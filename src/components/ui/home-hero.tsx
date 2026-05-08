@@ -1,13 +1,16 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { CurrencyToggle, CurrencyValue } from "@/components/ui/currency-toggle";
 import { IndexSparkline } from "@/components/ui/index-sparkline";
 import { StatusPill } from "@/components/ui/status-pill";
 import { SITE_CONFIG } from "@/lib/constants";
+import type { FxRates } from "@/lib/fx-rates";
 import type { Locale } from "@/lib/i18n";
 import type { Commodity } from "@/lib/mock-data";
 
 type HomeHeroProps = {
   commodities: Commodity[];
+  fxRates: FxRates;
   locale: Locale;
   updatedAt: string;
   labels: {
@@ -27,6 +30,7 @@ type HomeHeroProps = {
 
 export function HomeHero({
   commodities,
+  fxRates,
   labels,
   locale,
   updatedAt,
@@ -123,8 +127,13 @@ export function HomeHero({
           <HeroIndexBoard
             commodities={commodities}
             currentValues={labels.currentValues}
+            fxRates={fxRates}
             locale={locale}
             boardKicker={copy.boardKicker}
+            currencyToggleLabel={copy.currencyToggleLabel}
+            fxLabel={copy.fxLabel}
+            officialLabel={copy.officialLabel}
+            officialNotice={copy.officialNotice}
             respondentLabel={copy.respondents}
           />
         </div>
@@ -161,19 +170,29 @@ function HeroStatusTag({
 function HeroIndexBoard({
   commodities,
   currentValues,
+  currencyToggleLabel,
+  fxLabel,
+  fxRates,
   locale,
+  officialLabel,
+  officialNotice,
   boardKicker,
   respondentLabel,
 }: {
   commodities: Commodity[];
   currentValues: string;
+  currencyToggleLabel: string;
+  fxLabel: string;
+  fxRates: FxRates;
   locale: Locale;
+  officialLabel: string;
+  officialNotice: string;
   boardKicker: string;
   respondentLabel: string;
 }) {
   return (
     <div className="order-1 min-w-0 max-w-full bg-uga-mist/35 p-4 sm:p-6 lg:order-none lg:p-7 xl:p-8">
-      <div className="mb-3 flex items-center justify-between border-b border-black pb-3">
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-3 border-b border-black pb-3">
         <div>
           <p className="text-[0.64rem] font-black uppercase tracking-[0.18em] text-uga-green">
             {boardKicker}
@@ -182,16 +201,27 @@ function HeroIndexBoard({
             {currentValues}
           </h2>
         </div>
-        <span className="rounded-full border border-black/40 bg-white px-3 py-1.5 text-xs font-black text-black">
-          {SITE_CONFIG.currency}/{SITE_CONFIG.unit}
-        </span>
+        <CurrencyToggle label={currencyToggleLabel} />
+        <div className="basis-full">
+          <p className="text-[0.68rem] font-black uppercase leading-5 tracking-normal text-black/50">
+            {fxLabel}:{" "}
+            {fxRates.source === "demo" ? "demo FX" : fxRates.source} · USD/UAH{" "}
+            {fxRates.usdUah.toFixed(2)} · EUR/UAH {fxRates.eurUah.toFixed(2)} ·{" "}
+            {fxRates.rateDate}
+          </p>
+          <p className="mt-1 text-[0.68rem] font-semibold leading-4 text-black/50">
+            {officialNotice}
+          </p>
+        </div>
       </div>
       <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:gap-4">
         {commodities.map((commodity) => (
           <HeroIndexCard
             commodity={commodity}
+            fxRates={fxRates}
             key={commodity.id}
             locale={locale}
+            officialLabel={officialLabel}
             respondentLabel={respondentLabel}
           />
         ))}
@@ -202,11 +232,15 @@ function HeroIndexBoard({
 
 function HeroIndexCard({
   commodity,
+  fxRates,
   locale,
+  officialLabel,
   respondentLabel,
 }: {
   commodity: Commodity;
+  fxRates: FxRates;
   locale: Locale;
+  officialLabel: string;
   respondentLabel: string;
 }) {
   const isPositive = commodity.absoluteChange >= 0;
@@ -241,10 +275,12 @@ function HeroIndexCard({
       <div className="mt-auto">
         <div className="flex items-end justify-between gap-3">
           <p className="text-[1.95rem] font-black leading-none tracking-tight text-black sm:text-[2.2rem]">
-            {commodity.latest}{" "}
-            <span className="text-sm font-black tracking-normal text-black/55">
-              {SITE_CONFIG.currency}/{SITE_CONFIG.unit}
-            </span>
+            <CurrencyValue
+              fxRates={fxRates}
+              locale={locale}
+              officialLabel={officialLabel}
+              officialUsd={commodity.latest}
+            />
           </p>
           <div className="text-right">
             <p className={`text-sm font-black ${changeClass}`}>
@@ -281,6 +317,11 @@ function getHeroCopy(locale: Locale) {
       kicker: "Spot export price index",
       methodologyPrefix: "Методологія",
       methodologyShort: "Методологія: EOD · медіана · ±2% · 5+ · фіксація",
+      currencyToggleLabel: "Валюта відображення",
+      fxLabel: "FX",
+      officialLabel: "офіційно",
+      officialNotice:
+        "Офіційні значення UGA Index публікуються в USD/т. UAH та EUR є перерахунком для відображення.",
       respondents: "респондентів",
     };
   }
@@ -296,6 +337,11 @@ function getHeroCopy(locale: Locale) {
     kicker: "Spot export price index",
     methodologyPrefix: "Methodology",
     methodologyShort: "Methodology: EOD · median · ±2% · 5+ · locked",
+    currencyToggleLabel: "Display currency",
+    fxLabel: "FX",
+    officialLabel: "official",
+    officialNotice:
+      "Official UGA Index values are published in USD/t. UAH and EUR are converted display values.",
     respondents: "respondents",
   };
 }

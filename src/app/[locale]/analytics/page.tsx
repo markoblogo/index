@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
+import { CurrencyToggle, CurrencyValue } from "@/components/ui/currency-toggle";
 import { SectionHeader } from "@/components/ui/section-header";
 import { SITE_CONFIG } from "@/lib/constants";
+import { getFxRates } from "@/lib/fx-rates";
 import { getDictionary, type Locale } from "@/lib/i18n";
 import {
   commodities,
@@ -42,6 +44,7 @@ export default async function AnalyticsPage({
 }) {
   const { locale } = await params;
   const dict = getDictionary(locale);
+  const fxRates = await getFxRates();
   const history = buildAnalyticsHistory();
   const latestRows = commodities.map((commodity) => {
     const commodityHistory = history.filter(
@@ -94,6 +97,13 @@ export default async function AnalyticsPage({
                   <select className="w-full rounded-[3px] border-black/15 bg-white px-4 py-3 text-sm font-semibold text-black">
                     <option>{SITE_CONFIG.defaultDeliveryBasis}</option>
                   </select>
+                </FilterControl>
+                <FilterControl label={locale === "uk" ? "Валюта" : "Currency"}>
+                  <CurrencyToggle
+                    label={
+                      locale === "uk" ? "Валюта відображення" : "Display currency"
+                    }
+                  />
                 </FilterControl>
               </div>
             </div>
@@ -217,8 +227,15 @@ export default async function AnalyticsPage({
                         {SITE_CONFIG.defaultDeliveryBasis}
                       </td>
                       <td className="px-5 py-4 font-semibold text-black">
-                        ${row.value.toFixed(1)} {SITE_CONFIG.currency}/
-                        {SITE_CONFIG.unit}
+                        <CurrencyValue
+                          compact
+                          fxRates={fxRates}
+                          locale={locale}
+                          officialLabel={
+                            locale === "uk" ? "офіційно" : "official"
+                          }
+                          officialUsd={row.value}
+                        />
                       </td>
                       <td
                         className={

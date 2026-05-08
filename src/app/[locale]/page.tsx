@@ -5,6 +5,7 @@ import { LatestQuotesTable } from "@/components/ui/latest-quotes-table";
 import { MainIndexChart } from "@/components/ui/main-index-chart";
 import { PartnerStrip } from "@/components/ui/partner-strip";
 import { SectionHeader } from "@/components/ui/section-header";
+import { getFxRates } from "@/lib/fx-rates";
 import { getDictionary, type Locale } from "@/lib/i18n";
 import { getPublicIndexSnapshot } from "@/lib/public-index-data";
 
@@ -20,6 +21,7 @@ export default async function LocaleHome({
   const { locale } = await params;
   const dict = getDictionary(locale);
   const snapshot = await getPublicIndexSnapshot();
+  const fxRates = await getFxRates();
   const updatedAt = new Intl.DateTimeFormat(locale === "uk" ? "uk-UA" : "en-US", {
     dateStyle: "medium",
     timeStyle: "short",
@@ -29,6 +31,7 @@ export default async function LocaleHome({
     <>
       <HomeHero
         commodities={snapshot.commodities}
+        fxRates={fxRates}
         labels={{
           analytics: dict.home.viewAnalytics,
           attribution: dict.home.heroAttribution,
@@ -74,6 +77,7 @@ export default async function LocaleHome({
           <div>
             <LatestQuotesTable
               commodities={snapshot.commodities}
+              fxRates={fxRates}
               labels={dict.home.table}
               locale={locale}
               quotes={snapshot.latestQuotes}

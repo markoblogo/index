@@ -1,4 +1,5 @@
-import { SITE_CONFIG } from "@/lib/constants";
+import { CurrencyValue } from "@/components/ui/currency-toggle";
+import type { FxRates } from "@/lib/fx-rates";
 import type { Locale } from "@/lib/i18n";
 import {
   commodities as defaultCommodities,
@@ -9,6 +10,7 @@ import {
 
 type LatestQuotesTableProps = {
   locale: Locale;
+  fxRates: FxRates;
   commodities?: Commodity[];
   quotes?: LatestQuote[];
   labels: {
@@ -22,6 +24,7 @@ type LatestQuotesTableProps = {
 
 export function LatestQuotesTable({
   locale,
+  fxRates,
   labels,
   commodities = defaultCommodities,
   quotes = defaultLatestQuotes,
@@ -59,7 +62,15 @@ export function LatestQuotesTable({
                   </td>
                   <td className="px-5 py-4 text-black/60">{quote.basis}</td>
                   <td className="px-5 py-4 font-black text-black">
-                    ${quote.price} {SITE_CONFIG.currency}/{SITE_CONFIG.unit}
+                    <CurrencyValue
+                      compact
+                      fxRates={fxRates}
+                      locale={locale}
+                      officialLabel={
+                        locale === "uk" ? "офіційно" : "official"
+                      }
+                      officialUsd={quote.price}
+                    />
                   </td>
                   <td
                     className={
