@@ -62,10 +62,14 @@ type Dictionary = {
   about: {
     label: string;
     title: string;
-    description: string;
-    partners: Array<{ name: string; role: string }>;
-    rolesTitle: string;
-    rolesHeading: string;
+    descriptionBeforeLink: string;
+    descriptionLinkText: string;
+    descriptionAfterLink: string;
+    ugaHref: string;
+    whyLabel: string;
+    whyTitle: string;
+    whyBody: string[];
+    whyFeatures: Array<{ title: string; description: string }>;
     respondentsLabel: string;
     respondentsTitle: string;
     respondentsDescription: string;
@@ -198,33 +202,45 @@ const dictionaries: Record<Locale, Dictionary> = {
       viewAnalytics: "Дивитися аналітику",
     },
     about: {
-      label: "Про продукт",
-      title: "Публічний індекс під брендом Української зернової асоціації",
-      description:
-        "UGA Index створений як демонстраційна платформа для публікації щоденного ринкового бенчмарку справедливих експортних цін, збору індикативів та прозорої методології.",
-      partners: [
+      label: "Про індекс",
+      title:
+        "Публічний бенчмарк експортних цін українського зернового ринку",
+      descriptionBeforeLink: "UGA Index — це окрема платформа ",
+      descriptionLinkText: "Української зернової асоціації",
+      descriptionAfterLink:
+        " для щоденної публікації індексів спотових експортних цін на ключові українські зернові та олійні культури. Індекс створений, щоб дати ринку зрозумілий, порівнюваний і методологічно визначений орієнтир цін на базисі FOB Black Sea з періодом поставки T+30.",
+      ugaHref: "https://uga.ua/",
+      whyLabel: "Чому це важливо",
+      whyTitle: "Країновий ціновий орієнтир для експортного ринку",
+      whyBody: [
+        "Україна є одним із важливих світових ринків експорту зернових та олійних культур. Формування внутрішніх цін залежить не лише від локального попиту й пропозиції, а й від світових товарних ринків, логістики, доступу до портів, фрахту, страхування, валютного середовища та щоденного торгового потоку.",
+        "Для такого ринку публічний країновий бенчмарк зменшує фрагментацію цінової інформації. Замість орієнтації лише на приватні котирування, двосторонні переговори або розрізнені індикативи, учасники ринку можуть використовувати щоденне агреговане значення, розраховане за прозорою методологією.",
+        "UGA Index має стати першим в Україні публічним бенчмарком такого формату для спотових експортних цін на ринку зернових та олійних культур. Індекс створюється під брендом УЗА за підтримки членів асоціації та партнерів проєкту і призначений для виробників, експортерів, трейдерів, переробників, аналітиків та інституційних учасників, яким потрібен спільний ціновий орієнтир.",
+      ],
+      whyFeatures: [
         {
-          name: "UGA",
-          role: "Незалежний адміністратор, власник бренду та публічний видавець індексу.",
+          title: "Прозоре ціноутворення",
+          description:
+            "Щоденно опубліковані значення допомагають ринку порівнювати рівні цін за ключовими культурами та умовами поставки.",
         },
         {
-          name: "Spike Brokers",
-          role: "Партнер, що надає ринкові індикативи для демонстраційного процесу.",
+          title: "Репрезентативні ринкові дані",
+          description:
+            "Індекс базується на даних респондентів із компаній, які беруть активну участь в українських аграрних експортних потоках.",
         },
         {
-          name: "Cropto/MN7R",
-          role: "Технологічний партнер, відповідальний за платформу, локалізацію та віджет.",
+          title: "Методологічна публікація",
+          description:
+            "Значення агрегуються, перевіряються та публікуються за визначеними правилами, включно з медіанною перевіркою, фільтром викидів і мінімальною кількістю респондентів.",
         },
       ],
-      rolesTitle: "Ролі партнерів",
-      rolesHeading: "Екосистема UGA Index",
       respondentsLabel: "Респонденти",
-      respondentsTitle: "Компанії, що беруть участь у демонстраційному кошику",
+      respondentsTitle: "Компанії-респонденти у поточній корзині",
       respondentsDescription:
-        "Демо відображає структуру щоденного опитування респондентів для ключових експортних культур.",
-      disclaimerTitle: "Інформаційний характер даних",
+        "Корзина респондентів відображає компанії, представлені у щоденному процесі збору цінових даних за ключовими експортними культурами. Індивідуальні щоденні значення компаній не публікуються; у відкритому доступі відображаються лише агреговані значення індексу.",
+      disclaimerTitle: "Важливе інформаційне повідомлення",
       disclaimer:
-        "Публічні значення UGA Index мають виключно інформаційний характер. Вони не є інвестиційною рекомендацією, офертою або зобов'язанням укласти угоду; УЗА не несе відповідальності за збитки, спричинені використанням цих даних.",
+        "Значення UGA Index публікуються виключно з інформаційною та аналітичною метою. Вони не є інвестиційною порадою, публічною офертою або рекомендацією купувати чи продавати будь-який товар. Значення агрегуються з даних респондентів і публікуються відповідно до методології індексу; індивідуальні дані компаній не розкриваються. УЗА, партнери проєкту та технологічні провайдери не несуть відповідальності за рішення, прийняті на основі цих даних.",
     },
     methodology: {
       label: "Методологія",
@@ -465,32 +481,43 @@ const dictionaries: Record<Locale, Dictionary> = {
     },
     about: {
       label: "About",
-      title: "A public index under the Ukrainian Grain Association brand",
-      description:
-        "UGA Index is a demo platform for publishing a daily market benchmark for fair Ukrainian export prices, collecting indicatives, and explaining the methodology transparently.",
-      partners: [
+      title: "A public benchmark for Ukrainian grain export prices",
+      descriptionBeforeLink: "UGA Index is a dedicated platform by the ",
+      descriptionLinkText: "Ukrainian Grain Association",
+      descriptionAfterLink:
+        " for publishing daily spot export price benchmarks for key Ukrainian grains and oilseeds. The index is designed to give the market a clear, comparable and methodology-based reference for FOB Black Sea, T+30 price levels.",
+      ugaHref: "https://uga.ua/en/",
+      whyLabel: "Why it matters",
+      whyTitle: "A country-level price reference for an export-driven market",
+      whyBody: [
+        "Ukraine is one of the world’s important grain and oilseed export markets. Domestic price formation depends not only on local supply and demand, but also on global commodity prices, logistics, port access, freight, insurance, currency conditions and daily deal flow.",
+        "In such a market, a public country-level benchmark helps reduce fragmentation. Instead of relying only on private quotes, bilateral conversations or scattered indicative levels, market participants can refer to a daily aggregated value calculated under a transparent methodology.",
+        "UGA Index is intended to become Ukraine’s first public benchmark of this kind for spot export prices in the grain and oilseed market. It is created under the UGA brand with the support of association members and project partners, and is built for producers, exporters, traders, processors, analysts and institutional stakeholders who need a common pricing reference.",
+      ],
+      whyFeatures: [
         {
-          name: "UGA",
-          role: "Independent administrator, brand owner, and public publisher of the index.",
+          title: "Transparent price discovery",
+          description:
+            "Daily published values help the market compare price levels across key commodities and delivery conditions.",
         },
         {
-          name: "Spike Brokers",
-          role: "Market indicatives partner for the demonstration workflow.",
+          title: "Representative market input",
+          description:
+            "The index is based on respondent data from companies active in Ukrainian agricultural export flows.",
         },
         {
-          name: "Cropto/MN7R",
-          role: "Technology partner for the platform, localization, and embeddable widget.",
+          title: "Methodology-based publication",
+          description:
+            "Values are aggregated, validated and published according to defined rules, including median checks, outlier filtering and minimum respondent thresholds.",
         },
       ],
-      rolesTitle: "Partner roles",
-      rolesHeading: "UGA Index ecosystem",
       respondentsLabel: "Respondents",
-      respondentsTitle: "Companies represented in the demo basket",
+      respondentsTitle: "Respondent companies in the current basket",
       respondentsDescription:
-        "The demo mirrors a daily respondent survey structure for the core export commodities.",
-      disclaimerTitle: "Informational data notice",
+        "The respondent basket reflects companies represented in the daily price collection workflow for the core export commodities. Individual daily submissions are not published; the public index displays aggregated values only.",
+      disclaimerTitle: "Important information notice",
       disclaimer:
-        "Public UGA Index values are informational only. They are not investment advice, an offer, or a commitment to transact; UGA is not liable for losses caused by use of the data.",
+        "UGA Index values are published for informational and analytical purposes only. They are not investment advice, a public offer, or a recommendation to buy or sell any commodity. Values are aggregated from respondent data and published according to the index methodology; individual company submissions are not disclosed. UGA, project partners and technology providers are not liable for decisions made on the basis of these data.",
     },
     methodology: {
       label: "Methodology",
