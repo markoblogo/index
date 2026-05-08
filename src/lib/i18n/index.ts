@@ -80,11 +80,16 @@ type Dictionary = {
     label: string;
     title: string;
     description: string;
-    metrics: Array<{ value: string; label: string }>;
-    sections: Array<{ title: string; description: string }>;
-    signedPdfTitle: string;
-    signedPdfDescription: string;
-    signedPdfAction: string;
+    coreLabel: string;
+    coreTitle: string;
+    coreNarrative: string[];
+    facts: Array<{ value: string; label: string }>;
+    flowTitle: string;
+    flow: Array<{ title: string; description: string }>;
+    pdfTitle: string;
+    pdfDescription: string;
+    pdfDownload: string;
+    pdfOpen: string;
     faqTitle: string;
     faq: Array<{ question: string; answer: string }>;
   };
@@ -244,96 +249,89 @@ const dictionaries: Record<Locale, Dictionary> = {
     },
     methodology: {
       label: "Методологія",
-      title: "Від індикативів респондентів до зафіксованого значення індексу",
+      title: "Як розраховується UGA Index",
       description:
-        "Демо використовує простий і відтворюваний процес розрахунку для кожної дати, культури та базису поставки.",
-      metrics: [
-        { value: "FOB", label: "Black Sea" },
-        { value: "T+30", label: "період поставки" },
-        { value: "5+", label: "респондентів" },
+        "UGA Index використовує повторюваний щоденний процес, який перетворює цінові індикативи респондентів на перевірені та зафіксовані значення індексу для кожної культури, базису поставки та дати розрахунку.",
+      coreLabel: "Підхід до розрахунку",
+      coreTitle: "Від EOD-цін респондентів до опублікованого бенчмарку",
+      coreNarrative: [
+        "UGA Index розраховується на основі щоденних цінових оцінок, які надає репрезентативна група респондентів ринку. Кожне подане значення має відображати справедливий ринковий рівень на кінець торгового дня для реально виконуваної експортної угоди з визначеною культурою, базисом поставки та періодом поставки.",
+        "Для демо-індексу стандартним базисом є FOB Black Sea, а періодом поставки — T+30. Ціни збираються для кожної культури та дати розрахунку, після чого проходять валідацію перед публікацією. Спочатку система визначає медіанне значення у вибірці респондентів. Значення, що відхиляються від медіани більш ніж на ±2%, виключаються з розрахунку як потенційні викиди.",
+        "Після очищення вибірки значення індексу розраховується як середнє арифметичне валідних цін. Корзина може бути опублікована лише тоді, коли після фільтрації залишається щонайменше 5 валідних цін респондентів. Якщо даних недостатньо, система може показувати зовнішні ринкові індикативи окремо, але вони не публікуються автоматично як значення UGA Index.",
+        "До публікації значення можуть перевірятися, уточнюватися та мати декілька версій. Після публікації фінальне значення фіксується. Система зберігає зміни, перерахунки та події публікації в журналі аудиту.",
       ],
-      sections: [
+      facts: [
+        { value: "FOB Black Sea", label: "Стандартний базис поставки для демо" },
+        { value: "T+30", label: "Стандартний період поставки" },
+        { value: "5+", label: "Мінімум валідних респондентів" },
+        { value: "EOD", label: "Оцінка ціни на кінець торгового дня" },
+        { value: "±2%", label: "Фільтр викидів відносно медіани" },
+        { value: "Фіксація", label: "Фінальне значення після публікації" },
+      ],
+      flowTitle: "Послідовність розрахунку",
+      flow: [
         {
-          title: "Що таке UGA Index",
+          title: "Збір цін респондентів",
           description:
-            "UGA Index - це щоденний ринковий бенчмарк справедливої експортної ціни української аграрної продукції під брендом Української зернової асоціації.",
+            "Респонденти подають EOD-оцінки справедливої ціни для відповідної культури, базису та періоду поставки.",
         },
         {
-          title: "Кошики респондентів",
+          title: "Валідація вибірки",
           description:
-            "Для кожної культури, базису поставки, дати та періоду поставки система збирає ціни від визначеного кошика респондентів. Демо використовує один кошик FOB Black Sea з вагою 1, але модель підтримує майбутні зважені кошики.",
+            "Система розраховує медіану та перевіряє всі подані значення відносно центрального ринкового рівня.",
         },
         {
-          title: "Логіка ціни EOD",
+          title: "Виключення викидів",
           description:
-            "Кожна ціна є оцінкою справедливої ринкової ціни на кінець торгового дня та має відповідати рівню реально виконуваної угоди, за яким респондент готовий купити або продати.",
+            "Ціни, що відхиляються від медіани більш ніж на ±2%, виключаються з очищеної вибірки.",
         },
         {
-          title: "Період поставки T+30",
+          title: "Розрахунок індексу",
           description:
-            "Індекс орієнтований на поставку протягом 30 днів від дати котирування. Це робить значення порівнюваними між респондентами та торговими днями.",
+            "Опубліковане значення є середнім арифметичним очищеної вибірки за умови виконання мінімальної кількості респондентів.",
         },
         {
-          title: "Медіана, фільтр +/-2% та очищене середнє",
+          title: "Перевірка та фіксація",
           description:
-            "Система розраховує медіану валідних цін, виключає значення з відхиленням понад +/-2% від медіани, а потім публікує арифметичне середнє очищеної вибірки.",
-        },
-        {
-          title: "Мінімум 5 респондентів",
-          description:
-            "Кошик може бути опублікований лише тоді, коли після фільтрації залишається щонайменше 5 валідних цін респондентів. Якщо даних недостатньо, Spike показується тільки як зовнішній індикатив.",
-        },
-        {
-          title: "Аудит і зафіксовані значення",
-          description:
-            "Після публікації значення індексу блокується. Зміни вхідних даних, перерахунки та публікації мають відображатися в аудит-лозі з попереднім і новим станом.",
-        },
-        {
-          title: "Верифікація та версійність",
-          description:
-            "До публікації розрахунок може мати версії v1, v2 тощо та проходить незалежну партнерську верифікацію. Після публікації фіксується фінальна версія, а зміни заборонені.",
-        },
-        {
-          title: "Майбутнє масштабування",
-          description:
-            "Методологія передбачає volume-weighted модель, forward індекси T+60/T+90, а також окремі типи котирувань bid, offer і mid.",
+            "До публікації значення можуть переглядатися та версіонуватися. Після публікації фінальне значення фіксується і записується в audit log.",
         },
       ],
-      signedPdfTitle: "Підписана методологія PDF",
-      signedPdfDescription:
-        "У фінальній версії тут буде розміщено підписаний PDF-файл з офіційною методологією UGA Index.",
-      signedPdfAction: "Очікує на завантаження",
-      faqTitle: "Поширені питання",
+      pdfTitle: "Офіційний PDF методології",
+      pdfDescription:
+        "Завантажте документ методології, використаний як основа для демо-сторінки UGA Index. У production-версії цей файл може бути замінений на підписану та затверджену УЗА версію.",
+      pdfDownload: "Завантажити PDF",
+      pdfOpen: "Відкрити PDF",
+      faqTitle: "FAQ",
       faq: [
         {
           question: "Що таке UGA Index?",
           answer:
-            "Це щоденний індекс спотових експортних цін України для ключових зернових та олійних культур на базисі FOB Black Sea.",
+            "UGA Index — це щоденний бенчмарк експортних цін української аграрної продукції. Він публікує агреговані значення індексу для обраних культур та умов поставки.",
         },
         {
           question: "Хто надає дані?",
           answer:
-            "Дані надходять від респондентів кошика: експортерів та інших репрезентативних учасників ринку. Spike Brokers підтримує процес зовнішніми ринковими індикативами.",
+            "Дані збираються від визначеного пулу респондентів ринку. Індивідуальні значення окремих компаній не розкриваються у публічних матеріалах.",
         },
         {
           question: "Як обробляються викиди?",
           answer:
-            "Після розрахунку медіани система виключає ціни, що відхиляються більш ніж на +/-2% від медіани, і рахує середнє очищеної вибірки.",
+            "Система розраховує медіану вибірки респондентів і виключає значення, що відхиляються від неї більш ніж на ±2%, перед розрахунком фінального середнього.",
         },
         {
           question: "Що відбувається, якщо даних недостатньо?",
           answer:
-            "Індекс не публікується автоматично. Spike може відображатися тільки як зовнішній індикатив, без заміни розрахункового значення.",
+            "Якщо після фільтрації залишається менше ніж 5 валідних цін респондентів, корзина не може бути опублікована як значення UGA Index. Зовнішні індикативи можуть відображатися лише як окремі довідкові дані.",
         },
         {
-          question: "Як часто публікується індекс?",
+          question: "Чи можна змінювати опубліковані значення?",
           answer:
-            "Демо передбачає щоденну публікацію після завершення збору та перевірки даних за торговий день.",
+            "До публікації значення можуть перевірятися та версіонуватися. Після публікації фінальне значення фіксується, а зміни відображаються через audit trail.",
         },
         {
-          question: "Що доступно публічно, а що для членів UGA?",
+          question: "Чи може методологія масштабуватися?",
           answer:
-            "Публічно доступні останні значення, методологія та базова аналітика. Для членів UGA може бути розширена історія, додаткові зрізи та внутрішні матеріали.",
+            "Так. Методологія підтримує майбутні зважені корзини, додаткові періоди поставки на кшталт T+60 і T+90, а також окремі типи котирувань bid, offer або mid.",
         },
       ],
     },
@@ -521,96 +519,89 @@ const dictionaries: Record<Locale, Dictionary> = {
     },
     methodology: {
       label: "Methodology",
-      title: "From respondent indicatives to locked index values",
+      title: "How UGA Index is calculated",
       description:
-        "The demo uses a simple and repeatable calculation process for every date, commodity, and delivery basis.",
-      metrics: [
-        { value: "FOB", label: "Black Sea" },
-        { value: "T+30", label: "delivery period" },
-        { value: "5+", label: "respondents" },
+        "UGA Index uses a repeatable daily process to turn respondent price indicatives into verified and locked index values for each commodity, delivery basis and calculation date.",
+      coreLabel: "Calculation approach",
+      coreTitle: "From respondent EOD prices to a published benchmark",
+      coreNarrative: [
+        "UGA Index is calculated from daily price assessments submitted by a representative group of market respondents. Each submitted value should reflect a fair end-of-day market level for an executable export transaction, using the defined commodity, delivery basis and delivery period.",
+        "For the demo index, the standard basis is FOB Black Sea and the delivery period is T+30. Prices are collected for each commodity and calculation date, then validated before publication. The calculation first identifies the median value in the respondent sample. Prices that deviate by more than ±2% from the median are excluded from the calculation as potential outliers.",
+        "The index value is then calculated as the arithmetic average of the cleaned respondent sample. A basket is publishable only when at least 5 valid respondent prices remain after filtering. If the data are insufficient, the system may display external market indicatives separately, but they are not silently published as UGA Index values.",
+        "Before publication, values can be reviewed, corrected and versioned. After publication, the final value is locked. The system records changes, recalculations and publication events in an audit log.",
       ],
-      sections: [
+      facts: [
+        { value: "FOB Black Sea", label: "Standard demo delivery basis" },
+        { value: "T+30", label: "Standard delivery period" },
+        { value: "5+", label: "Minimum valid respondents" },
+        { value: "EOD", label: "End-of-day price assessment" },
+        { value: "±2%", label: "Median-based outlier filter" },
+        { value: "Locked", label: "Final value after publication" },
+      ],
+      flowTitle: "Calculation flow",
+      flow: [
         {
-          title: "What UGA Index is",
+          title: "Collect respondent prices",
           description:
-            "UGA Index is a daily market benchmark for fair Ukrainian agricultural export prices under the Ukrainian Grain Association brand.",
+            "Respondents submit fair EOD price assessments for the relevant commodity, basis and delivery period.",
         },
         {
-          title: "Respondent baskets",
+          title: "Validate the sample",
           description:
-            "For each commodity, delivery basis, calculation date, and delivery period, the system collects prices from a defined respondent basket. The demo uses one FOB Black Sea basket with weight 1, while the model supports future weighted baskets.",
+            "The system calculates the median and checks all submitted values against the central market level.",
         },
         {
-          title: "EOD price logic",
+          title: "Exclude outliers",
           description:
-            "Each price is an end-of-day fair market assessment and should represent an executable level where the respondent is ready to buy or sell.",
+            "Prices deviating by more than ±2% from the median are excluded from the cleaned sample.",
         },
         {
-          title: "T+30 delivery period",
+          title: "Calculate the index",
           description:
-            "The index is oriented around delivery within 30 days from the quotation date. This keeps values comparable across respondents and trading days.",
+            "The published value is the arithmetic average of the cleaned sample, provided the minimum respondent count is met.",
         },
         {
-          title: "Median, +/-2% filter, and trimmed average",
+          title: "Verify and lock",
           description:
-            "The system calculates the median of valid prices, excludes prices deviating by more than +/-2% from that median, then publishes the arithmetic average of the cleaned sample.",
-        },
-        {
-          title: "Minimum 5 respondents",
-          description:
-            "A basket is publishable only when at least 5 valid respondent prices remain after filtering. If data is insufficient, Spike is displayed only as an external indicative.",
-        },
-        {
-          title: "Audit log and locked values",
-          description:
-            "After publication, the index value is locked. Source edits, recalculations, and publication events should be recorded in the audit log with before and after state.",
-        },
-        {
-          title: "Verification and versioning",
-          description:
-            "Before publication, calculations can have v1, v2, and later versions and pass independent partner verification. Publication fixes the final version and blocks further changes.",
-        },
-        {
-          title: "Future scaling",
-          description:
-            "The methodology supports a future volume-weighted model, T+60/T+90 forward indices, and separate bid, offer, and mid quote types.",
+            "Before publication, values may be reviewed and versioned. Once published, the final value is locked and recorded in the audit log.",
         },
       ],
-      signedPdfTitle: "Signed methodology PDF",
-      signedPdfDescription:
-        "The production page will host the signed PDF with the official UGA Index methodology.",
-      signedPdfAction: "Pending upload",
+      pdfTitle: "Official methodology PDF",
+      pdfDescription:
+        "Download the methodology document used as the basis for the UGA Index demo page. The production site can replace this file with the signed and stamped version approved by UGA.",
+      pdfDownload: "Download PDF",
+      pdfOpen: "Open PDF",
       faqTitle: "FAQ",
       faq: [
         {
           question: "What is UGA Index?",
           answer:
-            "It is a daily Ukrainian spot export price index for core grain and oilseed commodities on a FOB Black Sea basis.",
+            "UGA Index is a daily benchmark for Ukrainian agricultural export prices. It publishes aggregated index values for selected commodities and delivery conditions.",
         },
         {
           question: "Who provides data?",
           answer:
-            "Data comes from basket respondents: exporters and other representative market participants. Spike Brokers supports the process with external market indicatives.",
+            "Data are collected from a defined pool of market respondents. Individual company submissions are not disclosed in public outputs.",
         },
         {
           question: "How are outliers handled?",
           answer:
-            "After the median is calculated, prices deviating by more than +/-2% from the median are excluded before the cleaned average is calculated.",
+            "The system calculates the median of the respondent sample and excludes values that deviate by more than ±2% from that median before calculating the final average.",
         },
         {
           question: "What happens if there is insufficient data?",
           answer:
-            "The index is not silently published. Spike can be shown as an external indicative only, not as a fallback index value.",
+            "If fewer than 5 valid respondent prices remain after filtering, the basket is not publishable as a UGA Index value. External indicatives may be shown only as separate reference data.",
         },
         {
-          question: "How often is the index published?",
+          question: "Can published values be changed?",
           answer:
-            "The demo is designed for daily publication after end-of-day data collection and review.",
+            "Before publication, values can be reviewed and versioned. After publication, the final value is locked and changes are recorded through the audit trail.",
         },
         {
-          question: "What is available publicly vs for UGA members?",
+          question: "Can the methodology scale?",
           answer:
-            "The public site shows latest values, methodology, and basic analytics. UGA members can later receive deeper history, additional cuts, and internal materials.",
+            "Yes. The methodology supports future weighted baskets, additional delivery periods such as T+60 and T+90, and separate bid, offer or mid quote types.",
         },
       ],
     },
