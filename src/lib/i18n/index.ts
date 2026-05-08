@@ -18,6 +18,13 @@ type Dictionary = {
     description: string;
     boardTitle: string;
     boardDescription: string;
+    heroSubtitle: string;
+    heroMeta: string;
+    heroAttribution: string;
+    heroAttributionShort: string;
+    heroTrustStrip: string;
+    heroTrustStripShort: string;
+    currentValuesTitle: string;
     liveStatus: string;
     selectorTitle: string;
     reportTitle: string;
@@ -131,6 +138,16 @@ const dictionaries: Record<Locale, Dictionary> = {
       boardTitle: "UGA Index / Експортні ціни",
       boardDescription:
         "Ринковий бенчмарк справедливих експортних цін України у USD/t. FOB Black Sea, T+30, щоденна публікація після EOD-перевірки.",
+      heroSubtitle:
+        "Щоденний експортний ціновий бенчмарк для українських зернових та олійних культур.",
+      heroMeta: "FOB Чорне море · T+30 · USD/т · публікація після EOD-перевірки",
+      heroAttribution:
+        "Публікується Українською зерновою асоціацією. Ринкові індикативи: Spike Brokers. Технологія: Cropto/MN7R.",
+      heroAttributionShort: "UGA · Spike Brokers · Cropto/MN7R",
+      heroTrustStrip:
+        "EOD-дані респондентів · медіанна валідація · ±2% фільтр викидів · мінімум 5 респондентів · фіксація після публікації",
+      heroTrustStripShort: "EOD · медіана · ±2% · 5+ · фіксація",
+      currentValuesTitle: "Поточні значення індексу",
       liveStatus: "live index",
       selectorTitle: "Культури",
       reportTitle: "Завантажити звіт",
@@ -374,6 +391,16 @@ const dictionaries: Record<Locale, Dictionary> = {
       boardTitle: "UGA Index / Export Pricing",
       boardDescription:
         "Fair Ukrainian export price benchmark in USD/t. FOB Black Sea, T+30, published daily after EOD review.",
+      heroSubtitle:
+        "Daily export pricing benchmark for Ukrainian grains and oilseeds.",
+      heroMeta: "FOB Black Sea · T+30 · USD/t · published after EOD review",
+      heroAttribution:
+        "Published by Ukrainian Grain Association. Market indicatives by Spike Brokers. Technology by Cropto/MN7R.",
+      heroAttributionShort: "UGA · Spike Brokers · Cropto/MN7R",
+      heroTrustStrip:
+        "Respondent EOD data · median validation · ±2% outlier filter · minimum 5 respondents · locked after publication",
+      heroTrustStripShort: "EOD · median · ±2% · 5+ · locked",
+      currentValuesTitle: "Current index values",
       liveStatus: "live index",
       selectorTitle: "Commodities",
       reportTitle: "Download report",
