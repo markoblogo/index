@@ -1,8 +1,6 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
 import { CurrencyToggle, CurrencyValue } from "@/components/ui/currency-toggle";
 import { IndexSparkline } from "@/components/ui/index-sparkline";
-import { StatusPill } from "@/components/ui/status-pill";
 import { SITE_CONFIG } from "@/lib/constants";
 import type { FxRates } from "@/lib/fx-rates";
 import type { Locale } from "@/lib/i18n";
@@ -15,15 +13,11 @@ type HomeHeroProps = {
   updatedAt: string;
   labels: {
     analytics: string;
-    attribution: string;
-    attributionShort: string;
     currentValues: string;
     liveStatus: string;
     methodology: string;
-    meta: string;
     subtitle: string;
     trustStrip: string;
-    trustStripShort: string;
     updated: string;
   };
 };
@@ -50,22 +44,6 @@ export function HomeHero({
           INDEX
         </div>
 
-        <div className="relative z-10 border-b border-black px-5 py-3 sm:px-7 lg:px-8">
-          <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:items-center">
-            <div className="min-w-0">
-              <StatusPill>{labels.liveStatus}</StatusPill>
-            </div>
-            <HeroStatusTag className="col-span-2 truncate">
-              {labels.updated}: {updatedAt}
-            </HeroStatusTag>
-            <HeroStatusTag>{SITE_CONFIG.defaultDeliveryBasis}</HeroStatusTag>
-            <HeroStatusTag>{SITE_CONFIG.defaultDeliveryPeriod}</HeroStatusTag>
-            <HeroStatusTag>
-              {SITE_CONFIG.currency}/{SITE_CONFIG.unit}
-            </HeroStatusTag>
-          </div>
-        </div>
-
         <div className="relative z-10 grid lg:grid-cols-[0.78fr_1.22fr]">
           <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:border-r lg:border-black lg:p-8 xl:p-9">
             <div className="border-b border-black p-5 sm:p-7 lg:border-b-0 lg:p-0">
@@ -83,10 +61,6 @@ export function HomeHero({
             <div className="order-2 border-b border-black p-5 sm:p-7 lg:order-none lg:mt-7 lg:border-b-0 lg:p-0">
               <p className="max-w-xl text-base font-semibold leading-6 text-black sm:text-lg sm:leading-7">
                 {labels.subtitle}
-              </p>
-              <p className="mt-3 max-w-xl text-sm leading-6 text-black/65">
-                <span className="sm:hidden">{labels.attributionShort}</span>
-                <span className="hidden sm:inline">{labels.attribution}</span>
               </p>
 
               <div className="mt-5 grid grid-cols-3 border border-black">
@@ -132,9 +106,12 @@ export function HomeHero({
             boardKicker={copy.boardKicker}
             currencyToggleLabel={copy.currencyToggleLabel}
             fxLabel={copy.fxLabel}
+            liveStatus={labels.liveStatus}
             officialLabel={copy.officialLabel}
             officialNotice={copy.officialNotice}
             respondentLabel={copy.respondents}
+            updatedAt={updatedAt}
+            updatedLabel={labels.updated}
           />
         </div>
 
@@ -151,22 +128,6 @@ export function HomeHero({
   );
 }
 
-function HeroStatusTag({
-  children,
-  className = "",
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
-  return (
-    <span
-      className={`min-w-0 overflow-hidden truncate whitespace-nowrap rounded-full border border-black/25 bg-white px-3 py-1.5 text-center text-[0.68rem] font-black tracking-normal text-black/65 sm:text-left ${className}`}
-    >
-      {children}
-    </span>
-  );
-}
-
 function HeroIndexBoard({
   commodities,
   currentValues,
@@ -174,10 +135,13 @@ function HeroIndexBoard({
   fxLabel,
   fxRates,
   locale,
+  liveStatus,
   officialLabel,
   officialNotice,
   boardKicker,
   respondentLabel,
+  updatedAt,
+  updatedLabel,
 }: {
   commodities: Commodity[];
   currentValues: string;
@@ -185,10 +149,13 @@ function HeroIndexBoard({
   fxLabel: string;
   fxRates: FxRates;
   locale: Locale;
+  liveStatus: string;
   officialLabel: string;
   officialNotice: string;
   boardKicker: string;
   respondentLabel: string;
+  updatedAt: string;
+  updatedLabel: string;
 }) {
   return (
     <div className="order-1 min-w-0 max-w-full bg-uga-mist/35 p-4 sm:p-6 lg:order-none lg:p-7 xl:p-8">
@@ -200,6 +167,10 @@ function HeroIndexBoard({
           <h2 className="mt-1 text-base font-black uppercase tracking-[0.08em] text-black">
             {currentValues}
           </h2>
+          <p className="mt-2 text-[0.68rem] font-black uppercase leading-5 tracking-normal text-black/50">
+            {liveStatus} · {updatedLabel}: {updatedAt} ·{" "}
+            {SITE_CONFIG.defaultDeliveryBasis} · {SITE_CONFIG.defaultDeliveryPeriod}
+          </p>
         </div>
         <CurrencyToggle label={currencyToggleLabel} />
         <div className="basis-full">

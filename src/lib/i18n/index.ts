@@ -115,9 +115,18 @@ type Dictionary = {
     };
   };
   footer: {
-    rights: string;
+    demo: string;
     partners: string;
     disclaimer: string;
+    navigationTitle: string;
+    contactsTitle: string;
+    addressTitle: string;
+    address: string[];
+    phonesTitle: string;
+    phones: string[];
+    emailTitle: string;
+    email: string;
+    socialTitle: string;
   };
 };
 
@@ -139,7 +148,7 @@ const dictionaries: Record<Locale, Dictionary> = {
       boardDescription:
         "Ринковий бенчмарк справедливих експортних цін України у USD/t. FOB Black Sea, T+30, щоденна публікація після EOD-перевірки.",
       heroSubtitle:
-        "Щоденний експортний ціновий бенчмарк для українських зернових та олійних культур.",
+        "Щоденні значення для ключових зернових та олійних культур України на базисі FOB Black Sea.",
       heroMeta: "FOB Чорне море · T+30 · USD/т · публікація після EOD-перевірки",
       heroAttribution:
         "Публікується УЗА. Ринкові індикативи: Spike Brokers. Технологія: Cropto/MN7R.",
@@ -369,10 +378,23 @@ const dictionaries: Record<Locale, Dictionary> = {
       },
     },
     footer: {
-      rights: "Демо для Української зернової асоціації.",
-      partners: "Індикативи: Spike Brokers · Технології: Cropto/MN7R",
+      demo: "Демо для Української зернової асоціації.",
+      partners: "Індикативи: Spike Brokers · Технологія: Cropto/MN7R",
       disclaimer:
         "Інформація надається виключно для інформаційних цілей. УЗА не несе відповідальності за збитки, спричинені використанням даних.",
+      navigationTitle: "Навігація",
+      contactsTitle: "Контакти",
+      addressTitle: "Адреса",
+      address: [
+        "Україна, 01133, Київ,",
+        "вул. Євгена Коновальця, 36Д",
+        "6 поверх",
+      ],
+      phonesTitle: "Телефони",
+      phones: ["+38 (044) 492-39-68", "+38 (044) 492-39-69"],
+      emailTitle: "E-mail",
+      email: "inbox@uga.ua",
+      socialTitle: "Соціальні мережі",
     },
   },
   en: {
@@ -392,7 +414,7 @@ const dictionaries: Record<Locale, Dictionary> = {
       boardDescription:
         "Fair Ukrainian export price benchmark in USD/t. FOB Black Sea, T+30, published daily after EOD review.",
       heroSubtitle:
-        "Daily export pricing benchmark for Ukrainian grains and oilseeds.",
+        "Daily values for key Ukrainian grains and oilseeds on FOB Black Sea basis.",
       heroMeta: "FOB Black Sea · T+30 · USD/t · published after EOD review",
       heroAttribution:
         "Published by UGA. Market indicatives: Spike Brokers. Technology: Cropto/MN7R.",
@@ -622,10 +644,23 @@ const dictionaries: Record<Locale, Dictionary> = {
       },
     },
     footer: {
-      rights: "Demo for the Ukrainian Grain Association.",
+      demo: "Demo for the Ukrainian Grain Association.",
       partners: "Indicatives: Spike Brokers · Technology: Cropto/MN7R",
       disclaimer:
         "Information is provided for informational purposes only. UGA is not liable for losses caused by use of the data.",
+      navigationTitle: "Navigation",
+      contactsTitle: "Contacts",
+      addressTitle: "Address",
+      address: [
+        "Ukraine, 01133, Kyiv,",
+        "36D Yevhena Konovaltsia St.",
+        "6th floor",
+      ],
+      phonesTitle: "Phones",
+      phones: ["+38 (044) 492-39-68", "+38 (044) 492-39-69"],
+      emailTitle: "E-mail",
+      email: "inbox@uga.ua",
+      socialTitle: "Social",
     },
   },
 };
