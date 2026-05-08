@@ -938,9 +938,9 @@ function getAnalyticsCopy(locale: Locale) {
   if (locale === "uk") {
     return {
       accessLabels: [
-        "Безкоштовний доступ до 15.06.2027",
-        "Платна аналітика після стартового періоду",
-        "Платний API-доступ у планах",
+        "Перший рік безкоштовно",
+        "Платна аналітика планується",
+        "API планується",
       ],
       accessMatrixEyebrow: "Доступ",
       accessMatrixHeaders: ["Рівень", "Історія", "Аналітика", "API"],
@@ -999,12 +999,12 @@ function getAnalyticsCopy(locale: Locale) {
         "Місячний сценарний діапазон для довшого аналітичного горизонту.",
       outlookTitle: "Аналітичний прогноз на 12 місяців",
       plannedLabel: "planned",
-      previewLabel: "Preview access",
+      previewLabel: "Попередній доступ",
       publishedLabel: "published",
       quarterTitle: "Сценарій на найближчий квартал",
       respondentCoverage: "Покриття респондентів",
       scenarioBody:
-        "Демо-аналітична модель будує можливі траєкторії індексів на основі історичної динаміки, короткострокового імпульсу та волатильності окремих культур. Результат є сценарним діапазоном, а не гарантією майбутніх цін.",
+        "Аналітична preview-модель будує можливі траєкторії індексів на основі історичної динаміки, короткострокового імпульсу та волатильності окремих культур. Результат є сценарним діапазоном, а не гарантією майбутніх цін.",
       scenarioChartDescription:
         "90-денний горизонт із базовим сценарієм і верхнім/нижнім діапазоном.",
       scenarioDisclaimer:
@@ -1024,7 +1024,7 @@ function getAnalyticsCopy(locale: Locale) {
         "Статус",
       ],
       trendDescription:
-        "30-денна demo-історія для всіх чотирьох опублікованих індексів.",
+        "30-денна історія для всіх чотирьох опублікованих індексів у режимі аналітичного preview.",
       trendTitle: "Динаміка індексів за культурами",
       upperRange: "Верхній діапазон",
       volatilityDescription:
@@ -1036,11 +1036,7 @@ function getAnalyticsCopy(locale: Locale) {
   }
 
   return {
-    accessLabels: [
-      "Free preview until 15.06.2027",
-      "Paid analytics after launch period",
-      "Paid API access planned",
-    ],
+    accessLabels: ["Free first year", "Paid analytics planned", "API planned"],
     accessMatrixEyebrow: "Access",
     accessMatrixHeaders: ["Access level", "History", "Analytics", "API"],
     accessMatrixRows: [
@@ -1103,7 +1099,7 @@ function getAnalyticsCopy(locale: Locale) {
     quarterTitle: "Next quarter scenario",
     respondentCoverage: "Respondent coverage",
     scenarioBody:
-      "A demo analytical model projects possible index paths using historical index movement, short-term momentum and commodity-specific volatility. The output is a scenario range, not a guarantee of future prices.",
+      "An analytical preview model projects possible index paths using historical index movement, short-term momentum and commodity-specific volatility. The output is a scenario range, not a guarantee of future prices.",
     scenarioChartDescription:
       "90-day horizon with a base scenario and upper/lower range.",
     scenarioDisclaimer:
@@ -1123,7 +1119,7 @@ function getAnalyticsCopy(locale: Locale) {
       "Status",
     ],
     trendDescription:
-      "30-day demo history for all four published commodity indices.",
+      "30-day analytics preview history for all four published commodity indices.",
     trendTitle: "Index dynamics by commodity",
     upperRange: "Upper range",
     volatilityDescription:

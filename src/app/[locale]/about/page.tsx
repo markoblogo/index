@@ -23,7 +23,7 @@ export default async function AboutPage({
   return (
     <>
       <section className="border-b border-black bg-white">
-        <div className="mx-auto grid max-w-7xl gap-8 px-6 py-12 lg:grid-cols-[0.82fr_1.18fr] lg:px-8 lg:py-16">
+        <div className="mx-auto grid max-w-7xl gap-8 px-6 py-10 lg:grid-cols-[0.82fr_1.18fr] lg:px-8 lg:py-14">
           <p className="text-xs font-black uppercase tracking-[0.18em] text-uga-green">
             {dict.about.label}
           </p>
@@ -47,7 +47,7 @@ export default async function AboutPage({
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-7xl gap-8 px-6 py-14 lg:grid-cols-[0.82fr_1.18fr] lg:px-8 lg:py-16">
+      <section className="mx-auto grid max-w-7xl gap-8 px-6 py-10 lg:grid-cols-[0.82fr_1.18fr] lg:px-8 lg:py-14">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.18em] text-uga-green">
             {dict.about.whyLabel}
@@ -84,7 +84,7 @@ export default async function AboutPage({
       </section>
 
       <section className="border-y border-black bg-uga-mist">
-        <div className="mx-auto max-w-7xl px-6 py-14 lg:px-8 lg:py-16">
+        <div className="mx-auto max-w-7xl px-6 py-10 lg:px-8 lg:py-14">
           <div className="grid gap-8 lg:grid-cols-[23rem_1fr] lg:items-start">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.18em] text-uga-green">
@@ -121,7 +121,7 @@ export default async function AboutPage({
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-6 py-12 lg:px-8 lg:py-14">
+      <section className="mx-auto max-w-7xl px-6 py-10 lg:px-8 lg:py-12">
         <div className="grid border border-black bg-uga-dark text-white lg:grid-cols-[20rem_1fr]">
           <div className="border-b border-white/25 p-5 lg:border-b-0 lg:border-r">
             <p className="text-xs font-black uppercase leading-5 tracking-[0.18em] text-uga-lime">

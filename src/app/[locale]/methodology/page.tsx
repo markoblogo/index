@@ -13,7 +13,7 @@ export default async function MethodologyPage({
   return (
     <>
       <section className="border-b border-black bg-white">
-        <div className="mx-auto grid max-w-7xl gap-8 px-6 py-12 lg:grid-cols-[0.78fr_1.22fr] lg:px-8 lg:py-16">
+        <div className="mx-auto grid max-w-7xl gap-8 px-6 py-10 lg:grid-cols-[0.78fr_1.22fr] lg:px-8 lg:py-14">
           <p className="text-xs font-black uppercase tracking-[0.18em] text-uga-green">
             {dict.methodology.label}
           </p>
@@ -28,7 +28,7 @@ export default async function MethodologyPage({
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-7xl gap-8 px-6 py-12 lg:grid-cols-[0.78fr_1.22fr] lg:px-8 lg:py-16">
+      <section className="mx-auto grid max-w-7xl gap-8 px-6 py-10 lg:grid-cols-[0.78fr_1.22fr] lg:px-8 lg:py-14">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.18em] text-uga-green">
             {dict.methodology.coreLabel}
@@ -64,7 +64,7 @@ export default async function MethodologyPage({
       </section>
 
       <section className="border-y border-black bg-uga-mist">
-        <div className="mx-auto grid max-w-7xl gap-8 px-6 py-12 lg:grid-cols-[0.78fr_1.22fr] lg:px-8 lg:py-16">
+        <div className="mx-auto grid max-w-7xl gap-8 px-6 py-10 lg:grid-cols-[0.78fr_1.22fr] lg:px-8 lg:py-14">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.18em] text-uga-green">
               {dict.methodology.label}
@@ -95,7 +95,7 @@ export default async function MethodologyPage({
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-6 py-10 lg:px-8 lg:py-12">
+      <section className="mx-auto max-w-7xl px-6 py-8 lg:px-8 lg:py-10">
         <div className="grid border border-black bg-white lg:grid-cols-[1fr_auto] lg:items-center">
           <div className="border-b border-black p-5 lg:border-b-0 lg:border-r">
             <p className="text-xs font-black uppercase tracking-[0.18em] text-uga-green">
@@ -128,7 +128,7 @@ export default async function MethodologyPage({
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-6 pb-12 lg:px-8 lg:pb-16">
+      <section className="mx-auto max-w-7xl px-6 pb-10 lg:px-8 lg:pb-14">
         <div className="grid gap-8 lg:grid-cols-[0.78fr_1.22fr]">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.18em] text-uga-green">
