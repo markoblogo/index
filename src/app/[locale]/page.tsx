@@ -61,6 +61,14 @@ export default async function LocaleHome({
                   </dd>
                 </div>
                 <div>
+                  <dt className="text-black/50">
+                    {dict.home.deliveryPeriodLabel}
+                  </dt>
+                  <dd className="mt-1 font-semibold text-uga-dark">
+                    {SITE_CONFIG.defaultDeliveryPeriod}
+                  </dd>
+                </div>
+                <div>
                   <dt className="text-black/50">{dict.home.statusLabel}</dt>
                   <dd className="mt-1 inline-flex rounded-full bg-uga-green px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-white">
                     {dict.home.marketOpen}

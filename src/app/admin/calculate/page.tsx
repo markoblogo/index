@@ -6,6 +6,7 @@ import {
   todayInputDate,
   type AdminCalculationCommodity,
 } from "@/lib/admin-calculate";
+import { SITE_CONFIG } from "@/lib/constants";
 import type { IndexCalculationStatus } from "@/lib/index-calculation";
 
 type CalculatePageProps = {
@@ -85,6 +86,9 @@ export default async function AdminCalculatePage({
               <span className="rounded-full bg-black px-3 py-1 text-white">
                 {data.basisLabel}
               </span>
+              <span className="rounded-full bg-black px-3 py-1 text-white">
+                Delivery {SITE_CONFIG.defaultDeliveryPeriod}
+              </span>
             </div>
           </div>
 
@@ -115,10 +119,16 @@ export default async function AdminCalculatePage({
       </div>
 
       <div className="grid gap-3 rounded-[1.5rem] border border-black/10 bg-white p-4 shadow-sm lg:grid-cols-[1fr_auto_auto] lg:items-center">
-        <p className="text-sm leading-6 text-black/60">
-          Spike is shown only as an external indicative. Insufficient baskets
-          are not published automatically.
-        </p>
+        <div className="grid gap-2 text-sm leading-6 text-black/60">
+          <p>
+            Spike is shown only as an external indicative. Insufficient baskets
+            are not published automatically.
+          </p>
+          <p className="font-semibold text-uga-dark">
+            Independent verification: demo placeholder. In production, the
+            final calculation version should be reviewed before publication.
+          </p>
+        </div>
         <form action={recalculate}>
           <input name="date" type="hidden" value={date} />
           <button
@@ -212,6 +222,24 @@ function CalculationPanel({
       </div>
 
       <div className="mt-5 grid gap-4 lg:grid-cols-2">
+        <div className="rounded-2xl border border-uga-green/20 bg-uga-mist p-4">
+          <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-uga-green">
+            Independent verification
+          </h3>
+          <dl className="mt-3 grid gap-2 text-sm">
+            <Row label="Delivery period" value={SITE_CONFIG.defaultDeliveryPeriod} />
+            <Row label="Pre-publication version" value={`v${commodity.version}`} />
+            <Row
+              label="Demo status"
+              value={
+                commodity.status === "publishable"
+                  ? "ready for partner review"
+                  : "blocked until sufficient data"
+              }
+            />
+          </dl>
+        </div>
+
         <div className="rounded-2xl border border-black/10 bg-uga-mist p-4">
           <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-black/45">
             Spike comparison
@@ -231,7 +259,7 @@ function CalculationPanel({
           ) : null}
         </div>
 
-        <div className="rounded-2xl border border-black/10 bg-white p-4">
+        <div className="rounded-2xl border border-black/10 bg-white p-4 lg:col-span-2">
           <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-black/45">
             Published lock
           </h3>

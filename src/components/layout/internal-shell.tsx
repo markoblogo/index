@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import Image from "next/image";
+import { SITE_CONFIG } from "@/lib/constants";
 import type { DemoUser } from "@/lib/demo-auth";
 
 type InternalShellProps = {
@@ -30,22 +32,30 @@ export function InternalShell({ children, user }: InternalShellProps) {
     <div className="min-h-screen bg-uga-mist text-uga-dark">
       <header className="border-b border-black/10 bg-white">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-6 py-5 lg:flex-row lg:items-center lg:justify-between lg:px-8">
-          <div>
-            <div className="flex flex-wrap items-center gap-3">
-              <Link
-                className="text-xl font-semibold tracking-tight"
-                href={`/${user.role}`}
-              >
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Link className="flex w-fit items-center gap-3" href={`/${user.role}`}>
+              <Image
+                alt="UGA logo"
+                className="h-10 w-auto object-contain"
+                height={80}
+                src={SITE_CONFIG.logoPath}
+                width={140}
+              />
+              <span className="border-l border-black/10 pl-3 text-xl font-semibold tracking-tight">
                 UGA Index
-              </Link>
-              <span className="rounded-full bg-uga-green px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white">
-                Demo mode
               </span>
+            </Link>
+            <div>
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="rounded-full bg-uga-green px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white">
+                  Demo mode
+                </span>
+              </div>
+              <p className="mt-2 text-sm text-black/60">
+                Signed in as {user.username} · {user.role}
+                {user.respondentName ? ` · ${user.respondentName}` : ""}
+              </p>
             </div>
-            <p className="mt-2 text-sm text-black/60">
-              Signed in as {user.username} · {user.role}
-              {user.respondentName ? ` · ${user.respondentName}` : ""}
-            </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Link

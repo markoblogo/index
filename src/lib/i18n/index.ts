@@ -19,6 +19,7 @@ type Dictionary = {
     statusLabel: string;
     updatedLabel: string;
     basisLabel: string;
+    deliveryPeriodLabel: string;
     marketOpen: string;
     cardsLabel: string;
     chartsLabel: string;
@@ -102,6 +103,7 @@ type Dictionary = {
   footer: {
     rights: string;
     partners: string;
+    disclaimer: string;
   };
 };
 
@@ -122,6 +124,7 @@ const dictionaries: Record<Locale, Dictionary> = {
       statusLabel: "Статус оновлення",
       updatedLabel: "Оновлено",
       basisLabel: "Базис",
+      deliveryPeriodLabel: "Період поставки",
       marketOpen: "Опубліковано для демо",
       cardsLabel: "Поточні значення",
       chartsLabel: "Тижнева динаміка",
@@ -156,11 +159,11 @@ const dictionaries: Record<Locale, Dictionary> = {
       label: "Про продукт",
       title: "Публічний індекс під брендом Української зернової асоціації",
       description:
-        "UGA Index створений як демонстраційна платформа для публікації щоденного експортного індексу, збору індикативів та прозорої методології.",
+        "UGA Index створений як демонстраційна платформа для публікації щоденного ринкового бенчмарку справедливих експортних цін, збору індикативів та прозорої методології.",
       partners: [
         {
           name: "UGA",
-          role: "Власник бренду, інституційний спонсор та публічний видавець індексу.",
+          role: "Незалежний адміністратор, власник бренду та публічний видавець індексу.",
         },
         {
           name: "Spike Brokers",
@@ -179,7 +182,7 @@ const dictionaries: Record<Locale, Dictionary> = {
         "Демо відображає структуру щоденного опитування респондентів для ключових експортних культур.",
       disclaimerTitle: "Інформаційний характер даних",
       disclaimer:
-        "Публічні значення UGA Index у демо мають інформаційний характер і не є інвестиційною рекомендацією, офертою або зобов'язанням укласти угоду.",
+        "Публічні значення UGA Index мають виключно інформаційний характер. Вони не є інвестиційною рекомендацією, офертою або зобов'язанням укласти угоду; УЗА не несе відповідальності за збитки, спричинені використанням цих даних.",
     },
     methodology: {
       label: "Методологія",
@@ -195,17 +198,17 @@ const dictionaries: Record<Locale, Dictionary> = {
         {
           title: "Що таке UGA Index",
           description:
-            "UGA Index - це щоденний спотовий експортний індекс під брендом Української зернової асоціації для кукурудзи, пшениці 11.5pro, фуражної пшениці та сої ГМО.",
+            "UGA Index - це щоденний ринковий бенчмарк справедливої експортної ціни української аграрної продукції під брендом Української зернової асоціації.",
         },
         {
           title: "Кошики респондентів",
           description:
-            "Для кожної культури та базису поставки система збирає ціни від визначеного кошика респондентів. Поточна демо-версія використовує один кошик FOB Black Sea з вагою 1, але модель підтримує майбутні зважені кошики.",
+            "Для кожної культури, базису поставки, дати та періоду поставки система збирає ціни від визначеного кошика респондентів. Демо використовує один кошик FOB Black Sea з вагою 1, але модель підтримує майбутні зважені кошики.",
         },
         {
           title: "Логіка ціни EOD",
           description:
-            "Значення розраховується як кінець торгового дня на основі отриманих і перевірених індикативів. Адміністратор бачить джерела, статуси та зовнішній індикатив Spike перед публікацією.",
+            "Кожна ціна є оцінкою справедливої ринкової ціни на кінець торгового дня та має відповідати рівню реально виконуваної угоди, за яким респондент готовий купити або продати.",
         },
         {
           title: "Період поставки T+30",
@@ -227,6 +230,16 @@ const dictionaries: Record<Locale, Dictionary> = {
           description:
             "Після публікації значення індексу блокується. Зміни вхідних даних, перерахунки та публікації мають відображатися в аудит-лозі з попереднім і новим станом.",
         },
+        {
+          title: "Верифікація та версійність",
+          description:
+            "До публікації розрахунок може мати версії v1, v2 тощо та проходить незалежну партнерську верифікацію. Після публікації фіксується фінальна версія, а зміни заборонені.",
+        },
+        {
+          title: "Майбутнє масштабування",
+          description:
+            "Методологія передбачає volume-weighted модель, forward індекси T+60/T+90, а також окремі типи котирувань bid, offer і mid.",
+        },
       ],
       signedPdfTitle: "Підписана методологія PDF",
       signedPdfDescription:
@@ -242,7 +255,7 @@ const dictionaries: Record<Locale, Dictionary> = {
         {
           question: "Хто надає дані?",
           answer:
-            "Дані надходять від респондентів кошика. Spike Brokers підтримує процес зовнішніми ринковими індикативами.",
+            "Дані надходять від респондентів кошика: експортерів та інших репрезентативних учасників ринку. Spike Brokers підтримує процес зовнішніми ринковими індикативами.",
         },
         {
           question: "Як обробляються викиди?",
@@ -325,6 +338,8 @@ const dictionaries: Record<Locale, Dictionary> = {
     footer: {
       rights: "Демо для Української зернової асоціації.",
       partners: "Індикативи: Spike Brokers · Технології: Cropto/MN7R",
+      disclaimer:
+        "Інформація надається виключно для інформаційних цілей. УЗА не несе відповідальності за збитки, спричинені використанням даних.",
     },
   },
   en: {
@@ -343,6 +358,7 @@ const dictionaries: Record<Locale, Dictionary> = {
       statusLabel: "Update status",
       updatedLabel: "Updated",
       basisLabel: "Basis",
+      deliveryPeriodLabel: "Delivery period",
       marketOpen: "Published for demo",
       cardsLabel: "Current index values",
       chartsLabel: "Weekly movement",
@@ -377,11 +393,11 @@ const dictionaries: Record<Locale, Dictionary> = {
       label: "About",
       title: "A public index under the Ukrainian Grain Association brand",
       description:
-        "UGA Index is a demo platform for publishing a daily export index, collecting indicatives, and explaining the methodology transparently.",
+        "UGA Index is a demo platform for publishing a daily market benchmark for fair Ukrainian export prices, collecting indicatives, and explaining the methodology transparently.",
       partners: [
         {
           name: "UGA",
-          role: "Brand owner, institutional sponsor, and public publisher of the index.",
+          role: "Independent administrator, brand owner, and public publisher of the index.",
         },
         {
           name: "Spike Brokers",
@@ -400,7 +416,7 @@ const dictionaries: Record<Locale, Dictionary> = {
         "The demo mirrors a daily respondent survey structure for the core export commodities.",
       disclaimerTitle: "Informational data notice",
       disclaimer:
-        "Public UGA Index values in this demo are informational only and are not investment advice, an offer, or a commitment to transact.",
+        "Public UGA Index values are informational only. They are not investment advice, an offer, or a commitment to transact; UGA is not liable for losses caused by use of the data.",
     },
     methodology: {
       label: "Methodology",
@@ -416,17 +432,17 @@ const dictionaries: Record<Locale, Dictionary> = {
         {
           title: "What UGA Index is",
           description:
-            "UGA Index is a daily Ukrainian spot export price index under the Ukrainian Grain Association brand for corn, wheat 11.5% protein, feed wheat, and GMO soybean.",
+            "UGA Index is a daily market benchmark for fair Ukrainian agricultural export prices under the Ukrainian Grain Association brand.",
         },
         {
           title: "Respondent baskets",
           description:
-            "For each commodity and delivery basis, the system collects prices from a defined basket of respondents. The current demo uses one FOB Black Sea basket with weight 1, while the model supports future weighted baskets.",
+            "For each commodity, delivery basis, calculation date, and delivery period, the system collects prices from a defined respondent basket. The demo uses one FOB Black Sea basket with weight 1, while the model supports future weighted baskets.",
         },
         {
           title: "EOD price logic",
           description:
-            "The value is calculated as an end-of-day market reference from submitted and reviewed indicatives. The admin workflow shows source values, statuses, and the external Spike indicative before publication.",
+            "Each price is an end-of-day fair market assessment and should represent an executable level where the respondent is ready to buy or sell.",
         },
         {
           title: "T+30 delivery period",
@@ -448,6 +464,16 @@ const dictionaries: Record<Locale, Dictionary> = {
           description:
             "After publication, the index value is locked. Source edits, recalculations, and publication events should be recorded in the audit log with before and after state.",
         },
+        {
+          title: "Verification and versioning",
+          description:
+            "Before publication, calculations can have v1, v2, and later versions and pass independent partner verification. Publication fixes the final version and blocks further changes.",
+        },
+        {
+          title: "Future scaling",
+          description:
+            "The methodology supports a future volume-weighted model, T+60/T+90 forward indices, and separate bid, offer, and mid quote types.",
+        },
       ],
       signedPdfTitle: "Signed methodology PDF",
       signedPdfDescription:
@@ -463,7 +489,7 @@ const dictionaries: Record<Locale, Dictionary> = {
         {
           question: "Who provides data?",
           answer:
-            "Data comes from basket respondents. Spike Brokers supports the process with external market indicatives.",
+            "Data comes from basket respondents: exporters and other representative market participants. Spike Brokers supports the process with external market indicatives.",
         },
         {
           question: "How are outliers handled?",
@@ -546,6 +572,8 @@ const dictionaries: Record<Locale, Dictionary> = {
     footer: {
       rights: "Demo for the Ukrainian Grain Association.",
       partners: "Indicatives: Spike Brokers · Technology: Cropto/MN7R",
+      disclaimer:
+        "Information is provided for informational purposes only. UGA is not liable for losses caused by use of the data.",
     },
   },
 };

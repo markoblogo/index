@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { LocaleSwitcher } from "@/components/ui/locale-switcher";
 import { SITE_CONFIG } from "@/lib/constants";
 import { getDictionary, type Locale } from "@/lib/i18n";
@@ -16,10 +17,16 @@ export function SiteHeader({ locale }: { locale: Locale }) {
     <header className="sticky top-0 z-20 border-b border-black/10 bg-white/90 backdrop-blur">
       <nav className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-6 py-4 lg:px-8">
         <Link className="flex items-center gap-3" href={`/${locale}`}>
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-uga-green text-sm font-black text-white">
-            U
+          <span className="flex h-10 w-16 items-center">
+            <Image
+              alt={locale === "uk" ? "Логотип УЗА" : "UGA logo"}
+              className="h-8 w-auto object-contain"
+              height={80}
+              src={SITE_CONFIG.logoPath}
+              width={140}
+            />
           </span>
-          <span className="font-semibold tracking-tight text-uga-dark">
+          <span className="border-l border-black/10 pl-3 font-semibold tracking-tight text-uga-dark">
             {SITE_CONFIG.name}
           </span>
         </Link>

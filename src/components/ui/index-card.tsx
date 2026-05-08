@@ -59,9 +59,14 @@ export function IndexCard({
           </p>
         </div>
       </div>
-      <p className="mt-5 rounded-full bg-uga-mist px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-black/55">
-        {SITE_CONFIG.defaultDeliveryBasis}
-      </p>
+      <div className="mt-5 flex flex-wrap gap-2">
+        <p className="rounded-full bg-uga-mist px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-black/55">
+          {SITE_CONFIG.defaultDeliveryBasis}
+        </p>
+        <p className="rounded-full bg-uga-mist px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-black/55">
+          {SITE_CONFIG.defaultDeliveryPeriod}
+        </p>
+      </div>
     </article>
   );
 }
