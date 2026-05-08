@@ -1,5 +1,7 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { IndexSparkline } from "@/components/ui/index-sparkline";
+import { StatusPill } from "@/components/ui/status-pill";
 import { SITE_CONFIG } from "@/lib/constants";
 import type { Locale } from "@/lib/i18n";
 import type { Commodity } from "@/lib/mock-data";
@@ -29,92 +31,130 @@ export function HomeHero({
   locale,
   updatedAt,
 }: HomeHeroProps) {
-  const identity = (
-    <div className="min-w-0">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="inline-flex items-center rounded-full border border-black px-3 py-1.5 text-xs font-black lowercase tracking-tight text-black">
-          <span className="mr-2 h-2 w-2 rounded-full bg-uga-lime" />
-          {labels.liveStatus}
-        </span>
-        <span className="rounded-full border border-black/20 px-3 py-1.5 text-xs font-semibold text-black/65">
-          {labels.updated}: {updatedAt}
-        </span>
-      </div>
-
-      <h1 className="mt-5 max-w-[calc(100vw-2.5rem)] break-words text-[clamp(2.85rem,7.25vw,6.15rem)] font-black uppercase leading-[0.88] tracking-normal text-black sm:max-w-full lg:mt-6">
-        UGA Index
-      </h1>
-    </div>
-  );
-
-  const details = (
-    <div className="min-w-0">
-      <p className="max-w-[calc(100vw-2.5rem)] text-base font-semibold leading-6 text-black sm:max-w-xl sm:text-lg sm:leading-7">
-        {labels.subtitle}
-      </p>
-      <p className="mt-3 max-w-[calc(100vw-2.5rem)] break-words text-sm leading-6 text-black/65 sm:max-w-xl">
-        <span className="sm:hidden">{labels.attributionShort}</span>
-        <span className="hidden sm:inline">{labels.attribution}</span>
-      </p>
-
-      <div className="mt-5 flex flex-wrap gap-2">
-        {labels.meta.split(" · ").map((item) => (
-          <span
-            className="rounded-full border border-black/45 px-3 py-1.5 text-[0.68rem] font-black uppercase tracking-normal text-black/75"
-            key={item}
-          >
-            {item}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-
-  const actions = (
-    <div className="min-w-0">
-      <div className="flex flex-wrap gap-3">
-        <Link
-          className="inline-flex rounded-[3px] border border-black bg-uga-dark px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-uga-green"
-          href={`/${locale}/methodology`}
-        >
-          {labels.methodology}
-        </Link>
-        <Link
-          className="inline-flex rounded-[3px] border border-black/60 bg-white px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-uga-lime"
-          href={`/${locale}/analytics`}
-        >
-          {labels.analytics}
-        </Link>
-      </div>
-      <p className="mt-4 max-w-[calc(100vw-2.5rem)] break-words border-t border-black/10 pt-3 text-[0.68rem] font-semibold uppercase leading-5 tracking-normal text-black/55 sm:max-w-full">
-        <span className="sm:hidden">{labels.trustStripShort}</span>
-        <span className="hidden sm:inline">{labels.trustStrip}</span>
-      </p>
-    </div>
-  );
-
+  const copy = getHeroCopy(locale);
   return (
-    <section className="overflow-x-hidden border-b border-black bg-white">
-      <div className="mx-auto grid min-h-[calc(100svh-65px)] w-full min-w-0 max-w-[1440px] border-x border-black lg:grid-cols-[0.78fr_1.22fr]">
-        <div className="contents lg:flex lg:min-w-0 lg:max-w-full lg:flex-col lg:border-r lg:border-black lg:p-8 xl:p-9">
-          <div className="border-b border-black p-5 sm:p-7 lg:border-b-0 lg:p-0">
-            {identity}
-          </div>
-          <div className="order-2 border-b border-black p-5 sm:p-7 lg:order-none lg:mt-9 lg:border-b-0 lg:p-0">
-            {details}
-          </div>
-          <div className="order-3 border-b border-black p-5 sm:p-7 lg:order-none lg:mt-auto lg:border-b-0 lg:p-0">
-            {actions}
+    <section className="overflow-hidden border-b border-black bg-white">
+      <div className="relative mx-auto min-h-[calc(100svh-61px)] max-w-[1440px] border-x border-black">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 opacity-[0.045] [background-image:linear-gradient(var(--color-ink)_1px,transparent_1px),linear-gradient(90deg,var(--color-ink)_1px,transparent_1px)] [background-size:28px_28px]"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute bottom-6 right-6 hidden text-[8rem] font-black uppercase leading-none text-black/[0.035] xl:block"
+        >
+          INDEX
+        </div>
+
+        <div className="relative z-10 border-b border-black px-5 py-3 sm:px-7 lg:px-8">
+          <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:items-center">
+            <div className="min-w-0">
+              <StatusPill>{labels.liveStatus}</StatusPill>
+            </div>
+            <HeroStatusTag className="col-span-2 truncate">
+              {labels.updated}: {updatedAt}
+            </HeroStatusTag>
+            <HeroStatusTag>{SITE_CONFIG.defaultDeliveryBasis}</HeroStatusTag>
+            <HeroStatusTag>{SITE_CONFIG.defaultDeliveryPeriod}</HeroStatusTag>
+            <HeroStatusTag>
+              {SITE_CONFIG.currency}/{SITE_CONFIG.unit}
+            </HeroStatusTag>
           </div>
         </div>
 
-        <HeroIndexBoard
-          commodities={commodities}
-          currentValues={labels.currentValues}
-          locale={locale}
-        />
+        <div className="relative z-10 grid lg:grid-cols-[0.78fr_1.22fr]">
+          <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:border-r lg:border-black lg:p-8 xl:p-9">
+            <div className="border-b border-black p-5 sm:p-7 lg:border-b-0 lg:p-0">
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-uga-green">
+                {copy.kicker}
+              </p>
+              <h1 className="mt-3 max-w-[calc(100vw-2.5rem)] break-words text-[clamp(2.8rem,7vw,5.9rem)] font-black uppercase leading-[0.88] tracking-normal text-black sm:max-w-full">
+                UGA Index
+              </h1>
+              <p className="mt-2 text-lg font-black leading-6 text-black/60 sm:text-xl">
+                {copy.editorialLine}
+              </p>
+            </div>
+
+            <div className="order-2 border-b border-black p-5 sm:p-7 lg:order-none lg:mt-7 lg:border-b-0 lg:p-0">
+              <p className="max-w-xl text-base font-semibold leading-6 text-black sm:text-lg sm:leading-7">
+                {labels.subtitle}
+              </p>
+              <p className="mt-3 max-w-xl text-sm leading-6 text-black/65">
+                <span className="sm:hidden">{labels.attributionShort}</span>
+                <span className="hidden sm:inline">{labels.attribution}</span>
+              </p>
+
+              <div className="mt-5 grid grid-cols-3 border border-black">
+                {copy.facts.map((fact) => (
+                  <div
+                    className="border-r border-black p-3 last:border-r-0"
+                    key={fact.label}
+                  >
+                    <p className="text-xl font-black leading-none text-black sm:text-2xl">
+                      {fact.value}
+                    </p>
+                    <p className="mt-1 text-[0.64rem] font-black uppercase tracking-[0.12em] text-black/50">
+                      {fact.label}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="order-3 border-b border-black p-5 sm:p-7 lg:order-none lg:mt-auto lg:border-b-0 lg:p-0">
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  className="inline-flex rounded-[3px] border border-black bg-uga-dark px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-uga-green"
+                  href={`/${locale}/methodology`}
+                >
+                  {labels.methodology}
+                </Link>
+                <Link
+                  className="inline-flex rounded-[3px] border border-black/60 bg-white px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-uga-lime"
+                  href={`/${locale}/analytics`}
+                >
+                  {labels.analytics}
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          <HeroIndexBoard
+            commodities={commodities}
+            currentValues={labels.currentValues}
+            locale={locale}
+            boardKicker={copy.boardKicker}
+            respondentLabel={copy.respondents}
+          />
+        </div>
+
+        <div className="relative z-10 border-t border-black bg-uga-mist/45 px-5 py-3 sm:px-7 lg:px-8">
+          <p className="text-[0.68rem] font-semibold uppercase leading-5 tracking-normal text-black/60">
+            <span className="sm:hidden">{copy.methodologyShort}</span>
+            <span className="hidden sm:inline">
+              {copy.methodologyPrefix}: {labels.trustStrip}
+            </span>
+          </p>
+        </div>
       </div>
     </section>
+  );
+}
+
+function HeroStatusTag({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <span
+      className={`min-w-0 overflow-hidden truncate whitespace-nowrap rounded-full border border-black/25 bg-white px-3 py-1.5 text-center text-[0.68rem] font-black tracking-normal text-black/65 sm:text-left ${className}`}
+    >
+      {children}
+    </span>
   );
 }
 
@@ -122,27 +162,37 @@ function HeroIndexBoard({
   commodities,
   currentValues,
   locale,
+  boardKicker,
+  respondentLabel,
 }: {
   commodities: Commodity[];
   currentValues: string;
   locale: Locale;
+  boardKicker: string;
+  respondentLabel: string;
 }) {
   return (
-    <div className="order-1 min-w-0 max-w-[100vw] bg-uga-mist/35 p-4 sm:max-w-none sm:p-6 lg:order-none lg:p-7 xl:p-8">
-      <div className="mb-3 flex items-center justify-between gap-4 lg:mb-4">
-        <h2 className="text-xs font-black uppercase tracking-[0.16em] text-black/55 sm:text-sm">
-          {currentValues}
-        </h2>
-        <span className="hidden rounded-full border border-black/40 bg-white px-3 py-1.5 text-xs font-black uppercase text-black sm:inline-flex">
+    <div className="order-1 min-w-0 max-w-full bg-uga-mist/35 p-4 sm:p-6 lg:order-none lg:p-7 xl:p-8">
+      <div className="mb-3 flex items-center justify-between border-b border-black pb-3">
+        <div>
+          <p className="text-[0.64rem] font-black uppercase tracking-[0.18em] text-uga-green">
+            {boardKicker}
+          </p>
+          <h2 className="mt-1 text-base font-black uppercase tracking-[0.08em] text-black">
+            {currentValues}
+          </h2>
+        </div>
+        <span className="rounded-full border border-black/40 bg-white px-3 py-1.5 text-xs font-black text-black">
           {SITE_CONFIG.currency}/{SITE_CONFIG.unit}
         </span>
       </div>
-      <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:gap-4 2xl:grid-cols-4">
+      <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:gap-4">
         {commodities.map((commodity) => (
           <HeroIndexCard
             commodity={commodity}
             key={commodity.id}
             locale={locale}
+            respondentLabel={respondentLabel}
           />
         ))}
       </div>
@@ -153,22 +203,25 @@ function HeroIndexBoard({
 function HeroIndexCard({
   commodity,
   locale,
+  respondentLabel,
 }: {
   commodity: Commodity;
   locale: Locale;
+  respondentLabel: string;
 }) {
   const isPositive = commodity.absoluteChange >= 0;
   const trend = isPositive ? "up" : "down";
   const changePrefix = isPositive ? "+" : "";
+  const changeClass = isPositive ? "text-uga-green" : "text-red-700";
 
   return (
-    <article className="grid min-h-[11.75rem] border border-black border-b-4 border-b-uga-green bg-white p-4 sm:min-h-[13.5rem] lg:min-h-[14.25rem] 2xl:min-h-[15rem]">
+    <article className="grid min-h-[11.5rem] border border-black border-b-4 border-b-uga-green bg-white p-4 sm:min-h-[13rem] lg:min-h-[13.35rem] xl:min-h-[14rem]">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-black/45">
+          <p className="text-[0.64rem] font-black uppercase tracking-[0.16em] text-black/45">
             {commodity.code}
           </p>
-          <h3 className="mt-1.5 text-lg font-black leading-5 text-black">
+          <h3 className="mt-1 text-lg font-black leading-5 text-black">
             {commodity.name[locale]}
           </h3>
         </div>
@@ -177,46 +230,72 @@ function HeroIndexCard({
         </span>
       </div>
 
-      <div className="my-2 sm:my-2.5">
+      <div className="my-2">
         <IndexSparkline
-          heightClassName="h-8 sm:h-10"
+          heightClassName="h-8 sm:h-9"
           values={commodity.sparkline}
           trend={trend}
         />
       </div>
 
-      <div className="mt-auto flex items-end justify-between gap-3">
-        <div>
-          <p className="text-[2.1rem] font-black leading-none tracking-tight text-black sm:text-[2.25rem] lg:text-[2.35rem]">
-            ${commodity.latest}
+      <div className="mt-auto">
+        <div className="flex items-end justify-between gap-3">
+          <p className="text-[1.95rem] font-black leading-none tracking-tight text-black sm:text-[2.2rem]">
+            {commodity.latest}{" "}
+            <span className="text-sm font-black tracking-normal text-black/55">
+              {SITE_CONFIG.currency}/{SITE_CONFIG.unit}
+            </span>
           </p>
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            <span className="rounded-full border border-black/15 px-2 py-1 text-[0.62rem] font-black uppercase tracking-[0.12em] text-black/45">
-              {SITE_CONFIG.defaultDeliveryBasis}
-            </span>
-            <span className="rounded-full border border-black/15 px-2 py-1 text-[0.62rem] font-black uppercase tracking-[0.12em] text-black/45">
-              {SITE_CONFIG.defaultDeliveryPeriod}
-            </span>
+          <div className="text-right">
+            <p className={`text-sm font-black ${changeClass}`}>
+              <span aria-hidden="true">{isPositive ? "↑ " : "↓ "}</span>
+              {changePrefix}
+              {commodity.absoluteChange} USD
+            </p>
+            <p className="mt-1 text-sm font-semibold text-black/55">
+              {changePrefix}
+              {commodity.percentChange}%
+            </p>
           </div>
         </div>
-        <div className="text-right">
-          <p
-            className={
-              isPositive
-                ? "text-sm font-black text-uga-green"
-                : "text-sm font-black text-red-700"
-            }
-          >
-            <span aria-hidden="true">{isPositive ? "↑ " : "↓ "}</span>
-            {changePrefix}
-            {commodity.absoluteChange} USD
-          </p>
-          <p className="mt-1 text-sm font-semibold text-black/55">
-            {changePrefix}
-            {commodity.percentChange}%
-          </p>
-        </div>
+        <p className="mt-2 truncate text-[0.65rem] font-black tracking-[0.12em] text-black/45">
+          {SITE_CONFIG.defaultDeliveryBasis} · {SITE_CONFIG.defaultDeliveryPeriod} ·
+          {" 8 "}
+          {respondentLabel}
+        </p>
       </div>
     </article>
   );
+}
+
+function getHeroCopy(locale: Locale) {
+  if (locale === "uk") {
+    return {
+      editorialLine: "/ експортний ціновий бенчмарк",
+      boardKicker: "Щоденний бюлетень",
+      facts: [
+        { value: "4", label: "культури" },
+        { value: "8", label: "респондентів" },
+        { value: "EOD", label: "перевірка" },
+      ],
+      kicker: "Spot export price index",
+      methodologyPrefix: "Методологія",
+      methodologyShort: "Методологія: EOD · медіана · ±2% · 5+ · фіксація",
+      respondents: "респондентів",
+    };
+  }
+
+  return {
+    editorialLine: "/ export pricing benchmark",
+    boardKicker: "Daily bulletin",
+    facts: [
+      { value: "4", label: "commodities" },
+      { value: "8", label: "respondents" },
+      { value: "EOD", label: "review" },
+    ],
+    kicker: "Spot export price index",
+    methodologyPrefix: "Methodology",
+    methodologyShort: "Methodology: EOD · median · ±2% · 5+ · locked",
+    respondents: "respondents",
+  };
 }

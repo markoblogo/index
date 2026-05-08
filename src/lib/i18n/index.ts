@@ -142,7 +142,7 @@ const dictionaries: Record<Locale, Dictionary> = {
         "Щоденний експортний ціновий бенчмарк для українських зернових та олійних культур.",
       heroMeta: "FOB Чорне море · T+30 · USD/т · публікація після EOD-перевірки",
       heroAttribution:
-        "Публікується Українською зерновою асоціацією. Ринкові індикативи: Spike Brokers. Технологія: Cropto/MN7R.",
+        "Публікується УЗА. Ринкові індикативи: Spike Brokers. Технологія: Cropto/MN7R.",
       heroAttributionShort: "UGA · Spike Brokers · Cropto/MN7R",
       heroTrustStrip:
         "EOD-дані респондентів · медіанна валідація · ±2% фільтр викидів · мінімум 5 респондентів · фіксація після публікації",
@@ -395,7 +395,7 @@ const dictionaries: Record<Locale, Dictionary> = {
         "Daily export pricing benchmark for Ukrainian grains and oilseeds.",
       heroMeta: "FOB Black Sea · T+30 · USD/t · published after EOD review",
       heroAttribution:
-        "Published by Ukrainian Grain Association. Market indicatives by Spike Brokers. Technology by Cropto/MN7R.",
+        "Published by UGA. Market indicatives: Spike Brokers. Technology: Cropto/MN7R.",
       heroAttributionShort: "UGA · Spike Brokers · Cropto/MN7R",
       heroTrustStrip:
         "Respondent EOD data · median validation · ±2% outlier filter · minimum 5 respondents · locked after publication",

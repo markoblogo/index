@@ -17,8 +17,8 @@ export function SiteHeader({ locale }: { locale: Locale }) {
 
   return (
     <header className="sticky top-0 z-20 border-b border-black bg-white/95 backdrop-blur">
-      <nav className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-2.5 lg:px-6">
-        <Link className="flex items-center gap-3" href={`/${locale}`}>
+      <nav className="mx-auto flex max-w-7xl items-center justify-start gap-2 px-4 py-2.5 sm:justify-between lg:gap-4 lg:px-6">
+        <Link className="flex min-w-0 items-center gap-3" href={`/${locale}`}>
           <span className="flex h-9 w-14 items-center">
             <Image
               alt={locale === "uk" ? "Логотип УЗА" : "UGA logo"}
@@ -28,7 +28,7 @@ export function SiteHeader({ locale }: { locale: Locale }) {
               width={140}
             />
           </span>
-          <span className="border-l border-black/10 pl-3 text-sm font-black tracking-tight text-black sm:text-base">
+          <span className="hidden border-l border-black/10 pl-3 text-sm font-black tracking-tight text-black sm:inline sm:text-base">
             {SITE_CONFIG.name}
           </span>
         </Link>
