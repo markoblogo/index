@@ -28,8 +28,8 @@ export function SiteFooter({ locale }: { locale: Locale }) {
 
   return (
     <footer className="border-t border-black bg-uga-dark text-white">
-      <div className="mx-auto grid max-w-7xl gap-5 px-6 py-5 text-sm text-white/70 sm:grid-cols-2 lg:grid-cols-[1.35fr_0.62fr_0.9fr_0.72fr_0.48fr] lg:px-8">
-        <section>
+      <div className="mx-auto grid max-w-7xl gap-6 px-6 py-5 text-sm text-white/70 sm:grid-cols-2 lg:grid-cols-[1.8fr_0.8fr_1.15fr_1.05fr_1fr] lg:gap-8 lg:px-8">
+        <section className="order-1">
           <h2 className="text-base font-black uppercase tracking-normal text-white">
             {SITE_CONFIG.name}
           </h2>
@@ -52,19 +52,19 @@ export function SiteFooter({ locale }: { locale: Locale }) {
             <FooterExternalLink href="https://cr0pto.com">Cropto</FooterExternalLink>
             /<FooterExternalLink href="https://mn7r.com">MN7R</FooterExternalLink>
           </p>
-          <p className="mt-3 max-w-md text-xs leading-5 text-white/55">
+          <p className="mt-2.5 max-w-md text-xs leading-5 text-white/55">
             {dict.footer.disclaimer}
           </p>
         </section>
 
-        <section>
+        <section className="order-2">
           <h2 className="text-xs font-black uppercase tracking-[0.16em] text-white">
             {dict.footer.navigationTitle}
           </h2>
-          <nav className="mt-3 grid gap-2" aria-label={dict.footer.navigationTitle}>
+          <nav className="mt-3 grid gap-1.5" aria-label={dict.footer.navigationTitle}>
             {navItems.map((item) => (
               <Link
-                className="w-fit text-sm font-semibold text-white/70 transition hover:text-uga-lime"
+                className="w-fit text-sm font-semibold leading-5 text-white/70 transition hover:text-uga-lime"
                 href={item.href}
                 key={item.href}
               >
@@ -72,28 +72,9 @@ export function SiteFooter({ locale }: { locale: Locale }) {
               </Link>
             ))}
           </nav>
-          <div className="mt-4 border-t border-white/20 pt-3">
-            <h3 className="text-[0.65rem] font-black uppercase tracking-[0.16em] text-white/60">
-              {locale === "uk" ? "Правові документи" : "Legal"}
-            </h3>
-            <nav
-              className="mt-2 grid gap-1.5"
-              aria-label={locale === "uk" ? "Правові документи" : "Legal"}
-            >
-              {legalItems.map((item) => (
-                <Link
-                  className="w-fit text-xs font-semibold leading-5 text-white/60 transition hover:text-uga-lime"
-                  href={item.href}
-                  key={item.href}
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
-          </div>
         </section>
 
-        <section>
+        <section className="order-4 lg:order-3">
           <h2 className="text-xs font-black uppercase tracking-[0.16em] text-white">
             {dict.footer.contactsTitle}
           </h2>
@@ -105,8 +86,8 @@ export function SiteFooter({ locale }: { locale: Locale }) {
           </div>
         </section>
 
-        <section className="lg:pt-[1.55rem]">
-          <div className="grid gap-3 text-sm leading-5">
+        <section className="order-5 lg:order-4 lg:pt-[1.55rem]">
+          <div className="grid gap-2.5 text-sm leading-5">
             <div>
               <p className="font-black text-white/80">{dict.footer.phonesTitle}</p>
               <a className="block transition hover:text-uga-lime" href="tel:+380444923968">
@@ -116,25 +97,39 @@ export function SiteFooter({ locale }: { locale: Locale }) {
                 +38 (044) 492-39-69
               </a>
             </div>
-            <div>
-              <p className="font-black text-white/80">{dict.footer.emailTitle}</p>
+            <p>
+              <span className="font-black text-white/80">{dict.footer.emailTitle}</span>{" "}
               <a className="transition hover:text-uga-lime" href="mailto:inbox@uga.ua">
                 {dict.footer.email}
               </a>
+            </p>
+            <div className="flex gap-2 pt-1">
+              <SocialPlaceholder label="X" mark="X" />
+              <SocialPlaceholder label="Bluesky" mark="B" />
+              <SocialPlaceholder label="LinkedIn" mark="in" />
+              <SocialPlaceholder label="Telegram" mark="tg" />
             </div>
           </div>
         </section>
 
-        <section>
+        <section className="order-3 lg:order-5">
           <h2 className="text-xs font-black uppercase tracking-[0.16em] text-white">
-            {dict.footer.socialTitle}
+            {locale === "uk" ? "Правові документи" : "Legal"}
           </h2>
-          <div className="mt-3 flex gap-2">
-            <SocialPlaceholder label="X" mark="X" />
-            <SocialPlaceholder label="Bluesky" mark="B" />
-            <SocialPlaceholder label="LinkedIn" mark="in" />
-            <SocialPlaceholder label="Telegram" mark="tg" />
-          </div>
+          <nav
+            className="mt-3 grid gap-1.5"
+            aria-label={locale === "uk" ? "Правові документи" : "Legal"}
+          >
+            {legalItems.map((item) => (
+              <Link
+                className="w-fit text-sm font-semibold leading-5 text-white/70 transition hover:text-uga-lime"
+                href={item.href}
+                key={item.href}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
         </section>
       </div>
     </footer>
@@ -145,7 +140,7 @@ function SocialPlaceholder({ label, mark }: { label: string; mark: string }) {
   return (
     <span
       aria-label={label}
-      className="inline-flex h-8 w-8 items-center justify-center border border-white/35 text-xs font-black text-white/70"
+      className="inline-flex h-7 w-7 items-center justify-center border border-white/35 text-[0.68rem] font-black text-white/70"
       role="img"
       title={label}
     >
