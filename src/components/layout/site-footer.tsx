@@ -47,7 +47,8 @@ export function SiteFooter({ locale }: { locale: Locale }) {
             <FooterExternalLink href="https://spike.broker/en/">
               Spike Brokers
             </FooterExternalLink>
-            {" · "}
+          </p>
+          <p className="mt-0.5 leading-5">
             {locale === "uk" ? "Технологія: " : "Technology: "}
             <FooterExternalLink href="https://cr0pto.com">Cropto</FooterExternalLink>
             /<FooterExternalLink href="https://mn7r.com">MN7R</FooterExternalLink>
