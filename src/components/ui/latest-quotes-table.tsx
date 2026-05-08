@@ -31,19 +31,19 @@ export function LatestQuotesTable({
   );
 
   return (
-    <div className="overflow-hidden rounded-[1.5rem] border border-black/10 bg-white shadow-sm">
+    <div className="overflow-hidden border border-black bg-white">
       <div className="overflow-x-auto">
         <table className="w-full min-w-[760px] text-left">
-          <thead className="bg-uga-dark text-xs uppercase tracking-[0.16em] text-white/70">
+          <thead className="border-b border-black bg-white text-xs uppercase tracking-[0.14em] text-black/55">
             <tr>
-              <th className="px-5 py-4 font-semibold">{labels.commodity}</th>
-              <th className="px-5 py-4 font-semibold">{labels.basis}</th>
-              <th className="px-5 py-4 font-semibold">{labels.price}</th>
-              <th className="px-5 py-4 font-semibold">{labels.change}</th>
-              <th className="px-5 py-4 font-semibold">{labels.respondents}</th>
+              <th className="px-5 py-4 font-black">{labels.commodity}</th>
+              <th className="px-5 py-4 font-black">{labels.basis}</th>
+              <th className="px-5 py-4 font-black">{labels.price}</th>
+              <th className="px-5 py-4 font-black">{labels.change}</th>
+              <th className="px-5 py-4 font-black">{labels.respondents}</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-black/10">
+          <tbody className="divide-y divide-black">
             {quotes.map((quote) => {
               const commodity = commodityById.get(quote.commodityId);
               const isPositive = quote.absoluteChange >= 0;
@@ -53,12 +53,12 @@ export function LatestQuotesTable({
               }
 
               return (
-                <tr className="text-sm" key={quote.id}>
-                  <td className="px-5 py-4 font-semibold text-uga-dark">
+                <tr className="text-sm transition hover:bg-uga-mist" key={quote.id}>
+                  <td className="px-5 py-5 font-black text-black">
                     {commodity.name[locale]}
                   </td>
                   <td className="px-5 py-4 text-black/60">{quote.basis}</td>
-                  <td className="px-5 py-4 font-semibold text-uga-dark">
+                  <td className="px-5 py-4 font-black text-black">
                     ${quote.price} {SITE_CONFIG.currency}/{SITE_CONFIG.unit}
                   </td>
                   <td

@@ -16,6 +16,13 @@ type Dictionary = {
     partnerLine: string;
     title: string;
     description: string;
+    boardTitle: string;
+    boardDescription: string;
+    liveStatus: string;
+    selectorTitle: string;
+    reportTitle: string;
+    reportDescription: string;
+    reportAction: string;
     statusLabel: string;
     updatedLabel: string;
     basisLabel: string;
@@ -121,6 +128,15 @@ const dictionaries: Record<Locale, Dictionary> = {
       title: "UGA Index",
       description:
         "Щоденний індекс експортних спотових цін України для ключових зернових та олійних культур на базисі FOB Black Sea.",
+      boardTitle: "UGA Index / Експортні ціни",
+      boardDescription:
+        "Ринковий бенчмарк справедливих експортних цін України у USD/t. FOB Black Sea, T+30, щоденна публікація після EOD-перевірки.",
+      liveStatus: "live index",
+      selectorTitle: "Культури",
+      reportTitle: "Завантажити звіт",
+      reportDescription:
+        "Демо-експорт денного пакета індексу для презентації та внутрішнього огляду.",
+      reportAction: "PDF / Excel демо",
       statusLabel: "Статус оновлення",
       updatedLabel: "Оновлено",
       basisLabel: "Базис",
@@ -355,6 +371,15 @@ const dictionaries: Record<Locale, Dictionary> = {
       title: "UGA Index",
       description:
         "Daily Ukrainian spot export price index for core grain and oilseed commodities on a FOB Black Sea basis.",
+      boardTitle: "UGA Index / Export Pricing",
+      boardDescription:
+        "Fair Ukrainian export price benchmark in USD/t. FOB Black Sea, T+30, published daily after EOD review.",
+      liveStatus: "live index",
+      selectorTitle: "Commodities",
+      reportTitle: "Download report",
+      reportDescription:
+        "Demo export of the daily index pack for presentations and internal review.",
+      reportAction: "PDF / Excel demo",
       statusLabel: "Update status",
       updatedLabel: "Updated",
       basisLabel: "Basis",

@@ -14,8 +14,8 @@ export function SiteHeader({ locale }: { locale: Locale }) {
   ];
 
   return (
-    <header className="sticky top-0 z-20 border-b border-black/10 bg-white/90 backdrop-blur">
-      <nav className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-6 py-4 lg:px-8">
+    <header className="sticky top-0 z-20 border-b border-black bg-white/95 backdrop-blur">
+      <nav className="mx-auto flex max-w-7xl items-center justify-between gap-5 px-4 py-3 lg:px-6">
         <Link className="flex items-center gap-3" href={`/${locale}`}>
           <span className="flex h-10 w-16 items-center">
             <Image
@@ -30,10 +30,14 @@ export function SiteHeader({ locale }: { locale: Locale }) {
             {SITE_CONFIG.name}
           </span>
         </Link>
-        <div className="hidden items-center gap-6 md:flex">
+        <div className="hidden items-center gap-5 md:flex">
+          <span className="rounded-full border border-black px-3 py-1 text-xs font-semibold lowercase tracking-tight text-uga-dark">
+            <span className="mr-2 inline-block h-2 w-2 rounded-full bg-uga-lime align-middle" />
+            {dict.home.liveStatus}
+          </span>
           {navItems.map((item) => (
             <Link
-              className="text-sm font-medium text-black/65 transition hover:text-uga-green"
+              className="text-sm font-semibold text-black/65 transition hover:text-uga-green"
               href={item.href}
               key={item.href}
             >
@@ -44,7 +48,7 @@ export function SiteHeader({ locale }: { locale: Locale }) {
         <div className="flex items-center gap-2">
           <LocaleSwitcher locale={locale} />
           <Link
-            className="hidden rounded-full bg-uga-green px-4 py-2 text-sm font-semibold text-white transition hover:bg-uga-dark sm:inline-flex"
+            className="hidden rounded-full bg-black px-4 py-2 text-sm font-semibold text-white transition hover:bg-uga-green sm:inline-flex"
             href="/login"
           >
             {dict.nav.login}
