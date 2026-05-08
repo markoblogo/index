@@ -17,8 +17,25 @@ export default function RootLayout({
   children: ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className="antialiased">{children}</body>
+    <html lang="en" suppressHydrationWarning>
+      <body className="antialiased">
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var stored = localStorage.getItem('uga_theme');
+                  var theme = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                  document.documentElement.dataset.theme = theme;
+                } catch (_) {
+                  document.documentElement.dataset.theme = 'light';
+                }
+              })();
+            `,
+          }}
+        />
+        {children}
+      </body>
     </html>
   );
 }

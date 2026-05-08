@@ -22,7 +22,7 @@ export default async function LocaleLayout({
   }
 
   return (
-    <div className="min-h-screen bg-white text-uga-dark">
+    <div className="min-h-screen bg-white text-black">
       <SiteHeader locale={locale as Locale} />
       <main>{children}</main>
       <SiteFooter locale={locale as Locale} />

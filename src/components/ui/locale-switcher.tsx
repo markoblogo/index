@@ -8,24 +8,30 @@ export function LocaleSwitcher({ locale }: { locale: Locale }) {
   const pathname = usePathname();
 
   return (
-    <div className="flex items-center gap-2" aria-label="Language switcher">
-      {locales.map((item) => {
+    <div
+      aria-label="Language switcher"
+      className="ui-control inline-flex h-9 items-center border border-black bg-white p-1 text-xs font-black uppercase text-black"
+    >
+      {locales.map((item, index) => {
         const href = buildLocaleHref(pathname, item);
+        const label = item === "uk" ? "UA" : "EN";
 
         return (
-          <Link
-            aria-current={item === locale ? "page" : undefined}
-            className={
-              item === locale
-                ? "rounded-full bg-uga-dark px-3 py-2 text-xs font-semibold uppercase text-white"
-                : "rounded-full border border-black/10 px-3 py-2 text-xs font-semibold uppercase text-black/60 transition hover:border-uga-green hover:text-uga-green"
-            }
-            href={href}
-            key={item}
-            onClick={() => setLocaleCookie(item)}
-          >
-            {item}
-          </Link>
+          <span className="inline-flex items-center" key={item}>
+            {index > 0 ? <span className="px-1 text-black/30">|</span> : null}
+            <Link
+              aria-current={item === locale ? "page" : undefined}
+              className={
+                item === locale
+                  ? "ui-control bg-uga-dark px-2.5 py-1 text-white"
+                  : "ui-control px-2.5 py-1 text-black/55 transition hover:text-uga-green"
+              }
+              href={href}
+              onClick={() => setLocaleCookie(item)}
+            >
+              {label}
+            </Link>
+          </span>
         );
       })}
     </div>

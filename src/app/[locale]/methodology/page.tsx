@@ -35,7 +35,7 @@ export default async function MethodologyPage({
         <div className="grid gap-5 lg:grid-cols-2">
           {dict.methodology.sections.map((section, index) => (
             <article
-              className="rounded-[1.5rem] border border-black/10 bg-white p-6 shadow-sm"
+              className="rounded-[3px] border border-black/10 bg-white p-6 "
               key={section.title}
             >
               <div className="flex items-start gap-4">
@@ -43,7 +43,7 @@ export default async function MethodologyPage({
                   {index + 1}
                 </span>
                 <div>
-                  <h2 className="text-xl font-semibold tracking-tight text-uga-dark">
+                  <h2 className="text-xl font-semibold tracking-tight text-black">
                     {section.title}
                   </h2>
                   <p className="mt-3 text-sm leading-6 text-black/65">
@@ -62,15 +62,15 @@ export default async function MethodologyPage({
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-uga-green">
               PDF
             </p>
-            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-uga-dark">
+            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-black">
               {dict.methodology.signedPdfTitle}
             </h2>
             <p className="mt-4 max-w-3xl text-base leading-7 text-black/65">
               {dict.methodology.signedPdfDescription}
             </p>
           </div>
-          <div className="rounded-[1.5rem] border border-dashed border-uga-green/45 bg-white p-6 shadow-sm">
-            <div className="flex aspect-[4/3] items-center justify-center rounded-2xl bg-uga-mist">
+          <div className="rounded-[3px] border border-dashed border-uga-green/45 bg-white p-6 ">
+            <div className="flex aspect-[4/3] items-center justify-center rounded-[3px] bg-uga-mist">
               <span className="rounded-full bg-uga-green px-4 py-2 text-sm font-semibold text-white">
                 {dict.methodology.signedPdfAction}
               </span>
@@ -84,17 +84,17 @@ export default async function MethodologyPage({
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-uga-green">
             FAQ
           </p>
-          <h2 className="mt-4 text-3xl font-semibold tracking-tight text-uga-dark">
+          <h2 className="mt-4 text-3xl font-semibold tracking-tight text-black">
             {dict.methodology.faqTitle}
           </h2>
         </div>
         <div className="mt-8 grid gap-4 lg:grid-cols-2">
           {dict.methodology.faq.map((item) => (
             <details
-              className="group rounded-2xl border border-black/10 bg-white p-5 shadow-sm"
+              className="group rounded-[3px] border border-black/10 bg-white p-5 "
               key={item.question}
             >
-              <summary className="cursor-pointer list-none text-base font-semibold text-uga-dark marker:hidden">
+              <summary className="cursor-pointer list-none text-base font-semibold text-black marker:hidden">
                 <span className="flex items-center justify-between gap-4">
                   {item.question}
                   <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-uga-mist text-uga-green transition group-open:rotate-45">
@@ -115,7 +115,7 @@ export default async function MethodologyPage({
 
 function MethodMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[1.5rem] border border-black/10 bg-uga-mist p-5">
+    <div className="rounded-[3px] border border-black/10 bg-uga-mist p-5">
       <p className="text-4xl font-semibold tracking-tight text-uga-green">
         {value}
       </p>

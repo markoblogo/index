@@ -30,7 +30,9 @@ export function IndexSparkline({
       <polyline
         fill="none"
         points={points}
-        stroke={trend === "up" ? "#0b6b3a" : "#111111"}
+        stroke={
+          trend === "up" ? "var(--color-green)" : "var(--color-negative)"
+        }
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth="3"

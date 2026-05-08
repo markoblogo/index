@@ -10,15 +10,17 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        black: "rgb(var(--color-ink-rgb) / <alpha-value>)",
+        white: "rgb(var(--color-on-dark-rgb) / <alpha-value>)",
         uga: {
-          green: "#0b6b3a",
-          dark: "#06150d",
-          lime: "#d9f99d",
-          mist: "#f3f8f1",
+          green: "rgb(var(--color-green-rgb) / <alpha-value>)",
+          dark: "rgb(var(--color-dark-rgb) / <alpha-value>)",
+          lime: "rgb(var(--color-lime-rgb) / <alpha-value>)",
+          mist: "rgb(var(--color-mist-rgb) / <alpha-value>)",
         },
       },
       boxShadow: {
-        soft: "0 18px 60px rgba(6, 21, 13, 0.12)",
+        soft: "none",
       },
     },
   },

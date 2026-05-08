@@ -125,11 +125,11 @@ function CtaBlock({
   title: string;
 }) {
   return (
-    <article className="rounded-[1.5rem] border border-black/10 bg-uga-dark p-7 text-white shadow-soft">
+    <article className="rounded-[3px] border border-black bg-uga-dark p-7 text-white">
       <h2 className="text-2xl font-semibold tracking-tight">{title}</h2>
       <p className="mt-3 text-sm leading-6 text-white/70">{description}</p>
       <Link
-        className="mt-6 inline-flex rounded-full bg-white px-5 py-3 text-sm font-semibold text-uga-dark transition hover:bg-uga-lime"
+        className="mt-6 inline-flex rounded-[3px] border border-white bg-white px-5 py-3 text-sm font-semibold text-black transition hover:bg-uga-lime"
         href={href}
       >
         {label}
@@ -158,7 +158,7 @@ function ReportCta({
         </p>
       </div>
       <button
-        className="mt-8 w-fit rounded-full border border-black bg-white px-5 py-3 text-sm font-semibold text-black transition hover:bg-uga-lime"
+        className="mt-8 w-fit rounded-[3px] border border-black bg-white px-5 py-3 text-sm font-semibold text-black transition hover:bg-uga-lime"
         type="button"
       >
         {action}

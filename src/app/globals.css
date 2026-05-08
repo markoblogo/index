@@ -4,6 +4,54 @@
 
 :root {
   color-scheme: light;
+  --color-surface-rgb: 255 255 255;
+  --color-panel-rgb: 251 252 248;
+  --color-mist-rgb: 243 248 241;
+  --color-ink-rgb: 6 21 13;
+  --color-on-dark-rgb: 255 255 255;
+  --color-green-rgb: 11 107 58;
+  --color-dark-rgb: 6 21 13;
+  --color-lime-rgb: 217 249 157;
+  --color-surface: #ffffff;
+  --color-panel: #fbfcf8;
+  --color-mist: #f3f8f1;
+  --color-ink: #06150d;
+  --color-muted: rgba(6, 21, 13, 0.64);
+  --color-border: rgba(6, 21, 13, 0.18);
+  --color-strong-border: #06150d;
+  --color-green: #0b6b3a;
+  --color-dark: #06150d;
+  --color-lime: #d9f99d;
+  --color-negative: #b42318;
+  --radius-panel: 3px;
+  --radius-control: 999px;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --color-surface-rgb: 7 16 12;
+  --color-panel-rgb: 11 23 17;
+  --color-mist-rgb: 16 29 21;
+  --color-ink-rgb: 247 244 234;
+  --color-on-dark-rgb: 247 244 234;
+  --color-green-rgb: 143 191 139;
+  --color-dark-rgb: 5 9 7;
+  --color-lime-rgb: 217 249 157;
+  --color-surface: #07100c;
+  --color-panel: #0b1711;
+  --color-mist: #101d15;
+  --color-ink: #f7f4ea;
+  --color-muted: rgba(247, 244, 234, 0.66);
+  --color-border: rgba(176, 213, 173, 0.22);
+  --color-strong-border: rgba(217, 249, 157, 0.42);
+  --color-green: #8fbf8b;
+  --color-dark: #050907;
+  --color-lime: #d9f99d;
+  --color-negative: #ff9b8f;
+}
+
+[data-theme="dark"] .brand-logo {
+  filter: invert(1) brightness(1.6);
 }
 
 * {
@@ -17,8 +65,8 @@ html {
 body {
   min-height: 100vh;
   margin: 0;
-  background: #ffffff;
-  color: #06150d;
+  background: var(--color-surface);
+  color: var(--color-ink);
 }
 
 a {
@@ -27,6 +75,43 @@ a {
 }
 
 ::selection {
-  background: #d9f99d;
+  background: var(--color-lime);
   color: #06150d;
+}
+
+@layer base {
+  input,
+  select,
+  textarea {
+    color: var(--color-ink);
+    background-color: var(--color-surface);
+  }
+}
+
+@layer components {
+  .ui-panel {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-panel);
+    background: var(--color-surface);
+  }
+
+  .ui-panel-muted {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-panel);
+    background: var(--color-mist);
+  }
+
+  .ui-control {
+    border-radius: var(--radius-control);
+  }
+}
+
+@layer utilities {
+  .bg-white {
+    background-color: rgb(var(--color-surface-rgb) / var(--tw-bg-opacity, 1));
+  }
+
+  .bg-white\/95 {
+    background-color: rgb(var(--color-surface-rgb) / 0.95);
+  }
 }

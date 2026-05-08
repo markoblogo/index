@@ -74,13 +74,13 @@ export function HomeHero({
     <div className="min-w-0">
       <div className="flex flex-wrap gap-3">
         <Link
-          className="inline-flex rounded-full bg-black px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-uga-green"
+          className="inline-flex rounded-[3px] border border-black bg-uga-dark px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-uga-green"
           href={`/${locale}/methodology`}
         >
           {labels.methodology}
         </Link>
         <Link
-          className="inline-flex rounded-full border border-black/60 bg-white px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-uga-lime"
+          className="inline-flex rounded-[3px] border border-black/60 bg-white px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-uga-lime"
           href={`/${locale}/analytics`}
         >
           {labels.analytics}
@@ -162,7 +162,7 @@ function HeroIndexCard({
   const changePrefix = isPositive ? "+" : "";
 
   return (
-    <article className="grid min-h-[11.75rem] border border-black bg-white p-4 shadow-[3px_3px_0_rgba(11,107,58,0.82)] sm:min-h-[13.5rem] lg:min-h-[14.25rem] 2xl:min-h-[15rem]">
+    <article className="grid min-h-[11.75rem] border border-black border-b-4 border-b-uga-green bg-white p-4 sm:min-h-[13.5rem] lg:min-h-[14.25rem] 2xl:min-h-[15rem]">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-black/45">

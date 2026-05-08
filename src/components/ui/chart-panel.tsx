@@ -20,10 +20,10 @@ export function ChartPanel({ commodity, locale, values }: ChartPanelProps) {
     .join(" ");
 
   return (
-    <article className="rounded-2xl border border-black/10 bg-white p-6 shadow-sm">
+    <article className="rounded-[3px] border border-black/10 bg-white p-6 ">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h3 className="text-lg font-semibold text-uga-dark">
+          <h3 className="text-lg font-semibold text-black">
             {commodity.name[locale]}
           </h3>
           <p className="mt-1 text-sm text-black/55">FOB Black Sea · USD/t</p>

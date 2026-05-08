@@ -27,7 +27,7 @@ export default async function AboutPage({
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-uga-green">
             {dict.about.rolesTitle}
           </p>
-          <h2 className="mt-4 text-3xl font-semibold tracking-tight text-uga-dark">
+          <h2 className="mt-4 text-3xl font-semibold tracking-tight text-black">
             {dict.about.rolesHeading}
           </h2>
         </div>
@@ -35,12 +35,12 @@ export default async function AboutPage({
           {dict.about.partners.map((partner) => (
             <article
               key={partner.name}
-              className="rounded-[1.5rem] border border-black/10 bg-white p-6 shadow-sm"
+              className="rounded-[3px] border border-black/10 bg-white p-6 "
             >
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-uga-mist text-sm font-black text-uga-green ring-1 ring-uga-green/15">
                 {partner.name.slice(0, 1)}
               </div>
-              <h3 className="mt-5 text-xl font-semibold text-uga-dark">
+              <h3 className="mt-5 text-xl font-semibold text-black">
                 {partner.name}
               </h3>
               <p className="mt-3 text-sm leading-6 text-black/65">
@@ -58,7 +58,7 @@ export default async function AboutPage({
               <p className="text-sm font-semibold uppercase tracking-[0.18em] text-uga-green">
                 {dict.about.respondentsLabel}
               </p>
-              <h2 className="mt-4 text-3xl font-semibold tracking-tight text-uga-dark">
+              <h2 className="mt-4 text-3xl font-semibold tracking-tight text-black">
                 {dict.about.respondentsTitle}
               </h2>
               <p className="mt-4 text-base leading-7 text-black/65">
@@ -68,7 +68,7 @@ export default async function AboutPage({
             <div className="grid gap-3 sm:grid-cols-2">
               {respondents.map((respondent) => (
                 <div
-                  className="rounded-2xl border border-black/10 bg-white px-4 py-4 text-sm font-semibold text-uga-dark shadow-sm"
+                  className="rounded-[3px] border border-black/10 bg-white px-4 py-4 text-sm font-semibold text-black "
                   key={respondent.id}
                 >
                   {respondent.legalName}
@@ -80,7 +80,7 @@ export default async function AboutPage({
       </section>
 
       <section className="mx-auto max-w-7xl px-6 py-14 lg:px-8">
-        <div className="rounded-[1.5rem] border border-black/10 bg-uga-dark p-7 text-white shadow-soft">
+        <div className="rounded-[3px] border border-black/10 bg-uga-dark p-7 text-white ">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-uga-lime">
             {dict.about.disclaimerTitle}
           </p>
