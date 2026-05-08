@@ -14,7 +14,6 @@ type HomeHeroProps = {
   labels: {
     analytics: string;
     currentValues: string;
-    liveStatus: string;
     methodology: string;
     subtitle: string;
     trustStrip: string;
@@ -106,7 +105,6 @@ export function HomeHero({
             boardKicker={copy.boardKicker}
             currencyToggleLabel={copy.currencyToggleLabel}
             fxLabel={copy.fxLabel}
-            liveStatus={labels.liveStatus}
             officialLabel={copy.officialLabel}
             officialNotice={copy.officialNotice}
             respondentLabel={copy.respondents}
@@ -135,7 +133,6 @@ function HeroIndexBoard({
   fxLabel,
   fxRates,
   locale,
-  liveStatus,
   officialLabel,
   officialNotice,
   boardKicker,
@@ -149,7 +146,6 @@ function HeroIndexBoard({
   fxLabel: string;
   fxRates: FxRates;
   locale: Locale;
-  liveStatus: string;
   officialLabel: string;
   officialNotice: string;
   boardKicker: string;
@@ -158,8 +154,8 @@ function HeroIndexBoard({
   updatedLabel: string;
 }) {
   return (
-    <div className="order-1 min-w-0 max-w-full bg-uga-mist/35 p-4 sm:p-6 lg:order-none lg:p-7 xl:p-8">
-      <div className="mb-3 flex flex-wrap items-start justify-between gap-3 border-b border-black pb-3">
+    <div className="order-1 min-w-0 max-w-full bg-uga-mist/35 p-4 sm:p-5 lg:order-none lg:p-6 xl:p-7">
+      <div className="border-b border-black pb-3">
         <div>
           <p className="text-[0.64rem] font-black uppercase tracking-[0.18em] text-uga-green">
             {boardKicker}
@@ -168,22 +164,18 @@ function HeroIndexBoard({
             {currentValues}
           </h2>
           <p className="mt-2 text-[0.68rem] font-black uppercase leading-5 tracking-normal text-black/50">
-            {liveStatus} · {updatedLabel}: {updatedAt} ·{" "}
-            {SITE_CONFIG.defaultDeliveryBasis} · {SITE_CONFIG.defaultDeliveryPeriod}
+            {updatedLabel}: {updatedAt} · {SITE_CONFIG.defaultDeliveryBasis} ·{" "}
+            {SITE_CONFIG.defaultDeliveryPeriod} · {fxLabel}:{" "}
+            {formatFxSource(fxRates.source, locale)} USD/UAH{" "}
+            {fxRates.usdUah.toFixed(2)}, EUR/UAH {fxRates.eurUah.toFixed(2)}
           </p>
         </div>
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-2 py-2">
+        <p className="max-w-[24rem] text-[0.65rem] font-semibold leading-4 text-black/45">
+          {officialNotice}
+        </p>
         <CurrencyToggle label={currencyToggleLabel} />
-        <div className="basis-full">
-          <p className="text-[0.68rem] font-black uppercase leading-5 tracking-normal text-black/50">
-            {fxLabel}:{" "}
-            {fxRates.source === "demo" ? "demo FX" : fxRates.source} · USD/UAH{" "}
-            {fxRates.usdUah.toFixed(2)} · EUR/UAH {fxRates.eurUah.toFixed(2)} ·{" "}
-            {fxRates.rateDate}
-          </p>
-          <p className="mt-1 text-[0.68rem] font-semibold leading-4 text-black/50">
-            {officialNotice}
-          </p>
-        </div>
       </div>
       <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:gap-4">
         {commodities.map((commodity) => (
@@ -220,7 +212,7 @@ function HeroIndexCard({
   const changeClass = isPositive ? "text-uga-green" : "text-red-700";
 
   return (
-    <article className="grid min-h-[11.5rem] border border-black border-b-4 border-b-uga-green bg-white p-4 sm:min-h-[13rem] lg:min-h-[13.35rem] xl:min-h-[14rem]">
+    <article className="grid min-h-[11.5rem] border border-black border-b-4 border-b-uga-green bg-white p-4 sm:min-h-[12.5rem] lg:min-h-[13rem] xl:min-h-[13.5rem]">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[0.64rem] font-black uppercase tracking-[0.16em] text-black/45">
@@ -237,7 +229,7 @@ function HeroIndexCard({
 
       <div className="my-2">
         <IndexSparkline
-          heightClassName="h-8 sm:h-9"
+          heightClassName="h-7 sm:h-8"
           values={commodity.sparkline}
           trend={trend}
         />
@@ -245,8 +237,9 @@ function HeroIndexCard({
 
       <div className="mt-auto">
         <div className="flex items-end justify-between gap-3">
-          <p className="text-[1.95rem] font-black leading-none tracking-tight text-black sm:text-[2.2rem]">
+          <p className="text-[clamp(3.05rem,4.3vw,4.9rem)] font-black leading-[0.9] tracking-tight text-black">
             <CurrencyValue
+              className="[&>span:first-child]:leading-[0.9] [&_.currency-unit]:text-base"
               fxRates={fxRates}
               locale={locale}
               officialLabel={officialLabel}
@@ -292,7 +285,7 @@ function getHeroCopy(locale: Locale) {
       fxLabel: "FX",
       officialLabel: "офіційно",
       officialNotice:
-        "Офіційні значення UGA Index публікуються в USD/т. UAH та EUR є перерахунком для відображення.",
+        "Офіційні значення: USD/т. UAH та EUR — перерахунок для відображення.",
       respondents: "респондентів",
     };
   }
@@ -312,7 +305,15 @@ function getHeroCopy(locale: Locale) {
     fxLabel: "FX",
     officialLabel: "official",
     officialNotice:
-      "Official UGA Index values are published in USD/t. UAH and EUR are converted display values.",
+      "Official values: USD/t. UAH and EUR are display conversions.",
     respondents: "respondents",
   };
+}
+
+function formatFxSource(source: FxRates["source"], locale: Locale) {
+  if (source === "NBU" && locale === "uk") {
+    return "НБУ";
+  }
+
+  return source === "demo" ? "demo FX" : source;
 }

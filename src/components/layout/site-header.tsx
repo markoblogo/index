@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { LocaleSwitcher } from "@/components/ui/locale-switcher";
+import { StatusPill } from "@/components/ui/status-pill";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { SITE_CONFIG } from "@/lib/constants";
 import { getDictionary, type Locale } from "@/lib/i18n";
@@ -16,25 +17,26 @@ export function SiteHeader({ locale }: { locale: Locale }) {
 
   return (
     <header className="sticky top-0 z-20 border-b border-black bg-white/95 backdrop-blur">
-      <nav className="mx-auto flex max-w-7xl items-center justify-start gap-2 px-4 py-2.5 sm:justify-between lg:gap-4 lg:px-6">
+      <nav className="mx-auto flex h-14 max-w-7xl items-center justify-start gap-2 px-4 sm:justify-between lg:gap-4 lg:px-6">
         <Link
-          className="flex min-w-0 items-center gap-3 leading-none"
+          className="flex h-full min-w-0 items-center gap-3 leading-none"
           href={`/${locale}`}
         >
-          <span className="flex h-8 w-14 shrink-0 items-center">
+          <span className="flex h-full w-14 shrink-0 items-center justify-center overflow-hidden">
             <Image
               alt={locale === "uk" ? "Логотип УЗА" : "UGA logo"}
-              className="brand-logo block h-7 w-auto object-contain"
+              className="brand-logo block h-8 w-auto translate-y-px object-contain"
               height={80}
               src={SITE_CONFIG.logoPath}
               width={140}
             />
           </span>
-          <span className="hidden border-l border-black/10 pl-3 text-sm font-black leading-none tracking-tight text-black sm:inline-flex sm:items-center sm:text-base">
+          <span className="hidden h-6 items-center border-l border-black/10 pl-3 text-sm font-black leading-none tracking-tight text-black sm:inline-flex sm:text-base">
             {SITE_CONFIG.name}
           </span>
         </Link>
         <div className="hidden items-center gap-5 md:flex">
+          <StatusPill>{dict.home.liveStatus}</StatusPill>
           {navItems.map((item) => (
             <Link
               className="text-sm font-semibold text-black/65 transition hover:text-uga-green"

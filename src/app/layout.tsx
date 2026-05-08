@@ -6,6 +6,11 @@ export const metadata: Metadata = {
   title: "UGA Index",
   description:
     "Daily spot export price index demo for the Ukrainian Grain Association.",
+  icons: {
+    icon: "/icon.png",
+    shortcut: "/icon.png",
+    apple: "/icon.png",
+  },
   metadataBase: process.env.NEXT_PUBLIC_SITE_URL
     ? new URL(process.env.NEXT_PUBLIC_SITE_URL)
     : undefined,

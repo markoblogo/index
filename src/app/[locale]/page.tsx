@@ -30,7 +30,6 @@ export default async function LocaleHome({
         labels={{
           analytics: dict.home.viewAnalytics,
           currentValues: dict.home.currentValuesTitle,
-          liveStatus: dict.home.liveStatus,
           methodology: dict.home.readMore,
           subtitle: dict.home.heroSubtitle,
           trustStrip: dict.home.heroTrustStrip,
