@@ -100,18 +100,23 @@ export default async function AboutPage({
             <div className="grid border border-black bg-white sm:grid-cols-2">
               {respondents.map((respondent) => {
                 const respondentHref = respondentLinks.get(respondent.id) ?? "#";
+                const hasExternalLink = respondentHref !== "#";
 
                 return (
                 <a
-                  className="group border-b border-black px-4 py-3 text-sm font-black text-black transition hover:bg-uga-lime sm:border-r odd:sm:border-r even:sm:border-r-0 [&:nth-last-child(-n+2)]:sm:border-b-0 last:border-b-0"
+                  className={`group border-b border-black px-4 py-3 text-sm font-black text-black transition sm:border-r odd:sm:border-r even:sm:border-r-0 [&:nth-last-child(-n+2)]:sm:border-b-0 last:border-b-0 ${
+                    hasExternalLink ? "hover:bg-uga-lime" : "pointer-events-none"
+                  }`}
                   href={respondentHref}
                   key={respondent.id}
                   rel="noopener noreferrer"
                   target="_blank"
                 >
-                  <span className="mr-2 text-[0.62rem] uppercase text-uga-green transition group-hover:text-black">
-                    URL
-                  </span>
+                  {hasExternalLink ? (
+                    <span className="mr-2 text-[0.62rem] uppercase text-uga-green transition group-hover:text-black">
+                      URL
+                    </span>
+                  ) : null}
                   {respondent.legalName}
                 </a>
                 );

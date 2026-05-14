@@ -1,4 +1,5 @@
 import type { Locale } from "@/lib/i18n";
+import { getActiveIndexConfig } from "@/lib/index-platform";
 
 export const legalPages = ["privacy", "terms", "risk-disclosure"] as const;
 export type LegalPageSlug = (typeof legalPages)[number];
@@ -26,7 +27,133 @@ export function getLegalPageContent(
   locale: Locale,
   slug: LegalPageSlug,
 ): LegalPageContent {
+  if (getActiveIndexConfig().id === "spike-ua") {
+    return getSpikeLegalPageContent(locale, slug);
+  }
+
   return legalContent[locale][slug];
+}
+
+function getSpikeLegalPageContent(
+  locale: Locale,
+  slug: LegalPageSlug,
+): LegalPageContent {
+  const base = legalContent[locale][slug];
+  const mapped = mapLegalContentText(base, (text) =>
+    locale === "uk" ? mapSpikeUkLegalText(text) : mapSpikeEnLegalText(text),
+  );
+
+  if (slug === "privacy") {
+    return {
+      ...mapped,
+      description:
+        locale === "uk"
+          ? "Політика конфіденційності SPIKE Spot Commodity Index Ukraine"
+          : "SPIKE Spot Commodity Index Ukraine Privacy Policy",
+      intro:
+        locale === "uk"
+          ? [
+              "Ця Політика конфіденційності пояснює, як SPIKE Spot Commodity Index Ukraine збирає, використовує та захищає інформацію під час взаємодії відвідувачів, респондентів, адміністраторів та користувачів аналітики з платформою.",
+              "SPIKE Spot Commodity Index Ukraine — це платформа Spike Brokers для публікації агрегованих ринкових значень індексу та пов'язаної аналітики щодо українських аграрних спотових цін.",
+            ]
+          : [
+              "This Privacy Policy explains how SPIKE Spot Commodity Index Ukraine collects, uses and protects information when visitors, respondents, administrators and analytics users interact with the platform.",
+              "SPIKE Spot Commodity Index Ukraine is a Spike Brokers platform for publishing aggregated market index values and related analytics for Ukrainian agricultural spot prices.",
+            ],
+    };
+  }
+
+  if (slug === "terms") {
+    return {
+      ...mapped,
+      description:
+        locale === "uk"
+          ? "Умови використання SPIKE Spot Commodity Index Ukraine"
+          : "SPIKE Spot Commodity Index Ukraine Terms of Use",
+      intro:
+        locale === "uk"
+          ? [
+              "Ці Умови використання регулюють доступ до платформи SPIKE Spot Commodity Index Ukraine та її використання, включно з публічними значеннями індексу, аналітикою, процесами для респондентів, embedded-віджетами та пов'язаним контентом.",
+              "Користуючись платформою, ви погоджуєтеся з цими Умовами.",
+            ]
+          : [
+              "These Terms of Use govern access to and use of SPIKE Spot Commodity Index Ukraine, including public index values, analytics, respondent workflows, embedded widgets and related content.",
+              "By using the platform, you agree to these Terms.",
+            ],
+    };
+  }
+
+  return {
+    ...mapped,
+    description:
+      locale === "uk"
+        ? "Розкриття ризиків SPIKE Spot Commodity Index Ukraine"
+        : "SPIKE Spot Commodity Index Ukraine Risk Disclosure",
+    intro:
+      locale === "uk"
+        ? [
+            "Це Розкриття ризиків пояснює важливі обмеження та ризики, пов'язані з використанням значень SPIKE Spot Commodity Index Ukraine, аналітики, сценарних результатів та пов'язаних даних.",
+          ]
+        : [
+            "This Risk Disclosure explains important limitations and risks related to the use of SPIKE Spot Commodity Index Ukraine values, analytics, scenario outputs and related data.",
+          ],
+  };
+}
+
+function mapLegalContentText(
+  content: LegalPageContent,
+  mapper: (text: string) => string,
+): LegalPageContent {
+  return {
+    ...content,
+    description: mapper(content.description),
+    intro: content.intro.map(mapper),
+    sections: content.sections.map((section) => ({
+      ...section,
+      paragraphs: section.paragraphs?.map(mapper),
+      paragraphsAfter: section.paragraphsAfter?.map(mapper),
+      bullets: section.bullets?.map(mapper),
+    })),
+  };
+}
+
+function mapSpikeEnLegalText(text: string) {
+  return text
+    .replaceAll("UGA Index", "SPIKE Spot Commodity Index Ukraine")
+    .replaceAll("the Ukrainian Grain Association", "Spike Brokers")
+    .replaceAll("Ukrainian Grain Association", "Spike Brokers")
+    .replaceAll("UGA", "Spike Brokers")
+    .replaceAll("FOB Black Sea", "CPT Odesa and CPT parity Odesa")
+    .replaceAll("T+30", "spot")
+    .replaceAll("inbox@uga.ua", "info@spike.broker")
+    .replaceAll(
+      "Ukraine, 01133, Kyiv,\n36D Yevhena Konovaltsia St.,\n6th floor",
+      "Ukraine, 04070, Kyiv,\n8 Illinska St.,\nIllinskyi Business Center",
+    )
+    .replaceAll(
+      "External market indicatives, including partner indicatives, may be displayed as reference information. They should not be treated as official SPIKE Spot Commodity Index Ukraine values unless expressly published as such.",
+      "This Spike Brokers tenant does not use a separate Spike external indicative. Any third-party reference values, if introduced later, should be displayed separately and should not be treated as official index values unless expressly published as such.",
+    );
+}
+
+function mapSpikeUkLegalText(text: string) {
+  return text
+    .replaceAll("UGA Index", "SPIKE Spot Commodity Index Ukraine")
+    .replaceAll("Української зернової асоціації", "Spike Brokers")
+    .replaceAll("Українська зернова асоціація", "Spike Brokers")
+    .replaceAll("Української зернової асоціації", "Spike Brokers")
+    .replaceAll("УЗА", "Spike Brokers")
+    .replaceAll("FOB Black Sea", "CPT Одеса та CPT parity Одеса")
+    .replaceAll("T+30", "spot")
+    .replaceAll("inbox@uga.ua", "info@spike.broker")
+    .replaceAll(
+      "Україна, 01133, Київ,\nвул. Євгена Коновальця, 36Д,\n6 поверх",
+      "Україна, 04070, Київ,\nвул. Іллінська, 8,\nБЦ «Іллінський»",
+    )
+    .replaceAll(
+      "Зовнішні ринкові індикативи, включно з індикативами партнерів, можуть відображатися як довідкова інформація. Вони не повинні вважатися офіційними значеннями SPIKE Spot Commodity Index Ukraine, якщо прямо не опубліковані як такі.",
+      "У цьому інстансі Spike Brokers не використовується окремий зовнішній індикатив Spike. Будь-які сторонні довідкові значення, якщо вони будуть додані пізніше, мають відображатися окремо і не повинні вважатися офіційними значеннями індексу, якщо прямо не опубліковані як такі.",
+    );
 }
 
 const legalContent: Record<Locale, Record<LegalPageSlug, LegalPageContent>> = {

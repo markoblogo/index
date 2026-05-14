@@ -3,6 +3,7 @@ import { CurrencyToggle, CurrencyValue } from "@/components/ui/currency-toggle";
 import { SITE_CONFIG } from "@/lib/constants";
 import { getFxRates } from "@/lib/fx-rates";
 import type { Locale } from "@/lib/i18n";
+import { getActiveIndexConfig } from "@/lib/index-platform";
 import {
   commodities,
   indexUpdatedAt,
@@ -953,8 +954,10 @@ function standardDeviation(values: number[]) {
 type AnalyticsCopy = ReturnType<typeof getAnalyticsCopy>;
 
 function getAnalyticsCopy(locale: Locale) {
+  const activeIndex = getActiveIndexConfig();
+
   if (locale === "uk") {
-    return {
+    const copy = {
       accessLabels: [
         "Перший рік безкоштовно",
         "Платна аналітика планується",
@@ -1051,9 +1054,33 @@ function getAnalyticsCopy(locale: Locale) {
       volatilityTitle: "Волатильність і ціновий діапазон",
       weekUnit: "тижнів",
     };
+
+    if (activeIndex.id !== "spike-ua") {
+      return copy;
+    }
+
+    return {
+      ...copy,
+      accessMatrixRows: copy.accessMatrixRows.map((row) =>
+        row[0] === "UGA member" ? ["Spike partner", row[1], row[2], row[3]] : row,
+      ),
+      accessText:
+        "Аналітична панель доступна як preview для SPIKE Spot Commodity Index Ukraine. Розширена історія, API-доступ і комерційні аналітичні зрізи можуть бути оформлені як окремі рівні доступу після запуску.",
+      heroBody:
+        "Порівнюйте динаміку спотових позицій, аналізуйте експортні та переробні базиси, відстежуйте волатильність і переглядайте сценарії для українських аграрних цін Spike Brokers.",
+      heroTitle: "Аналітика SPIKE Spot Commodity Index Ukraine",
+      scenarioBody:
+        "Аналітична preview-модель будує можливі траєкторії індексів на основі історичної динаміки, короткострокового імпульсу та волатильності окремих позицій. Результат є сценарним діапазоном, а не гарантією майбутніх цін.",
+      spreadDescription:
+        "Відносні спреди показують, як експортні та переробні позиції рухаються одна відносно одної.",
+      spreadTitle: "Спреди та премії між позиціями",
+      trendDescription:
+        "30-денна історія для опублікованих позицій SPIKE Spot Commodity Index Ukraine у режимі аналітичного preview.",
+      trendTitle: "Динаміка індексів за позиціями",
+    };
   }
 
-  return {
+  const copy = {
     accessLabels: ["Free first year", "Paid analytics planned", "API planned"],
     accessMatrixEyebrow: "Access",
     accessMatrixHeaders: ["Access level", "History", "Analytics", "API"],
@@ -1145,5 +1172,29 @@ function getAnalyticsCopy(locale: Locale) {
     volatilityRange: "Volatility range",
     volatilityTitle: "Volatility and price range",
     weekUnit: "weeks",
+  };
+
+  if (activeIndex.id !== "spike-ua") {
+    return copy;
+  }
+
+  return {
+    ...copy,
+    accessMatrixRows: copy.accessMatrixRows.map((row) =>
+      row[0] === "UGA member" ? ["Spike partner", row[1], row[2], row[3]] : row,
+    ),
+    accessText:
+      "The analytics dashboard is available as a preview for SPIKE Spot Commodity Index Ukraine. Extended history, API access and commercial analytics views can be introduced as separate access levels after launch.",
+    heroBody:
+      "Compare spot-position dynamics, review export and processing bases, track volatility and explore analytical scenarios for Spike Brokers Ukrainian agricultural prices.",
+    heroTitle: "SPIKE Spot Commodity Index Ukraine analytics",
+    scenarioBody:
+      "An analytical preview model projects possible index paths using historical index movement, short-term momentum and position-specific volatility. The output is a scenario range, not a guarantee of future prices.",
+    spreadDescription:
+      "Relative spreads help show how export and processing positions move against each other.",
+    spreadTitle: "Position spreads and premiums",
+    trendDescription:
+      "30-day analytics preview history for published SPIKE Spot Commodity Index Ukraine positions.",
+    trendTitle: "Index dynamics by position",
   };
 }

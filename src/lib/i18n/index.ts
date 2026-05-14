@@ -691,7 +691,274 @@ export function isLocale(value: string): value is Locale {
 }
 
 export function getDictionary(locale: Locale) {
+  if (getActiveTenantId() === "spike-ua") {
+    return getSpikeDictionary(locale, dictionaries[locale]);
+  }
+
   return dictionaries[locale];
+}
+
+function getActiveTenantId() {
+  return process.env.NEXT_PUBLIC_INDEX_TENANT ?? process.env.INDEX_TENANT;
+}
+
+function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
+  if (locale === "uk") {
+    return {
+      ...base,
+      home: {
+        ...base.home,
+        partnerLine: "Spike Brokers · партнери ринку · Cropto/MN7R",
+        title: "SPIKE Spot Commodity Index Ukraine",
+        description:
+          "Щоденний спотовий індекс Spike Brokers для ключових експортних і переробних позицій українського аграрного ринку.",
+        boardTitle: "SPIKE Index / Спотові ціни",
+        boardDescription:
+          "Ринковий бенчмарк у USD/т для CPT Одеса та CPT parity Одеса, що публікується після щоденної перевірки даних партнерів.",
+        heroSubtitle:
+          "Щоденні значення для експортних і переробних базисів України від Spike Brokers.",
+        heroMeta: "CPT Одеса · spot · USD/т · публікація після EOD-перевірки",
+        heroAttribution:
+          "Публікується Spike Brokers. Дані: партнери ринку. Технологія: Cropto/MN7R.",
+        heroAttributionShort: "Spike Brokers · партнери ринку · Cropto/MN7R",
+        heroTrustStrip:
+          "Дані партнерів Spike Brokers · медіанна валідація · +/-2% фільтр викидів · мінімум 5 респондентів · фіксація після публікації",
+        heroTrustStripShort: "партнери Spike · медіана · +/-2% · 5+ · фіксація",
+        partnersTitle: "Ролі в екосистемі SPIKE Spot Commodity Index Ukraine",
+        partnersDescription:
+          "Spike Brokers відповідає за бренд, публікацію та ринкову експертизу; партнери-респонденти надають щоденні цінові оцінки; Cropto/MN7R забезпечує технологічну платформу.",
+      },
+      about: {
+        ...base.about,
+        title:
+          "Спотовий бенчмарк Spike Brokers для українського аграрного ринку",
+        descriptionBeforeLink:
+          "SPIKE Spot Commodity Index Ukraine — це окрема індексна платформа ",
+        descriptionLinkText: "Spike Brokers",
+        descriptionAfterLink:
+          " для щоденної публікації агрегованих спотових цін за ключовими експортними та переробними позиціями України. Індекс створений, щоб дати ринку прозорий і порівнюваний орієнтир для CPT Одеса та CPT parity Одеса.",
+        ugaHref: "https://spike.broker/",
+        whyTitle: "Операційний ціновий орієнтир для угод, логістики та переробки",
+        whyBody: [
+          "Український аграрний ринок щодня реагує на попит експортерів, переробників, логістику, портову інфраструктуру, валюту, фрахт і якісні параметри продукції. Для роботи з такими потоками учасникам потрібен спільний орієнтир, прив'язаний до реальних торгових базисів.",
+          "SPIKE Spot Commodity Index Ukraine агрегує ринкові оцінки партнерів Spike Brokers і перетворює їх на зіставні значення для публікації. Індекс не розкриває індивідуальні подання компаній, а показує очищений агрегований результат.",
+          "Платформа охоплює експортні позиції CPT Одеса та переробні позиції CPT parity Одеса. Для сої ГМО та соняшнику публічні значення відображаються з ПДВ, відповідно до логіки ринку переробки.",
+        ],
+        whyFeatures: [
+          {
+            title: "Спотовий ринковий орієнтир",
+            description:
+              "Щоденні значення допомагають порівнювати рівні цін для експортних і переробних потоків.",
+          },
+          {
+            title: "Дані партнерів Spike Brokers",
+            description:
+              "Індекс базується на щоденних оцінках респондентів, які працюють з українськими аграрними товарами.",
+          },
+          {
+            title: "Єдина методологія",
+            description:
+              "Значення проходять медіанну перевірку, фільтрацію викидів і публікуються тільки за достатнього покриття респондентів.",
+          },
+        ],
+        respondentsTitle: "Партнери-респонденти у поточній корзині",
+        respondentsDescription:
+          "Корзина респондентів відображає партнерів Spike Brokers, представлених у щоденному зборі цінових даних. Індивідуальні подання не публікуються; у відкритому доступі відображаються лише агреговані значення індексу.",
+        disclaimer:
+          "Значення SPIKE Spot Commodity Index Ukraine публікуються виключно з інформаційною та аналітичною метою. Вони не є інвестиційною порадою, публічною офертою або рекомендацією купувати чи продавати будь-який товар. Значення агрегуються з даних партнерів-респондентів і публікуються відповідно до методології; індивідуальні дані компаній не розкриваються. Spike Brokers, партнери проєкту та технологічні провайдери не несуть відповідальності за рішення, прийняті на основі цих даних.",
+      },
+      methodology: {
+        ...base.methodology,
+        title: "Як розраховується SPIKE Spot Commodity Index Ukraine",
+        description:
+          "SPIKE Spot Commodity Index Ukraine використовує повторюваний щоденний процес, який перетворює цінові оцінки партнерів-респондентів на перевірені та зафіксовані значення індексу для кожної позиції, базису та дати розрахунку.",
+        coreTitle: "Від EOD-оцінок партнерів до опублікованого спотового бенчмарку",
+        coreNarrative: [
+          "Індекс розраховується на основі щоденних цінових оцінок, які надає визначена група партнерів-респондентів Spike Brokers. Кожне подане значення має відображати справедливий ринковий рівень на кінець торгового дня для відповідної культури та базису.",
+          "Поточні публічні базиси: CPT Одеса, Україна для експортних позицій і CPT parity Одеса, Україна для позицій переробки. Ціни збираються для кожної позиції та дати розрахунку, після чого проходять валідацію. Система визначає медіану вибірки, а значення, що відхиляються від медіани більш ніж на +/-2%, виключаються як потенційні викиди.",
+          "Після очищення вибірки значення індексу розраховується як середнє арифметичне валідних цін. Корзина може бути опублікована лише тоді, коли після фільтрації залишається щонайменше 5 валідних цін респондентів. Окремого зовнішнього індикативу Spike Brokers у цьому інстансі немає, оскільки Spike Brokers є видавцем індексу.",
+          "До публікації значення можуть перевірятися, уточнюватися та мати декілька версій. Після публікації фінальне значення фіксується. Система зберігає зміни, перерахунки та події публікації в журналі аудиту.",
+        ],
+        facts: [
+          { value: "CPT Odesa", label: "Базис для експортних позицій" },
+          { value: "CPT parity", label: "Базис для позицій переробки" },
+          { value: "5+", label: "Мінімум валідних респондентів" },
+          { value: "EOD", label: "Оцінка ціни на кінець торгового дня" },
+          { value: "+/-2%", label: "Фільтр викидів відносно медіани" },
+          { value: "Фіксація", label: "Фінальне значення після публікації" },
+        ],
+        pdfDescription:
+          "Завантажте документ методології, використаний як основа для SPIKE Spot Commodity Index Ukraine. Production-версія може бути замінена на затверджену Spike Brokers редакцію.",
+        faq: [
+          {
+            question: "Що таке SPIKE Spot Commodity Index Ukraine?",
+            answer:
+              "Це щоденний спотовий бенчмарк Spike Brokers для ключових українських аграрних позицій на експортних і переробних базисах.",
+          },
+          {
+            question: "Хто надає дані?",
+            answer:
+              "Дані збираються від визначеного пулу партнерів-респондентів Spike Brokers. Індивідуальні значення окремих компаній не розкриваються у публічних матеріалах.",
+          },
+          ...base.methodology.faq.slice(2, 3),
+          {
+            question: "Що відбувається, якщо даних недостатньо?",
+            answer:
+              "Якщо після фільтрації залишається менше ніж 5 валідних цін респондентів, корзина не може бути опублікована як офіційне значення індексу.",
+          },
+          ...base.methodology.faq.slice(4),
+        ],
+      },
+      analytics: {
+        ...base.analytics,
+        title: "Аналітика SPIKE Spot Commodity Index Ukraine",
+        description:
+          "Аналітична сторінка готує основу для порівняння спотових позицій, перегляду трендів та історії публікацій Spike Brokers.",
+        accessLevels: base.analytics.accessLevels.map((level) =>
+          level.title === "Член UGA"
+            ? { ...level, title: "Партнер Spike Brokers" }
+            : level,
+        ),
+      },
+      footer: {
+        ...base.footer,
+        demo: "Платформа для Spike Brokers.",
+        partners: "Дані: партнери Spike Brokers · Технологія: Cropto/MN7R",
+        disclaimer:
+          "Інформація надається виключно для інформаційних цілей. Spike Brokers не несе відповідальності за збитки, спричинені використанням даних.",
+        address: ["Україна, 04070, Київ", "вул. Іллінська, 8", "БЦ «Іллінський»"],
+        phones: ["+380 63 412 86 33"],
+        email: "info@spike.broker",
+      },
+    };
+  }
+
+  return {
+    ...base,
+    home: {
+      ...base.home,
+      partnerLine: "Spike Brokers · market partners · Cropto/MN7R",
+      title: "SPIKE Spot Commodity Index Ukraine",
+      description:
+        "Daily Spike Brokers spot index for core Ukrainian export and processing commodity positions.",
+      boardTitle: "SPIKE Index / Spot Pricing",
+      boardDescription:
+        "USD/t market benchmark for CPT Odesa and CPT parity Odesa, published after daily partner-data review.",
+      heroSubtitle:
+        "Daily values for Ukrainian export and processing bases from Spike Brokers.",
+      heroMeta: "CPT Odesa · spot · USD/t · published after EOD review",
+      heroAttribution:
+        "Published by Spike Brokers. Data: market partners. Technology: Cropto/MN7R.",
+      heroAttributionShort: "Spike Brokers · market partners · Cropto/MN7R",
+      heroTrustStrip:
+        "Spike Brokers partner data · median validation · +/-2% outlier filter · minimum 5 respondents · locked publication",
+      heroTrustStripShort: "Spike partners · median · +/-2% · 5+ · locked",
+      partnersTitle: "Roles in the SPIKE Spot Commodity Index Ukraine ecosystem",
+      partnersDescription:
+        "Spike Brokers owns the brand, publication and market expertise; respondent partners provide daily price assessments; Cropto/MN7R powers the technology platform.",
+    },
+    about: {
+      ...base.about,
+      title: "A Spike Brokers spot benchmark for Ukrainian agricultural markets",
+      descriptionBeforeLink:
+        "SPIKE Spot Commodity Index Ukraine is a dedicated index platform by ",
+      descriptionLinkText: "Spike Brokers",
+      descriptionAfterLink:
+        " for publishing daily aggregated spot prices across selected Ukrainian export and processing positions. The index gives the market a transparent and comparable reference for CPT Odesa and CPT parity Odesa levels.",
+      ugaHref: "https://spike.broker/en/",
+      whyTitle: "An operational price reference for trade, logistics and processing",
+      whyBody: [
+        "Ukraine's agricultural market reacts daily to exporter and processor demand, logistics, port infrastructure, currency, freight and product quality. Market participants need a shared reference linked to executable trading bases.",
+        "SPIKE Spot Commodity Index Ukraine aggregates market assessments from Spike Brokers partners and turns them into comparable public values. The index does not disclose individual company submissions; it shows a cleaned aggregated result.",
+        "The platform covers CPT Odesa export positions and CPT parity Odesa processing positions. GMO soybean and sunflower seed public values are shown VAT-included, reflecting processing-market convention.",
+      ],
+      whyFeatures: [
+        {
+          title: "Spot market reference",
+          description:
+            "Daily values help compare price levels across export and processing flows.",
+        },
+        {
+          title: "Spike Brokers partner data",
+          description:
+            "The index is based on daily respondent assessments from partners active in Ukrainian agricultural commodities.",
+        },
+        {
+          title: "Single methodology",
+          description:
+            "Values go through median validation, outlier filtering and publication only when respondent coverage is sufficient.",
+        },
+      ],
+      respondentsTitle: "Respondent partners in the current basket",
+      respondentsDescription:
+        "The respondent basket reflects Spike Brokers partners represented in the daily price collection workflow. Individual submissions are not published; the public index displays aggregated values only.",
+      disclaimer:
+        "SPIKE Spot Commodity Index Ukraine values are published for informational and analytical purposes only. They are not investment advice, a public offer, or a recommendation to buy or sell any commodity. Values are aggregated from respondent-partner data and published according to the index methodology; individual company submissions are not disclosed. Spike Brokers, project partners and technology providers are not liable for decisions made on the basis of these data.",
+    },
+    methodology: {
+      ...base.methodology,
+      title: "How SPIKE Spot Commodity Index Ukraine is calculated",
+      description:
+        "SPIKE Spot Commodity Index Ukraine uses a repeatable daily process to turn respondent-partner price assessments into verified and locked index values for each position, basis and calculation date.",
+      coreTitle: "From partner EOD assessments to a published spot benchmark",
+      coreNarrative: [
+        "The index is calculated from daily price assessments submitted by a defined group of Spike Brokers respondent partners. Each submitted value should reflect a fair end-of-day market level for the relevant commodity and basis.",
+        "Current public bases are CPT Odesa, Ukraine for export positions and CPT parity Odesa, Ukraine for processing positions. Prices are collected for each position and calculation date, then validated. The system identifies the median value in the respondent sample and excludes prices deviating by more than +/-2% from the median as potential outliers.",
+        "The index value is calculated as the arithmetic average of the cleaned respondent sample. A basket is publishable only when at least 5 valid respondent prices remain after filtering. This tenant does not use a separate Spike Brokers external indicative because Spike Brokers is the index publisher.",
+        "Before publication, values can be reviewed, corrected and versioned. After publication, the final value is locked. The system records changes, recalculations and publication events in an audit log.",
+      ],
+      facts: [
+        { value: "CPT Odesa", label: "Export-position basis" },
+        { value: "CPT parity", label: "Processing-position basis" },
+        { value: "5+", label: "Minimum valid respondents" },
+        { value: "EOD", label: "End-of-day price assessment" },
+        { value: "+/-2%", label: "Median-based outlier filter" },
+        { value: "Locked", label: "Final value after publication" },
+      ],
+      pdfDescription:
+        "Download the methodology document used as the basis for SPIKE Spot Commodity Index Ukraine. The production site can replace this file with the approved Spike Brokers version.",
+      faq: [
+        {
+          question: "What is SPIKE Spot Commodity Index Ukraine?",
+          answer:
+            "It is a daily Spike Brokers spot benchmark for selected Ukrainian agricultural export and processing positions.",
+        },
+        {
+          question: "Who provides data?",
+          answer:
+            "Data are collected from a defined pool of Spike Brokers respondent partners. Individual company submissions are not disclosed in public outputs.",
+        },
+        ...base.methodology.faq.slice(2, 3),
+        {
+          question: "What happens if there is insufficient data?",
+          answer:
+            "If fewer than 5 valid respondent prices remain after filtering, the basket is not publishable as an official index value.",
+        },
+        ...base.methodology.faq.slice(4),
+      ],
+    },
+    analytics: {
+      ...base.analytics,
+      title: "SPIKE Spot Commodity Index Ukraine analytics",
+      description:
+        "The analytics page prepares the surface for comparing spot positions, reviewing trends and reading Spike Brokers publication history.",
+      accessLevels: base.analytics.accessLevels.map((level) =>
+        level.title === "UGA member"
+          ? { ...level, title: "Spike Brokers partner" }
+          : level,
+      ),
+    },
+    footer: {
+      ...base.footer,
+      demo: "Platform for Spike Brokers.",
+      partners: "Data: Spike Brokers partners · Technology: Cropto/MN7R",
+      disclaimer:
+        "Information is provided for informational purposes only. Spike Brokers is not liable for losses caused by use of the data.",
+      address: ["Ukraine, 04070, Kyiv", "8 Illinska St.", "Illinskyi Business Center"],
+      phones: ["+380 63 412 86 33"],
+      email: "info@spike.broker",
+    },
+  };
 }
 
 export function detectLocaleFromCountry(country: string | null): Locale {

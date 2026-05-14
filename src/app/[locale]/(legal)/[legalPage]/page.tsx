@@ -5,6 +5,7 @@ import {
   isLegalPageSlug,
   legalPages,
 } from "@/lib/legal-content";
+import { SITE_CONFIG } from "@/lib/constants";
 import { isLocale, locales, type Locale } from "@/lib/i18n";
 
 type LegalPageProps = {
@@ -48,7 +49,7 @@ export default async function LegalPage({ params }: LegalPageProps) {
       <section className="border-b border-black bg-white">
         <div className="mx-auto max-w-[900px] px-6 py-10 lg:px-8 lg:py-14">
           <p className="text-xs font-black uppercase tracking-[0.18em] text-uga-green">
-            UGA Index
+            {SITE_CONFIG.name}
           </p>
           <h1 className="mt-4 text-4xl font-black uppercase leading-[0.98] tracking-normal text-black sm:text-5xl">
             {content.title}
