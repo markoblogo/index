@@ -60,9 +60,10 @@ export default async function AnalyticsPage({
   const quarterScenario = buildScenario("wheat-115", 13, "week");
   const annualScenario = buildScenario("wheat-115", 12, "month");
   const spreads = buildSpreads();
+  const isSpike = getActiveIndexConfig().id === "spike-ua";
 
   return (
-    <>
+    <main className={isSpike ? "spike-analytics-page overflow-hidden bg-[#050505] text-[#f8f8f2]" : ""}>
       <section className="border-b border-black bg-white">
         <div className="mx-auto grid max-w-7xl gap-8 px-6 py-10 lg:grid-cols-[1fr_27rem] lg:px-8 lg:py-14">
           <div>
@@ -227,7 +228,7 @@ export default async function AnalyticsPage({
           />
         </div>
       </section>
-    </>
+    </main>
   );
 }
 

@@ -109,6 +109,111 @@ body[data-index="spike"] .brand-logo {
   }
 }
 
+.spike-analytics-page > section {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: #050505;
+}
+
+.spike-analytics-page > section:first-child {
+  background: var(--spike-hero-bg);
+}
+
+.spike-analytics-page > section:nth-child(3),
+.spike-analytics-page > section:nth-child(5) {
+  background: #090909;
+}
+
+.spike-analytics-page h1,
+.spike-analytics-page h2,
+.spike-analytics-page h3,
+.spike-analytics-page p,
+.spike-analytics-page span,
+.spike-analytics-page td,
+.spike-analytics-page th,
+.spike-analytics-page label {
+  color: inherit;
+}
+
+.spike-analytics-page h1 {
+  max-width: 980px;
+  color: #f8f8f2;
+  font-size: clamp(2.6rem, 5.7vw, 6.1rem);
+  line-height: 0.88;
+}
+
+.spike-analytics-page h2,
+.spike-analytics-page h3 {
+  color: #f8f8f2;
+}
+
+.spike-analytics-page p {
+  color: rgba(248, 248, 242, 0.62);
+}
+
+.spike-analytics-page select,
+.spike-analytics-page button {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: #050505;
+  color: #f8f8f2;
+}
+
+.spike-analytics-page article,
+.spike-analytics-page table,
+.spike-analytics-page .min-w-0.overflow-hidden,
+.spike-analytics-page .grid.border,
+.spike-analytics-page .bg-uga-mist {
+  border-color: rgba(255, 255, 255, 0.12);
+  border-radius: 1.15rem;
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.spike-analytics-page article {
+  transition:
+    border-color 180ms ease,
+    transform 180ms ease;
+}
+
+.spike-analytics-page article:hover {
+  border-color: var(--spike-accent);
+  transform: translateY(-2px);
+}
+
+.spike-analytics-page .border,
+.spike-analytics-page .border-b,
+.spike-analytics-page .border-t,
+.spike-analytics-page .border-y,
+.spike-analytics-page .divide-y > :not([hidden]) ~ :not([hidden]) {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.spike-analytics-page thead {
+  background: #050505;
+  color: rgba(248, 248, 242, 0.62);
+}
+
+.spike-analytics-page svg line {
+  stroke: rgba(248, 248, 242, 0.14);
+}
+
+.spike-analytics-page .bg-uga-green {
+  background: var(--spike-accent);
+}
+
+.spike-analytics-page .bg-uga-lime {
+  background: var(--spike-pink);
+}
+
+.spike-analytics-page .text-uga-green {
+  color: var(--spike-accent);
+}
+
+.spike-analytics-page .text-black,
+.spike-analytics-page .text-black\/60,
+.spike-analytics-page .text-black\/65,
+.spike-analytics-page .text-black\/70 {
+  color: rgba(248, 248, 242, 0.74);
+}
+
 * {
   box-sizing: border-box;
 }

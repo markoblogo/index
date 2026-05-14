@@ -1,3 +1,4 @@
+import { SITE_CONFIG } from "@/lib/constants";
 import { getDictionary, type Locale } from "@/lib/i18n";
 import { respondents } from "@/lib/mock-data";
 
@@ -19,6 +20,10 @@ export default async function AboutPage({
 }) {
   const { locale } = await params;
   const dict = getDictionary(locale);
+
+  if (SITE_CONFIG.tenantId === "spike-ua") {
+    return <SpikeAboutPage dict={dict} />;
+  }
 
   return (
     <>
@@ -142,5 +147,135 @@ export default async function AboutPage({
         </div>
       </section>
     </>
+  );
+}
+
+function SpikeAboutPage({
+  dict,
+}: {
+  dict: ReturnType<typeof getDictionary>;
+}) {
+  return (
+    <main className="spike-static-page overflow-hidden bg-[#050505] text-[#f8f8f2]">
+      <section className="relative border-b border-white/10 [background:var(--spike-hero-bg)]">
+        <div className="mx-auto grid max-w-[1900px] gap-8 px-6 py-12 lg:grid-cols-[minmax(0,1fr)_28rem] lg:px-8 lg:py-16">
+          <div>
+            <p className="text-sm font-black uppercase tracking-[0.24em] text-[var(--spike-accent)]">
+              {dict.about.label}
+            </p>
+            <h1 className="mt-5 max-w-5xl text-[clamp(2.6rem,6vw,6.4rem)] font-black uppercase leading-[0.88] tracking-normal text-[#f8f8f2]">
+              {dict.about.title}
+            </h1>
+          </div>
+          <div className="self-end rounded-[1.4rem] border border-white/18 bg-black/35 p-5 backdrop-blur">
+            <p className="text-base font-semibold leading-7 text-white/72">
+              {dict.about.descriptionBeforeLink}
+              <a
+                className="font-black text-[var(--spike-accent)] underline-offset-4 hover:underline"
+                href={dict.about.ugaHref}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                {dict.about.descriptionLinkText}
+              </a>
+              {dict.about.descriptionAfterLink}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto grid max-w-[1900px] gap-6 px-6 py-10 lg:grid-cols-[0.42fr_0.58fr] lg:px-8 lg:py-14">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.24em] text-[var(--spike-accent)]">
+            {dict.about.whyLabel}
+          </p>
+          <h2 className="mt-4 max-w-xl text-4xl font-black uppercase leading-none tracking-normal text-white lg:text-5xl">
+            {dict.about.whyTitle}
+          </h2>
+        </div>
+        <div className="grid gap-5">
+          <div className="grid gap-4 text-base leading-7 text-white/66">
+            {dict.about.whyBody.map((paragraph) => (
+              <p key={paragraph}>{paragraph}</p>
+            ))}
+          </div>
+          <div className="grid gap-3 md:grid-cols-3">
+            {dict.about.whyFeatures.map((feature, index) => (
+              <article
+                className="rounded-[1.35rem] border border-white/12 bg-white/[0.055] p-5 transition hover:-translate-y-1 hover:border-[var(--spike-accent)]"
+                key={feature.title}
+              >
+                <span className="text-sm font-black text-[var(--spike-accent)]">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <h3 className="mt-8 text-lg font-black uppercase leading-5 text-white">
+                  {feature.title}
+                </h3>
+                <p className="mt-3 text-sm leading-6 text-white/58">
+                  {feature.description}
+                </p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="border-y border-white/10 bg-[#090909]">
+        <div className="mx-auto grid max-w-[1900px] gap-6 px-6 py-10 lg:grid-cols-[24rem_1fr] lg:px-8 lg:py-14">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-[var(--spike-pink)]">
+              {dict.about.respondentsLabel}
+            </p>
+            <h2 className="mt-4 text-3xl font-black uppercase leading-tight tracking-normal text-white">
+              {dict.about.respondentsTitle}
+            </h2>
+            <p className="mt-4 text-sm leading-6 text-white/58">
+              {dict.about.respondentsDescription}
+            </p>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+            {respondents.map((respondent, index) => {
+              const respondentHref = respondentLinks.get(respondent.id) ?? "#";
+              const hasExternalLink = respondentHref !== "#";
+
+              return (
+                <a
+                  className={`rounded-[1rem] border border-white/10 bg-black px-4 py-4 text-sm font-black text-white/78 transition ${
+                    hasExternalLink
+                      ? "hover:border-[var(--spike-accent)] hover:text-white"
+                      : "pointer-events-none"
+                  }`}
+                  href={respondentHref}
+                  key={respondent.id}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  <span className="mb-5 block text-[0.64rem] uppercase tracking-[0.18em] text-white/34">
+                    Partner {String(index + 1).padStart(2, "0")}
+                  </span>
+                  {respondent.legalName}
+                </a>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-[1900px] px-6 py-10 lg:px-8 lg:py-12">
+        <div className="rounded-[1.5rem] border border-white/12 bg-[radial-gradient(circle_at_90%_0%,rgba(255,63,115,0.22),transparent_28rem),#080808] p-6 lg:grid lg:grid-cols-[22rem_1fr] lg:gap-8">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-[var(--spike-pink)]">
+              {dict.about.label}
+            </p>
+            <h2 className="mt-3 text-2xl font-black uppercase leading-tight tracking-normal text-white">
+              {dict.about.disclaimerTitle}
+            </h2>
+          </div>
+          <p className="mt-5 text-sm leading-6 text-white/62 lg:mt-0">
+            {dict.about.disclaimer}
+          </p>
+        </div>
+      </section>
+    </main>
   );
 }
