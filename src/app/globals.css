@@ -74,11 +74,19 @@ body[data-index="spike"] {
   --color-dark: #080808;
   --color-lime: #c4ff1a;
   --color-negative: #ff4d5a;
-  --spike-accent: #c4ff1a;
+  --spike-accent: #39ff14;
+  --spike-violet: #8f7cff;
+  --spike-blue: #31c6ff;
+  --spike-pink: #ff3f73;
+  --spike-yellow: #ffbf00;
   --spike-hero-bg:
-    radial-gradient(circle at 78% 14%, rgba(196, 255, 26, 0.19), transparent 25rem),
-    radial-gradient(circle at 8% 86%, rgba(85, 96, 255, 0.28), transparent 32rem),
-    linear-gradient(135deg, #080808 0%, #171717 48%, #101700 100%);
+    radial-gradient(circle at 78% 12%, rgba(57, 255, 20, 0.18), transparent 24rem),
+    radial-gradient(circle at 12% 82%, rgba(49, 198, 255, 0.22), transparent 34rem),
+    linear-gradient(135deg, #3530a8 0%, #4f53e8 46%, #5f5cff 100%);
+}
+
+body[data-index="spike"] .brand-logo {
+  filter: invert(1);
 }
 
 * {

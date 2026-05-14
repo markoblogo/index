@@ -322,6 +322,8 @@ export const INDEX_CONFIGS: Record<IndexTenantId, IndexConfig> = {
     legalName: { uk: "Spike Brokers", en: "Spike Brokers" },
     publicSiteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "https://spike-index.cr0pto.com",
     brandUrl: "https://spike.broker/en/",
+    logoPath: "/brand/spike-logo-full.png",
+    logoHeaderPath: "/brand/spike-logo-full.png",
     defaultDeliveryBasis: "CPT Odesa / CPT parity Odesa",
     defaultDeliveryPeriod: "spot",
     currency: "USD",
