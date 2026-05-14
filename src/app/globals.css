@@ -54,6 +54,33 @@
   filter: invert(1) brightness(1.6);
 }
 
+body[data-index="spike"] {
+  --color-surface-rgb: 9 9 9;
+  --color-panel-rgb: 14 14 14;
+  --color-mist-rgb: 28 28 26;
+  --color-ink-rgb: 248 248 242;
+  --color-on-dark-rgb: 248 248 242;
+  --color-green-rgb: 196 255 26;
+  --color-dark-rgb: 8 8 8;
+  --color-lime-rgb: 196 255 26;
+  --color-surface: #090909;
+  --color-panel: #0e0e0e;
+  --color-mist: #1c1c1a;
+  --color-ink: #f8f8f2;
+  --color-muted: rgba(248, 248, 242, 0.62);
+  --color-border: rgba(196, 255, 26, 0.2);
+  --color-strong-border: #c4ff1a;
+  --color-green: #c4ff1a;
+  --color-dark: #080808;
+  --color-lime: #c4ff1a;
+  --color-negative: #ff4d5a;
+  --spike-accent: #c4ff1a;
+  --spike-hero-bg:
+    radial-gradient(circle at 78% 14%, rgba(196, 255, 26, 0.19), transparent 25rem),
+    radial-gradient(circle at 8% 86%, rgba(85, 96, 255, 0.28), transparent 32rem),
+    linear-gradient(135deg, #080808 0%, #171717 48%, #101700 100%);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -65,6 +92,7 @@ html {
 body {
   min-height: 100vh;
   margin: 0;
+  overflow-x: hidden;
   background: var(--color-surface);
   color: var(--color-ink);
 }

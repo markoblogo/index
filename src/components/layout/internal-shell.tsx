@@ -33,15 +33,21 @@ export function InternalShell({ children, user }: InternalShellProps) {
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-6 py-4 lg:flex-row lg:items-center lg:justify-between lg:px-8">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <Link className="flex w-fit items-center gap-3" href={`/${user.role}`}>
-              <Image
-                alt="UGA logo"
-                className="h-10 w-auto object-contain"
-                height={80}
-                src={SITE_CONFIG.logoPath}
-                width={140}
-              />
+              {SITE_CONFIG.logoPath ? (
+                <Image
+                  alt={`${SITE_CONFIG.name} logo`}
+                  className="h-10 w-auto object-contain"
+                  height={80}
+                  src={SITE_CONFIG.logoPath}
+                  width={140}
+                />
+              ) : (
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-uga-green text-sm font-black text-uga-dark">
+                  S
+                </span>
+              )}
               <span className="border-l border-black/10 pl-3 text-xl font-semibold tracking-tight">
-                UGA Index
+                {SITE_CONFIG.name}
               </span>
             </Link>
             <div>

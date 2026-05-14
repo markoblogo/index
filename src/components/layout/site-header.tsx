@@ -6,8 +6,6 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { SITE_CONFIG } from "@/lib/constants";
 import { getDictionary, type Locale } from "@/lib/i18n";
 
-const HEADER_LOGO_PATH = "/brand/uga-logo-header.png";
-
 export function SiteHeader({ locale }: { locale: Locale }) {
   const dict = getDictionary(locale);
   const navItems = [
@@ -58,16 +56,22 @@ export function SiteHeader({ locale }: { locale: Locale }) {
 function HeaderBrand({ locale }: { locale: Locale }) {
   return (
     <>
-      <span className="flex h-full w-[3.35rem] shrink-0 items-center justify-center overflow-visible leading-none">
-        {/* Optical correction for UGA mark geometry in header lockup. */}
-        <Image
-          alt={locale === "uk" ? "Логотип УЗА" : "UGA logo"}
-          className="brand-logo block h-[2.15rem] w-auto translate-y-[var(--brand-logo-y)] object-contain"
-          height={757}
-          src={HEADER_LOGO_PATH}
-          width={1359}
-        />
-      </span>
+      {SITE_CONFIG.logoHeaderPath ? (
+        <span className="flex h-full w-[3.35rem] shrink-0 items-center justify-center overflow-visible leading-none">
+          {/* Optical correction for UGA mark geometry in header lockup. */}
+          <Image
+            alt={locale === "uk" ? "Логотип індексу" : "Index logo"}
+            className="brand-logo block h-[2.15rem] w-auto translate-y-[var(--brand-logo-y)] object-contain"
+            height={757}
+            src={SITE_CONFIG.logoHeaderPath}
+            width={1359}
+          />
+        </span>
+      ) : (
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-black/20 bg-uga-green text-xs font-black text-uga-dark">
+          S
+        </span>
+      )}
       <span
         aria-hidden="true"
         className="hidden h-7 w-px translate-y-[var(--brand-title-y)] bg-black/10 sm:block"

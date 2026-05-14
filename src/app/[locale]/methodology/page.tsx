@@ -1,6 +1,5 @@
 import { getDictionary, type Locale } from "@/lib/i18n";
-
-const methodologyPdfHref = "/files/uga-index-methodology.pdf";
+import { SITE_CONFIG } from "@/lib/constants";
 
 export default async function MethodologyPage({
   params,
@@ -112,13 +111,13 @@ export default async function MethodologyPage({
             <a
               className="inline-flex rounded-[3px] border border-black bg-uga-dark px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-uga-green"
               download
-              href={methodologyPdfHref}
+              href={SITE_CONFIG.methodologyPdfPath}
             >
               {dict.methodology.pdfDownload}
             </a>
             <a
               className="inline-flex rounded-[3px] border border-black bg-white px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-uga-lime"
-              href={methodologyPdfHref}
+              href={SITE_CONFIG.methodologyPdfPath}
               rel="noopener noreferrer"
               target="_blank"
             >

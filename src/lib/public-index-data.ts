@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { getLatestDemoPublishedIndices } from "@/lib/demo-published-index-store";
 import { hasDatabaseUrl } from "@/lib/admin-daily-inputs";
+import { getActiveIndexConfig } from "@/lib/index-platform";
 import {
   commodities,
   indexUpdatedAt,
@@ -16,15 +17,14 @@ export type PublicIndexSnapshot = {
   updatedAt: string;
 };
 
-const BASIS_CODE = "FOB_BLACK_SEA";
-const BASKET_CODE = "FOB_BLACK_SEA_DEMO";
-const MOCK_BASIS_ID = "fob-black-sea";
-const commodityCodeByMockId: Record<CommodityId, string> = {
-  corn: "CORN",
-  "wheat-115": "WHT_115",
-  "feed-wheat": "FEED_WHT",
-  "gmo-soybean": "GMO_SOY",
-};
+const activeIndex = getActiveIndexConfig();
+const primaryDeliveryBasis = activeIndex.deliveryBases[0];
+const BASIS_CODE = primaryDeliveryBasis.code;
+const BASKET_CODE = primaryDeliveryBasis.basketCode;
+const MOCK_BASIS_ID = primaryDeliveryBasis.code.toLowerCase().replaceAll("_", "-");
+const commodityCodeByMockId: Record<CommodityId, string> = Object.fromEntries(
+  activeIndex.commodities.map((commodity) => [commodity.id, commodity.dbCode]),
+);
 const mockCommodityByCode = new Map(
   commodities.flatMap((commodity) => [
     [commodity.code, commodity],

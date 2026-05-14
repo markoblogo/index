@@ -1,6 +1,6 @@
 type IndexSparklineProps = {
   values: number[];
-  trend?: "up" | "down";
+  trend?: "up" | "down" | "flat";
   heightClassName?: string;
 };
 
@@ -31,7 +31,11 @@ export function IndexSparkline({
         fill="none"
         points={points}
         stroke={
-          trend === "up" ? "var(--color-green)" : "var(--color-negative)"
+          trend === "flat"
+            ? "rgba(var(--color-ink-rgb) / 0.55)"
+            : trend === "up"
+              ? "var(--color-green)"
+              : "var(--color-negative)"
         }
         strokeLinecap="round"
         strokeLinejoin="round"

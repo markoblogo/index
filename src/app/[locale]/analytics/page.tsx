@@ -31,12 +31,14 @@ const chartColors = [
   "var(--color-ink)",
   "#6b8f1a",
   "#2f7f68",
+  "#a3d600",
+  "#7c6cff",
 ];
 
-const profileByCommodity: Record<
+const profileByCommodity: Partial<Record<
   CommodityId,
   { drift: number; volatility: number; phase: number }
-> = {
+>> = {
   corn: { drift: 0.22, volatility: 1.2, phase: 0.2 },
   "wheat-115": { drift: 0.31, volatility: 1.05, phase: 0.85 },
   "feed-wheat": { drift: -0.08, volatility: 0.78, phase: 1.7 },
@@ -332,7 +334,7 @@ function MultiCommodityTrend({
               min,
               max,
             )}
-            stroke={chartColors[index]}
+            stroke={chartColors[index % chartColors.length]}
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeWidth="2.6"
@@ -348,7 +350,7 @@ function MultiCommodityTrend({
           >
             <span
               className="h-2.5 w-2.5 border border-black"
-              style={{ backgroundColor: chartColors[index] }}
+              style={{ backgroundColor: chartColors[index % chartColors.length] }}
             />
             {commodity.name[locale]}
           </span>
@@ -738,7 +740,7 @@ function buildAnalyticsHistory(): AnalyticsPoint[] {
   });
 
   const rows = commodities.flatMap((commodity) => {
-    const profile = profileByCommodity[commodity.id];
+    const profile = getCommodityProfile(commodity.id);
     const values = dates.map((_, index) => {
       const reverseIndex = 29 - index;
       const wave =
@@ -875,7 +877,7 @@ function buildScenario(
   period: "week" | "month",
 ): ScenarioPoint[] {
   const commodity = getCommodity(commodityId);
-  const profile = profileByCommodity[commodityId];
+  const profile = getCommodityProfile(commodityId);
   const periodFactor = period === "week" ? 1 : 4.2;
 
   return Array.from({ length }, (_, index) => {
@@ -913,6 +915,22 @@ function getCommodityHistory(history: AnalyticsPoint[], commodityId: CommodityId
 
 function getCommodity(commodityId: CommodityId): Commodity {
   return commodities.find((commodity) => commodity.id === commodityId) ?? commodities[0];
+}
+
+function getCommodityProfile(commodityId: CommodityId) {
+  const configuredProfile = profileByCommodity[commodityId];
+
+  if (configuredProfile) {
+    return configuredProfile;
+  }
+
+  const commodityIndex = commodities.findIndex((commodity) => commodity.id === commodityId);
+
+  return {
+    drift: 0.16 + Math.max(commodityIndex, 0) * 0.06,
+    phase: 0.45 + Math.max(commodityIndex, 0) * 0.55,
+    volatility: 0.85 + Math.max(commodityIndex, 0) * 0.2,
+  };
 }
 
 function formatSigned(value: number) {

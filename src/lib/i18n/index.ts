@@ -2,7 +2,10 @@ export const locales = ["uk", "en"] as const;
 export type Locale = (typeof locales)[number];
 
 export const DEFAULT_LOCALE: Locale = "en";
-export const LOCALE_COOKIE = "uga_locale";
+export const LOCALE_COOKIE =
+  process.env.NEXT_PUBLIC_INDEX_TENANT === "spike-ua"
+    ? "spike_index_locale"
+    : "uga_locale";
 
 type Dictionary = {
   nav: {

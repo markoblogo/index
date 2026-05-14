@@ -1,9 +1,17 @@
+import { getActiveIndexConfig } from "@/lib/index-platform";
+
+const activeIndex = getActiveIndexConfig();
+
 export const SITE_CONFIG = {
-  name: "UGA Index",
-  publicSiteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
-  defaultDeliveryBasis: "FOB Black Sea",
-  defaultDeliveryPeriod: "T+30",
-  currency: "USD",
-  unit: "t",
-  logoPath: "/brand/uga-logo.png",
+  name: activeIndex.name,
+  publicSiteUrl: activeIndex.publicSiteUrl,
+  defaultDeliveryBasis: activeIndex.defaultDeliveryBasis,
+  defaultDeliveryPeriod: activeIndex.defaultDeliveryPeriod,
+  currency: activeIndex.currency,
+  unit: activeIndex.unit,
+  logoPath: activeIndex.logoPath,
+  logoHeaderPath: activeIndex.logoHeaderPath,
+  methodologyPdfPath: activeIndex.methodologyPdfPath,
+  tenantId: activeIndex.id,
+  features: activeIndex.features,
 } as const;

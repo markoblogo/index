@@ -2,9 +2,11 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { SITE_CONFIG } from "@/lib/constants";
 import { getDictionary, type Locale } from "@/lib/i18n";
+import { getActiveIndexConfig } from "@/lib/index-platform";
 
 export function SiteFooter({ locale }: { locale: Locale }) {
   const dict = getDictionary(locale);
+  const activeIndex = getActiveIndexConfig();
   const navItems = [
     { href: `/${locale}`, label: dict.nav.home },
     { href: `/${locale}/about`, label: dict.nav.about },
@@ -34,24 +36,14 @@ export function SiteFooter({ locale }: { locale: Locale }) {
             {SITE_CONFIG.name}
           </h2>
           <p className="mt-2 leading-5">
-            {locale === "uk" ? "Демо для " : "Demo for the "}
-            <FooterExternalLink href="https://uga.ua/">
-              {locale === "uk"
-                ? "Української зернової асоціації"
-                : "Ukrainian Grain Association"}
+            {activeIndex.home.footerDemo[locale]}{" "}
+            <FooterExternalLink href={activeIndex.brandUrl}>
+              {activeIndex.legalName[locale]}
             </FooterExternalLink>
             .
           </p>
           <p className="mt-1.5 leading-5">
-            {locale === "uk" ? "Індикативи: " : "Indicatives: "}
-            <FooterExternalLink href="https://spike.broker/en/">
-              Spike Brokers
-            </FooterExternalLink>
-          </p>
-          <p className="mt-0.5 leading-5">
-            {locale === "uk" ? "Технологія: " : "Technology: "}
-            <FooterExternalLink href="https://cr0pto.com">Cropto</FooterExternalLink>
-            /<FooterExternalLink href="https://mn7r.com">MN7R</FooterExternalLink>
+            {activeIndex.home.partnersLine[locale]}
           </p>
           <p className="mt-2.5 max-w-md text-xs leading-5 text-white/55">
             {dict.footer.disclaimer}
@@ -81,7 +73,7 @@ export function SiteFooter({ locale }: { locale: Locale }) {
           </h2>
           <div className="mt-3 text-sm leading-5">
             <p className="font-black text-white/80">{dict.footer.addressTitle}</p>
-            {dict.footer.address.map((line) => (
+            {activeIndex.contacts.address[locale].map((line) => (
               <p key={line}>{line}</p>
             ))}
           </div>
@@ -91,24 +83,31 @@ export function SiteFooter({ locale }: { locale: Locale }) {
           <div className="grid gap-2.5 text-sm leading-5">
             <div>
               <p className="font-black text-white/80">{dict.footer.phonesTitle}</p>
-              <a className="block transition hover:text-uga-lime" href="tel:+380444923968">
-                +38 (044) 492-39-68
-              </a>
-              <a className="block transition hover:text-uga-lime" href="tel:+380444923969">
-                +38 (044) 492-39-69
-              </a>
+              {activeIndex.contacts.phones.map((phone) => (
+                <a
+                  className="block transition hover:text-uga-lime"
+                  href={`tel:${phone.replace(/[^\d+]/g, "")}`}
+                  key={phone}
+                >
+                  {phone}
+                </a>
+              ))}
             </div>
             <p>
               <span className="font-black text-white/80">{dict.footer.emailTitle}</span>{" "}
-              <a className="transition hover:text-uga-lime" href="mailto:inbox@uga.ua">
-                {dict.footer.email}
+              <a
+                className="transition hover:text-uga-lime"
+                href={`mailto:${activeIndex.contacts.email}`}
+              >
+                {activeIndex.contacts.email}
               </a>
             </p>
             <div className="flex gap-2 pt-1">
-              <SocialPlaceholder label="X" mark="X" />
-              <SocialPlaceholder label="Bluesky" mark="B" />
-              <SocialPlaceholder label="LinkedIn" mark="in" />
-              <SocialPlaceholder label="Telegram" mark="tg" />
+              {activeIndex.contacts.social.map((social) => (
+                <FooterExternalLink href={social.href} key={social.label}>
+                  <SocialPlaceholder label={social.label} mark={social.mark} />
+                </FooterExternalLink>
+              ))}
             </div>
           </div>
         </section>

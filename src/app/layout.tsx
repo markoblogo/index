@@ -1,11 +1,16 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { getActiveIndexConfig } from "@/lib/index-platform";
 import "./globals.css";
 
+const activeIndex = getActiveIndexConfig();
+
 export const metadata: Metadata = {
-  title: "UGA Index",
+  title: activeIndex.name,
   description:
-    "Daily spot export price index demo for the Ukrainian Grain Association.",
+    activeIndex.id === "spike-ua"
+      ? "Daily SPIKE Spot Commodity Index Ukraine for export and processing commodity markets."
+      : "Daily spot export price index demo for the Ukrainian Grain Association.",
   icons: {
     icon: "/icon.png",
     shortcut: "/icon.png",
@@ -23,7 +28,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="antialiased">
+      <body className="antialiased" data-index={activeIndex.theme.dataAttribute}>
         <script
           dangerouslySetInnerHTML={{
             __html: `

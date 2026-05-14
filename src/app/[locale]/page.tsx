@@ -2,6 +2,7 @@ import { connection } from "next/server";
 import { HomeHero } from "@/components/ui/home-hero";
 import { getFxRates } from "@/lib/fx-rates";
 import { getDictionary, type Locale } from "@/lib/i18n";
+import { getActiveIndexConfig } from "@/lib/index-platform";
 import { getPublicIndexSnapshot } from "@/lib/public-index-data";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +16,7 @@ export default async function LocaleHome({
 
   const { locale } = await params;
   const dict = getDictionary(locale);
+  const activeIndex = getActiveIndexConfig();
   const snapshot = await getPublicIndexSnapshot();
   const fxRates = await getFxRates();
   const updatedAt = new Intl.DateTimeFormat(locale === "uk" ? "uk-UA" : "en-US", {
@@ -31,8 +33,8 @@ export default async function LocaleHome({
           analytics: dict.home.viewAnalytics,
           currentValues: dict.home.currentValuesTitle,
           methodology: dict.home.readMore,
-          subtitle: dict.home.heroSubtitle,
-          trustStrip: dict.home.heroTrustStrip,
+          subtitle: activeIndex.home.subtitle[locale],
+          trustStrip: activeIndex.home.trustStrip[locale],
           updated: dict.home.updatedLabel,
         }}
         locale={locale}

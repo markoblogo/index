@@ -1,73 +1,48 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import { calculateIndexValue } from "../src/lib/index-calculation";
+import { getActiveIndexConfig } from "../src/lib/index-platform";
 
 const prisma = new PrismaClient();
+const activeIndex = getActiveIndexConfig();
 
-const BASE_DATE = new Date(Date.UTC(2026, 4, 8));
+const BASE_DATE =
+  activeIndex.id === "spike-ua"
+    ? new Date(Date.UTC(2026, 4, 14))
+    : new Date(Date.UTC(2026, 4, 8));
 
-const commodities = [
-  {
-    code: "CORN",
-    nameUk: "Кукурудза",
-    nameEn: "Corn",
-    sortOrder: 1,
-    basePrice: 214,
-  },
-  {
-    code: "WHT_115",
-    nameUk: "Пшениця 11.5pro",
-    nameEn: "Wheat 11.5% protein",
-    sortOrder: 2,
-    basePrice: 231,
-  },
-  {
-    code: "FEED_WHT",
-    nameUk: "Пшениця фураж",
-    nameEn: "Feed wheat",
-    sortOrder: 3,
-    basePrice: 206,
-  },
-  {
-    code: "GMO_SOY",
-    nameUk: "Соя ГМО",
-    nameEn: "GMO soybean",
-    sortOrder: 4,
-    basePrice: 418,
-  },
-];
+const commodities = activeIndex.commodities.map((commodity) => ({
+  code: commodity.dbCode,
+  nameUk: commodity.name.uk,
+  nameEn: commodity.name.en,
+  sortOrder: commodity.sortOrder,
+  basePrice: commodity.basePrice,
+  group: commodity.group,
+}));
 
-const respondents = [
-  { id: "bunge-ukraine", legalName: "ПІІ «БУНГЕ ЮКРЕЙН»" },
-  { id: "adm-ukraine", legalName: "ТОВ «АДМ ЮКРЕЙН»" },
-  { id: "hermes-trading", legalName: "ТОВ «Гермес-Трейдінг»" },
-  { id: "louis-dreyfus-ukraine", legalName: "ТОВ «Луї Дрейфус Україна»" },
-  { id: "kernel-trade", legalName: "ТОВ «Кернел-Трейд»" },
-  {
-    id: "cofco-agri-resources-ukraine",
-    legalName: "ТОВ «КОФКО АГРІ РЕСУРСІЗ УКРАЇНА»",
-  },
-  {
-    id: "new-world-grain-ukraine",
-    legalName: "ТОВ «Нью Ворлд Грейн Юкрейн»",
-  },
-  { id: "nibulon", legalName: "ТОВ СП «НІБУЛОН»" },
-];
+const respondents = activeIndex.respondents;
 
 async function main() {
-  const deliveryBasis = await prisma.deliveryBasis.upsert({
-    where: { code: "FOB_BLACK_SEA" },
-    update: {
-      name: "FOB Black Sea",
-      region: "Black Sea",
-      status: "published",
-    },
-    create: {
-      code: "FOB_BLACK_SEA",
-      name: "FOB Black Sea",
-      region: "Black Sea",
-      status: "published",
-    },
-  });
+  const deliveryBasisRecords = await Promise.all(
+    activeIndex.deliveryBases.map((basis) =>
+      prisma.deliveryBasis.upsert({
+        where: { code: basis.code },
+        update: {
+          name: basis.name,
+          region: basis.region,
+          status: "published",
+        },
+        create: {
+          code: basis.code,
+          name: basis.name,
+          region: basis.region,
+          status: "published",
+        },
+      }),
+    ),
+  );
+  const deliveryBasisByCode = new Map(
+    deliveryBasisRecords.map((basis) => [basis.code, basis]),
+  );
 
   const commodityRecords = await Promise.all(
     commodities.map((commodity) =>
@@ -109,51 +84,66 @@ async function main() {
     ),
   );
 
-  const basket = await prisma.basket.upsert({
-    where: { code: "FOB_BLACK_SEA_DEMO" },
-    update: {
-      name: "FOB Black Sea Demo Basket",
-      deliveryBasisId: deliveryBasis.id,
-      weight: new Prisma.Decimal(1),
-      active: true,
-    },
-    create: {
-      code: "FOB_BLACK_SEA_DEMO",
-      name: "FOB Black Sea Demo Basket",
-      deliveryBasisId: deliveryBasis.id,
-      weight: new Prisma.Decimal(1),
-      active: true,
-    },
-  });
+  const basketRecords = await Promise.all(
+    activeIndex.deliveryBases.map((basis) => {
+      const deliveryBasis = deliveryBasisByCode.get(basis.code);
 
-  await Promise.all(
-    respondentRecords.map((respondent) =>
-      prisma.basketRespondent.upsert({
-        where: {
-          basketId_respondentId: {
-            basketId: basket.id,
-            respondentId: respondent.id,
-          },
-        },
+      if (!deliveryBasis) {
+        throw new Error(`Missing delivery basis ${basis.code}`);
+      }
+
+      return prisma.basket.upsert({
+        where: { code: basis.basketCode },
         update: {
+          name: basis.basketName,
+          deliveryBasisId: deliveryBasis.id,
           weight: new Prisma.Decimal(1),
           active: true,
         },
         create: {
-          basketId: basket.id,
-          respondentId: respondent.id,
+          code: basis.basketCode,
+          name: basis.basketName,
+          deliveryBasisId: deliveryBasis.id,
           weight: new Prisma.Decimal(1),
           active: true,
         },
-      }),
+      });
+    }),
+  );
+  const basketByBasisCode = new Map(
+    activeIndex.deliveryBases.map((basis, index) => [basis.code, basketRecords[index]]),
+  );
+
+  await Promise.all(
+    basketRecords.flatMap((basket) =>
+      respondentRecords.map((respondent) =>
+        prisma.basketRespondent.upsert({
+          where: {
+            basketId_respondentId: {
+              basketId: basket.id,
+              respondentId: respondent.id,
+            },
+          },
+          update: {
+            weight: new Prisma.Decimal(1),
+            active: true,
+          },
+          create: {
+            basketId: basket.id,
+            respondentId: respondent.id,
+            weight: new Prisma.Decimal(1),
+            active: true,
+          },
+        }),
+      ),
     ),
   );
 
   const adminUser = await prisma.user.upsert({
-    where: { email: "admin@uga-index.demo" },
+    where: { email: `admin@${activeIndex.id}.demo` },
     update: { name: "Demo Admin", role: "admin", active: true },
     create: {
-      email: "admin@uga-index.demo",
+      email: `admin@${activeIndex.id}.demo`,
       name: "Demo Admin",
       role: "admin",
       active: true,
@@ -161,10 +151,10 @@ async function main() {
   });
 
   await prisma.user.upsert({
-    where: { email: "member@uga-index.demo" },
+    where: { email: `member@${activeIndex.id}.demo` },
     update: { name: "Demo Member", role: "member", active: true },
     create: {
-      email: "member@uga-index.demo",
+      email: `member@${activeIndex.id}.demo`,
       name: "Demo Member",
       role: "member",
       active: true,
@@ -174,7 +164,7 @@ async function main() {
   await Promise.all(
     respondentRecords.map((respondent, index) =>
       prisma.user.upsert({
-        where: { email: `respondent-${index + 1}@uga-index.demo` },
+        where: { email: `respondent-${index + 1}@${activeIndex.id}.demo` },
         update: {
           name: `Respondent ${index + 1}`,
           role: "respondent",
@@ -182,7 +172,7 @@ async function main() {
           active: true,
         },
         create: {
-          email: `respondent-${index + 1}@uga-index.demo`,
+          email: `respondent-${index + 1}@${activeIndex.id}.demo`,
           name: `Respondent ${index + 1}`,
           role: "respondent",
           respondentId: respondent.id,
@@ -200,6 +190,17 @@ async function main() {
 
       if (!commoditySeed) {
         continue;
+      }
+
+      const basisConfig =
+        commoditySeed.group === "processing"
+          ? activeIndex.deliveryBases[1] ?? activeIndex.deliveryBases[0]
+          : activeIndex.deliveryBases[0];
+      const deliveryBasis = deliveryBasisByCode.get(basisConfig.code);
+      const basket = basketByBasisCode.get(basisConfig.code);
+
+      if (!deliveryBasis || !basket) {
+        throw new Error(`Missing seed basket for ${basisConfig.code}`);
       }
 
       const basePrice = commoditySeed.basePrice - dayOffset * 0.65;
@@ -237,32 +238,34 @@ async function main() {
         }),
       );
 
-      await prisma.externalIndicative.upsert({
-        where: {
-          tradeDate_commodityId_deliveryBasisId_source: {
+      if (activeIndex.features.externalIndicative) {
+        await prisma.externalIndicative.upsert({
+          where: {
+            tradeDate_commodityId_deliveryBasisId_source: {
+              tradeDate,
+              commodityId: commodity.id,
+              deliveryBasisId: deliveryBasis.id,
+              source: "spike",
+            },
+          },
+          update: {
+            priceUsdPerMt: new Prisma.Decimal(roundMoney(basePrice + 0.4)),
+            status: "submitted",
+            receivedAt: noonUtc(tradeDate),
+            metadata: { provider: "Spike Brokers", basis: deliveryBasis.name },
+          },
+          create: {
             tradeDate,
             commodityId: commodity.id,
             deliveryBasisId: deliveryBasis.id,
             source: "spike",
+            status: "submitted",
+            priceUsdPerMt: new Prisma.Decimal(roundMoney(basePrice + 0.4)),
+            receivedAt: noonUtc(tradeDate),
+            metadata: { provider: "Spike Brokers", basis: deliveryBasis.name },
           },
-        },
-        update: {
-          priceUsdPerMt: new Prisma.Decimal(roundMoney(basePrice + 0.4)),
-          status: "submitted",
-          receivedAt: noonUtc(tradeDate),
-          metadata: { provider: "Spike Brokers", basis: "FOB Black Sea" },
-        },
-        create: {
-          tradeDate,
-          commodityId: commodity.id,
-          deliveryBasisId: deliveryBasis.id,
-          source: "spike",
-          status: "submitted",
-          priceUsdPerMt: new Prisma.Decimal(roundMoney(basePrice + 0.4)),
-          receivedAt: noonUtc(tradeDate),
-          metadata: { provider: "Spike Brokers", basis: "FOB Black Sea" },
-        },
-      });
+        });
+      }
 
       if (dayOffset >= 1 && dayOffset <= 7) {
         await seedPublishedIndex({
@@ -284,13 +287,13 @@ async function main() {
       actorRole: "admin",
       action: "seed.completed",
       entityType: "database",
-      summary: "Seeded UGA Index demo data.",
+      summary: `Seeded ${activeIndex.name} demo data.`,
       beforeJson: Prisma.JsonNull,
       afterJson: {
         commodities: commodityRecords.length,
         respondents: respondentRecords.length,
         daysOfSubmissions: 14,
-        daysOfSpikeIndicatives: 14,
+        daysOfSpikeIndicatives: activeIndex.features.externalIndicative ? 14 : 0,
         daysOfPublishedIndices: 7,
       },
     },
