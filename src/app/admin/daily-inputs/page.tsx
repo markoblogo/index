@@ -6,6 +6,7 @@ import {
   type DailyInputCell,
   type DailyInputStatus,
 } from "@/lib/admin-daily-inputs";
+import { SITE_CONFIG } from "@/lib/constants";
 
 type DailyInputsPageProps = {
   searchParams: Promise<{
@@ -35,6 +36,9 @@ export default async function DailyInputsPage({
   const params = await searchParams;
   const date = params.date ?? todayInputDate();
   const data = await getDailyInputData(date);
+  const isSpike = SITE_CONFIG.tenantId === "spike-ua";
+  const respondentKindLabel = isSpike ? "partner" : "respondent";
+  const showSpikeComparison = !isSpike;
   const cellByKey = new Map(
     data.cells.map((cell) => [
       `${cell.commodityId}:${cell.respondentId}`,
@@ -61,8 +65,9 @@ export default async function DailyInputsPage({
               Daily input matrix
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-black/65">
-              Review respondent submissions, enter missing values and compare
-              them with Spike Brokers indicatives before calculation.
+              {isSpike
+                ? "Review partner submissions and enter missing values before calculation."
+                : "Review respondent submissions, enter missing values and compare them with Spike Brokers indicatives before calculation."}
             </p>
             <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.12em]">
               <span className="rounded-full bg-uga-mist px-3 py-1 text-uga-green">
@@ -106,38 +111,41 @@ export default async function DailyInputsPage({
 
       <form action={save} className="grid gap-5">
         <input name="date" type="hidden" value={date} />
-          <div className="overflow-hidden border border-black bg-white">
-          <div className="overflow-x-auto">
-            <table className="min-w-[1840px] border-collapse text-left">
+        <div className="overflow-hidden border border-black bg-white">
+          <div className="overflow-x-auto lg:overflow-x-visible">
+            <table className="w-full table-fixed border-collapse text-left">
               <thead className="bg-uga-dark text-white">
                 <tr>
-                  <th className="sticky left-0 z-10 w-56 bg-uga-dark px-4 py-4 text-xs font-semibold uppercase tracking-[0.16em] text-white/70">
-                    Commodity
+                  <th className="w-[20%] bg-uga-dark px-4 py-4 text-xs font-semibold uppercase tracking-[0.16em] text-white/70">
+                    Respondent
                   </th>
-                  {data.respondents.map((respondent) => (
+                  {data.commodities.map((commodity) => (
                     <th
-                      className="w-52 border-l border-white/10 px-4 py-4 align-bottom text-xs font-semibold uppercase tracking-[0.12em] text-white/70"
-                      key={respondent.id}
+                      className="border-l border-white/10 px-3 py-4 align-bottom text-xs font-semibold uppercase tracking-[0.12em] text-white/70"
+                      key={commodity.id}
                     >
-                      <span className="line-clamp-3 normal-case tracking-normal text-white">
-                        {respondent.name}
+                      <span className="line-clamp-3 text-sm font-semibold normal-case tracking-normal text-white">
+                        {commodity.name}
+                      </span>
+                      <span className="mt-1 block text-[0.65rem] uppercase tracking-[0.14em] text-white/50">
+                        {commodity.code}
                       </span>
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {data.commodities.map((commodity) => (
-                  <tr className="border-t border-black/10" key={commodity.id}>
-                    <th className="sticky left-0 z-10 w-56 bg-white px-4 py-5 align-top">
+                {data.respondents.map((respondent) => (
+                  <tr className="border-t border-black/10" key={respondent.id}>
+                    <th className="bg-white px-4 py-4 align-top">
                       <p className="text-base font-semibold text-uga-dark">
-                        {commodity.name}
+                        {respondent.name}
                       </p>
                       <p className="mt-1 text-xs font-semibold uppercase tracking-[0.14em] text-black/45">
-                        {commodity.code}
+                        {respondentKindLabel}
                       </p>
                     </th>
-                    {data.respondents.map((respondent) => {
+                    {data.commodities.map((commodity) => {
                       const cell = cellByKey.get(
                         `${commodity.id}:${respondent.id}`,
                       );
@@ -145,14 +153,18 @@ export default async function DailyInputsPage({
                       if (!cell) {
                         return (
                           <td
-                            className="border-l border-black/10 px-3 py-4"
-                            key={respondent.id}
+                            className="border-l border-black/10 px-3 py-3"
+                            key={commodity.id}
                           />
                         );
                       }
 
                       return (
-                        <MatrixCell cell={cell} key={respondent.id} />
+                        <MatrixCell
+                          cell={cell}
+                          key={commodity.id}
+                          showSpikeComparison={showSpikeComparison}
+                        />
                       );
                     })}
                   </tr>
@@ -179,7 +191,13 @@ export default async function DailyInputsPage({
   );
 }
 
-function MatrixCell({ cell }: { cell: DailyInputCell }) {
+function MatrixCell({
+  cell,
+  showSpikeComparison,
+}: {
+  cell: DailyInputCell;
+  showSpikeComparison: boolean;
+}) {
   const signedDifference =
     cell.difference === null
       ? "n/a"
@@ -190,16 +208,16 @@ function MatrixCell({ cell }: { cell: DailyInputCell }) {
   return (
     <td
       className={
-        cell.warning
-          ? "border-l border-black/10 bg-red-50 px-3 py-4 align-top"
-          : "border-l border-black/10 px-3 py-4 align-top"
+        cell.warning && showSpikeComparison
+          ? "border-l border-black/10 bg-red-50 px-3 py-3 align-top"
+          : "border-l border-black/10 px-3 py-3 align-top"
       }
     >
-      <div className="grid gap-3">
+      <div className="grid gap-2">
         <input
           aria-label={`${cell.commodityId} ${cell.respondentId} price`}
           className={
-            cell.warning
+            cell.warning && showSpikeComparison
               ? "w-full border border-red-300 bg-white px-3 py-2 text-sm font-semibold text-uga-dark focus:border-red-500 focus:ring-red-500"
               : "w-full border border-black/20 bg-white px-3 py-2 text-sm font-semibold text-uga-dark focus:border-uga-green focus:ring-uga-green"
           }
@@ -211,44 +229,46 @@ function MatrixCell({ cell }: { cell: DailyInputCell }) {
           step="0.01"
           type="number"
         />
-        <dl className="grid gap-1 text-xs text-black/55">
-          <div className="flex justify-between gap-2">
-            <dt>Spike</dt>
-            <dd className="font-semibold text-uga-dark">
-              ${cell.spikeIndicative.toFixed(2)}
-            </dd>
-          </div>
-          <div className="flex justify-between gap-2">
-            <dt>Diff</dt>
-            <dd
-              className={
-                cell.warning
-                  ? "font-semibold text-red-700"
-                  : "font-semibold text-uga-dark"
-              }
-            >
-              {signedDifference}
-            </dd>
-          </div>
-          <div className="flex justify-between gap-2">
-            <dt>Deviation</dt>
-            <dd
-              className={
-                cell.warning
-                  ? "font-semibold text-red-700"
-                  : "font-semibold text-uga-dark"
-              }
-            >
-              {deviation}
-            </dd>
-          </div>
-        </dl>
+        {showSpikeComparison ? (
+          <dl className="grid gap-1 text-xs text-black/55">
+            <div className="flex justify-between gap-2">
+              <dt>Spike</dt>
+              <dd className="font-semibold text-uga-dark">
+                ${cell.spikeIndicative.toFixed(2)}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-2">
+              <dt>Diff</dt>
+              <dd
+                className={
+                  cell.warning
+                    ? "font-semibold text-red-700"
+                    : "font-semibold text-uga-dark"
+                }
+              >
+                {signedDifference}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-2">
+              <dt>Deviation</dt>
+              <dd
+                className={
+                  cell.warning
+                    ? "font-semibold text-red-700"
+                    : "font-semibold text-uga-dark"
+                }
+              >
+                {deviation}
+              </dd>
+            </div>
+          </dl>
+        ) : null}
         <span
           className={`inline-flex w-fit rounded-full px-2.5 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.1em] ring-1 ${statusClasses[cell.status]}`}
         >
           {statusLabels[cell.status]}
         </span>
-        {cell.warning ? (
+        {cell.warning && showSpikeComparison ? (
           <p className="text-xs font-semibold text-red-700">
             Large deviation vs Spike
           </p>
