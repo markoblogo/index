@@ -149,14 +149,18 @@ function SpikeHomeHero({
 }: HomeHeroProps) {
   const activeIndex = getActiveIndexConfig();
   const copy = getHeroCopy(locale);
+  const facts = [
+    { label: "index", value: "live" },
+    ...activeIndex.home.facts[locale],
+  ];
 
   return (
     <section className="max-w-full overflow-x-hidden text-white [background:var(--spike-hero-bg)] lg:min-h-[calc(100svh-57px)]">
       <div className="mx-auto flex max-w-[1900px] flex-col px-4 py-5 sm:px-6 lg:min-h-[calc(100svh-57px)] lg:px-8">
-        <div className="grid gap-5 border-b border-white/18 pb-5 lg:grid-cols-[minmax(0,1fr)_26rem] lg:items-end">
+        <div className="grid gap-5 border-b border-white/18 pb-5 lg:grid-cols-[minmax(0,1fr)_34rem] lg:items-end">
           <div className="min-w-0">
             <SpikeHeroSubtitle locale={locale} text={activeIndex.home.subtitle[locale]} />
-            <h1 className="mt-3 max-w-[calc(100vw-2rem)] break-words text-[clamp(2rem,8.4vw,3.35rem)] font-black uppercase leading-[0.9] tracking-normal sm:text-[clamp(2.6rem,7.7vw,5.4rem)] lg:max-w-6xl lg:text-[clamp(4.1rem,6.9vw,8rem)]">
+            <h1 className="mt-3 max-w-[calc(100vw-2rem)] break-words text-[clamp(2rem,8.4vw,3.35rem)] font-black uppercase leading-[0.9] tracking-normal sm:text-[clamp(2.6rem,7vw,4.9rem)] lg:max-w-5xl lg:text-[clamp(3.4rem,5.25vw,6.25rem)]">
               <SpikeHeroTitle />
             </h1>
           </div>
@@ -170,13 +174,13 @@ function SpikeHomeHero({
                 {updatedAt}
               </p>
             </div>
-            <div className="grid w-full gap-2 sm:grid-cols-3 lg:max-w-[25rem]">
-              {activeIndex.home.facts[locale].map((fact) => (
+            <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-4 lg:max-w-[34rem]">
+              {facts.map((fact) => (
                 <div
                   className="rounded-[1.15rem] border border-white/18 bg-black/20 px-4 py-3 backdrop-blur"
                   key={fact.label}
                 >
-                  <p className="text-2xl font-black leading-none text-white">
+                  <p className="text-2xl font-black lowercase leading-none text-white">
                     {fact.value}
                   </p>
                   <p className="mt-1 text-[0.58rem] font-black uppercase tracking-[0.18em] text-white/52">
@@ -218,9 +222,13 @@ function SpikeHomeHero({
           </div>
         </div>
 
-        <p className="border-t border-white/10 pt-4 text-[0.68rem] font-black uppercase tracking-[0.22em] text-white/45">
-          {activeIndex.home.trustStrip[locale]}
-        </p>
+        <div className="overflow-hidden border-t border-white/10 py-4">
+          <div className="spike-marquee flex w-max gap-10 text-[0.68rem] font-black uppercase tracking-[0.22em] text-white/45">
+            {[0, 1, 2, 3].map((item) => (
+              <span key={item}>{activeIndex.home.trustStrip[locale]}</span>
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   );

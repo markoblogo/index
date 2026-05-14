@@ -25,7 +25,11 @@ export function SiteHeader({ locale }: { locale: Locale }) {
           : "border-black bg-white/95"
       }`}
     >
-      <nav className="mx-auto flex h-14 max-w-7xl items-center px-4 lg:px-6">
+      <nav
+        className={`mx-auto flex h-14 items-center ${
+          isSpike ? "max-w-[1900px] px-4 sm:px-6 lg:px-8" : "max-w-7xl px-4 lg:px-6"
+        }`}
+      >
         <Link
           className="flex h-full min-w-0 items-center gap-3 leading-none [--brand-logo-y:2px] [--brand-title-y:0px]"
           href={`/${locale}`}
@@ -34,10 +38,14 @@ export function SiteHeader({ locale }: { locale: Locale }) {
         </Link>
         <div className="ml-auto flex min-w-0 items-center gap-3 lg:gap-5">
           <div className="hidden min-w-0 items-center gap-3 md:flex lg:gap-4">
-            <StatusPill>{dict.home.liveStatus}</StatusPill>
+            {!isSpike ? <StatusPill>{dict.home.liveStatus}</StatusPill> : null}
             {navItems.map((item) => (
               <Link
-                className="whitespace-nowrap text-sm font-semibold text-black/65 transition hover:text-uga-green"
+                className={`whitespace-nowrap text-sm font-semibold transition ${
+                  isSpike
+                    ? "text-white/62 hover:text-white"
+                    : "text-black/65 hover:text-uga-green"
+                }`}
                 href={item.href}
                 key={item.href}
               >
@@ -47,9 +55,13 @@ export function SiteHeader({ locale }: { locale: Locale }) {
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <LocaleSwitcher locale={locale} />
-            <ThemeToggle />
+            {!isSpike ? <ThemeToggle /> : null}
             <Link
-              className="hidden rounded-[3px] border border-black bg-uga-dark px-4 py-2 text-sm font-semibold text-white transition hover:bg-uga-green sm:inline-flex"
+              className={`hidden rounded-[3px] px-4 py-2 text-sm font-semibold text-white transition sm:inline-flex ${
+                isSpike
+                  ? "bg-[#050505] hover:bg-[#111111]"
+                  : "border border-black bg-uga-dark hover:bg-uga-green"
+              }`}
               href="/login"
             >
               {dict.nav.login}
@@ -76,7 +88,7 @@ function HeaderBrand({ locale }: { locale: Locale }) {
           <Image
             alt={locale === "uk" ? "Логотип індексу" : "Index logo"}
             className={`brand-logo block w-auto translate-y-[var(--brand-logo-y)] object-contain ${
-              isSpike ? "h-[2.35rem]" : "h-[2.15rem]"
+              isSpike ? "h-[2.35rem] -translate-x-5" : "h-[2.15rem]"
             }`}
             height={isSpike ? 398 : 757}
             src={SITE_CONFIG.logoHeaderPath}

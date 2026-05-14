@@ -89,6 +89,26 @@ body[data-index="spike"] .brand-logo {
   filter: invert(1);
 }
 
+@keyframes spike-marquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.spike-marquee {
+  animation: spike-marquee 26s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spike-marquee {
+    animation: none;
+  }
+}
+
 * {
   box-sizing: border-box;
 }
