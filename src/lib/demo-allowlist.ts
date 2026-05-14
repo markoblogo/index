@@ -1,3 +1,5 @@
+import { getActiveIndexConfig } from "@/lib/index-platform";
+
 export type DemoAllowlistRole = "admin" | "respondent";
 
 export type DemoAllowlistUser = {
@@ -11,7 +13,7 @@ export type DemoAllowlistUser = {
   passwordSetupStatus: "temporary";
 };
 
-export const demoAllowlist: DemoAllowlistUser[] = [
+const ugaAllowlist: DemoAllowlistUser[] = [
   {
     userId: "demo-admin",
     email: "admin@uga.ua",
@@ -102,6 +104,40 @@ export const demoAllowlist: DemoAllowlistUser[] = [
   },
 ];
 
+const spikeAllowlist: DemoAllowlistUser[] = [
+  {
+    userId: "spike-demo-admin",
+    email: "admin@spike-ua.demo",
+    password: "admin",
+    role: "admin",
+    name: "Spike Brokers Administrator",
+    passwordSetupStatus: "temporary",
+  },
+  {
+    userId: "spike-respondent-1",
+    email: "respondent-1@spike-ua.demo",
+    password: "respondent",
+    role: "respondent",
+    name: "Spike Brokers partner respondent",
+    respondentId: "spike-partner-1",
+    companyName: "Spike Brokers Partner 1",
+    passwordSetupStatus: "temporary",
+  },
+  {
+    userId: "spike-respondent-2",
+    email: "respondent-2@spike-ua.demo",
+    password: "respondent",
+    role: "respondent",
+    name: "Spike Brokers partner respondent",
+    respondentId: "spike-partner-2",
+    companyName: "Spike Brokers Partner 2",
+    passwordSetupStatus: "temporary",
+  },
+];
+
+export const demoAllowlist =
+  getActiveIndexConfig().id === "spike-ua" ? spikeAllowlist : ugaAllowlist;
+
 export function authenticateDemoUser({
   login,
   password,
@@ -113,7 +149,7 @@ export function authenticateDemoUser({
   const normalizedPassword = password.trim();
 
   if (normalizedLogin === "admin" && normalizedPassword === "admin") {
-    return demoAllowlist.find((user) => user.email === "admin@uga.ua") ?? null;
+    return demoAllowlist.find((user) => user.role === "admin") ?? null;
   }
 
   if (
@@ -121,7 +157,7 @@ export function authenticateDemoUser({
     normalizedPassword === "respondent"
   ) {
     return (
-      demoAllowlist.find((user) => user.email === "bunge@uga-index.demo") ??
+      demoAllowlist.find((user) => user.role === "respondent") ??
       null
     );
   }
