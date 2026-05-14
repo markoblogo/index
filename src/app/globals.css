@@ -214,6 +214,116 @@ body[data-index="spike"] .brand-logo {
   color: rgba(248, 248, 242, 0.74);
 }
 
+body[data-index="spike"] .spike-login-input:-webkit-autofill,
+body[data-index="spike"] .spike-login-input:-webkit-autofill:hover,
+body[data-index="spike"] .spike-login-input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #050505;
+  box-shadow: 0 0 0 1000px #f8f8f2 inset;
+  caret-color: var(--spike-accent);
+}
+
+body[data-index="spike"] .spike-internal-shell {
+  background:
+    linear-gradient(rgba(5, 5, 5, 0.7), rgba(5, 5, 5, 0.84)),
+    var(--spike-hero-bg);
+}
+
+body[data-index="spike"] .spike-internal-shell .bg-white,
+body[data-index="spike"] .spike-internal-shell .bg-uga-mist {
+  background-color: rgba(5, 5, 5, 0.88);
+}
+
+body[data-index="spike"] .spike-internal-shell .bg-uga-dark,
+body[data-index="spike"] .spike-internal-shell .bg-black {
+  background-color: #050505;
+}
+
+body[data-index="spike"] .spike-internal-shell .bg-red-50,
+body[data-index="spike"] .spike-internal-shell .bg-amber-50 {
+  background-color: rgba(255, 63, 115, 0.12);
+}
+
+body[data-index="spike"] .spike-internal-shell .bg-uga-green {
+  background-color: var(--spike-accent);
+  color: #050505;
+}
+
+body[data-index="spike"] .spike-internal-shell .border-black,
+body[data-index="spike"] .spike-internal-shell .border-black\/10,
+body[data-index="spike"] .spike-internal-shell .border-black\/15,
+body[data-index="spike"] .spike-internal-shell .border-black\/20,
+body[data-index="spike"] .spike-internal-shell .border-white\/10 {
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+body[data-index="spike"] .spike-internal-shell .divide-black\/10 > :not([hidden]) ~ :not([hidden]) {
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+body[data-index="spike"] .spike-internal-shell .text-uga-dark,
+body[data-index="spike"] .spike-internal-shell .text-black {
+  color: #f8f8f2;
+}
+
+body[data-index="spike"] .spike-internal-shell .text-black\/40,
+body[data-index="spike"] .spike-internal-shell .text-black\/45,
+body[data-index="spike"] .spike-internal-shell .text-black\/55,
+body[data-index="spike"] .spike-internal-shell .text-black\/60,
+body[data-index="spike"] .spike-internal-shell .text-black\/65,
+body[data-index="spike"] .spike-internal-shell .text-black\/70,
+body[data-index="spike"] .spike-internal-shell .text-white\/70 {
+  color: rgba(248, 248, 242, 0.68);
+}
+
+body[data-index="spike"] .spike-internal-shell .text-uga-green {
+  color: var(--spike-accent);
+}
+
+body[data-index="spike"] .spike-internal-shell .text-red-700,
+body[data-index="spike"] .spike-internal-shell .text-amber-800 {
+  color: #ff8aa8;
+}
+
+body[data-index="spike"] .spike-internal-shell .ring-uga-green,
+body[data-index="spike"] .spike-internal-shell .ring-uga-green\/15,
+body[data-index="spike"] .spike-internal-shell .ring-black\/10,
+body[data-index="spike"] .spike-internal-shell .ring-black\/15,
+body[data-index="spike"] .spike-internal-shell .ring-red-200,
+body[data-index="spike"] .spike-internal-shell .ring-amber-200 {
+  --tw-ring-color: rgba(196, 255, 26, 0.28);
+}
+
+body[data-index="spike"] .spike-internal-shell input:not([type="hidden"]),
+body[data-index="spike"] .spike-internal-shell select,
+body[data-index="spike"] .spike-internal-shell textarea {
+  border-color: rgba(255, 255, 255, 0.22);
+  background-color: #050505;
+  color: #f8f8f2;
+  caret-color: var(--spike-accent);
+  color-scheme: dark;
+}
+
+body[data-index="spike"] .spike-internal-shell input::placeholder,
+body[data-index="spike"] .spike-internal-shell textarea::placeholder {
+  color: rgba(248, 248, 242, 0.5);
+  opacity: 1;
+}
+
+body[data-index="spike"] .spike-internal-shell input:focus,
+body[data-index="spike"] .spike-internal-shell select:focus,
+body[data-index="spike"] .spike-internal-shell textarea:focus {
+  border-color: var(--spike-accent);
+  outline: 2px solid rgba(57, 255, 20, 0.25);
+  outline-offset: 2px;
+}
+
+body[data-index="spike"] .spike-internal-shell input:-webkit-autofill,
+body[data-index="spike"] .spike-internal-shell input:-webkit-autofill:hover,
+body[data-index="spike"] .spike-internal-shell input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #f8f8f2;
+  box-shadow: 0 0 0 1000px #050505 inset;
+}
+
 * {
   box-sizing: border-box;
 }

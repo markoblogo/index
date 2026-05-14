@@ -105,7 +105,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               autoComplete="username"
               className={
                 isSpike
-                  ? "rounded-[0.85rem] border border-white/16 bg-black px-4 py-3 text-base font-semibold normal-case tracking-normal text-white outline-none transition placeholder:text-white/34 focus:border-[var(--spike-accent)]"
+                  ? "spike-login-input rounded-[0.85rem] border border-white/16 !bg-[#f8f8f2] px-4 py-3 text-base font-semibold normal-case tracking-normal !text-[#050505] caret-[var(--spike-accent)] outline-none transition placeholder:!text-black/45 focus:border-[var(--spike-accent)]"
                   : "border border-black bg-white px-3 py-3 text-base font-semibold normal-case tracking-normal text-black outline-none transition focus:border-uga-green"
               }
               name="email"
@@ -126,7 +126,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               autoComplete="current-password"
               className={
                 isSpike
-                  ? "rounded-[0.85rem] border border-white/16 bg-black px-4 py-3 text-base font-semibold normal-case tracking-normal text-white outline-none transition placeholder:text-white/34 focus:border-[var(--spike-accent)]"
+                  ? "spike-login-input rounded-[0.85rem] border border-white/16 !bg-[#f8f8f2] px-4 py-3 text-base font-semibold normal-case tracking-normal !text-[#050505] caret-[var(--spike-accent)] outline-none transition placeholder:!text-black/45 focus:border-[var(--spike-accent)]"
                   : "border border-black bg-white px-3 py-3 text-base font-semibold normal-case tracking-normal text-black outline-none transition focus:border-uga-green"
               }
               name="password"
