@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { AnalyticsTrendChart } from "@/components/ui/analytics-trend-chart";
 import { CurrencyValue } from "@/components/ui/currency-toggle";
 import { SITE_CONFIG } from "@/lib/constants";
 import { getFxRates } from "@/lib/fx-rates";
@@ -26,15 +27,6 @@ type ScenarioPoint = {
   upper: number;
   lower: number;
 };
-
-const chartColors = [
-  "var(--color-green)",
-  "var(--color-ink)",
-  "#6b8f1a",
-  "#2f7f68",
-  "#a3d600",
-  "#7c6cff",
-];
 
 const profileByCommodity: Partial<Record<
   CommodityId,
@@ -91,7 +83,11 @@ export default async function AnalyticsPage({
             description={copy.trendDescription}
             title={copy.trendTitle}
           >
-            <MultiCommodityTrend history={history} locale={locale} />
+            <AnalyticsTrendChart
+              commodities={commodities}
+              history={history}
+              locale={locale}
+            />
           </AnalyticsPanel>
           <AnalyticsPanel
             description={copy.movementDescription}
@@ -273,61 +269,6 @@ function AnalyticsPanel({
       </div>
       <div className="mt-4">{children}</div>
     </article>
-  );
-}
-
-function MultiCommodityTrend({
-  history,
-  locale,
-}: {
-  history: AnalyticsPoint[];
-  locale: Locale;
-}) {
-  const values = history.map((point) => point.value);
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-
-  return (
-    <div>
-      <svg
-        aria-label="Index dynamics by commodity"
-        className="h-72 w-full overflow-visible"
-        preserveAspectRatio="none"
-        viewBox="0 0 100 100"
-      >
-        <GridLines />
-        {commodities.map((commodity, index) => (
-          <polyline
-            fill="none"
-            key={commodity.id}
-            points={toChartPoints(
-              getCommodityHistory(history, commodity.id).map((point) => point.value),
-              min,
-              max,
-            )}
-            stroke={chartColors[index % chartColors.length]}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2.6"
-            vectorEffect="non-scaling-stroke"
-          />
-        ))}
-      </svg>
-      <div className="mt-4 flex flex-wrap gap-3">
-        {commodities.map((commodity, index) => (
-          <span
-            className="inline-flex items-center gap-2 text-xs font-black uppercase text-black/65"
-            key={commodity.id}
-          >
-            <span
-              className="h-2.5 w-2.5 border border-black"
-              style={{ backgroundColor: chartColors[index % chartColors.length] }}
-            />
-            {commodity.name[locale]}
-          </span>
-        ))}
-      </div>
-    </div>
   );
 }
 
@@ -701,16 +642,16 @@ function GridLines() {
 }
 
 function buildAnalyticsHistory(): AnalyticsPoint[] {
-  const dates = Array.from({ length: 90 }, (_, index) => {
+  const dates = Array.from({ length: 180 }, (_, index) => {
     const date = new Date("2026-05-08T00:00:00.000Z");
-    date.setUTCDate(date.getUTCDate() - (89 - index));
+    date.setUTCDate(date.getUTCDate() - (179 - index));
     return date.toISOString().slice(0, 10);
   });
 
   const rows = commodities.flatMap((commodity) => {
     const profile = getCommodityProfile(commodity.id);
     const values = dates.map((_, index) => {
-      const reverseIndex = 89 - index;
+      const reverseIndex = 179 - index;
       const wave =
         Math.sin(index * 0.72 + profile.phase) * profile.volatility +
         Math.cos(index * 0.31 + profile.phase) * profile.volatility * 0.45;
