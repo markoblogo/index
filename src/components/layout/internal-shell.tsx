@@ -33,7 +33,7 @@ export function InternalShell({ children, user }: InternalShellProps) {
       className={
         isSpike
           ? "spike-internal-shell min-h-screen text-[#f8f8f2]"
-          : "min-h-screen bg-uga-mist text-uga-dark"
+          : "uga-internal-shell min-h-screen bg-uga-mist text-uga-dark"
       }
     >
       <header
@@ -52,7 +52,7 @@ export function InternalShell({ children, user }: InternalShellProps) {
                   className={
                     isSpike
                       ? "h-10 w-auto object-contain invert"
-                      : "h-10 w-auto object-contain"
+                      : "brand-logo h-10 w-auto object-contain"
                   }
                   height={80}
                   src={SITE_CONFIG.logoPath}

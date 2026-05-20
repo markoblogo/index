@@ -29,6 +29,9 @@ const statusClasses: Record<DailyInputStatus, string> = {
   edited_by_admin: "bg-uga-green text-white ring-uga-green",
 };
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function DailyInputsPage({
   searchParams,
 }: DailyInputsPageProps) {

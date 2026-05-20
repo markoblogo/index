@@ -54,6 +54,40 @@
   filter: invert(1) brightness(1.6);
 }
 
+[data-theme="dark"] body[data-index="uga"] .uga-internal-shell {
+  color: var(--color-ink);
+}
+
+[data-theme="dark"] body[data-index="uga"] .uga-internal-shell.text-uga-dark,
+[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .text-uga-dark,
+[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .text-black {
+  color: var(--color-ink);
+}
+
+[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .text-black\/40,
+[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .text-black\/45,
+[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .text-black\/55,
+[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .text-black\/60,
+[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .text-black\/65,
+[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .text-black\/70 {
+  color: rgba(var(--color-ink-rgb) / 0.68);
+}
+
+[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .border-black,
+[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .border-black\/10,
+[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .border-black\/15,
+[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .border-black\/20 {
+  border-color: var(--color-strong-border);
+}
+
+[data-theme="dark"] body[data-index="uga"] .uga-internal-shell input,
+[data-theme="dark"] body[data-index="uga"] .uga-internal-shell select,
+[data-theme="dark"] body[data-index="uga"] .uga-internal-shell textarea {
+  border-color: var(--color-strong-border);
+  background: var(--color-panel);
+  color: var(--color-ink);
+}
+
 body[data-index="spike"] {
   --color-surface-rgb: 9 9 9;
   --color-panel-rgb: 14 14 14;
