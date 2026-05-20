@@ -1,115 +1,137 @@
 # Index Platform
 
-Index Platform is a multi-brand Next.js platform for bilingual Ukrainian commodity market indices.
+Index Platform is a Next.js/TypeScript platform for bilingual Ukrainian commodity market indices. The current primary tenant is **UGA Index** for the Ukrainian Grain Association. The codebase also contains a Spike tenant configuration that reuses the same calculation engine, internal workflows, public APIs and embed infrastructure.
 
-The repository is organized as a shared index platform, not as a single UGA-only website. UGA Index and SPIKE Spot Commodity Index Ukraine are two tenant instances built on the same calculation engine, internal workflows, API routes, database model and deployment pattern.
+## Live Deployments
 
-## Live Demo Deployments
+- UGA Index: [https://index-uga.cr0pto.com](https://index-uga.cr0pto.com)
+- Spike tenant preview: [https://spike-ua.cr0pto.com](https://spike-ua.cr0pto.com)
 
-The project is currently deployed in two working demo versions and remains under active refinement:
+Both deployments are Vercel projects built from the same repository with tenant-specific environment variables.
 
-- UGA Index: https://index-uga.cr0pto.com
-- SPIKE Spot Commodity Index Ukraine: https://spike-ua.cr0pto.com
+## Current UGA Product
 
-Both deployments are Vercel projects connected to this repository. The same codebase is built with tenant-specific environment variables.
+UGA Index publishes a daily Ukrainian spot export price benchmark for key grain and oilseed commodities.
 
-## Tenants
+Current public commodities:
 
-### `uga-ua`
+- Corn / Кукурудза
+- Wheat 11.5% protein / Пшениця 11.5pro
+- Feed wheat / Пшениця фураж
+- GMO soybean / Соя ГМО
 
-UGA Index for the Ukrainian Grain Association.
+Current UGA basis language:
 
-- Public bilingual website in Ukrainian and English.
-- FOB Black Sea export index workflow.
-- Respondent submissions and admin daily input matrix.
-- Admin calculation and publication workflow.
-- Spike Brokers external indicative comparison is enabled.
-- Public analytics, methodology, legal pages, embeds and API routes.
+- Hero and methodology reference: `CPT Black Sea Panamax Ports (POC)`
+- Index cards, respondent forms and tables: `CPT UA Black Sea`
+- Delivery period: `T+30`
+- Official currency: `USD/t`
+- Optional display conversions: `UAH/t` and `EUR/t` using NBU FX rates with fallback demo rates
 
-### `spike-ua`
+The public site includes:
 
-SPIKE Spot Commodity Index Ukraine for Spike Brokers.
+- Ukrainian and English localization with `/uk` and `/en` routes
+- automatic root locale redirect using locale cookie and country header
+- public homepage with current index cards and currency switching
+- About, Methodology, Analytics, Cooperation/Subscription and legal pages
+- compact footer with UGA contacts, disclaimer, legal links and partner attribution
+- embeddable cards, chart and full-site views for the UGA website
+- public JSON API routes for latest values, history and FX rates
 
-- Public bilingual website in Ukrainian and English.
-- CPT Odesa export positions and CPT parity Odesa processing positions.
-- Partner respondent submissions and admin daily input matrix.
-- No separate Spike indicative comparison in daily input, because Spike is the index publisher.
-- Separate Spike visual style for the public site, login and internal pages.
-- Public analytics, methodology, legal pages, embeds and API routes.
+## Internal Workflows
 
-Current Spike public positions:
+The internal area is a working preview of the intended operational flow.
 
-- Corn - CPT Odesa, Ukraine, export.
-- Wheat 11.5% protein - CPT Odesa, Ukraine, export.
-- Feed wheat - CPT Odesa, Ukraine, export.
-- GMO soybean - CPT parity Odesa, Ukraine, processing, VAT included.
-- Sunflower seed - CPT parity Odesa, Ukraine, processing, VAT included.
+Admin routes:
 
-## Recent Platform Updates
+- `/admin` - internal landing page
+- `/admin/daily-inputs` - daily respondent price input matrix
+- `/admin/respondents` - respondent directory, contacts, login email, temporary passwords and collection mode
+- `/admin/calculate` - calculation preview and publication workflow
+- `/admin/embed` - embed preview and copyable embed code for the UGA website
 
-- Reorganized the codebase into a tenant-based index platform.
-- Added the `spike-ua` tenant with Spike-specific branding, content, logo, favicon and deployment config.
-- Added Spike commodity positions and partner respondent pool.
-- Adapted About, Methodology, Analytics and legal copy for Spike.
-- Added separate Spike public homepage design with animated commodity cards and currency switching.
-- Added Spike-styled login, admin and respondent screens.
-- Updated demo auth to use tenant-specific allowlists and credentials.
-- Changed admin daily input matrix for both tenants: respondents are now vertical rows, commodities are horizontal columns.
-- Removed Spike/Diff/Deviation comparison and high-deviation warning cells from Spike daily input.
-- Kept Spike external indicative comparison in the UGA admin workflow.
-- Added deployed temporary demo domains for UGA and Spike.
+Respondent route:
+
+- `/respondent` - focused daily survey for the logged-in respondent company
+
+Current admin behavior:
+
+- respondent companies are maintained in the respondent directory;
+- active respondent count is used in public index cards and analytics displays;
+- respondent contacts can include multiple people per company;
+- each respondent has a login email and temporary password status;
+- collection mode indicates whether the company fills the site form or requires manual outreach;
+- daily input compares respondent prices against an external benchmark reference;
+- calculation uses respondent prices only and does not silently publish benchmark fallback values;
+- published values are treated as locked and audit-visible.
+
+## Calculation Methodology
+
+Shared calculation engine:
+
+```txt
+src/lib/index-calculation.ts
+```
+
+Rules:
+
+- collect respondent prices by date, commodity and delivery basis;
+- ignore invalid, missing, zero and negative prices;
+- calculate the median of valid submitted prices;
+- exclude prices where `abs(price - median) / median > 0.02`;
+- calculate the arithmetic average of the cleaned sample;
+- require at least 5 included respondent prices for `publishable`;
+- round public values to one decimal place while preserving raw precision internally;
+- keep official published values in `USD/t`;
+- support future weighted baskets while current preview baskets use weight `1`.
+
+Unit tests:
+
+```txt
+src/lib/index-calculation.test.ts
+src/lib/admin-calculate.test.ts
+```
 
 ## Architecture
 
-Shared platform code includes:
-
-- index calculation rules;
-- public bilingual site structure;
-- tenant-aware branding and copy;
-- admin daily input workflow;
-- respondent survey workflow;
-- calculation and publication workflow;
-- demo authentication;
-- public API routes;
-- embeddable cards and chart widgets;
-- Prisma/PostgreSQL data model;
-- shared UI components.
-
-Tenant-specific configuration includes:
-
-- brand name and legal owner;
-- public domain;
-- logo, favicon and visual theme;
-- commodity list;
-- delivery bases and baskets;
-- respondent or partner pool;
-- methodology PDF;
-- contact details;
-- feature flags such as external indicative comparison.
-
-Main tenant config:
-
-```txt
-src/lib/index-platform.ts
-```
-
-Runtime site config:
-
-```txt
-src/lib/constants.ts
-```
-
-## Tech Stack
+Core stack:
 
 - Next.js App Router
 - React
 - TypeScript
 - Tailwind CSS
 - Prisma
-- PostgreSQL-ready data model
+- PostgreSQL-ready schema
 - Vitest
 - ESLint
 - Vercel
+
+Important modules:
+
+```txt
+src/lib/index-platform.ts       tenant configuration
+src/lib/constants.ts            runtime site config
+src/lib/mock-data.ts            commodity and public fallback data
+src/lib/respondent-directory.ts respondent directory preview store
+src/lib/admin-daily-inputs.ts   admin matrix data/actions
+src/lib/admin-calculate.ts      admin calculation/publication workflow
+src/lib/public-index-data.ts    homepage/analytics public data
+src/lib/fx-rates.ts             NBU FX server-side data layer
+src/lib/demo-auth.ts            simple preview auth/session helper
+src/lib/demo-allowlist.ts       tenant-aware preview users
+```
+
+Tenant-specific configuration controls:
+
+- brand name, logo and favicon;
+- public domain;
+- commodity list;
+- delivery basis labels and baskets;
+- respondent pool;
+- methodology PDF;
+- contact details;
+- public copy and localization;
+- whether external benchmark comparison is shown in admin workflows.
 
 ## Local Setup
 
@@ -134,41 +156,41 @@ INDEX_TENANT=spike-ua NEXT_PUBLIC_INDEX_TENANT=spike-ua npm run dev
 Use another port if needed:
 
 ```bash
-INDEX_TENANT=spike-ua NEXT_PUBLIC_INDEX_TENANT=spike-ua npm run dev -- --port 3100
+npm run dev -- --port 3100
 ```
 
 ## Environment
 
-Typical UGA environment:
+UGA example:
 
 ```bash
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/index_platform?schema=public"
 NEXT_PUBLIC_SITE_URL="https://index-uga.cr0pto.com"
 INDEX_TENANT="uga-ua"
 NEXT_PUBLIC_INDEX_TENANT="uga-ua"
-ALLOWED_EMBED_ORIGINS="https://index-uga.cr0pto.com https://spike-ua.cr0pto.com http://localhost:* http://127.0.0.1:*"
+ALLOWED_EMBED_ORIGINS="https://uga.ua https://www.uga.ua https://index-uga.cr0pto.com http://localhost:* http://127.0.0.1:*"
 DEMO_AUTH_SECRET="replace-with-a-long-random-secret"
 ```
 
-Typical Spike environment:
+Spike example:
 
 ```bash
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/index_platform?schema=public"
 NEXT_PUBLIC_SITE_URL="https://spike-ua.cr0pto.com"
 INDEX_TENANT="spike-ua"
 NEXT_PUBLIC_INDEX_TENANT="spike-ua"
-ALLOWED_EMBED_ORIGINS="https://index-uga.cr0pto.com https://spike-ua.cr0pto.com http://localhost:* http://127.0.0.1:*"
+ALLOWED_EMBED_ORIGINS="https://spike-ua.cr0pto.com http://localhost:* http://127.0.0.1:*"
 DEMO_AUTH_SECRET="replace-with-a-long-random-secret"
 ```
 
-Notes:
+Environment notes:
 
+- `NEXT_PUBLIC_SITE_URL` is used for absolute public URLs and embed code generation.
 - `INDEX_TENANT` is used by server-side code, seed scripts and build-time logic.
 - `NEXT_PUBLIC_INDEX_TENANT` is available to client/build-time code.
 - `DATABASE_URL` enables Prisma-backed persistence and seeding.
-- `NEXT_PUBLIC_SITE_URL` is used for absolute public URLs and embed snippets.
-- `ALLOWED_EMBED_ORIGINS` controls the frame allowlist for `/embed/*`.
-- `DEMO_AUTH_SECRET` signs the simple demo session cookie.
+- `ALLOWED_EMBED_ORIGINS` controls frame policy for `/embed/*`.
+- `DEMO_AUTH_SECRET` signs the simple preview session cookie.
 
 ## Routes
 
@@ -179,6 +201,7 @@ Public:
 - `/uk/about`, `/en/about`
 - `/uk/methodology`, `/en/methodology`
 - `/uk/analytics`, `/en/analytics`
+- `/uk/subscription`, `/en/subscription`
 - `/uk/privacy`, `/en/privacy`
 - `/uk/terms`, `/en/terms`
 - `/uk/risk-disclosure`, `/en/risk-disclosure`
@@ -189,7 +212,9 @@ Internal:
 - `/logout`
 - `/admin`
 - `/admin/daily-inputs`
+- `/admin/respondents`
 - `/admin/calculate`
+- `/admin/embed`
 - `/respondent`
 - `/member`
 
@@ -197,6 +222,7 @@ Embeds:
 
 - `/embed/cards`
 - `/embed/chart`
+- `/embed/site`
 - `/embed/uga-index.js`
 
 Public API:
@@ -206,20 +232,54 @@ Public API:
 - `GET /api/public/history`
 - `GET /api/public/fx-rates`
 
+## Embedding on UGA Website
+
+The project supports both compact widgets and a full-site iframe experience.
+
+Full-site iframe example:
+
+```html
+<iframe
+  src="https://index-uga.cr0pto.com/embed/site?locale=uk&theme=light&view=index"
+  title="UGA Index"
+  loading="lazy"
+  style="width:100%;height:860px;border:0;"
+  allowfullscreen
+></iframe>
+```
+
+JS loader example:
+
+```html
+<div
+  id="uga-index"
+  data-locale="uk"
+  data-theme="light"
+  data-layout="site"
+></div>
+<script src="https://index-uga.cr0pto.com/embed/uga-index.js" async></script>
+```
+
+Full details:
+
+```txt
+docs/embed.md
+```
+
 ## Demo Login
 
-Demo users are tenant-aware and live in:
+Preview users are tenant-aware and live in:
 
 ```txt
 src/lib/demo-allowlist.ts
 ```
 
-UGA demo credentials:
+UGA credentials:
 
 - Admin: `admin@uga.ua` / `admin`
 - Respondent: `bunge@uga-index.demo` / `respondent`
 
-Spike demo credentials:
+Spike credentials:
 
 - Admin: `admin@spike-ua.demo` / `admin`
 - Respondent: `respondent-1@spike-ua.demo` / `respondent`
@@ -229,13 +289,7 @@ Short aliases work for the active tenant:
 - `admin` / `admin`
 - `respondent` / `respondent`
 
-Post-login routing:
-
-- Admin users go to `/admin/daily-inputs`.
-- Respondent users go to `/respondent`.
-- Member users go to `/member`.
-
-Production auth notes are documented in:
+Production auth plan:
 
 ```txt
 docs/auth.md
@@ -271,38 +325,13 @@ npm run db:seed
 
 The seed is tenant-aware:
 
-- UGA seed creates FOB Black Sea commodities, respondents, demo users, mock submissions, Spike external indicatives and published demo indices.
-- Spike seed creates CPT Odesa export and CPT parity Odesa processing positions, partner respondents, demo users, mock submissions and published demo indices without Spike external indicatives.
+- UGA seed creates CPT UA Black Sea basis, commodities, respondents, preview users, mock respondent submissions, external benchmark indicatives and published index values.
+- Spike seed creates CPT Odesa export and CPT parity Odesa processing positions, partner respondents, preview users, mock submissions and published index values.
 
 More detail:
 
 ```txt
 docs/database.md
-```
-
-## Index Calculation
-
-Shared calculation engine:
-
-```txt
-src/lib/index-calculation.ts
-```
-
-Rules:
-
-- collect respondent prices by date, commodity and delivery basis;
-- calculate the median;
-- exclude prices deviating more than +/-2% from the median;
-- calculate the arithmetic average of the cleaned sample;
-- require at least 5 included respondent prices for `publishable`;
-- keep official published values in USD/t;
-- support future weighted baskets while current demo baskets use weight `1`.
-
-Unit tests:
-
-```txt
-src/lib/index-calculation.test.ts
-src/lib/admin-calculate.test.ts
 ```
 
 ## Validation
@@ -315,24 +344,14 @@ npm run test
 npm run build
 ```
 
-Validate Spike build:
-
-```bash
-INDEX_TENANT=spike-ua NEXT_PUBLIC_INDEX_TENANT=spike-ua npm run build
-```
-
-Validate UGA build explicitly:
+Validate tenant builds explicitly:
 
 ```bash
 INDEX_TENANT=uga-ua NEXT_PUBLIC_INDEX_TENANT=uga-ua npm run build
+INDEX_TENANT=spike-ua NEXT_PUBLIC_INDEX_TENANT=spike-ua npm run build
 ```
 
 ## Deployment
-
-The repository currently backs two Vercel projects:
-
-- UGA production demo: https://index-uga.cr0pto.com
-- Spike production demo: https://spike-ua.cr0pto.com
 
 Recommended setup per tenant:
 
@@ -372,7 +391,7 @@ Project docs:
 - `docs/source-analysis.md`
 - `docs/variant-design-analysis.md`
 
-Source reference materials are stored under:
+Source reference materials:
 
 ```txt
 docs/source/
@@ -380,9 +399,10 @@ docs/source/
 
 ## Current TODO
 
-- Replace demo auth with production auth, password setup and hashed credentials.
-- Decide whether each tenant uses a separate database or a shared database with tenant scoping.
-- Replace remaining mock fallback paths with durable database workflows where required.
-- Rename legacy UGA-specific embed loader route when a neutral public embed URL is agreed.
+- Replace preview auth with production auth, password setup and hashed credentials.
+- Decide whether each tenant uses a separate database or a shared database with strict tenant scoping.
+- Replace remaining mock/in-memory preview stores with durable database workflows where required.
+- Connect respondent notification settings to a real email provider and tokenized survey links.
 - Finalize production legal text with legal counsel.
+- Finalize paid analytics/API subscription terms.
 - Add production observability, backups and operational runbooks.
