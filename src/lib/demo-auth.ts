@@ -23,7 +23,7 @@ export type DemoUser = {
 
 type DemoSessionPayload = Omit<DemoUser, "respondentName">;
 
-const SESSION_TTL_SECONDS = 60 * 60 * 8;
+export const DEMO_SESSION_TTL_SECONDS = 60 * 60 * 8;
 
 export async function getCurrentDemoUser(): Promise<DemoUser | null> {
   const cookieStore = await cookies();
@@ -60,26 +60,13 @@ export async function requireDemoRole(role: DemoRole) {
 }
 
 export async function setDemoSession(user: DemoAllowlistUser) {
-  const now = Math.floor(Date.now() / 1000);
-  const payload: DemoSessionPayload = {
-    userId: user.userId,
-    email: user.email,
-    name: user.name,
-    username: user.email,
-    role: user.role,
-    respondentId: user.role === "respondent" ? user.respondentId : undefined,
-    companyName: user.role === "respondent" ? user.companyName : undefined,
-    issuedAt: now,
-    expiresAt: now + SESSION_TTL_SECONDS,
-  };
-
   const cookieStore = await cookies();
-  cookieStore.set(DEMO_SESSION_COOKIE, encodePayload(payload), {
+  cookieStore.set(DEMO_SESSION_COOKIE, createDemoSessionCookieValue(user), {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: SESSION_TTL_SECONDS,
+    maxAge: DEMO_SESSION_TTL_SECONDS,
   });
 }
 
@@ -106,6 +93,23 @@ export function getSafeRoleRedirect(role: DemoRole, next?: string | null) {
   }
 
   return getRoleHome(role);
+}
+
+export function createDemoSessionCookieValue(user: DemoAllowlistUser) {
+  const now = Math.floor(Date.now() / 1000);
+  const payload: DemoSessionPayload = {
+    userId: user.userId,
+    email: user.email,
+    name: user.name,
+    username: user.email,
+    role: user.role,
+    respondentId: user.role === "respondent" ? user.respondentId : undefined,
+    companyName: user.role === "respondent" ? user.companyName : undefined,
+    issuedAt: now,
+    expiresAt: now + DEMO_SESSION_TTL_SECONDS,
+  };
+
+  return encodePayload(payload);
 }
 
 function encodePayload(payload: DemoSessionPayload) {
