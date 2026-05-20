@@ -54,38 +54,77 @@
   filter: invert(1) brightness(1.6);
 }
 
-[data-theme="dark"] body[data-index="uga"] .uga-internal-shell {
-  color: var(--color-ink);
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell {
+  color: var(--color-ink) !important;
 }
 
-[data-theme="dark"] body[data-index="uga"] .uga-internal-shell.text-uga-dark,
-[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .text-uga-dark,
-[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .text-black {
-  color: var(--color-ink);
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .brand-logo {
+  filter: invert(1) brightness(1.8) !important;
 }
 
-[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .text-black\/40,
-[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .text-black\/45,
-[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .text-black\/55,
-[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .text-black\/60,
-[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .text-black\/65,
-[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .text-black\/70 {
-  color: rgba(var(--color-ink-rgb) / 0.68);
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell h1,
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell h2,
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell h3,
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell h4,
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell label,
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell dt,
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell dd,
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell th,
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell td,
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell p,
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell a,
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell button,
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell span {
+  color: inherit;
 }
 
-[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .border-black,
-[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .border-black\/10,
-[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .border-black\/15,
-[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .border-black\/20 {
-  border-color: var(--color-strong-border);
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell.text-uga-dark,
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .text-uga-dark,
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .text-black {
+  color: var(--color-ink) !important;
 }
 
-[data-theme="dark"] body[data-index="uga"] .uga-internal-shell input,
-[data-theme="dark"] body[data-index="uga"] .uga-internal-shell select,
-[data-theme="dark"] body[data-index="uga"] .uga-internal-shell textarea {
-  border-color: var(--color-strong-border);
-  background: var(--color-panel);
-  color: var(--color-ink);
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .text-black\/40,
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .text-black\/45,
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .text-black\/55,
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .text-black\/60,
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .text-black\/65,
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .text-black\/70 {
+  color: rgba(var(--color-ink-rgb) / 0.68) !important;
+}
+
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .text-white,
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .text-white\/50,
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .text-white\/70 {
+  color: rgba(var(--color-ink-rgb) / 0.86) !important;
+}
+
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .text-red-700 {
+  color: var(--color-negative) !important;
+}
+
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .text-uga-green {
+  color: var(--color-green) !important;
+}
+
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .border-black,
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .border-black\/10,
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .border-black\/15,
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .border-black\/20 {
+  border-color: var(--color-strong-border) !important;
+}
+
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell input,
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell select,
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell textarea {
+  border-color: var(--color-strong-border) !important;
+  background: var(--color-panel) !important;
+  color: var(--color-ink) !important;
+}
+
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell input::placeholder,
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell textarea::placeholder {
+  color: rgba(var(--color-ink-rgb) / 0.42) !important;
 }
 
 body[data-index="spike"] {
