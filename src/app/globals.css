@@ -127,6 +127,19 @@ html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell textarea::pla
   color: rgba(var(--color-ink-rgb) / 0.42) !important;
 }
 
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .admin-warning-cell {
+  background: rgba(255, 155, 143, 0.1) !important;
+  color: var(--color-ink) !important;
+}
+
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .admin-warning-cell input {
+  border-color: rgba(255, 155, 143, 0.62) !important;
+}
+
+html[data-theme="dark"] body[data-index="uga"] .uga-internal-shell .admin-warning-cell .text-red-700 {
+  color: var(--color-negative) !important;
+}
+
 body[data-index="spike"] {
   --color-surface-rgb: 9 9 9;
   --color-panel-rgb: 14 14 14;

@@ -211,7 +211,7 @@ function MatrixCell({
     <td
       className={
         cell.warning && showSpikeComparison
-          ? "border-l border-black/10 bg-red-50 px-3 py-3 align-top"
+          ? "admin-warning-cell border-l border-black/10 bg-red-50 px-3 py-3 align-top"
           : "border-l border-black/10 px-3 py-3 align-top"
       }
     >
