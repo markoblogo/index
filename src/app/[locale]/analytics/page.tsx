@@ -343,8 +343,10 @@ function MovementSummary({
       {commodities.map((commodity) => {
         const commodityHistory = getCommodityHistory(history, commodity.id);
         const latest = commodityHistory.at(-1) ?? commodityHistory[0];
+        const latestDate = formatShortDate(latest.date, locale);
         const sevenDay = latest.value - commodityHistory.at(-8)!.value;
-        const thirtyDay = latest.value - commodityHistory[0].value;
+        const thirtyDay = latest.value - commodityHistory.at(-31)!.value;
+        const ninetyDay = latest.value - commodityHistory[0].value;
 
         return (
           <div
@@ -359,10 +361,20 @@ function MovementSummary({
                 {commodity.code}
               </p>
             </div>
-            <div className="grid grid-cols-3 gap-3 text-right text-xs">
+            <div className="grid grid-cols-5 gap-3 text-right text-xs">
+              <div className="min-w-[4.25rem]">
+                <p className="font-black text-black/45">INDEX</p>
+                <p className="mt-1 font-black text-black">
+                  {latest.value.toFixed(0)}
+                </p>
+                <p className="mt-1 text-[0.65rem] font-semibold leading-none text-black/45">
+                  {latestDate}
+                </p>
+              </div>
               <MetricDelta label="1D" value={latest.dayChange} />
               <MetricDelta label="7D" value={sevenDay} />
               <MetricDelta label="30D" value={thirtyDay} />
+              <MetricDelta label="90D" value={ninetyDay} />
             </div>
           </div>
         );
@@ -689,16 +701,16 @@ function GridLines() {
 }
 
 function buildAnalyticsHistory(): AnalyticsPoint[] {
-  const dates = Array.from({ length: 30 }, (_, index) => {
+  const dates = Array.from({ length: 90 }, (_, index) => {
     const date = new Date("2026-05-08T00:00:00.000Z");
-    date.setUTCDate(date.getUTCDate() - (29 - index));
+    date.setUTCDate(date.getUTCDate() - (89 - index));
     return date.toISOString().slice(0, 10);
   });
 
   const rows = commodities.flatMap((commodity) => {
     const profile = getCommodityProfile(commodity.id);
     const values = dates.map((_, index) => {
-      const reverseIndex = 29 - index;
+      const reverseIndex = 89 - index;
       const wave =
         Math.sin(index * 0.72 + profile.phase) * profile.volatility +
         Math.cos(index * 0.31 + profile.phase) * profile.volatility * 0.45;
@@ -740,7 +752,7 @@ function buildMarketSnapshot(history: AnalyticsPoint[], locale: Locale) {
     const commodityHistory = getCommodityHistory(history, row.commodityId);
     return {
       commodity: getCommodity(row.commodityId),
-      change: roundOne(row.value - commodityHistory[0].value),
+      change: roundOne(row.value - commodityHistory.at(-31)!.value),
       volatility: standardDeviation(commodityHistory.slice(-30).map((point) => point.percentChange)),
     };
   });
@@ -897,6 +909,13 @@ function roundOne(value: number) {
   return Math.round(value * 10) / 10;
 }
 
+function formatShortDate(date: string, locale: Locale) {
+  return new Intl.DateTimeFormat(locale === "uk" ? "uk-UA" : "en-US", {
+    day: "numeric",
+    month: "short",
+  }).format(new Date(`${date}T00:00:00Z`));
+}
+
 function standardDeviation(values: number[]) {
   const average = values.reduce((sum, value) => sum + value, 0) / values.length;
   const variance =
@@ -969,7 +988,7 @@ function getAnalyticsCopy(locale: Locale) {
       monthUnit: "місяців",
       mostVolatileCommodity: "Найбільш волатильна за місяць культура",
       movementDescription:
-        "Стислий зріз денних і 30-денних змін за культурами.",
+        "Останнє значення індексу та зміни за 1, 7, 30 і 90 днів.",
       movementTitle: "Підсумок цінових змін",
       officialLabel: "офіційно",
       outlookDescription:
@@ -1089,7 +1108,7 @@ function getAnalyticsCopy(locale: Locale) {
     monthUnit: "months",
     mostVolatileCommodity: "Most volatile commodity this month",
     movementDescription:
-      "Compact daily and 30-day movement summary by commodity.",
+      "Latest index value and 1, 7, 30, and 90-day changes by commodity.",
     movementTitle: "Price movement summary",
     officialLabel: "official",
     outlookDescription:
