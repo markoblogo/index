@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { AnalyticsTrendChart } from "@/components/ui/analytics-trend-chart";
 import { CurrencyValue } from "@/components/ui/currency-toggle";
+import { ScenarioModelPanel } from "@/components/ui/scenario-model-panel";
 import { SpreadAnalysisPanel } from "@/components/ui/spread-analysis-panel";
 import { VolatilityRangePanel } from "@/components/ui/volatility-range-panel";
 import { SITE_CONFIG } from "@/lib/constants";
@@ -21,13 +22,6 @@ type AnalyticsPoint = {
   dayChange: number;
   percentChange: number;
   respondents: number;
-};
-
-type ScenarioPoint = {
-  label: string;
-  base: number;
-  upper: number;
-  lower: number;
 };
 
 const profileByCommodity: Partial<Record<
@@ -51,8 +45,6 @@ export default async function AnalyticsPage({
   const history = buildAnalyticsHistory();
   const snapshot = buildMarketSnapshot(history, locale);
   const tableRows = history.slice(-14).reverse();
-  const quarterScenario = buildScenario("wheat-115", 13, "week");
-  const annualScenario = buildScenario("wheat-115", 12, "month");
   const isSpike = getActiveIndexConfig().id === "spike-ua";
 
   return (
@@ -131,28 +123,11 @@ export default async function AnalyticsPage({
             </p>
           </div>
 
-          <div className="grid gap-5">
-            <AnalyticsPanel
-              description={copy.scenarioChartDescription}
-              title={copy.quarterTitle}
-            >
-              <ScenarioForecastChart
-                copy={copy}
-                points={quarterScenario}
-                unitLabel={copy.weekUnit}
-              />
-            </AnalyticsPanel>
-            <AnalyticsPanel
-              description={copy.outlookDescription}
-              title={copy.outlookTitle}
-            >
-              <ScenarioForecastChart
-                copy={copy}
-                points={annualScenario}
-                unitLabel={copy.monthUnit}
-              />
-            </AnalyticsPanel>
-          </div>
+          <ScenarioModelPanel
+            commodities={commodities}
+            history={history}
+            locale={locale}
+          />
         </div>
       </section>
 
@@ -345,78 +320,6 @@ function MetricDelta({ label, value }: { label: string; value: number }) {
   );
 }
 
-function ScenarioForecastChart({
-  copy,
-  points,
-  unitLabel,
-}: {
-  copy: AnalyticsCopy;
-  points: ScenarioPoint[];
-  unitLabel: string;
-}) {
-  const values = points.flatMap((point) => [point.lower, point.base, point.upper]);
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-
-  return (
-    <div>
-      <svg
-        aria-label="Scenario forecast chart"
-        className="h-56 w-full overflow-visible"
-        preserveAspectRatio="none"
-        viewBox="0 0 100 100"
-      >
-        <GridLines />
-        <polygon
-          fill="var(--color-lime)"
-          fillOpacity="0.32"
-          points={`${toChartPoints(points.map((point) => point.upper), min, max)} ${toChartPoints(
-            points.map((point) => point.lower).reverse(),
-            min,
-            max,
-          )
-            .split(" ")
-            .reverse()
-            .join(" ")}`}
-        />
-        <polyline
-          fill="none"
-          points={toChartPoints(points.map((point) => point.upper), min, max)}
-          stroke="var(--color-green)"
-          strokeDasharray="4 3"
-          strokeWidth="1.8"
-          vectorEffect="non-scaling-stroke"
-        />
-        <polyline
-          fill="none"
-          points={toChartPoints(points.map((point) => point.lower), min, max)}
-          stroke="var(--color-green)"
-          strokeDasharray="4 3"
-          strokeWidth="1.8"
-          vectorEffect="non-scaling-stroke"
-        />
-        <polyline
-          fill="none"
-          points={toChartPoints(points.map((point) => point.base), min, max)}
-          stroke="var(--color-ink)"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="2.6"
-          vectorEffect="non-scaling-stroke"
-        />
-      </svg>
-      <div className="mt-4 flex flex-wrap gap-3 text-xs font-black uppercase text-black/60">
-        <span>{copy.baseScenario}</span>
-        <span>{copy.upperRange}</span>
-        <span>{copy.lowerRange}</span>
-        <span>
-          {points.length} {unitLabel}
-        </span>
-      </div>
-    </div>
-  );
-}
-
 function ApiPanel({ copy }: { copy: AnalyticsCopy }) {
   return (
     <article className="min-w-0 border border-black bg-white p-5">
@@ -550,26 +453,6 @@ function PublishedValuesTable({
   );
 }
 
-function GridLines() {
-  return (
-    <>
-      {[18, 34, 50, 66, 82].map((y) => (
-        <line
-          key={y}
-          stroke="var(--color-ink)"
-          strokeOpacity="0.1"
-          strokeWidth="1"
-          vectorEffect="non-scaling-stroke"
-          x1="0"
-          x2="100"
-          y1={y}
-          y2={y}
-        />
-      ))}
-    </>
-  );
-}
-
 function buildAnalyticsHistory(): AnalyticsPoint[] {
   const dates = Array.from({ length: 360 }, (_, index) => {
     const date = new Date("2026-05-08T00:00:00.000Z");
@@ -676,44 +559,6 @@ function buildMarketSnapshot(history: AnalyticsPoint[], locale: Locale) {
       value: "6-8",
     },
   ];
-}
-
-function buildScenario(
-  commodityId: CommodityId,
-  length: number,
-  period: "week" | "month",
-): ScenarioPoint[] {
-  const commodity = getCommodity(commodityId);
-  const profile = getCommodityProfile(commodityId);
-  const periodFactor = period === "week" ? 1 : 4.2;
-
-  return Array.from({ length }, (_, index) => {
-    const step = index + 1;
-    const base =
-      commodity.latest +
-      profile.drift * periodFactor * step +
-      Math.sin(step * 0.65 + profile.phase) * profile.volatility * periodFactor * 0.22;
-    const range = profile.volatility * Math.sqrt(step) * (period === "week" ? 1.15 : 1.9);
-
-    return {
-      base: roundOne(base),
-      label: String(step),
-      lower: roundOne(base - range),
-      upper: roundOne(base + range),
-    };
-  });
-}
-
-function toChartPoints(values: number[], min: number, max: number) {
-  const range = Math.max(max - min, 1);
-
-  return values
-    .map((value, index) => {
-      const x = values.length === 1 ? 0 : (index / (values.length - 1)) * 100;
-      const y = 82 - ((value - min) / range) * 64;
-      return `${x},${y}`;
-    })
-    .join(" ");
 }
 
 function getCommodityHistory(history: AnalyticsPoint[], commodityId: CommodityId) {
