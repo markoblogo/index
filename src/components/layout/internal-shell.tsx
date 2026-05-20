@@ -106,12 +106,12 @@ export function InternalShell({ children, user }: InternalShellProps) {
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-7xl gap-6 px-6 py-7 lg:grid-cols-[16rem_1fr] lg:px-8">
+      <div className="mx-auto grid max-w-7xl gap-6 px-6 py-7 lg:grid-cols-[16rem_1fr] lg:items-start lg:px-8">
         <aside
           className={
             isSpike
-              ? "spike-internal-sidebar rounded-[1.2rem] border border-white/18 bg-[#050505]/88 p-4 shadow-2xl shadow-black/20"
-              : "border border-black bg-white p-4"
+              ? "spike-internal-sidebar self-start rounded-[1.2rem] border border-white/18 bg-[#050505]/88 p-4 shadow-2xl shadow-black/20"
+              : "self-start border border-black bg-white p-4"
           }
         >
           <p className="px-3 text-xs font-semibold uppercase tracking-[0.16em] text-black/40">

@@ -56,9 +56,17 @@ export default async function AdminRespondentsPage() {
 
       <div className="grid gap-4">
         <AddRespondentPanel />
-        {respondents.map((respondent) => (
-          <RespondentPanel key={respondent.id} respondent={respondent} />
-        ))}
+        <section className="border border-black bg-white">
+          <div className="hidden border-b border-black bg-uga-dark px-4 py-3 text-[0.68rem] font-black uppercase tracking-[0.16em] text-white/70 lg:grid lg:grid-cols-[minmax(18rem,1.4fr)_minmax(12rem,0.85fr)_minmax(15rem,1fr)_auto]">
+            <span>Company</span>
+            <span>Primary contact</span>
+            <span>Login</span>
+            <span className="text-right">Status / action</span>
+          </div>
+          {respondents.map((respondent) => (
+            <RespondentPanel key={respondent.id} respondent={respondent} />
+          ))}
+        </section>
       </div>
 
       <SurveyNotificationSettings />
@@ -88,7 +96,7 @@ function Metric({
 function SurveyNotificationSettings() {
   return (
     <aside className="border border-black bg-white p-5">
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(26rem,0.9fr)]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(15rem,0.6fr)_minmax(18rem,0.75fr)]">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-uga-green">
             Daily email
@@ -103,34 +111,32 @@ function SurveyNotificationSettings() {
           </p>
         </div>
 
-        <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-[1fr_1.15fr]">
-          <dl className="grid gap-3 text-sm">
-            <SettingRow
-              label="Status"
-              value={respondentEmailSchedule.enabled ? "enabled" : "disabled"}
-            />
-            <SettingRow label="Workdays" value="Monday-Friday" />
-            <SettingRow
-              label="Send time"
-              value={`${respondentEmailSchedule.sendTime} ${respondentEmailSchedule.timezone}`}
-            />
-            <SettingRow label="Sender" value={respondentEmailSchedule.sender} />
-            <SettingRow
-              label="Survey link"
-              value={respondentEmailSchedule.surveyUrl}
-            />
-          </dl>
+        <dl className="grid gap-3 text-sm">
+          <SettingRow
+            label="Status"
+            value={respondentEmailSchedule.enabled ? "enabled" : "disabled"}
+          />
+          <SettingRow label="Workdays" value="Monday-Friday" />
+          <SettingRow
+            label="Send time"
+            value={`${respondentEmailSchedule.sendTime} ${respondentEmailSchedule.timezone}`}
+          />
+          <SettingRow label="Sender" value={respondentEmailSchedule.sender} />
+          <SettingRow
+            label="Survey link"
+            value={respondentEmailSchedule.surveyUrl}
+          />
+        </dl>
 
-          <div className="border border-black bg-uga-mist p-4">
-            <p className="text-xs font-black uppercase tracking-[0.14em] text-black/45">
-              Email template
-            </p>
-            <p className="mt-2 text-sm font-semibold leading-6">
-              Please submit today&apos;s CPT UA Black Sea price indicatives for
-              UGA Index. Open your daily survey form using the personal link in
-              this email.
-            </p>
-          </div>
+        <div className="border border-black bg-uga-mist p-4">
+          <p className="text-xs font-black uppercase tracking-[0.14em] text-black/45">
+            Email template
+          </p>
+          <p className="mt-2 text-sm font-semibold leading-6">
+            Please submit today&apos;s CPT UA Black Sea price indicatives for
+            UGA Index. Open your daily survey form using the personal link in
+            this email.
+          </p>
         </div>
       </div>
     </aside>
@@ -213,8 +219,8 @@ function RespondentPanel({ respondent }: { respondent: RespondentDirectoryEntry 
     respondent.contacts[0];
 
   return (
-    <details className="group border border-black bg-white [&_summary::-webkit-details-marker]:hidden">
-      <summary className="grid cursor-pointer gap-3 px-4 py-3 transition hover:bg-uga-mist/70 lg:grid-cols-[minmax(18rem,1.4fr)_minmax(12rem,0.85fr)_minmax(15rem,1fr)_auto] lg:items-center">
+    <details className="group border-b border-black bg-white last:border-b-0 [&_summary::-webkit-details-marker]:hidden">
+      <summary className="grid cursor-pointer gap-3 px-4 py-4 transition hover:bg-uga-mist/70 lg:grid-cols-[minmax(18rem,1.4fr)_minmax(12rem,0.85fr)_minmax(15rem,1fr)_auto] lg:items-center">
         <div className="min-w-0">
           <h2 className="truncate text-base font-black leading-5">
             {respondent.companyName}
