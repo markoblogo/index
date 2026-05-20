@@ -182,7 +182,7 @@ const dictionaries: Record<Locale, Dictionary> = {
       marketOpen: "Опубліковано",
       cardsLabel: "Поточні значення",
       chartsLabel: "Тижнева динаміка",
-      chartsTitle: "Зведений тижневий графік",
+      chartsTitle: "Зведений місячний графік",
       chartsDescription:
         "Великий графік порівнює рух усіх чотирьох культур за останні торгові сесії.",
       quotesLabel: "Котирування",
@@ -340,7 +340,7 @@ const dictionaries: Record<Locale, Dictionary> = {
     },
     analytics: {
       label: "Аналітика",
-      title: "Порівняння культур і тижневі зміни",
+      title: "Порівняння культур і місячні зміни",
       description:
         "Аналітична сторінка готує основу для порівняння індексів, перегляду трендів та історії публікацій.",
       demoAccess: "Попередній доступ",
@@ -353,7 +353,7 @@ const dictionaries: Record<Locale, Dictionary> = {
       accessLevels: [
         {
           title: "Публічний відвідувач",
-          period: "останні 7 днів",
+          period: "останні 30 днів",
           description: "Базові значення індексу та коротка динаміка.",
         },
         {
@@ -453,7 +453,7 @@ const dictionaries: Record<Locale, Dictionary> = {
       marketOpen: "Published",
       cardsLabel: "Current index values",
       chartsLabel: "Weekly movement",
-      chartsTitle: "Combined weekly chart",
+      chartsTitle: "Combined monthly chart",
       chartsDescription:
         "A larger chart compares movement across all four commodities over recent trading sessions.",
       quotesLabel: "Quotations",
@@ -476,7 +476,7 @@ const dictionaries: Record<Locale, Dictionary> = {
         "Review the median, outlier filter, minimum respondent count, and publication locking rules.",
       analyticsCtaTitle: "Open analytics",
       analyticsCtaDescription:
-        "Compare commodities, weekly movement, and publication history on the analytics page.",
+        "Compare commodities, monthly movement, and publication history on the analytics page.",
       readMore: "Open methodology",
       viewAnalytics: "View analytics",
     },
@@ -610,7 +610,7 @@ const dictionaries: Record<Locale, Dictionary> = {
     },
     analytics: {
       label: "Analytics",
-      title: "Commodity comparison and weekly change",
+      title: "Commodity comparison and monthly change",
       description:
         "The analytics page prepares the surface for comparing index values, reviewing trends, and reading publication history.",
       demoAccess: "Access preview",
@@ -623,7 +623,7 @@ const dictionaries: Record<Locale, Dictionary> = {
       accessLevels: [
         {
           title: "Public visitor",
-          period: "last 7 days",
+          period: "last 30 days",
           description: "Core index values and short movement view.",
         },
         {

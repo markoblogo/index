@@ -86,7 +86,7 @@ export default async function EmbedChartPage({
           />
         </svg>
         <div className="mt-2 flex justify-between text-xs font-semibold text-black/45">
-          <span>{locale === "uk" ? "7 днів" : "7 days"}</span>
+          <span>{locale === "uk" ? "30 днів" : "30 days"}</span>
           <span>{SITE_CONFIG.currency}/{SITE_CONFIG.unit}</span>
         </div>
         <EmbedAttribution locale={locale} />

@@ -782,25 +782,25 @@ function buildMarketSnapshot(history: AnalyticsPoint[], locale: Locale) {
   const latestRows = commodities.map((commodity) =>
     getCommodityHistory(history, commodity.id).at(-1),
   ).filter(Boolean) as AnalyticsPoint[];
-  const weeklyRows = latestRows.map((row) => {
+  const monthlyRows = latestRows.map((row) => {
     const commodityHistory = getCommodityHistory(history, row.commodityId);
     return {
       commodity: getCommodity(row.commodityId),
-      change: roundOne(row.value - commodityHistory.at(-8)!.value),
-      volatility: standardDeviation(commodityHistory.slice(-7).map((point) => point.percentChange)),
+      change: roundOne(row.value - commodityHistory[0].value),
+      volatility: standardDeviation(commodityHistory.slice(-30).map((point) => point.percentChange)),
     };
   });
-  const highestGain = weeklyRows.reduce((max, row) =>
+  const highestGain = monthlyRows.reduce((max, row) =>
     row.change > max.change ? row : max,
   );
-  const largestDecline = weeklyRows.reduce((min, row) =>
+  const largestDecline = monthlyRows.reduce((min, row) =>
     row.change < min.change ? row : min,
   );
-  const mostStable = weeklyRows.reduce((min, row) =>
-    row.volatility < min.volatility ? row : min,
+  const mostVolatile = monthlyRows.reduce((max, row) =>
+    row.volatility > max.volatility ? row : max,
   );
   const copy = getAnalyticsCopy(locale);
-  const volatilityValues = weeklyRows.map((row) => row.volatility);
+  const volatilityValues = monthlyRows.map((row) => row.volatility);
   const minVolatility = Math.min(...volatilityValues).toFixed(2);
   const maxVolatility = Math.max(...volatilityValues).toFixed(2);
   const updatedAt = new Intl.DateTimeFormat(locale === "uk" ? "uk-UA" : "en-US", {
@@ -820,9 +820,9 @@ function buildMarketSnapshot(history: AnalyticsPoint[], locale: Locale) {
       value: `${formatSigned(largestDecline.change)} USD/t`,
     },
     {
-      label: copy.mostStableCommodity,
-      meta: mostStable.commodity.name[locale],
-      value: mostStable.volatility.toFixed(2) + "%",
+      label: copy.mostVolatileCommodity,
+      meta: mostVolatile.commodity.name[locale],
+      value: mostVolatile.volatility.toFixed(2) + "%",
     },
     {
       label: copy.latestPublication,
@@ -831,7 +831,7 @@ function buildMarketSnapshot(history: AnalyticsPoint[], locale: Locale) {
     },
     {
       label: copy.volatilityRange,
-      meta: copy.last7Days,
+      meta: copy.last30DaysMeta,
       value: `${minVolatility}-${maxVolatility}%`,
     },
     {
@@ -967,7 +967,7 @@ function getAnalyticsCopy(locale: Locale) {
       accessMatrixEyebrow: "Доступ",
       accessMatrixHeaders: ["Рівень", "Історія", "Аналітика", "API"],
       accessMatrixRows: [
-        ["Public preview", "7 днів", "обмежена", "ні"],
+        ["Public preview", "30 днів", "обмежена", "ні"],
         ["Registered preview", "1 рік", "стандартна", "ні"],
         ["UGA member", "повний період", "розширена", "планується"],
         ["Paid/API", "повний період", "розширена", "так"],
@@ -999,22 +999,23 @@ function getAnalyticsCopy(locale: Locale) {
         "Порівнюйте динаміку індексів, аналізуйте структуру ринку, відстежуйте волатильність і переглядайте аналітичні сценарії для українських експортних цін на зернові та олійні культури.",
       heroEyebrow: "Аналітика",
       heroTitle: "Аналітика значень UGA Index",
-      highestWeeklyGain: "Найбільше тижневе зростання",
+      highestWeeklyGain: "Найбільше місячне зростання",
       historyActions: ["Повна історія", "Export CSV", "API access"],
       historyDescription:
         "Останні опубліковані значення з базисом, зміною, кількістю респондентів і статусом публікації.",
       historyEyebrow: "Історія",
       historyTitle: "Історія опублікованих значень",
-      largestWeeklyDecline: "Найбільше тижневе зниження",
+      largestWeeklyDecline: "Найбільше місячне зниження",
       last30Days: "Останні 30 днів",
-      last7Days: "останні 7 днів",
+      last30DaysMeta: "останні 30 днів",
+      last7Days: "останні 30 днів",
       last90Days: "Останні 90 днів",
       latestPublication: "Остання публікація",
       lowerRange: "Нижній діапазон",
       monthUnit: "місяців",
-      mostStableCommodity: "Найстабільніша культура",
+      mostVolatileCommodity: "Найбільш волатильна за місяць культура",
       movementDescription:
-        "Стислий зріз денних, тижневих і 30-денних змін за культурами.",
+        "Стислий зріз денних і 30-денних змін за культурами.",
       movementTitle: "Підсумок цінових змін",
       officialLabel: "офіційно",
       outlookDescription:
@@ -1053,7 +1054,7 @@ function getAnalyticsCopy(locale: Locale) {
         "Рейтинг короткострокової волатильності та 30-денного діапазону.",
       volatilityRange: "Діапазон волатильності",
       volatilityTitle: "Волатильність і ціновий діапазон",
-      weekUnit: "тижнів",
+      weekUnit: "періодів",
     };
 
     if (activeIndex.id !== "spike-ua") {
@@ -1086,7 +1087,7 @@ function getAnalyticsCopy(locale: Locale) {
     accessMatrixEyebrow: "Access",
     accessMatrixHeaders: ["Access level", "History", "Analytics", "API"],
     accessMatrixRows: [
-      ["Public preview", "7 days", "limited", "no"],
+        ["Public preview", "30 days", "limited", "no"],
       ["Registered preview", "1 year", "standard", "no"],
       ["UGA member", "full period", "extended", "planned"],
       ["Paid/API", "full period", "extended", "yes"],
@@ -1118,22 +1119,23 @@ function getAnalyticsCopy(locale: Locale) {
       "Compare index dynamics, review market structure, track volatility and explore analytical scenarios for Ukrainian grain and oilseed export prices.",
     heroEyebrow: "Analytics",
     heroTitle: "Commodity intelligence for UGA Index values",
-    highestWeeklyGain: "Highest weekly gain",
+    highestWeeklyGain: "Highest monthly gain",
     historyActions: ["View full history", "Export CSV", "API access"],
     historyDescription:
       "Recent published values with basis, change, respondent count and publication status.",
     historyEyebrow: "History",
     historyTitle: "Published values history",
-    largestWeeklyDecline: "Largest weekly decline",
+    largestWeeklyDecline: "Largest monthly decline",
     last30Days: "Last 30 days",
-    last7Days: "last 7 days",
+    last30DaysMeta: "last 30 days",
+    last7Days: "last 30 days",
     last90Days: "Last 90 days",
     latestPublication: "Latest publication",
     lowerRange: "Lower range",
     monthUnit: "months",
-    mostStableCommodity: "Most stable commodity",
+    mostVolatileCommodity: "Most volatile commodity this month",
     movementDescription:
-      "Compact daily, 7-day and 30-day movement summary by commodity.",
+      "Compact daily and 30-day movement summary by commodity.",
     movementTitle: "Price movement summary",
     officialLabel: "official",
     outlookDescription:
@@ -1172,7 +1174,7 @@ function getAnalyticsCopy(locale: Locale) {
       "Ranking of short-term volatility and 30-day price range.",
     volatilityRange: "Volatility range",
     volatilityTitle: "Volatility and price range",
-    weekUnit: "weeks",
+    weekUnit: "periods",
   };
 
   if (activeIndex.id !== "spike-ua") {

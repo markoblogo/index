@@ -36,7 +36,7 @@ export function ChartPanel({ commodity, locale, values }: ChartPanelProps) {
         </p>
       </div>
       <svg
-        aria-label={`${commodity.name[locale]} weekly chart`}
+        aria-label={`${commodity.name[locale]} monthly chart`}
         className="mt-6 h-36 w-full overflow-visible"
         preserveAspectRatio="none"
         viewBox="0 0 100 100"

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { HeaderNavLink } from "@/components/layout/header-nav-link";
 import { LocaleSwitcher } from "@/components/ui/locale-switcher";
 import { StatusPill } from "@/components/ui/status-pill";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -40,17 +41,12 @@ export function SiteHeader({ locale }: { locale: Locale }) {
           <div className="hidden min-w-0 items-center gap-3 md:flex lg:gap-4">
             {!isSpike ? <StatusPill>{dict.home.liveStatus}</StatusPill> : null}
             {navItems.map((item) => (
-              <Link
-                className={`whitespace-nowrap text-sm font-semibold transition ${
-                  isSpike
-                    ? "text-white/62 hover:text-white"
-                    : "text-black/65 hover:text-uga-green"
-                }`}
+              <HeaderNavLink
                 href={item.href}
+                isSpike={isSpike}
                 key={item.href}
-              >
-                {item.label}
-              </Link>
+                label={item.label}
+              />
             ))}
           </div>
           <div className="flex shrink-0 items-center gap-2">
