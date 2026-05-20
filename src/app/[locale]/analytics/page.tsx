@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { AnalyticsTrendChart } from "@/components/ui/analytics-trend-chart";
 import { CurrencyValue } from "@/components/ui/currency-toggle";
+import { SpreadAnalysisPanel } from "@/components/ui/spread-analysis-panel";
 import { VolatilityRangePanel } from "@/components/ui/volatility-range-panel";
 import { SITE_CONFIG } from "@/lib/constants";
 import { getFxRates } from "@/lib/fx-rates";
@@ -52,7 +53,6 @@ export default async function AnalyticsPage({
   const tableRows = history.slice(-14).reverse();
   const quarterScenario = buildScenario("wheat-115", 13, "week");
   const annualScenario = buildScenario("wheat-115", 12, "month");
-  const spreads = buildSpreads();
   const isSpike = getActiveIndexConfig().id === "spike-ua";
 
   return (
@@ -106,14 +106,13 @@ export default async function AnalyticsPage({
               locale={locale}
             />
           </AnalyticsPanel>
-          <AnalyticsPanel
-            description={copy.spreadDescription}
-            title={copy.spreadTitle}
-          >
-            <SpreadPremiumChart locale={locale} spreads={spreads} />
-          </AnalyticsPanel>
         </div>
       </section>
+
+      <SpreadAnalysisPanel
+        history={history}
+        locale={locale}
+      />
 
       <section className="mx-auto max-w-7xl px-6 py-12 lg:px-8 lg:py-14">
         <div className="grid gap-8 lg:grid-cols-[0.78fr_1.22fr]">
@@ -342,37 +341,6 @@ function MetricDelta({ label, value }: { label: string; value: number }) {
       >
         {formatSigned(value)}
       </p>
-    </div>
-  );
-}
-
-function SpreadPremiumChart({
-  locale,
-  spreads,
-}: {
-  locale: Locale;
-  spreads: Array<{ label: Record<Locale, string>; value: number }>;
-}) {
-  const maxAbs = Math.max(...spreads.map((spread) => Math.abs(spread.value)), 1);
-
-  return (
-    <div className="grid gap-4">
-      {spreads.map((spread) => (
-        <div key={spread.label.en}>
-          <div className="mb-2 flex justify-between gap-3 text-sm">
-            <span className="font-black text-black">{spread.label[locale]}</span>
-            <span className="font-black text-uga-green">
-              {formatSigned(spread.value)} USD/t
-            </span>
-          </div>
-          <div className="h-3 border border-black bg-white">
-            <div
-              className="h-full bg-uga-lime"
-              style={{ width: `${Math.max((Math.abs(spread.value) / maxAbs) * 100, 8)}%` }}
-            />
-          </div>
-        </div>
-      ))}
     </div>
   );
 }
@@ -706,37 +674,6 @@ function buildMarketSnapshot(history: AnalyticsPoint[], locale: Locale) {
       label: copy.respondentCoverage,
       meta: copy.currentBasket,
       value: "6-8",
-    },
-  ];
-}
-
-function buildSpreads() {
-  const corn = getCommodity("corn").latest;
-  const wheat = getCommodity("wheat-115").latest;
-  const feed = getCommodity("feed-wheat").latest;
-  const soy = getCommodity("gmo-soybean").latest;
-
-  return [
-    {
-      label: {
-        en: "Wheat 11.5% premium vs feed wheat",
-        uk: "Премія пшениці 11.5% до фуражної",
-      },
-      value: wheat - feed,
-    },
-    {
-      label: {
-        en: "Corn vs feed wheat spread",
-        uk: "Спред кукурудзи до фуражної пшениці",
-      },
-      value: corn - feed,
-    },
-    {
-      label: {
-        en: "GMO soybean premium vs corn",
-        uk: "Премія сої ГМО до кукурудзи",
-      },
-      value: soy - corn,
     },
   ];
 }
