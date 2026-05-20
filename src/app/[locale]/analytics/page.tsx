@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { AnalyticsTrendChart } from "@/components/ui/analytics-trend-chart";
 import { CurrencyValue } from "@/components/ui/currency-toggle";
+import { VolatilityRangePanel } from "@/components/ui/volatility-range-panel";
 import { SITE_CONFIG } from "@/lib/constants";
 import { getFxRates } from "@/lib/fx-rates";
 import type { Locale } from "@/lib/i18n";
@@ -99,7 +100,11 @@ export default async function AnalyticsPage({
             description={copy.volatilityDescription}
             title={copy.volatilityTitle}
           >
-            <VolatilityPanel history={history} locale={locale} />
+            <VolatilityRangePanel
+              commodities={commodities}
+              history={history}
+              locale={locale}
+            />
           </AnalyticsPanel>
           <AnalyticsPanel
             description={copy.spreadDescription}
@@ -337,50 +342,6 @@ function MetricDelta({ label, value }: { label: string; value: number }) {
       >
         {formatSigned(value)}
       </p>
-    </div>
-  );
-}
-
-function VolatilityPanel({
-  history,
-  locale,
-}: {
-  history: AnalyticsPoint[];
-  locale: Locale;
-}) {
-  const rows = commodities.map((commodity) => {
-    const commodityHistory = getCommodityHistory(history, commodity.id);
-    const lastSeven = commodityHistory.slice(-7);
-    const changes = lastSeven.map((point) => point.percentChange);
-    const volatility = standardDeviation(changes);
-    const min = Math.min(...commodityHistory.map((point) => point.value));
-    const max = Math.max(...commodityHistory.map((point) => point.value));
-
-    return { commodity, volatility, min, max };
-  });
-  const maxVolatility = Math.max(...rows.map((row) => row.volatility), 1);
-
-  return (
-    <div className="grid gap-3">
-      {rows.map((row) => (
-        <div key={row.commodity.id}>
-          <div className="mb-2 flex items-center justify-between gap-3 text-sm">
-            <span className="font-black text-black">
-              {row.commodity.name[locale]}
-            </span>
-            <span className="font-black text-black/60">
-              {row.volatility.toFixed(2)}% · {row.min.toFixed(0)}-
-              {row.max.toFixed(0)} USD/t
-            </span>
-          </div>
-          <div className="h-3 border border-black bg-white">
-            <div
-              className="h-full bg-uga-green"
-              style={{ width: `${Math.max((row.volatility / maxVolatility) * 100, 8)}%` }}
-            />
-          </div>
-        </div>
-      ))}
     </div>
   );
 }
@@ -642,16 +603,16 @@ function GridLines() {
 }
 
 function buildAnalyticsHistory(): AnalyticsPoint[] {
-  const dates = Array.from({ length: 180 }, (_, index) => {
+  const dates = Array.from({ length: 360 }, (_, index) => {
     const date = new Date("2026-05-08T00:00:00.000Z");
-    date.setUTCDate(date.getUTCDate() - (179 - index));
+    date.setUTCDate(date.getUTCDate() - (359 - index));
     return date.toISOString().slice(0, 10);
   });
 
   const rows = commodities.flatMap((commodity) => {
     const profile = getCommodityProfile(commodity.id);
     const values = dates.map((_, index) => {
-      const reverseIndex = 179 - index;
+      const reverseIndex = 359 - index;
       const wave =
         Math.sin(index * 0.72 + profile.phase) * profile.volatility +
         Math.cos(index * 0.31 + profile.phase) * profile.volatility * 0.45;
