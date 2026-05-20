@@ -14,6 +14,7 @@ const navByRole = {
   admin: [
     { href: "/admin", label: "Admin dashboard" },
     { href: "/admin/daily-inputs", label: "Daily input" },
+    { href: "/admin/respondents", label: "Respondents" },
     { href: "/admin/calculate", label: "Calculate & publish" },
   ],
   respondent: [
