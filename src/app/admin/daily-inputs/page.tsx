@@ -70,7 +70,7 @@ export default async function DailyInputsPage({
             <p className="mt-3 max-w-3xl text-sm leading-6 text-black/65">
               {isSpike
                 ? "Review partner submissions and enter missing values before calculation."
-                : "Review respondent submissions, enter missing values and compare them with Spike Brokers indicatives before calculation."}
+                : "Review respondent submissions, enter missing values and compare them with benchmark indicatives before calculation."}
             </p>
             <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.12em]">
               <span className="rounded-full bg-uga-mist px-3 py-1 text-uga-green">
@@ -201,13 +201,6 @@ function MatrixCell({
   cell: DailyInputCell;
   showSpikeComparison: boolean;
 }) {
-  const signedDifference =
-    cell.difference === null
-      ? "n/a"
-      : `${cell.difference > 0 ? "+" : ""}${cell.difference.toFixed(2)}`;
-  const deviation =
-    cell.deviationPct === null ? "n/a" : `${cell.deviationPct.toFixed(2)}%`;
-
   return (
     <td
       className={
@@ -235,33 +228,9 @@ function MatrixCell({
         {showSpikeComparison ? (
           <dl className="grid gap-1 text-xs text-black/55">
             <div className="flex justify-between gap-2">
-              <dt>Spike</dt>
+              <dt>Benchmark</dt>
               <dd className="font-semibold text-uga-dark">
                 ${cell.spikeIndicative.toFixed(2)}
-              </dd>
-            </div>
-            <div className="flex justify-between gap-2">
-              <dt>Diff</dt>
-              <dd
-                className={
-                  cell.warning
-                    ? "font-semibold text-red-700"
-                    : "font-semibold text-uga-dark"
-                }
-              >
-                {signedDifference}
-              </dd>
-            </div>
-            <div className="flex justify-between gap-2">
-              <dt>Deviation</dt>
-              <dd
-                className={
-                  cell.warning
-                    ? "font-semibold text-red-700"
-                    : "font-semibold text-uga-dark"
-                }
-              >
-                {deviation}
               </dd>
             </div>
           </dl>
@@ -273,7 +242,7 @@ function MatrixCell({
         </span>
         {cell.warning && showSpikeComparison ? (
           <p className="text-xs font-semibold text-red-700">
-            Large deviation vs Spike
+            Large deviation vs benchmark
           </p>
         ) : null}
       </div>
