@@ -5,6 +5,7 @@ export type DemoSubmissionStatus = "draft" | "submitted";
 export type DemoStoredSubmission = {
   commodityId: string;
   date: string;
+  excluded?: boolean;
   price: number;
   respondentId: string;
   source: "admin" | "respondent";

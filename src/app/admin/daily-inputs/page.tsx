@@ -29,6 +29,12 @@ const statusClasses: Record<DailyInputStatus, string> = {
   edited_by_admin: "bg-uga-green text-white ring-uga-green",
 };
 
+const statusOptions: Array<{ value: DailyInputStatus; label: string }> = [
+  { value: "submitted_by_respondent", label: "Respondent" },
+  { value: "edited_by_admin", label: "Admin edit" },
+  { value: "saved", label: "Saved draft" },
+];
+
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
@@ -238,8 +244,33 @@ function MatrixCell({
         <span
           className={`inline-flex w-fit rounded-full px-2.5 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.1em] ring-1 ${statusClasses[cell.status]}`}
         >
-          {statusLabels[cell.status]}
+          {cell.excluded ? "excluded" : statusLabels[cell.status]}
         </span>
+        <div className="grid gap-2 border-t border-black/10 pt-2">
+          <label className="grid gap-1 text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-black/45">
+            Source status
+            <select
+              className="border border-black/20 bg-white px-2 py-1.5 text-xs font-semibold normal-case tracking-normal text-uga-dark"
+              defaultValue={cell.status === "missing" ? "edited_by_admin" : cell.status}
+              name={`status:${cell.commodityId}:${cell.respondentId}`}
+            >
+              {statusOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex items-center gap-2 text-[0.68rem] font-semibold uppercase tracking-[0.1em] text-black/55">
+            <input
+              className="h-4 w-4 border-black text-uga-green focus:ring-uga-green"
+              defaultChecked={cell.excluded}
+              name={`exclude:${cell.commodityId}:${cell.respondentId}`}
+              type="checkbox"
+            />
+            Exclude from index
+          </label>
+        </div>
         {cell.warning && showSpikeComparison ? (
           <p className="text-xs font-semibold text-red-700">
             Large deviation vs benchmark

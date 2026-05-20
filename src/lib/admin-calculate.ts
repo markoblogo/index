@@ -141,7 +141,7 @@ async function getMockCalculationData(date: string): Promise<AdminCalculationDat
         deliveryBasisId: MOCK_BASIS_ID,
         submissions: cells.map((cell) => ({
           respondentId: cell.respondentId,
-          price: cell.price,
+          price: cell.excluded ? undefined : cell.price,
         })),
       });
       const spikeIndicative = cells[0]?.spikeIndicative ?? null;

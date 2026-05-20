@@ -15,6 +15,7 @@ export type DailyInputStatus =
 
 export type DailyInputCell = {
   commodityId: string;
+  excluded: boolean;
   respondentId: string;
   price: number | null;
   spikeIndicative: number;
@@ -82,10 +83,11 @@ export async function saveDailyInputs(formData: FormData, user: DemoUser) {
       setDemoSubmission({
         commodityId: entry.commodityId,
         date,
+        excluded: entry.excluded,
         price: entry.price,
         respondentId: entry.respondentId,
-        source: "admin",
-        status: "submitted",
+        source: entry.inputSource,
+        status: entry.submissionStatus,
         updatedAt: new Date().toISOString(),
       });
     }
@@ -174,6 +176,7 @@ async function getDatabaseDailyInputData(date: string): Promise<DailyInputData> 
 
       return buildCell({
         commodityId: commodity.id,
+        excluded: false,
         respondentId: respondent.id,
         price,
         spikeIndicative,
@@ -236,6 +239,7 @@ function getMockDailyInputData(date: string): DailyInputData {
 
       return buildCell({
         commodityId: commodity.id,
+        excluded: Boolean(selectedSubmission?.excluded),
         respondentId: respondent.id,
         price: selectedSubmission?.price ?? price,
         spikeIndicative,
@@ -271,7 +275,7 @@ function getMockDailyInputData(date: string): DailyInputData {
 
 async function saveDatabaseDailyInputs(
   date: string,
-  entries: Array<{ commodityId: string; respondentId: string; price: number }>,
+  entries: Array<SubmittedDailyInput>,
   user: DemoUser,
 ) {
   const tradeDate = dateToUtcDate(date);
@@ -291,7 +295,7 @@ async function saveDatabaseDailyInputs(
           commodityId: entry.commodityId,
           deliveryBasisId: basis.id,
           respondentId: entry.respondentId,
-          source: "admin",
+          source: entry.inputSource,
         },
       },
     });
@@ -303,12 +307,12 @@ async function saveDatabaseDailyInputs(
           commodityId: entry.commodityId,
           deliveryBasisId: basis.id,
           respondentId: entry.respondentId,
-          source: "admin",
+          source: entry.inputSource,
         },
       },
       update: {
         priceUsdPerMt: new Prisma.Decimal(entry.price),
-        status: "verified",
+        status: entry.inputSource === "admin" ? "verified" : entry.submissionStatus,
         submittedAt: new Date(),
       },
       create: {
@@ -316,8 +320,8 @@ async function saveDatabaseDailyInputs(
         commodityId: entry.commodityId,
         deliveryBasisId: basis.id,
         respondentId: entry.respondentId,
-        source: "admin",
-        status: "verified",
+        source: entry.inputSource,
+        status: entry.inputSource === "admin" ? "verified" : entry.submissionStatus,
         priceUsdPerMt: new Prisma.Decimal(entry.price),
         submittedAt: new Date(),
       },
@@ -342,6 +346,7 @@ async function saveDatabaseDailyInputs(
             status: saved.status,
             source: saved.source,
             username: user.username,
+            excludedFromDemoCalculation: entry.excluded,
           },
         },
       });
@@ -349,12 +354,17 @@ async function saveDatabaseDailyInputs(
   }
 }
 
+type SubmittedDailyInput = {
+  commodityId: string;
+  excluded: boolean;
+  inputSource: "admin" | "respondent";
+  respondentId: string;
+  price: number;
+  submissionStatus: "draft" | "submitted";
+};
+
 function parseSubmittedPrices(formData: FormData) {
-  const entries: Array<{
-    commodityId: string;
-    respondentId: string;
-    price: number;
-  }> = [];
+  const entries: SubmittedDailyInput[] = [];
 
   for (const [key, value] of formData.entries()) {
     if (!key.startsWith("price:") || typeof value !== "string") {
@@ -370,7 +380,17 @@ function parseSubmittedPrices(formData: FormData) {
       Number.isFinite(price) &&
       price > 0
     ) {
-      entries.push({ commodityId, respondentId, price });
+      const status = normalizeInputStatus(
+        String(formData.get(`status:${commodityId}:${respondentId}`) ?? ""),
+      );
+      entries.push({
+        commodityId,
+        excluded: formData.get(`exclude:${commodityId}:${respondentId}`) === "on",
+        inputSource: status === "submitted_by_respondent" ? "respondent" : "admin",
+        respondentId,
+        price,
+        submissionStatus: status === "saved" ? "draft" : "submitted",
+      });
     }
   }
 
@@ -379,12 +399,14 @@ function parseSubmittedPrices(formData: FormData) {
 
 function buildCell({
   commodityId,
+  excluded,
   respondentId,
   price,
   spikeIndicative,
   status,
 }: {
   commodityId: string;
+  excluded: boolean;
   respondentId: string;
   price: number | null;
   spikeIndicative: number;
@@ -396,6 +418,7 @@ function buildCell({
 
   return {
     commodityId,
+    excluded,
     respondentId,
     price,
     spikeIndicative,
@@ -406,6 +429,18 @@ function buildCell({
       Math.abs(price - spikeIndicative) / spikeIndicative > WARNING_THRESHOLD,
     status,
   };
+}
+
+function normalizeInputStatus(value: string): DailyInputStatus {
+  if (
+    value === "saved" ||
+    value === "submitted_by_respondent" ||
+    value === "edited_by_admin"
+  ) {
+    return value;
+  }
+
+  return "edited_by_admin";
 }
 
 function fallbackSpikeForCommodityCode(code: string, date: string) {
