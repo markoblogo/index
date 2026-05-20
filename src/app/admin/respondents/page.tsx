@@ -51,56 +51,14 @@ export default async function AdminRespondentsPage() {
         </div>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_22rem]">
-        <div className="grid gap-4">
-          <AddRespondentPanel />
-          {respondents.map((respondent) => (
-            <RespondentPanel key={respondent.id} respondent={respondent} />
-          ))}
-        </div>
-
-        <aside className="border border-black bg-white p-5">
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-uga-green">
-            Daily email
-          </p>
-          <h2 className="mt-3 text-2xl font-black uppercase leading-tight">
-            Survey notification settings
-          </h2>
-          <p className="mt-3 text-sm leading-6 text-black/65">
-            Automatic workday email with a secure survey link for each
-            self-service respondent. Manual-outreach companies remain visible
-            for phone or email follow-up.
-          </p>
-
-          <dl className="mt-5 grid gap-3 text-sm">
-            <SettingRow
-              label="Status"
-              value={respondentEmailSchedule.enabled ? "enabled" : "disabled"}
-            />
-            <SettingRow label="Workdays" value="Monday-Friday" />
-            <SettingRow
-              label="Send time"
-              value={`${respondentEmailSchedule.sendTime} ${respondentEmailSchedule.timezone}`}
-            />
-            <SettingRow label="Sender" value={respondentEmailSchedule.sender} />
-            <SettingRow
-              label="Survey link"
-              value={respondentEmailSchedule.surveyUrl}
-            />
-          </dl>
-
-          <div className="mt-5 border border-black bg-uga-mist p-4">
-            <p className="text-xs font-black uppercase tracking-[0.14em] text-black/45">
-              Email template
-            </p>
-            <p className="mt-2 text-sm font-semibold leading-6">
-              Please submit today&apos;s CPT UA Black Sea price indicatives for
-              UGA Index. Open your daily survey form using the personal link in
-              this email.
-            </p>
-          </div>
-        </aside>
+      <div className="grid gap-4">
+        <AddRespondentPanel />
+        {respondents.map((respondent) => (
+          <RespondentPanel key={respondent.id} respondent={respondent} />
+        ))}
       </div>
+
+      <SurveyNotificationSettings />
     </section>
   );
 }
@@ -121,6 +79,58 @@ function Metric({
       </p>
       <p className="mt-1 text-2xl font-black">{value}</p>
     </div>
+  );
+}
+
+function SurveyNotificationSettings() {
+  return (
+    <aside className="border border-black bg-white p-5">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(26rem,0.9fr)]">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-uga-green">
+            Daily email
+          </p>
+          <h2 className="mt-3 text-2xl font-black uppercase leading-tight">
+            Survey notification settings
+          </h2>
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-black/65">
+            Automatic workday email with a secure survey link for each
+            self-service respondent. Manual-outreach companies remain visible
+            for phone or email follow-up.
+          </p>
+        </div>
+
+        <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-[1fr_1.15fr]">
+          <dl className="grid gap-3 text-sm">
+            <SettingRow
+              label="Status"
+              value={respondentEmailSchedule.enabled ? "enabled" : "disabled"}
+            />
+            <SettingRow label="Workdays" value="Monday-Friday" />
+            <SettingRow
+              label="Send time"
+              value={`${respondentEmailSchedule.sendTime} ${respondentEmailSchedule.timezone}`}
+            />
+            <SettingRow label="Sender" value={respondentEmailSchedule.sender} />
+            <SettingRow
+              label="Survey link"
+              value={respondentEmailSchedule.surveyUrl}
+            />
+          </dl>
+
+          <div className="border border-black bg-uga-mist p-4">
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-black/45">
+              Email template
+            </p>
+            <p className="mt-2 text-sm font-semibold leading-6">
+              Please submit today&apos;s CPT UA Black Sea price indicatives for
+              UGA Index. Open your daily survey form using the personal link in
+              this email.
+            </p>
+          </div>
+        </div>
+      </div>
+    </aside>
   );
 }
 
