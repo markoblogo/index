@@ -57,7 +57,7 @@ export default async function AdminRespondentsPage() {
       <div className="grid gap-4">
         <AddRespondentPanel />
         <section className="border border-black bg-white">
-          <div className="hidden border-b border-black bg-uga-dark px-4 py-3 text-[0.68rem] font-black uppercase tracking-[0.16em] text-white/70 lg:grid lg:grid-cols-[minmax(18rem,1.4fr)_minmax(12rem,0.85fr)_minmax(15rem,1fr)_auto]">
+          <div className="hidden border-b border-black bg-uga-dark px-4 py-3 text-[0.68rem] font-black uppercase tracking-[0.16em] text-white/70 lg:grid lg:grid-cols-[minmax(22rem,1.35fr)_minmax(16rem,0.85fr)_minmax(20rem,1fr)_auto]">
             <span>Company</span>
             <span>Primary contact</span>
             <span>Login</span>
@@ -220,7 +220,7 @@ function RespondentPanel({ respondent }: { respondent: RespondentDirectoryEntry 
 
   return (
     <details className="group border-b border-black bg-white last:border-b-0 [&_summary::-webkit-details-marker]:hidden">
-      <summary className="grid cursor-pointer gap-3 px-4 py-4 transition hover:bg-uga-mist/70 lg:grid-cols-[minmax(18rem,1.4fr)_minmax(12rem,0.85fr)_minmax(15rem,1fr)_auto] lg:items-center">
+      <summary className="grid cursor-pointer gap-3 px-4 py-4 transition hover:bg-uga-mist/70 lg:grid-cols-[minmax(22rem,1.35fr)_minmax(16rem,0.85fr)_minmax(20rem,1fr)_auto] lg:items-center">
         <div className="min-w-0">
           <h2 className="truncate text-base font-black leading-5">
             {respondent.companyName}
@@ -264,8 +264,8 @@ function RespondentPanel({ respondent }: { respondent: RespondentDirectoryEntry 
       </summary>
 
       <div className="border-t border-black bg-uga-mist/45 p-4">
-        <div className="grid gap-4 xl:grid-cols-[minmax(18rem,0.85fr)_minmax(20rem,1fr)_minmax(18rem,0.9fr)]">
-          <section className="border border-black/20 bg-white p-3">
+        <div className="grid gap-4 2xl:grid-cols-[minmax(24rem,0.8fr)_minmax(38rem,1.35fr)_minmax(24rem,0.85fr)]">
+          <section className="border border-black/20 bg-white p-4">
             <p className="mb-3 text-[0.68rem] font-black uppercase tracking-[0.16em] text-black/45">
               Company settings
             </p>
@@ -279,7 +279,7 @@ function RespondentPanel({ respondent }: { respondent: RespondentDirectoryEntry 
                   required
                 />
               </Field>
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-1">
+              <div className="grid gap-3 md:grid-cols-2">
                 <Field label="Status">
                   <select
                     className="admin-field"
@@ -313,7 +313,7 @@ function RespondentPanel({ respondent }: { respondent: RespondentDirectoryEntry 
             </form>
           </section>
 
-          <section className="border border-black/20 bg-white p-3">
+          <section className="border border-black/20 bg-white p-4">
             <p className="mb-3 text-[0.68rem] font-black uppercase tracking-[0.16em] text-black/45">
               Contact people
             </p>
@@ -350,43 +350,37 @@ function ContactEditor({
     <div className="border border-black/15 p-3">
       <form
         action={updateContactAction}
-        className="grid gap-2 lg:grid-cols-[1fr_0.9fr_auto]"
+        className="grid gap-3 xl:grid-cols-[minmax(9rem,1fr)_minmax(8rem,0.75fr)_minmax(9rem,0.85fr)_minmax(13rem,1.15fr)_auto] xl:items-end"
       >
         <input name="respondentId" type="hidden" value={respondentId} />
         <input name="contactId" type="hidden" value={contact.id} />
-        <div className="grid gap-2 sm:grid-cols-2 lg:col-span-2">
-          <Field label="Name">
-            <input
-              className="admin-field"
-              defaultValue={contact.name}
-              name="name"
-              required
-            />
-          </Field>
-          <Field label="Role">
-            <input
-              className="admin-field"
-              defaultValue={contact.role}
-              name="role"
-            />
-          </Field>
-          <Field label="Phone">
-            <input
-              className="admin-field"
-              defaultValue={contact.phone}
-              name="phone"
-            />
-          </Field>
-          <Field label="Email">
-            <input
-              className="admin-field"
-              defaultValue={contact.email}
-              name="email"
-              type="email"
-            />
-          </Field>
-        </div>
-        <div className="flex flex-wrap items-end gap-2 lg:flex-col lg:items-start">
+        <Field label="Name">
+          <input
+            className="admin-field"
+            defaultValue={contact.name}
+            name="name"
+            required
+          />
+        </Field>
+        <Field label="Role">
+          <input className="admin-field" defaultValue={contact.role} name="role" />
+        </Field>
+        <Field label="Phone">
+          <input
+            className="admin-field"
+            defaultValue={contact.phone}
+            name="phone"
+          />
+        </Field>
+        <Field label="Email">
+          <input
+            className="admin-field"
+            defaultValue={contact.email}
+            name="email"
+            type="email"
+          />
+        </Field>
+        <div className="flex flex-wrap items-end gap-2 xl:flex-col xl:items-start">
           <label className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.1em] text-black/55">
             <input
               className="h-4 w-4 accent-uga-green"
@@ -420,7 +414,7 @@ function AddContactForm({ respondentId }: { respondentId: string }) {
   return (
     <form action={addContactAction} className="mt-3 border border-black/25 p-3">
       <input name="respondentId" type="hidden" value={respondentId} />
-      <div className="grid gap-2 sm:grid-cols-2">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(9rem,1fr)_minmax(8rem,0.75fr)_minmax(9rem,0.85fr)_minmax(13rem,1.15fr)]">
         <Field label="New contact">
           <input className="admin-field" name="name" required />
         </Field>

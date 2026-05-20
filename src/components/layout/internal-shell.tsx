@@ -46,7 +46,7 @@ export function InternalShell({ children, user }: InternalShellProps) {
             : "border-b border-black/10 bg-white"
         }
       >
-        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-6 py-4 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+        <div className="mx-auto flex max-w-[118rem] flex-col gap-4 px-6 py-4 lg:flex-row lg:items-center lg:justify-between lg:px-8">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <Link className="flex w-fit items-center gap-3" href={`/${user.role}`}>
               {SITE_CONFIG.logoPath ? (
@@ -106,7 +106,7 @@ export function InternalShell({ children, user }: InternalShellProps) {
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-7xl gap-6 px-6 py-7 lg:grid-cols-[16rem_1fr] lg:items-start lg:px-8">
+      <div className="mx-auto grid max-w-[118rem] gap-6 px-6 py-7 lg:grid-cols-[14rem_minmax(0,1fr)] lg:items-start lg:px-8">
         <aside
           className={
             isSpike
