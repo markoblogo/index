@@ -1,5 +1,13 @@
 export type RespondentStatus = "active" | "pending";
 export type RespondentCollectionMode = "self_service" | "manual_outreach";
+export type RespondentPasswordStatus = "temporary" | "active";
+
+export type RespondentAuthAccount = {
+  lastGeneratedAt: string;
+  loginEmail: string;
+  passwordSetupStatus: RespondentPasswordStatus;
+  temporaryPassword: string;
+};
 
 export type RespondentContactPerson = {
   email: string;
@@ -11,6 +19,7 @@ export type RespondentContactPerson = {
 };
 
 export type RespondentDirectoryEntry = {
+  auth: RespondentAuthAccount;
   collectionMode: RespondentCollectionMode;
   companyName: string;
   contacts: RespondentContactPerson[];
@@ -199,6 +208,13 @@ export function addRespondentDirectoryEntry(input: {
   }
 
   state.respondents.push({
+    auth: {
+      lastGeneratedAt: new Date().toISOString(),
+      loginEmail:
+        input.contactEmail.trim().toLowerCase() || `${id}@uga-index.demo`,
+      passwordSetupStatus: "temporary",
+      temporaryPassword: generateTemporaryPassword(id),
+    },
     collectionMode: input.collectionMode,
     companyName: input.companyName.trim(),
     contacts: [
@@ -231,6 +247,38 @@ export function updateRespondentDirectoryEntry(input: {
   respondent.collectionMode = input.collectionMode;
   respondent.companyName = input.companyName.trim() || respondent.companyName;
   respondent.status = input.status;
+}
+
+export function updateRespondentAuthAccount(input: {
+  loginEmail: string;
+  passwordSetupStatus: RespondentPasswordStatus;
+  respondentId: string;
+}) {
+  const respondent = getState().respondents.find(
+    (item) => item.id === input.respondentId,
+  );
+
+  if (!respondent) {
+    return;
+  }
+
+  respondent.auth.loginEmail =
+    input.loginEmail.trim().toLowerCase() || respondent.auth.loginEmail;
+  respondent.auth.passwordSetupStatus = input.passwordSetupStatus;
+}
+
+export function regenerateRespondentTemporaryPassword(respondentId: string) {
+  const respondent = getState().respondents.find(
+    (item) => item.id === respondentId,
+  );
+
+  if (!respondent) {
+    return;
+  }
+
+  respondent.auth.temporaryPassword = generateTemporaryPassword(respondentId);
+  respondent.auth.passwordSetupStatus = "temporary";
+  respondent.auth.lastGeneratedAt = new Date().toISOString();
 }
 
 export function deleteRespondentDirectoryEntry(id: string) {
@@ -353,6 +401,12 @@ function createRespondentSeed(
   collectionMode: RespondentCollectionMode,
 ): RespondentDirectoryEntry {
   return {
+    auth: {
+      lastGeneratedAt: "2026-05-20T10:00:00.000Z",
+      loginEmail: email,
+      passwordSetupStatus: "temporary",
+      temporaryPassword: "respondent",
+    },
     collectionMode,
     companyName,
     contacts: [
@@ -375,6 +429,7 @@ function cloneRespondent(
 ): RespondentDirectoryEntry {
   return {
     ...respondent,
+    auth: { ...respondent.auth },
     contacts: respondent.contacts.map((contact) => ({ ...contact })),
   };
 }
@@ -390,4 +445,9 @@ function normalizeId(value: string) {
     .replace(/['"«»]/g, "")
     .replace(/[^a-z0-9а-яіїєґ]+/giu, "-")
     .replace(/^-+|-+$/g, "");
+}
+
+function generateTemporaryPassword(seed: string) {
+  const fragment = Math.random().toString(36).slice(2, 8).toUpperCase();
+  return `UGA-${normalizeId(seed).slice(0, 4).toUpperCase()}-${fragment}`;
 }

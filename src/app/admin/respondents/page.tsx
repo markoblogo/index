@@ -9,10 +9,13 @@ import {
   getActiveRespondentCount,
   getRespondentDirectory,
   respondentEmailSchedule,
+  regenerateRespondentTemporaryPassword,
   updateRespondentContact,
+  updateRespondentAuthAccount,
   updateRespondentDirectoryEntry,
   type RespondentCollectionMode,
   type RespondentDirectoryEntry,
+  type RespondentPasswordStatus,
   type RespondentStatus,
 } from "@/lib/respondent-directory";
 
@@ -264,6 +267,8 @@ function RespondentPanel({ respondent }: { respondent: RespondentDirectoryEntry 
               Delete respondent
             </button>
           </form>
+
+          <RespondentAuthPanel respondent={respondent} />
         </div>
 
         <div className="grid gap-3">
@@ -369,6 +374,62 @@ function RespondentPanel({ respondent }: { respondent: RespondentDirectoryEntry 
         </div>
       </div>
     </article>
+  );
+}
+
+function RespondentAuthPanel({
+  respondent,
+}: {
+  respondent: RespondentDirectoryEntry;
+}) {
+  return (
+    <div className="mt-4 border border-black/25 bg-uga-mist p-3">
+      <p className="text-[0.68rem] font-black uppercase tracking-[0.16em] text-black/45">
+        Respondent login
+      </p>
+      <form action={updateAuthAction} className="mt-3 grid gap-3">
+        <input name="respondentId" type="hidden" value={respondent.id} />
+        <Field label="Login email">
+          <input
+            className="admin-field"
+            defaultValue={respondent.auth.loginEmail}
+            name="loginEmail"
+            type="email"
+          />
+        </Field>
+        <Field label="Password status">
+          <select
+            className="admin-field"
+            defaultValue={respondent.auth.passwordSetupStatus}
+            name="passwordSetupStatus"
+          >
+            <option value="temporary">temporary password</option>
+            <option value="active">permanent password set</option>
+          </select>
+        </Field>
+        <button className="border border-black bg-white px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-black">
+          Save login
+        </button>
+      </form>
+
+      <div className="mt-3 border border-black/15 bg-white p-3">
+        <p className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-black/45">
+          Temporary password
+        </p>
+        <p className="mt-1 break-all text-sm font-black">
+          {respondent.auth.temporaryPassword}
+        </p>
+        <p className="mt-1 text-xs font-semibold text-black/55">
+          Generated: {formatAuthDate(respondent.auth.lastGeneratedAt)}
+        </p>
+        <form action={regeneratePasswordAction} className="mt-3">
+          <input name="respondentId" type="hidden" value={respondent.id} />
+          <button className="border border-black bg-uga-dark px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-white">
+            Regenerate temporary password
+          </button>
+        </form>
+      </div>
+    </div>
   );
 }
 
@@ -494,6 +555,28 @@ async function deleteContactAction(formData: FormData) {
   revalidateRespondentPages();
 }
 
+async function updateAuthAction(formData: FormData) {
+  "use server";
+  await requireDemoRole("admin");
+  updateRespondentAuthAccount({
+    loginEmail: readFormString(formData, "loginEmail"),
+    passwordSetupStatus: parsePasswordStatus(
+      formData.get("passwordSetupStatus"),
+    ),
+    respondentId: readFormString(formData, "respondentId"),
+  });
+  revalidateRespondentPages();
+}
+
+async function regeneratePasswordAction(formData: FormData) {
+  "use server";
+  await requireDemoRole("admin");
+  regenerateRespondentTemporaryPassword(
+    readFormString(formData, "respondentId"),
+  );
+  revalidateRespondentPages();
+}
+
 function readFormString(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" ? value : "";
@@ -507,6 +590,19 @@ function parseCollectionMode(
   value: FormDataEntryValue | null,
 ): RespondentCollectionMode {
   return value === "manual_outreach" ? "manual_outreach" : "self_service";
+}
+
+function parsePasswordStatus(
+  value: FormDataEntryValue | null,
+): RespondentPasswordStatus {
+  return value === "active" ? "active" : "temporary";
+}
+
+function formatAuthDate(value: string) {
+  return new Intl.DateTimeFormat("en-GB", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
 }
 
 function revalidateRespondentPages() {

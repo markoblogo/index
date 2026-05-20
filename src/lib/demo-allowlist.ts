@@ -1,4 +1,5 @@
 import { getActiveIndexConfig } from "@/lib/index-platform";
+import { getRespondentDirectory } from "@/lib/respondent-directory";
 
 export type DemoAllowlistRole = "admin" | "respondent";
 
@@ -10,7 +11,7 @@ export type DemoAllowlistUser = {
   name: string;
   respondentId?: string;
   companyName?: string;
-  passwordSetupStatus: "temporary";
+  passwordSetupStatus: "temporary" | "active";
 };
 
 const ugaAllowlist: DemoAllowlistUser[] = [
@@ -138,6 +139,28 @@ const spikeAllowlist: DemoAllowlistUser[] = [
 export const demoAllowlist =
   getActiveIndexConfig().id === "spike-ua" ? spikeAllowlist : ugaAllowlist;
 
+export function getDemoAllowlist() {
+  if (getActiveIndexConfig().id === "spike-ua") {
+    return spikeAllowlist;
+  }
+
+  return [
+    ugaAllowlist[0],
+    ...getRespondentDirectory().map(
+      (respondent): DemoAllowlistUser => ({
+        userId: `respondent-${respondent.id}`,
+        email: respondent.auth.loginEmail,
+        password: respondent.auth.temporaryPassword,
+        role: "respondent",
+        name: `${respondent.companyName} respondent`,
+        respondentId: respondent.id,
+        companyName: respondent.companyName,
+        passwordSetupStatus: respondent.auth.passwordSetupStatus,
+      }),
+    ),
+  ].filter((user): user is DemoAllowlistUser => Boolean(user));
+}
+
 export function authenticateDemoUser({
   login,
   password,
@@ -149,7 +172,7 @@ export function authenticateDemoUser({
   const normalizedPassword = password.trim();
 
   if (normalizedLogin === "admin" && normalizedPassword === "admin") {
-    return demoAllowlist.find((user) => user.role === "admin") ?? null;
+    return getDemoAllowlist().find((user) => user.role === "admin") ?? null;
   }
 
   if (
@@ -157,13 +180,13 @@ export function authenticateDemoUser({
     normalizedPassword === "respondent"
   ) {
     return (
-      demoAllowlist.find((user) => user.role === "respondent") ??
+      getDemoAllowlist().find((user) => user.role === "respondent") ??
       null
     );
   }
 
   return (
-    demoAllowlist.find(
+    getDemoAllowlist().find(
       (user) =>
         user.email.toLowerCase() === normalizedLogin &&
         user.password === normalizedPassword,
