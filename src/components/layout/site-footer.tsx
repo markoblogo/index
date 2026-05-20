@@ -13,6 +13,7 @@ export function SiteFooter({ locale }: { locale: Locale }) {
     { href: `/${locale}/about`, label: dict.nav.about },
     { href: `/${locale}/methodology`, label: dict.nav.methodology },
     { href: `/${locale}/analytics`, label: dict.nav.analytics },
+    { href: `/${locale}/subscription`, label: dict.nav.subscription },
   ];
   const legalItems = [
     {

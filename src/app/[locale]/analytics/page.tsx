@@ -66,7 +66,6 @@ export default async function AnalyticsPage({
       </section>
 
       <section className="mx-auto max-w-7xl px-6 py-10 lg:px-8">
-        <AccessNotice copy={copy} />
         <KpiStrip items={snapshot} />
       </section>
 
@@ -131,13 +130,6 @@ export default async function AnalyticsPage({
         </div>
       </section>
 
-      <section className="border-y border-black bg-uga-mist">
-        <div className="mx-auto grid max-w-7xl gap-5 px-6 py-10 lg:grid-cols-[1fr_1fr] lg:px-8 lg:py-12">
-          <ApiPanel copy={copy} />
-          <AccessMatrix copy={copy} />
-        </div>
-      </section>
-
       <section className="mx-auto max-w-7xl px-6 py-12 lg:px-8 lg:py-14">
         <div className="grid gap-6 lg:grid-cols-[0.78fr_1.22fr]">
           <div>
@@ -173,34 +165,6 @@ export default async function AnalyticsPage({
         </div>
       </section>
     </main>
-  );
-}
-
-function AccessNotice({ copy }: { copy: AnalyticsCopy }) {
-  return (
-    <div className="grid border border-black bg-white lg:grid-cols-[1fr_auto]">
-      <div className="p-4 lg:p-5">
-        <p className="text-xs font-black uppercase tracking-[0.18em] text-uga-green">
-          {copy.previewLabel}
-        </p>
-        <h2 className="mt-2 text-2xl font-black uppercase tracking-normal text-black">
-          {copy.accessTitle}
-        </h2>
-        <p className="mt-2 max-w-4xl text-sm leading-6 text-black/65">
-          {copy.accessText}
-        </p>
-      </div>
-      <div className="grid border-t border-black lg:min-w-[25rem] lg:border-l lg:border-t-0">
-        {copy.accessLabels.map((label) => (
-          <div
-            className="border-b border-black px-4 py-2.5 text-xs font-black uppercase tracking-[0.08em] text-black/70 last:border-b-0"
-            key={label}
-          >
-            {label}
-          </div>
-        ))}
-      </div>
-    </div>
   );
 }
 
@@ -317,67 +281,6 @@ function MetricDelta({ label, value }: { label: string; value: number }) {
         {formatSigned(value)}
       </p>
     </div>
-  );
-}
-
-function ApiPanel({ copy }: { copy: AnalyticsCopy }) {
-  return (
-    <article className="min-w-0 border border-black bg-white p-5">
-      <p className="text-xs font-black uppercase tracking-[0.18em] text-uga-green">
-        API
-      </p>
-      <h2 className="mt-3 text-2xl font-black uppercase text-black">
-        {copy.apiTitle}
-      </h2>
-      <p className="mt-3 text-sm leading-6 text-black/65">{copy.apiText}</p>
-      <div className="mt-4 grid border border-black">
-        {copy.apiBullets.map((bullet) => (
-          <div
-            className="border-b border-black px-3 py-2 text-sm font-black text-black last:border-b-0"
-            key={bullet}
-          >
-            {bullet}
-          </div>
-        ))}
-      </div>
-    </article>
-  );
-}
-
-function AccessMatrix({ copy }: { copy: AnalyticsCopy }) {
-  return (
-    <article className="min-w-0 border border-black bg-white p-5">
-      <p className="text-xs font-black uppercase tracking-[0.18em] text-uga-green">
-        {copy.accessMatrixEyebrow}
-      </p>
-      <h2 className="mt-3 text-2xl font-black uppercase text-black">
-        {copy.accessMatrixTitle}
-      </h2>
-      <div className="mt-4 overflow-x-auto">
-        <table className="w-full min-w-[520px] text-left text-sm">
-          <thead className="border-b border-black text-xs uppercase tracking-[0.12em] text-black/55">
-            <tr>
-              {copy.accessMatrixHeaders.map((header) => (
-                <th className="py-2 pr-3 font-black" key={header}>
-                  {header}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-black/20">
-            {copy.accessMatrixRows.map((row) => (
-              <tr key={row[0]}>
-                {row.map((cell) => (
-                  <td className="py-2 pr-3 font-semibold text-black/70" key={cell}>
-                    {cell}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </article>
   );
 }
 

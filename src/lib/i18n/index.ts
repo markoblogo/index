@@ -13,6 +13,7 @@ type Dictionary = {
     about: string;
     methodology: string;
     analytics: string;
+    subscription: string;
     login: string;
   };
   home: {
@@ -149,6 +150,7 @@ const dictionaries: Record<Locale, Dictionary> = {
       about: "Про індекс",
       methodology: "Методологія",
       analytics: "Аналітика",
+      subscription: "Співпраця/Підписка",
       login: "Вхід",
     },
     home: {
@@ -420,6 +422,7 @@ const dictionaries: Record<Locale, Dictionary> = {
       about: "About",
       methodology: "Methodology",
       analytics: "Analytics",
+      subscription: "Cooperation/Subscription",
       login: "Login",
     },
     home: {
