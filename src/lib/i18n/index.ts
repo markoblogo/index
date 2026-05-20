@@ -245,7 +245,7 @@ const dictionaries: Record<Locale, Dictionary> = {
       respondentsLabel: "Респонденти",
       respondentsTitle: "Компанії-респонденти у поточній корзині",
       respondentsDescription:
-        "Корзина респондентів відображає компанії, представлені у щоденному процесі збору цінових даних за ключовими експортними культурами. Індивідуальні щоденні значення компаній не публікуються; у відкритому доступі відображаються лише агреговані значення індексу.",
+        "Корзина респондентів відображає найбільш активні компанії, що займають значну частку експорту аграрної продукції України та представлені у щоденному процесі збору цінових даних за ключовими експортними культурами. Основні респонденти індексу є членами УЗА, але корзина не обмежується лише членами асоціації. Індивідуальні щоденні значення компаній не публікуються; у відкритому доступі відображаються лише агреговані значення індексу.",
       disclaimerTitle: "Важливе інформаційне повідомлення",
       disclaimer:
         "Значення UGA Index публікуються виключно з інформаційною та аналітичною метою. Вони не є інвестиційною порадою, публічною офертою або рекомендацією купувати чи продавати будь-який товар. Значення агрегуються з даних респондентів і публікуються відповідно до методології індексу; індивідуальні дані компаній не розкриваються. УЗА, партнери проєкту та технологічні провайдери не несуть відповідальності за рішення, прийняті на основі цих даних.",
@@ -515,7 +515,7 @@ const dictionaries: Record<Locale, Dictionary> = {
       respondentsLabel: "Respondents",
       respondentsTitle: "Respondent companies in the current basket",
       respondentsDescription:
-        "The respondent basket reflects companies represented in the daily price collection workflow for the core export commodities. Individual daily submissions are not published; the public index displays aggregated values only.",
+        "The respondent basket reflects the most active companies representing a significant share of Ukraine’s agricultural exports and participating in the daily price collection workflow for the core export commodities. The main index respondents are UGA members, but the basket is not limited only to association members. Individual daily submissions are not published; the public index displays aggregated values only.",
       disclaimerTitle: "Important information notice",
       disclaimer:
         "UGA Index values are published for informational and analytical purposes only. They are not investment advice, a public offer, or a recommendation to buy or sell any commodity. Values are aggregated from respondent data and published according to the index methodology; individual company submissions are not disclosed. UGA, project partners and technology providers are not liable for decisions made on the basis of these data.",
