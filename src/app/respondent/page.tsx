@@ -98,10 +98,10 @@ export default async function RespondentPage({
         <div className="grid gap-4">
           {data.commodities.map((commodity) => (
             <label
-              className="grid gap-3 border-b border-black/10 py-4 last:border-b-0 sm:grid-cols-[1fr_12rem] sm:items-center"
+              className="grid min-w-0 gap-3 border-b border-black/10 py-4 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_minmax(11rem,14rem)] sm:items-center"
               key={commodity.id}
             >
-              <span>
+              <span className="min-w-0">
                 <span className="block text-base font-semibold text-uga-dark">
                   {commodity.name}
                 </span>
@@ -109,12 +109,12 @@ export default async function RespondentPage({
                   {commodity.code} · {data.basisLabel}
                 </span>
               </span>
-              <span className="grid gap-1">
+              <span className="grid min-w-0 gap-1">
                 <span className="text-xs font-semibold uppercase tracking-[0.14em] text-black/45">
                   {labels.price}
                 </span>
                 <input
-                  className="border border-black/20 px-3 py-2.5 text-base font-semibold focus:border-uga-green focus:ring-uga-green"
+                  className="box-border w-full min-w-0 border border-black/20 px-3 py-2.5 text-base font-semibold focus:border-uga-green focus:ring-uga-green"
                   defaultValue={commodity.price ?? ""}
                   inputMode="decimal"
                   name={`price:${commodity.id}`}
