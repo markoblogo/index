@@ -37,6 +37,8 @@ const noticeText: Record<string, string> = {
     "Publish action completed. Published values are locked in the current dev session.",
   published_database:
     "Publish action completed. PublishedIndex rows, changes, locks, and audit logs were created.",
+  locked:
+    "Published UGA Index values for this trade date are locked and cannot be recalculated or republished.",
 };
 
 export default async function AdminCalculatePage({
@@ -47,7 +49,10 @@ export default async function AdminCalculatePage({
   const date = params.date ?? todayInputDate();
   const data = await getAdminCalculationData(date);
   const publishableCount = data.commodities.filter(
-    (commodity) => commodity.status === "publishable" && !commodity.published?.locked,
+    (commodity) =>
+      commodity.status === "publishable" &&
+      !commodity.published?.locked &&
+      !data.lockedForPublication,
   ).length;
 
   async function recalculate(formData: FormData) {
@@ -73,12 +78,11 @@ export default async function AdminCalculatePage({
               Admin publication workflow
             </p>
             <h1 className="mt-3 text-3xl font-semibold tracking-tight">
-              Calculate and publish UGA Index
+              Publish UGA Index
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-black/65">
-              Review median filtering, included respondent counts, outliers,
-              benchmark values, and publish only baskets with at least five
-              included respondent prices.
+              Review grouped index calculations for all commodities and publish
+              all eligible UGA Index values in one locked publication action.
             </p>
             <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.12em]">
               <span className="rounded-full bg-uga-mist px-3 py-1 text-uga-green">
@@ -89,6 +93,17 @@ export default async function AdminCalculatePage({
               </span>
               <span className="admin-dark-pill rounded-full bg-black px-3 py-1 text-white">
                 Delivery {SITE_CONFIG.defaultDeliveryPeriod}
+              </span>
+              <span
+                className={
+                  data.publicationStatus === "published_locked"
+                    ? "rounded-full bg-uga-lime px-3 py-1 text-black"
+                    : "rounded-full border border-black/15 bg-white px-3 py-1 text-black/65"
+                }
+              >
+                {data.publicationStatus === "published_locked"
+                  ? "Published indices locked"
+                  : "Indices not published"}
               </span>
             </div>
           </div>
@@ -117,6 +132,11 @@ export default async function AdminCalculatePage({
             {noticeText[params.notice] ?? "Action completed."}
           </div>
         ) : null}
+        {data.lockedForPublication ? (
+          <div className="mt-5 border border-black bg-uga-mist px-4 py-3 text-sm font-semibold text-black/70">
+            {data.lockReason}
+          </div>
+        ) : null}
       </div>
 
       <div className="grid gap-3 rounded-[1.5rem] border border-black/10 bg-white p-4 shadow-sm lg:grid-cols-[1fr_auto_auto] lg:items-center">
@@ -126,14 +146,15 @@ export default async function AdminCalculatePage({
             baskets are not published automatically.
           </p>
           <p className="font-semibold text-uga-dark">
-            Independent verification step. In production, the
-            final calculation version should be reviewed before publication.
+            Final publication is performed for all eligible commodities in one
+            action. Published dates are locked for historical review.
           </p>
         </div>
         <form action={recalculate}>
           <input name="date" type="hidden" value={date} />
           <button
-            className="w-full rounded-full border border-black/15 px-5 py-3 text-sm font-semibold text-uga-dark transition hover:border-uga-green hover:text-uga-green lg:w-auto"
+            className="w-full rounded-full border border-black/15 px-5 py-3 text-sm font-semibold text-uga-dark transition hover:border-uga-green hover:text-uga-green disabled:cursor-not-allowed disabled:opacity-45 lg:w-auto"
+            disabled={data.lockedForPublication}
             type="submit"
           >
             Recalculate
@@ -146,19 +167,14 @@ export default async function AdminCalculatePage({
             disabled={publishableCount === 0}
             type="submit"
           >
-            Publish all publishable indices
+            Publish UGA Index
           </button>
         </form>
       </div>
 
       <div className="grid gap-5">
         {data.commodities.map((commodity) => (
-          <CalculationPanel
-            commodity={commodity}
-            date={date}
-            key={commodity.id}
-            publishAction={publish}
-          />
+          <CalculationPanel commodity={commodity} key={commodity.id} />
         ))}
       </div>
     </section>
@@ -167,12 +183,8 @@ export default async function AdminCalculatePage({
 
 function CalculationPanel({
   commodity,
-  date,
-  publishAction,
 }: {
   commodity: AdminCalculationCommodity;
-  date: string;
-  publishAction: (formData: FormData) => Promise<void>;
 }) {
   return (
     <article className="rounded-[1.5rem] border border-black/10 bg-white p-5 shadow-sm">
@@ -196,19 +208,11 @@ function CalculationPanel({
           </p>
         </div>
 
-        <form action={publishAction}>
-          <input name="date" type="hidden" value={date} />
-          <input name="commodityId" type="hidden" value={commodity.id} />
-          <button
-            className="admin-contrast-pill rounded-full bg-uga-green px-5 py-3 text-sm font-semibold text-white shadow-soft transition hover:bg-uga-dark disabled:cursor-not-allowed disabled:bg-black/20"
-            disabled={
-              commodity.status !== "publishable" || Boolean(commodity.published?.locked)
-            }
-            type="submit"
-          >
-            Publish selected commodity
-          </button>
-        </form>
+        {commodity.published?.locked ? (
+          <span className="rounded-full bg-uga-lime px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-black">
+            published locked
+          </span>
+        ) : null}
       </div>
 
       <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
@@ -222,45 +226,8 @@ function CalculationPanel({
         />
       </div>
 
-      <div className="mt-5 grid gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl border border-uga-green/20 bg-uga-mist p-4">
-          <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-uga-green">
-            Independent verification
-          </h3>
-          <dl className="mt-3 grid gap-2 text-sm">
-            <Row label="Delivery period" value={SITE_CONFIG.defaultDeliveryPeriod} />
-            <Row label="Pre-publication version" value={`v${commodity.version}`} />
-            <Row
-              label="Review status"
-              value={
-                commodity.status === "publishable"
-                  ? "ready for partner review"
-                  : "blocked until sufficient data"
-              }
-            />
-          </dl>
-        </div>
-
-        <div className="rounded-2xl border border-black/10 bg-uga-mist p-4">
-          <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-black/45">
-            Benchmark comparison
-          </h3>
-          <dl className="mt-3 grid gap-2 text-sm">
-            <Row label="Difference" value={formatSignedUsd(commodity.spikeDifference)} />
-            <Row
-              label="Deviation"
-              value={formatSignedPercent(commodity.spikeDeviationPct)}
-            />
-          </dl>
-          {commodity.status !== "publishable" ? (
-            <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800">
-              Insufficient data blocks publication. Benchmark remains external
-              reference only.
-            </p>
-          ) : null}
-        </div>
-
-        <div className="rounded-2xl border border-black/10 bg-white p-4 lg:col-span-2">
+      <div className="mt-5 grid gap-4">
+        <div className="rounded-2xl border border-black/10 bg-white p-4">
           <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-black/45">
             Published lock
           </h3>

@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { SITE_CONFIG } from "@/lib/constants";
 import type { DemoUser } from "@/lib/demo-auth";
+import { InternalNav } from "@/components/layout/internal-nav";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 type InternalShellProps = {
@@ -15,7 +16,7 @@ const navByRole = {
     { href: "/admin", label: "Admin dashboard" },
     { href: "/admin/daily-inputs", label: "Daily input" },
     { href: "/admin/respondents", label: "Respondents" },
-    { href: "/admin/calculate", label: "Calculate & publish" },
+    { href: "/admin/calculate", label: "Publish UGA Index" },
     { href: "/admin/embed", label: "Embed on UGA site" },
   ],
   respondent: [
@@ -117,17 +118,7 @@ export function InternalShell({ children, user }: InternalShellProps) {
           <p className="px-3 text-xs font-semibold uppercase tracking-[0.16em] text-black/40">
             Navigation
           </p>
-          <nav className="mt-3 grid gap-1">
-            {navItems.map((item) => (
-              <Link
-                className="px-3 py-2 text-sm font-semibold text-black/65 transition hover:bg-uga-mist hover:text-uga-green"
-                href={item.href}
-                key={item.label}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
+          <InternalNav isSpike={isSpike} items={navItems} />
         </aside>
         <main className={isSpike ? "spike-internal-main" : undefined}>{children}</main>
       </div>

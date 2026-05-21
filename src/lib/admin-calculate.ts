@@ -58,6 +58,9 @@ export type AdminCalculationCommodity = {
 export type AdminCalculationData = {
   date: string;
   basisLabel: string;
+  lockReason: string | null;
+  lockedForPublication: boolean;
+  publicationStatus: "not_published" | "published_locked";
   source: "database" | "mock";
   commodities: AdminCalculationCommodity[];
 };
@@ -84,6 +87,10 @@ export async function getAdminCalculationData(
 export async function recalculateAdminIndices(formData: FormData, user: DemoUser) {
   const date = String(formData.get("date") ?? todayInputDate());
 
+  if (await isPublicationLockedForDate(date)) {
+    redirect(`/admin/calculate?date=${date}&notice=locked`);
+  }
+
   if (!hasDatabaseUrl()) {
     for (const commodity of commodities) {
       incrementDemoCalculationVersion({
@@ -102,16 +109,19 @@ export async function recalculateAdminIndices(formData: FormData, user: DemoUser
 
 export async function publishAdminIndices(formData: FormData, user: DemoUser) {
   const date = String(formData.get("date") ?? todayInputDate());
-  const commodityId = String(formData.get("commodityId") ?? "");
+
+  if (await isPublicationLockedForDate(date)) {
+    redirect(`/admin/calculate?date=${date}&notice=locked`);
+  }
 
   if (!hasDatabaseUrl()) {
-    await publishMockIndices(date, commodityId || null);
+    await publishMockIndices(date);
     revalidatePath("/uk");
     revalidatePath("/en");
     redirect(`/admin/calculate?date=${date}&notice=published_mock`);
   }
 
-  const calculations = await persistDatabaseCalculations(date, user, commodityId || null);
+  const calculations = await persistDatabaseCalculations(date, user);
   await publishDatabaseCalculations(date, calculations, user);
   revalidatePath("/uk");
   revalidatePath("/en");
@@ -135,6 +145,9 @@ async function getMockCalculationData(date: string): Promise<AdminCalculationDat
   return {
     date,
     basisLabel: inputData.basisLabel,
+    lockReason: isPastTradeDate(date) ? lockedPublicationReason() : null,
+    lockedForPublication: isPastTradeDate(date),
+    publicationStatus: isPastTradeDate(date) ? "published_locked" : "not_published",
     source: "mock",
     commodities: inputData.commodities.map((commodity) => {
       const cells = cellsByCommodity.get(commodity.id) ?? [];
@@ -172,14 +185,10 @@ async function getMockCalculationData(date: string): Promise<AdminCalculationDat
   };
 }
 
-async function publishMockIndices(date: string, targetCommodityId: string | null) {
+async function publishMockIndices(date: string) {
   const data = await getMockCalculationData(date);
 
   for (const commodity of data.commodities) {
-    if (targetCommodityId && commodity.id !== targetCommodityId) {
-      continue;
-    }
-
     if (commodity.status !== "publishable" || commodity.value === null) {
       continue;
     }
@@ -223,10 +232,14 @@ async function getDatabaseCalculationData(date: string): Promise<AdminCalculatio
 
   const { basis, basket, dbCommodities, existingCalculations, publishedIndices } =
     context;
+  const lockedForPublication = isPastTradeDate(date) && publishedIndices.size > 0;
 
   return {
     date,
     basisLabel: basis.name,
+    lockReason: lockedForPublication ? lockedPublicationReason() : null,
+    lockedForPublication,
+    publicationStatus: publishedIndices.size > 0 ? "published_locked" : "not_published",
     source: "database",
     commodities: dbCommodities.map((commodity) => {
       const calculationInput = buildDatabaseCalculationInput(context, commodity.id);
@@ -590,6 +603,27 @@ function buildDatabaseCalculationInput(
       }),
     ),
   };
+}
+
+function isPastTradeDate(date: string) {
+  return date < todayInputDate();
+}
+
+async function isPublicationLockedForDate(date: string) {
+  if (!isPastTradeDate(date)) {
+    return false;
+  }
+
+  if (!hasDatabaseUrl()) {
+    return true;
+  }
+
+  const context = await getDatabaseCalculationContext(date);
+  return (context?.publishedIndices.size ?? 0) > 0;
+}
+
+function lockedPublicationReason() {
+  return "Published UGA Index values for this trade date are locked. Historical published indices cannot be recalculated or republished.";
 }
 
 function buildCalculationCommodity({
