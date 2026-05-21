@@ -14,7 +14,10 @@ export type DailyInputStatus =
   | "edited_by_admin";
 
 export type DailyInputCell = {
+  adminChanged: boolean;
   commodityId: string;
+  enteredByAdmin: boolean;
+  enteredByRespondent: boolean;
   excluded: boolean;
   respondentId: string;
   price: number | null;
@@ -200,6 +203,9 @@ async function getDatabaseDailyInputData(date: string): Promise<DailyInputData> 
 
       return buildCell({
         commodityId: commodity.id,
+        adminChanged: Boolean(adminSubmission && respondentSubmission),
+        enteredByAdmin: Boolean(adminSubmission),
+        enteredByRespondent: Boolean(respondentSubmission),
         excluded: false,
         respondentId: respondent.id,
         price,
@@ -263,22 +269,32 @@ function getMockDailyInputData(date: string): DailyInputData {
         adminSubmission,
         respondentSubmission,
       );
+      const fallbackStatus = missing
+        ? "missing"
+        : respondentIndex % 5 === 0
+          ? "edited_by_admin"
+          : respondentIndex % 3 === 0
+            ? "saved"
+            : "submitted_by_respondent";
+      const status = selectedSubmission
+        ? getMockSubmissionStatus(selectedSubmission)
+        : fallbackStatus;
 
       return buildCell({
         commodityId: commodity.id,
+        adminChanged: Boolean(adminSubmission && respondentSubmission),
+        enteredByAdmin:
+          Boolean(adminSubmission) ||
+          (!selectedSubmission &&
+            (fallbackStatus === "edited_by_admin" || fallbackStatus === "saved")),
+        enteredByRespondent:
+          Boolean(respondentSubmission) ||
+          (!selectedSubmission && fallbackStatus === "submitted_by_respondent"),
         excluded: Boolean(selectedSubmission?.excluded),
         respondentId: respondent.id,
         price: selectedSubmission?.price ?? price,
         spikeIndicative,
-        status: selectedSubmission
-          ? getMockSubmissionStatus(selectedSubmission)
-          : missing
-            ? "missing"
-            : respondentIndex % 5 === 0
-              ? "edited_by_admin"
-              : respondentIndex % 3 === 0
-                ? "saved"
-                : "submitted_by_respondent",
+        status,
       });
     }),
   );
@@ -444,12 +460,20 @@ function parseSubmittedPrices(formData: FormData) {
       price > 0
     ) {
       const status = normalizeInputStatus(
-        String(formData.get(`status:${commodityId}:${respondentId}`) ?? ""),
+        String(formData.get(`originalStatus:${commodityId}:${respondentId}`) ?? ""),
       );
+      const originalPrice = Number(
+        formData.get(`originalPrice:${commodityId}:${respondentId}`) ?? Number.NaN,
+      );
+      const unchangedRespondentSubmission =
+        status === "submitted_by_respondent" &&
+        Number.isFinite(originalPrice) &&
+        pricesEqual(price, originalPrice);
+
       entries.push({
         commodityId,
         excluded: formData.get(`exclude:${commodityId}:${respondentId}`) === "on",
-        inputSource: status === "submitted_by_respondent" ? "respondent" : "admin",
+        inputSource: unchangedRespondentSubmission ? "respondent" : "admin",
         respondentId,
         price,
         submissionStatus: status === "saved" ? "draft" : "submitted",
@@ -461,14 +485,20 @@ function parseSubmittedPrices(formData: FormData) {
 }
 
 function buildCell({
+  adminChanged,
   commodityId,
+  enteredByAdmin,
+  enteredByRespondent,
   excluded,
   respondentId,
   price,
   spikeIndicative,
   status,
 }: {
+  adminChanged: boolean;
   commodityId: string;
+  enteredByAdmin: boolean;
+  enteredByRespondent: boolean;
   excluded: boolean;
   respondentId: string;
   price: number | null;
@@ -480,7 +510,10 @@ function buildCell({
     price === null ? null : (Math.abs(price - spikeIndicative) / spikeIndicative) * 100;
 
   return {
+    adminChanged,
     commodityId,
+    enteredByAdmin,
+    enteredByRespondent,
     excluded,
     respondentId,
     price,
@@ -492,6 +525,10 @@ function buildCell({
       Math.abs(price - spikeIndicative) / spikeIndicative > WARNING_THRESHOLD,
     status,
   };
+}
+
+function pricesEqual(a: number, b: number) {
+  return Math.abs(a - b) < 0.005;
 }
 
 function normalizeInputStatus(value: string): DailyInputStatus {
