@@ -145,9 +145,6 @@ export function SiteFooter({ locale }: { locale: Locale }) {
             </FooterExternalLink>
             .
           </p>
-          <p className="mt-1.5 leading-5">
-            {activeIndex.home.partnersLine[locale]}
-          </p>
           <p className="mt-2.5 max-w-md text-xs leading-5 text-white/55">
             {dict.footer.disclaimer}
           </p>
