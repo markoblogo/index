@@ -85,6 +85,17 @@ export default async function DailyInputsPage({
               <span className="admin-dark-pill rounded-full bg-black px-3 py-1 text-white">
                 No publish action
               </span>
+              <span
+                className={
+                  data.publicationStatus === "published_locked"
+                    ? "rounded-full bg-uga-lime px-3 py-1 text-black"
+                    : "rounded-full border border-black/15 bg-white px-3 py-1 text-black/65"
+                }
+              >
+                {data.publicationStatus === "published_locked"
+                  ? "Published index locked"
+                  : "Index not published"}
+              </span>
             </div>
           </div>
 
@@ -113,7 +124,14 @@ export default async function DailyInputsPage({
               ? "Changes saved to the database and audit log entries were created."
               : params.saved === "mock"
                 ? "Changes saved for the current session. Configure DATABASE_URL to persist changes and audit logs."
+                : params.saved === "locked"
+                  ? "This published trade date is locked. Price inputs can only be corrected on the same trade date until midnight."
                 : "No valid prices were submitted."}
+          </div>
+        ) : null}
+        {data.lockedForEditing ? (
+          <div className="mt-5 border border-black bg-uga-mist px-4 py-3 text-sm font-semibold text-black/70">
+            {data.lockReason}
           </div>
         ) : null}
       </div>
@@ -172,6 +190,7 @@ export default async function DailyInputsPage({
                         <MatrixCell
                           cell={cell}
                           key={commodity.id}
+                          locked={data.lockedForEditing}
                           showSpikeComparison={showSpikeComparison}
                         />
                       );
@@ -189,10 +208,11 @@ export default async function DailyInputsPage({
             handled from a separate workflow.
           </p>
           <button
-            className="rounded-[3px] bg-uga-green px-5 py-3 text-sm font-semibold text-white transition hover:bg-uga-dark"
+            className="rounded-[3px] bg-uga-green px-5 py-3 text-sm font-semibold text-white transition hover:bg-uga-dark disabled:cursor-not-allowed disabled:bg-black/20 disabled:text-black/45"
+            disabled={data.lockedForEditing}
             type="submit"
           >
-            Save changes
+            {data.lockedForEditing ? "Locked published day" : "Save changes"}
           </button>
         </div>
       </form>
@@ -202,9 +222,11 @@ export default async function DailyInputsPage({
 
 function MatrixCell({
   cell,
+  locked,
   showSpikeComparison,
 }: {
   cell: DailyInputCell;
+  locked: boolean;
   showSpikeComparison: boolean;
 }) {
   return (
@@ -224,6 +246,7 @@ function MatrixCell({
               : "w-full border border-black/20 bg-white px-3 py-2 text-sm font-semibold text-uga-dark focus:border-uga-green focus:ring-uga-green"
           }
           defaultValue={cell.price ?? ""}
+          disabled={locked}
           inputMode="decimal"
           min="0"
           name={`price:${cell.commodityId}:${cell.respondentId}`}
@@ -252,6 +275,7 @@ function MatrixCell({
             <select
               className="border border-black/20 bg-white px-2 py-1.5 text-xs font-semibold normal-case tracking-normal text-uga-dark"
               defaultValue={cell.status === "missing" ? "edited_by_admin" : cell.status}
+              disabled={locked}
               name={`status:${cell.commodityId}:${cell.respondentId}`}
             >
               {statusOptions.map((option) => (
@@ -265,6 +289,7 @@ function MatrixCell({
             <input
               className="h-4 w-4 border-black text-uga-green focus:ring-uga-green"
               defaultChecked={cell.excluded}
+              disabled={locked}
               name={`exclude:${cell.commodityId}:${cell.respondentId}`}
               type="checkbox"
             />

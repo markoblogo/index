@@ -39,6 +39,9 @@ export type DailyInputRespondent = {
 export type DailyInputData = {
   date: string;
   basisLabel: string;
+  lockReason: string | null;
+  lockedForEditing: boolean;
+  publicationStatus: "not_published" | "published_locked";
   source: "database" | "mock";
   commodities: DailyInputCommodity[];
   respondents: DailyInputRespondent[];
@@ -59,7 +62,12 @@ export function hasDatabaseUrl() {
 }
 
 export function todayInputDate() {
-  return new Date().toISOString().slice(0, 10);
+  return new Intl.DateTimeFormat("en-CA", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "Europe/Kyiv",
+    year: "numeric",
+  }).format(new Date());
 }
 
 export async function getDailyInputData(date: string): Promise<DailyInputData> {
@@ -79,6 +87,10 @@ export async function saveDailyInputs(formData: FormData, user: DemoUser) {
   const date = String(formData.get("date") ?? todayInputDate());
 
   if (!hasDatabaseUrl()) {
+    if (isPastTradeDate(date)) {
+      redirect(`/admin/daily-inputs?date=${date}&saved=locked`);
+    }
+
     for (const entry of parseSubmittedPrices(formData)) {
       setDemoSubmission({
         commodityId: entry.commodityId,
@@ -99,6 +111,10 @@ export async function saveDailyInputs(formData: FormData, user: DemoUser) {
 
   if (entries.length === 0) {
     redirect(`/admin/daily-inputs?date=${date}&saved=empty`);
+  }
+
+  if (await isDatabaseDailyInputLocked(date)) {
+    redirect(`/admin/daily-inputs?date=${date}&saved=locked`);
   }
 
   await saveDatabaseDailyInputs(date, entries, user);
@@ -124,7 +140,7 @@ async function getDatabaseDailyInputData(date: string): Promise<DailyInputData> 
     return getMockDailyInputData(date);
   }
 
-  const [submissions, indicatives] = await Promise.all([
+  const [submissions, indicatives, lockedPublishedCount] = await Promise.all([
     db.priceSubmission.findMany({
       where: {
         tradeDate,
@@ -138,7 +154,15 @@ async function getDatabaseDailyInputData(date: string): Promise<DailyInputData> 
         source: "spike",
       },
     }),
+    db.publishedIndex.count({
+      where: {
+        tradeDate,
+        deliveryBasisId: basis.id,
+        locked: true,
+      },
+    }),
   ]);
+  const lockedForEditing = isPastTradeDate(date) && lockedPublishedCount > 0;
 
   const indicativeByCommodity = new Map(
     indicatives.map((indicative) => [
@@ -188,6 +212,9 @@ async function getDatabaseDailyInputData(date: string): Promise<DailyInputData> 
   return {
     date,
     basisLabel: basis.name,
+    lockReason: lockedForEditing ? lockedInputReason() : null,
+    lockedForEditing,
+    publicationStatus: lockedPublishedCount > 0 ? "published_locked" : "not_published",
     source: "database",
     commodities: dbCommodities.map((commodity) => ({
       id: commodity.id,
@@ -259,6 +286,9 @@ function getMockDailyInputData(date: string): DailyInputData {
   return {
     date,
     basisLabel: SITE_CONFIG.defaultDeliveryBasis,
+    lockReason: isPastTradeDate(date) ? lockedInputReason() : null,
+    lockedForEditing: isPastTradeDate(date),
+    publicationStatus: isPastTradeDate(date) ? "published_locked" : "not_published",
     source: "mock",
     commodities: commodities.map((commodity) => ({
       id: commodity.id,
@@ -271,6 +301,39 @@ function getMockDailyInputData(date: string): DailyInputData {
     })),
     cells,
   };
+}
+
+async function isDatabaseDailyInputLocked(date: string) {
+  if (!isPastTradeDate(date)) {
+    return false;
+  }
+
+  const tradeDate = dateToUtcDate(date);
+  const basis = await db.deliveryBasis.findUnique({
+    where: { code: BASIS_CODE },
+  });
+
+  if (!basis) {
+    return false;
+  }
+
+  const lockedPublishedCount = await db.publishedIndex.count({
+    where: {
+      tradeDate,
+      deliveryBasisId: basis.id,
+      locked: true,
+    },
+  });
+
+  return lockedPublishedCount > 0;
+}
+
+function isPastTradeDate(date: string) {
+  return date < todayInputDate();
+}
+
+function lockedInputReason() {
+  return "This trade date already has locked published index values. Price inputs can only be corrected on the same trade date until midnight.";
 }
 
 async function saveDatabaseDailyInputs(
