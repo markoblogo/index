@@ -9,6 +9,31 @@ Index Platform is a Next.js/TypeScript platform for bilingual Ukrainian commodit
 
 Both deployments are Vercel projects built from the same repository with tenant-specific environment variables.
 
+## Production Status
+
+The UGA Index production deployment is currently connected to a Neon PostgreSQL database.
+
+Current production state:
+
+- Hosting: Vercel
+- Domain: `https://index-uga.cr0pto.com`
+- Runtime mode: `UGA_INDEX_RUNTIME_MODE=production`
+- Database provider: Neon Postgres
+- Database region: `aws-eu-central-1`
+- Prisma migration status: baseline migration applied
+- Seed status: UGA seed applied
+- Health check: `GET /api/health` returns `database: "ok"`
+- Public latest API: `GET /api/public/latest` returns DB-backed published index values
+
+Seeded production data currently includes:
+
+- 4 commodities
+- 12 respondent directory companies
+- 12 respondent contacts
+- 28 published index rows
+
+Respondent email delivery is configured through Resend, but real sending should only be triggered after replacing seeded demo respondent emails with real recipient addresses and setting the administrator reply-to email in `/admin/respondents`.
+
 ## Current UGA Product
 
 UGA Index publishes a daily Ukrainian spot export price benchmark for key grain and oilseed commodities.
@@ -331,6 +356,16 @@ npx prisma migrate deploy
 npm run db:seed
 ```
 
+Current UGA production database:
+
+- A Neon Postgres database has been provisioned for `index-uga.cr0pto.com`.
+- `DATABASE_URL` is set in Vercel Production.
+- `npx prisma migrate deploy` has been run successfully against the Neon database.
+- `npm run db:seed` has been run successfully against the Neon database.
+- Vercel has been redeployed with `UGA_INDEX_RUNTIME_MODE=production`.
+
+Do not commit the production connection string. Use Vercel Environment Variables or a local untracked `.env` file for operational commands.
+
 The seed is tenant-aware:
 
 - UGA seed creates CPT UA Black Sea basis, commodities, respondent directory contacts, login accounts, notification settings, respondent submissions, external benchmark indicatives and published index values.
@@ -423,10 +458,10 @@ docs/source/
 ## Current TODO
 
 - Replace preview auth with production auth, password setup emails and hashed credentials.
-- Run `npx prisma migrate deploy` against the production database and verify `/api/health`.
 - Decide whether each tenant uses a separate database or a shared database with strict tenant scoping.
 - Remove remaining development-only fallback stores from production deployments.
 - Replace temporary password display in admin with one-time setup links before production launch.
+- Replace seeded demo respondent email addresses with real recipients before triggering Resend delivery.
 - Finalize production legal text with legal counsel.
 - Finalize paid analytics/API subscription terms.
 - Add production observability, backups and operational runbooks.
