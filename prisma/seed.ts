@@ -1,9 +1,14 @@
+import { PrismaPg } from "@prisma/adapter-pg";
 import { Prisma, PrismaClient } from "@prisma/client";
 import { calculateIndexValue } from "../src/lib/index-calculation";
 import { getActiveIndexConfig } from "../src/lib/index-platform";
 import { hashPassword } from "../src/lib/password-hash";
 
-const prisma = new PrismaClient();
+const connectionString =
+  process.env.DATABASE_URL ??
+  "postgresql://user:password@localhost:5432/uga_index?schema=public";
+const adapter = new PrismaPg({ connectionString });
+const prisma = new PrismaClient({ adapter });
 const activeIndex = getActiveIndexConfig();
 
 const BASE_DATE =
