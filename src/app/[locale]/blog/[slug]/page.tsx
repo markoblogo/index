@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BlogShareTools } from "@/components/blog/blog-share-tools";
@@ -35,9 +36,10 @@ export async function generateMetadata({
     title: `${post.seoTitle} | ${SITE_CONFIG.name}`,
     description: post.seoDescription,
     openGraph: {
-      description: post.seoDescription,
-      title: post.seoTitle,
-      type: "article",
+          description: post.seoDescription,
+          images: [post.coverImage],
+          title: post.seoTitle,
+          type: "article",
     },
   };
 }
@@ -69,11 +71,18 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
         </Link>
 
         <header className="mt-6 overflow-hidden rounded-[1.5rem] border border-white/18 bg-[#050505]/86 shadow-2xl shadow-black/25">
-          <div
-            className="grid min-h-[25rem] content-end border-b border-white/12 p-5 sm:p-7 lg:p-9"
-            style={{ background: post.coverGradient }}
-          >
-            <div className="max-w-5xl">
+          <div className="relative min-h-[25rem] overflow-hidden border-b border-white/12">
+            <Image
+              alt={post.title}
+              className="absolute inset-0 h-full w-full object-cover"
+              height={941}
+              priority
+              src={post.coverImage}
+              width={1672}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/38 to-[#050505]/8" />
+            <div className="relative grid min-h-[25rem] content-end p-5 sm:p-7 lg:p-9">
+              <div className="max-w-5xl">
               <div className="flex flex-wrap gap-2">
                 {post.tags.map((tag) => (
                   <Link
@@ -88,6 +97,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               <h1 className="mt-5 text-5xl font-black uppercase leading-[0.9] tracking-normal text-white sm:text-6xl lg:text-7xl">
                 {post.title}
               </h1>
+              </div>
             </div>
           </div>
 

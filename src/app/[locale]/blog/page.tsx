@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SITE_CONFIG } from "@/lib/constants";
@@ -133,11 +134,16 @@ export default async function BlogPage({ params, searchParams }: BlogPageProps) 
                     key={post.slug}
                   >
                     <Link href={`/${locale}/blog/${post.slug}`}>
-                      <div
-                        className="min-h-56 border-b border-white/12 p-5"
-                        style={{ background: post.coverGradient }}
-                      >
-                        <div className="flex flex-wrap gap-2">
+                      <div className="relative aspect-[1672/941] overflow-hidden border-b border-white/12">
+                        <Image
+                          alt={post.title}
+                          className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+                          height={941}
+                          src={post.coverImage}
+                          width={1672}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#050505]/74 via-[#050505]/12 to-transparent" />
+                        <div className="absolute left-5 top-5 flex flex-wrap gap-2">
                           {post.tags.slice(0, 3).map((tag) => (
                             <span
                               className="rounded-full bg-[#050505]/75 px-3 py-1 text-[0.64rem] font-black uppercase tracking-[0.12em] text-white"
