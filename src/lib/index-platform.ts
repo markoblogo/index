@@ -322,7 +322,7 @@ export const INDEX_CONFIGS: Record<IndexTenantId, IndexConfig> = {
     id: "spike-ua",
     name: "SPIKE Spot Commodity Index Ukraine",
     legalName: { uk: "Spike Brokers", en: "Spike Brokers" },
-    publicSiteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "https://spike-index.cr0pto.com",
+    publicSiteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "https://spike-ua.cr0pto.com",
     brandUrl: "https://spike.broker/en/",
     logoPath: "/brand/spike-logo-full.png",
     logoHeaderPath: "/brand/spike-logo-full.png",

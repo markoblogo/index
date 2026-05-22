@@ -11,6 +11,11 @@ import {
 } from "@/lib/demo-submission-store";
 import { commodities, respondents } from "@/lib/mock-data";
 import { todayInputDate } from "@/lib/admin-daily-inputs";
+import {
+  getActiveIndexTenant,
+  getConfiguredDeliveryBasisCodes,
+  getDeliveryBasisConfigForCommodityCode,
+} from "@/lib/tenant-basis";
 
 export type SurveyLocale = "uk" | "en";
 
@@ -31,7 +36,8 @@ export type RespondentSurveyData = {
   commodities: RespondentSurveyCommodity[];
 };
 
-const BASIS_CODE = "FOB_BLACK_SEA";
+const activeIndex = getActiveIndexTenant();
+const isSpike = activeIndex.id === "spike-ua";
 
 const labels = {
   en: {
@@ -40,9 +46,11 @@ const labels = {
     company: "Company",
     date: "Date",
     draftSaved: "Draft saved.",
-    lockedSubmitted: "Submitted values are locked and already transferred to UGA.",
+    lockedSubmitted: `Submitted values are locked and already transferred to ${isSpike ? "Spike Brokers" : "UGA"}.`,
     intro:
-      "Submit today’s CPT UA Black Sea price indicatives for your company. Individual submissions are used for index calculation and are not published publicly.",
+      isSpike
+        ? "Submit today's CPT Odesa / CPT parity Odesa spot price indicatives for your company. Individual submissions are used for index calculation and are not published publicly."
+        : "Submit today’s CPT UA Black Sea price indicatives for your company. Individual submissions are used for index calculation and are not published publicly.",
     notPublished: "Not published",
     price: "Price",
     publication: "Publication",
@@ -51,11 +59,11 @@ const labels = {
     status: "Status",
     statusDraft: "Saved as draft",
     statusEmpty: "Not started",
-    statusSubmitted: "Submitted to UGA",
+    statusSubmitted: `Submitted to ${isSpike ? "Spike Brokers" : "UGA"}`,
     submit: "Submit",
     submitted: "Submitted",
     submittedLocked:
-      "Prices are fixed in this form and transferred to UGA for processing.",
+      `Prices are fixed in this form and transferred to ${isSpike ? "Spike Brokers" : "UGA"} for processing.`,
     submittedMessage: "Submitted values",
     title: "Daily respondent survey",
     unit: "Unit",
@@ -66,9 +74,11 @@ const labels = {
     company: "Компанія",
     date: "Дата",
     draftSaved: "Чернетку збережено.",
-    lockedSubmitted: "Подані значення зафіксовані та вже передані в УЗА.",
+    lockedSubmitted: `Подані значення зафіксовані та вже передані ${isSpike ? "Spike Brokers" : "в УЗА"}.`,
     intro:
-      "Подайте сьогоднішні цінові індикативи CPT UA Black Sea від вашої компанії. Індивідуальні значення використовуються для розрахунку індексу і не публікуються відкрито.",
+      isSpike
+        ? "Подайте сьогоднішні спотові цінові індикативи CPT Одеса / CPT паритет Одеса від вашої компанії. Індивідуальні значення використовуються для розрахунку індексу і не публікуються відкрито."
+        : "Подайте сьогоднішні цінові індикативи CPT UA Black Sea від вашої компанії. Індивідуальні значення використовуються для розрахунку індексу і не публікуються відкрито.",
     notPublished: "Не опубліковано",
     price: "Ціна",
     publication: "Публікація",
@@ -77,11 +87,11 @@ const labels = {
     status: "Статус",
     statusDraft: "Збережено як чернетку",
     statusEmpty: "Не розпочато",
-    statusSubmitted: "Передано в УЗА",
+    statusSubmitted: `Передано ${isSpike ? "Spike Brokers" : "в УЗА"}`,
     submit: "Подати",
     submitted: "Подано",
     submittedLocked:
-      "Ціни зафіксовані у формі та передані в УЗА для обробки.",
+      `Ціни зафіксовані у формі та передані ${isSpike ? "Spike Brokers" : "в УЗА"} для обробки.`,
     submittedMessage: "Подані значення",
     title: "Щоденна форма респондента",
     unit: "Одиниця",
@@ -224,8 +234,10 @@ async function getDatabaseRespondentSurveyData({
   respondentId: string;
 }): Promise<RespondentSurveyData> {
   const tradeDate = dateToUtcDate(date);
-  const [basis, respondent, dbCommodities] = await Promise.all([
-    db.deliveryBasis.findUnique({ where: { code: BASIS_CODE } }),
+  const [bases, respondent, dbCommodities] = await Promise.all([
+    db.deliveryBasis.findMany({
+      where: { code: { in: getConfiguredDeliveryBasisCodes() } },
+    }),
     db.respondent.findUnique({ where: { id: respondentId } }),
     db.commodity.findMany({
       orderBy: { sortOrder: "asc" },
@@ -233,7 +245,9 @@ async function getDatabaseRespondentSurveyData({
     }),
   ]);
 
-  if (!basis || !respondent || dbCommodities.length === 0) {
+  const basisIds = bases.map((basis) => basis.id);
+
+  if (basisIds.length === 0 || !respondent || dbCommodities.length === 0) {
     if (allowMockFallback()) {
       return getMockRespondentSurveyData({ date, locale, respondentId });
     }
@@ -244,7 +258,7 @@ async function getDatabaseRespondentSurveyData({
   const submissions = await db.priceSubmission.findMany({
     where: {
       tradeDate,
-      deliveryBasisId: basis.id,
+      deliveryBasisId: { in: basisIds },
       respondentId,
       source: "respondent",
     },
@@ -256,7 +270,7 @@ async function getDatabaseRespondentSurveyData({
   const drafted = submissions.some((submission) => submission.status === "draft");
 
   return {
-    basisLabel: basis.name,
+    basisLabel: SITE_CONFIG.defaultDeliveryBasis,
     companyName: respondent.legalName,
     date,
     locale,
@@ -292,15 +306,34 @@ async function saveDatabaseRespondentSurvey({
   user: DemoUser;
 }) {
   const tradeDate = dateToUtcDate(date);
-  const basis = await db.deliveryBasis.findUnique({
-    where: { code: BASIS_CODE },
-  });
+  const [bases, dbCommodities] = await Promise.all([
+    db.deliveryBasis.findMany({
+      where: { code: { in: getConfiguredDeliveryBasisCodes() } },
+    }),
+    db.commodity.findMany({
+      where: { id: { in: [...new Set(entries.map((entry) => entry.commodityId))] } },
+    }),
+  ]);
+  const basisByCode = new Map(bases.map((basis) => [basis.code, basis]));
+  const commodityById = new Map(
+    dbCommodities.map((commodity) => [commodity.id, commodity]),
+  );
 
-  if (!basis) {
-    throw new Error("CPT UA Black Sea delivery basis is not seeded.");
+  if (bases.length === 0) {
+    throw new Error("Delivery bases are not seeded.");
   }
 
   for (const entry of entries) {
+    const commodity = commodityById.get(entry.commodityId);
+    const basisCode = commodity
+      ? getDeliveryBasisConfigForCommodityCode(commodity.code).code
+      : getConfiguredDeliveryBasisCodes()[0];
+    const basis = basisByCode.get(basisCode);
+
+    if (!basis) {
+      throw new Error(`Delivery basis ${basisCode} is not seeded.`);
+    }
+
     const saved = await db.priceSubmission.upsert({
       where: {
         tradeDate_commodityId_deliveryBasisId_respondentId_source: {

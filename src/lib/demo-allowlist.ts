@@ -145,12 +145,12 @@ export const demoAllowlist =
   getActiveIndexConfig().id === "spike-ua" ? spikeAllowlist : ugaAllowlist;
 
 export function getDemoAllowlist() {
-  if (getActiveIndexConfig().id === "spike-ua") {
-    return spikeAllowlist;
-  }
+  const activeIndex = getActiveIndexConfig();
+  const adminUser =
+    activeIndex.id === "spike-ua" ? spikeAllowlist[0] : ugaAllowlist[0];
 
   return [
-    ugaAllowlist[0],
+    adminUser,
     ...getRespondentDirectory().map(
       (respondent): DemoAllowlistUser => ({
         userId: `respondent-${respondent.id}`,

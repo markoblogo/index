@@ -25,6 +25,12 @@ import {
   todayInputDate,
 } from "@/lib/admin-daily-inputs";
 import { getActiveRespondentCount } from "@/lib/respondent-directory";
+import {
+  getActiveIndexTenant,
+  getConfiguredDeliveryBasisCodes,
+  getDeliveryBasketCodeForCommodityCode,
+  getDeliveryBasisConfigForCommodityCode,
+} from "@/lib/tenant-basis";
 
 export { todayInputDate };
 
@@ -68,9 +74,7 @@ export type AdminCalculationData = {
   commodities: AdminCalculationCommodity[];
 };
 
-const BASIS_CODE = "FOB_BLACK_SEA";
 const MOCK_BASIS_ID = "fob-black-sea";
-const BASKET_CODE = "FOB_BLACK_SEA_DEMO";
 
 export async function getAdminCalculationData(
   date: string,
@@ -265,18 +269,24 @@ async function getDatabaseCalculationData(date: string): Promise<AdminCalculatio
     throw new Error(`Missing calculation context for ${date}.`);
   }
 
-  const { basis, basket, dbCommodities, existingCalculations, publishedIndices } =
-    context;
+  const { dbCommodities, existingCalculations, publishedIndices } = context;
   const lockedForPublication = isPastTradeDate(date) && publishedIndices.size > 0;
 
   return {
     date,
-    basisLabel: basis.name,
+    basisLabel: getActiveIndexTenant().defaultDeliveryBasis,
     lockReason: lockedForPublication ? lockedPublicationReason() : null,
     lockedForPublication,
     publicationStatus: publishedIndices.size > 0 ? "published_locked" : "not_published",
     source: "database",
     commodities: dbCommodities.map((commodity) => {
+      const basis = context.basisByCommodityId.get(commodity.id);
+      const basket = context.basketByCommodityId.get(commodity.id);
+
+      if (!basis || !basket) {
+        throw new Error(`Missing basis or basket for ${commodity.code}.`);
+      }
+
       const calculationInput = buildDatabaseCalculationInput(context, commodity.id);
       const result = calculateIndexValue({
         date,
@@ -329,11 +339,18 @@ async function persistDatabaseCalculations(
     }
 
     const calculationInput = buildDatabaseCalculationInput(context, commodity.id);
+    const basis = context.basisByCommodityId.get(commodity.id);
+    const basket = context.basketByCommodityId.get(commodity.id);
+
+    if (!basis || !basket) {
+      continue;
+    }
+
     const result = calculateIndexValue({
       date,
       commodityId: commodity.id,
-      deliveryBasisId: context.basis.id,
-      basketWeight: context.basket.weight.toNumber(),
+      deliveryBasisId: basis.id,
+      basketWeight: basket.weight.toNumber(),
       submissions: calculationInput.submissions,
     });
     const previousCalculation = context.existingCalculations.get(commodity.id);
@@ -345,8 +362,8 @@ async function persistDatabaseCalculations(
         tradeDate_commodityId_deliveryBasisId_basketId: {
           tradeDate,
           commodityId: commodity.id,
-          deliveryBasisId: context.basis.id,
-          basketId: context.basket.id,
+          deliveryBasisId: basis.id,
+          basketId: basket.id,
         },
       },
       update: {
@@ -356,7 +373,7 @@ async function persistDatabaseCalculations(
         publicValueUsdPerMt: toDecimalOrNull(result.value),
         rawCount: result.rawCount,
         usedCount: result.usedCount,
-        basketWeight: context.basket.weight,
+        basketWeight: basket.weight,
         version: nextVersion,
         calculatedById: await getDatabaseUserId(user),
         calculatedAt: new Date(),
@@ -364,15 +381,15 @@ async function persistDatabaseCalculations(
       create: {
         tradeDate,
         commodityId: commodity.id,
-        deliveryBasisId: context.basis.id,
-        basketId: context.basket.id,
+        deliveryBasisId: basis.id,
+        basketId: basket.id,
         status: dbStatus,
         medianUsdPerMt: toDecimalOrNull(result.median),
         valueUsdPerMt: toDecimalOrNull(result.rawValue),
         publicValueUsdPerMt: toDecimalOrNull(result.value),
         rawCount: result.rawCount,
         usedCount: result.usedCount,
-        basketWeight: context.basket.weight,
+        basketWeight: basket.weight,
         version: nextVersion,
         calculatedById: await getDatabaseUserId(user),
       },
@@ -571,9 +588,12 @@ async function publishDatabaseCalculations(
 
 async function getDatabaseCalculationContext(date: string) {
   const tradeDate = dateToUtcDate(date);
-  const [basis, basket, dbCommodities, dbRespondents] = await Promise.all([
-    db.deliveryBasis.findUnique({ where: { code: BASIS_CODE } }),
-    db.basket.findUnique({ where: { code: BASKET_CODE } }),
+  const activeIndex = getActiveIndexTenant();
+  const basisCodes = getConfiguredDeliveryBasisCodes(activeIndex);
+  const basketCodes = activeIndex.deliveryBases.map((basis) => basis.basketCode);
+  const [bases, baskets, dbCommodities, dbRespondents] = await Promise.all([
+    db.deliveryBasis.findMany({ where: { code: { in: basisCodes } } }),
+    db.basket.findMany({ where: { code: { in: basketCodes } } }),
     db.commodity.findMany({
       orderBy: { sortOrder: "asc" },
       where: { status: "published" },
@@ -583,8 +603,48 @@ async function getDatabaseCalculationContext(date: string) {
       where: { active: true, status: "active" },
     }),
   ]);
+  const basisByCode = new Map(bases.map((basis) => [basis.code, basis]));
+  const basketByCode = new Map(baskets.map((basket) => [basket.code, basket]));
+  const basisByCommodityId = new Map(
+    dbCommodities
+      .map((commodity) => {
+        const basisConfig = getDeliveryBasisConfigForCommodityCode(
+          commodity.code,
+          activeIndex,
+        );
+        const basis = basisByCode.get(basisConfig.code);
 
-  if (!basis || !basket || dbCommodities.length === 0) {
+        return basis ? ([commodity.id, basis] as const) : null;
+      })
+      .filter((entry): entry is readonly [string, (typeof bases)[number]] =>
+        Boolean(entry),
+      ),
+  );
+  const basketByCommodityId = new Map(
+    dbCommodities
+      .map((commodity) => {
+        const basketCode = getDeliveryBasketCodeForCommodityCode(
+          commodity.code,
+          activeIndex,
+        );
+        const basket = basketByCode.get(basketCode);
+
+        return basket ? ([commodity.id, basket] as const) : null;
+      })
+      .filter((entry): entry is readonly [string, (typeof baskets)[number]] =>
+        Boolean(entry),
+      ),
+  );
+  const basisIds = [...new Set([...basisByCommodityId.values()].map((basis) => basis.id))];
+  const basketIds = [
+    ...new Set([...basketByCommodityId.values()].map((basket) => basket.id)),
+  ];
+
+  if (
+    basisIds.length === 0 ||
+    basketIds.length === 0 ||
+    dbCommodities.length === 0
+  ) {
     return null;
   }
 
@@ -592,36 +652,36 @@ async function getDatabaseCalculationContext(date: string) {
     db.priceSubmission.findMany({
       where: {
         tradeDate,
-        deliveryBasisId: basis.id,
+        deliveryBasisId: { in: basisIds },
       },
       orderBy: { updatedAt: "desc" },
     }),
     db.externalIndicative.findMany({
       where: {
         tradeDate,
-        deliveryBasisId: basis.id,
+        deliveryBasisId: { in: basisIds },
         source: "spike",
       },
     }),
     db.indexCalculation.findMany({
       where: {
         tradeDate,
-        deliveryBasisId: basis.id,
-        basketId: basket.id,
+        deliveryBasisId: { in: basisIds },
+        basketId: { in: basketIds },
       },
     }),
     db.publishedIndex.findMany({
       where: {
         tradeDate,
-        deliveryBasisId: basis.id,
-        basketId: basket.id,
+        deliveryBasisId: { in: basisIds },
+        basketId: { in: basketIds },
       },
     }),
   ]);
 
   return {
-    basis,
-    basket,
+    basisByCommodityId,
+    basketByCommodityId,
     dbCommodities,
     dbRespondents,
     submissions,
@@ -643,9 +703,13 @@ function buildDatabaseCalculationInput(
     context.dbRespondents.map((respondent) => [respondent.id, respondent.legalName]),
   );
   const submissionsByRespondent = new Map<string, typeof context.submissions>();
+  const basis = context.basisByCommodityId.get(commodityId);
 
   for (const submission of context.submissions) {
-    if (submission.commodityId !== commodityId) {
+    if (
+      submission.commodityId !== commodityId ||
+      (basis && submission.deliveryBasisId !== basis.id)
+    ) {
       continue;
     }
 
@@ -664,7 +728,9 @@ function buildDatabaseCalculationInput(
       Boolean(submission),
     );
   const indicative = context.indicatives.find(
-    (item) => item.commodityId === commodityId,
+    (item) =>
+      item.commodityId === commodityId &&
+      (!basis || item.deliveryBasisId === basis.id),
   );
 
   return {
@@ -698,7 +764,7 @@ async function isPublicationLockedForDate(date: string) {
 }
 
 function lockedPublicationReason() {
-  return "Published UGA Index values for this trade date are locked. Historical published indices cannot be recalculated or republished.";
+  return `Published ${getActiveIndexTenant().name} values for this trade date are locked. Historical published indices cannot be recalculated or republished.`;
 }
 
 function buildCalculationCommodity({

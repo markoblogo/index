@@ -11,13 +11,13 @@ type InternalShellProps = {
   user: DemoUser;
 };
 
-const navByRole = {
+const baseNavByRole = {
   admin: [
     { href: "/admin", label: "Admin dashboard" },
     { href: "/admin/daily-inputs", label: "Daily input" },
     { href: "/admin/respondents", label: "Respondents" },
-    { href: "/admin/calculate", label: "Publish UGA Index" },
-    { href: "/admin/embed", label: "Embed on UGA site" },
+    { href: "/admin/calculate", label: "Publish index" },
+    { href: "/admin/embed", label: "Website embed" },
   ],
   respondent: [
     { href: "/respondent", label: "Survey form" },
@@ -29,8 +29,26 @@ const navByRole = {
 } as const;
 
 export function InternalShell({ children, user }: InternalShellProps) {
-  const navItems = navByRole[user.role];
   const isSpike = SITE_CONFIG.tenantId === "spike-ua";
+  const navItems = baseNavByRole[user.role].map((item) => {
+    if (user.role !== "admin" || !isSpike) {
+      return item;
+    }
+
+    if (item.href === "/admin/respondents") {
+      return { ...item, label: "Partner respondents" };
+    }
+
+    if (item.href === "/admin/calculate") {
+      return { ...item, label: "Publish Spike Index" };
+    }
+
+    if (item.href === "/admin/embed") {
+      return { ...item, label: "Spike embed" };
+    }
+
+    return item;
+  });
 
   return (
     <div

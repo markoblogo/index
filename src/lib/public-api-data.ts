@@ -11,6 +11,11 @@ import {
   getActiveRespondentCount,
   getActiveRespondentCountData,
 } from "@/lib/respondent-directory";
+import {
+  getConfiguredDeliveryBasisCodes,
+  getDeliveryBasketCodeForCommodityCode,
+  getDeliveryBasisConfigForCommodityCode,
+} from "@/lib/tenant-basis";
 
 export type PublicLatestItem = {
   commodityId: CommodityId;
@@ -30,9 +35,6 @@ export type PublicHistoryItem = PublicLatestItem & {
 };
 
 const activeIndex = getActiveIndexConfig();
-const primaryDeliveryBasis = activeIndex.deliveryBases[0];
-const BASIS_CODE = primaryDeliveryBasis.code;
-const BASKET_CODE = primaryDeliveryBasis.basketCode;
 const demoDates = [
   "2026-05-01",
   "2026-05-02",
@@ -52,6 +54,8 @@ const mockCommodityIdByCode: Record<string, CommodityId> = {
   "FEED WHT": "feed-wheat",
   GMO_SOY: "gmo-soybean",
   "GMO SOY": "gmo-soybean",
+  SUNFLOWER: "sunflower",
+  SUN: "sunflower",
 };
 
 export async function getPublicLatestData() {
@@ -146,26 +150,49 @@ function getMockHistoryData(): PublicHistoryItem[] {
 }
 
 async function getDatabaseLatestData(): Promise<PublicLatestItem[]> {
-  const [basis, basket, dbCommodities] = await Promise.all([
-    db.deliveryBasis.findUnique({ where: { code: BASIS_CODE } }),
-    db.basket.findUnique({ where: { code: BASKET_CODE } }),
+  const [bases, baskets, dbCommodities] = await Promise.all([
+    db.deliveryBasis.findMany({
+      where: { code: { in: getConfiguredDeliveryBasisCodes(activeIndex) } },
+    }),
+    db.basket.findMany({
+      where: {
+        code: { in: activeIndex.deliveryBases.map((basis) => basis.basketCode) },
+      },
+    }),
     db.commodity.findMany({
       orderBy: { sortOrder: "asc" },
       where: { status: "published" },
     }),
   ]);
+  const basisByCode = new Map(bases.map((basis) => [basis.code, basis]));
+  const basketByCode = new Map(baskets.map((basket) => [basket.code, basket]));
 
-  if (!basis || !basket) {
+  if (bases.length === 0 || baskets.length === 0) {
     if (allowMockFallback()) {
       return getMockLatestData();
     }
 
-    throw new Error(`Missing basis or basket for ${BASIS_CODE}/${BASKET_CODE}.`);
+    throw new Error("Missing configured basis or basket.");
   }
   const activeRespondentCount = await getActiveRespondentCountData();
 
   const rows = await Promise.all(
     dbCommodities.map(async (commodity) => {
+      const basisConfig = getDeliveryBasisConfigForCommodityCode(
+        commodity.code,
+        activeIndex,
+      );
+      const basketCode = getDeliveryBasketCodeForCommodityCode(
+        commodity.code,
+        activeIndex,
+      );
+      const basis = basisByCode.get(basisConfig.code);
+      const basket = basketByCode.get(basketCode);
+
+      if (!basis || !basket) {
+        return null;
+      }
+
       const published = await db.publishedIndex.findFirst({
         orderBy: { tradeDate: "desc" },
         where: {
@@ -187,7 +214,7 @@ async function getDatabaseLatestData(): Promise<PublicLatestItem[]> {
         commodityNameUk: commodity.nameUk,
         commodityNameEn: commodity.nameEn,
         date: published.tradeDate.toISOString().slice(0, 10),
-        basis: basis.name,
+        basis: basisConfig.name,
         valueUsdPerMt: published.valueUsdPerMt.toNumber(),
         changeAbs: published.changeAbsUsdPerMt?.toNumber() ?? 0,
         changePct: published.changePct?.toNumber() ?? 0,
@@ -200,17 +227,27 @@ async function getDatabaseLatestData(): Promise<PublicLatestItem[]> {
 }
 
 async function getDatabaseHistoryData(): Promise<PublicHistoryItem[]> {
-  const [basis, basket] = await Promise.all([
-    db.deliveryBasis.findUnique({ where: { code: BASIS_CODE } }),
-    db.basket.findUnique({ where: { code: BASKET_CODE } }),
+  const [bases, baskets] = await Promise.all([
+    db.deliveryBasis.findMany({
+      where: { code: { in: getConfiguredDeliveryBasisCodes(activeIndex) } },
+    }),
+    db.basket.findMany({
+      where: {
+        code: { in: activeIndex.deliveryBases.map((basis) => basis.basketCode) },
+      },
+    }),
   ]);
+  const basisByCode = new Map(bases.map((basis) => [basis.code, basis]));
+  const basketByCode = new Map(baskets.map((basket) => [basket.code, basket]));
+  const basisIds = bases.map((basis) => basis.id);
+  const basketIds = baskets.map((basket) => basket.id);
 
-  if (!basis || !basket) {
+  if (basisIds.length === 0 || basketIds.length === 0) {
     if (allowMockFallback()) {
       return getMockHistoryData();
     }
 
-    throw new Error(`Missing basis or basket for ${BASIS_CODE}/${BASKET_CODE}.`);
+    throw new Error("Missing configured basis or basket.");
   }
   const activeRespondentCount = await getActiveRespondentCountData();
 
@@ -219,26 +256,43 @@ async function getDatabaseHistoryData(): Promise<PublicHistoryItem[]> {
     orderBy: [{ tradeDate: "desc" }, { commodity: { sortOrder: "asc" } }],
     take: 365,
     where: {
-      deliveryBasisId: basis.id,
-      basketId: basket.id,
+      deliveryBasisId: { in: basisIds },
+      basketId: { in: basketIds },
       locked: true,
       status: "published",
     },
   });
 
-  return rows.map((row) => ({
-    commodityId: mockCommodityIdByCode[row.commodity.code] ?? "corn",
-    commodityCode: row.commodity.code,
-    commodityNameUk: row.commodity.nameUk,
-    commodityNameEn: row.commodity.nameEn,
-    date: row.tradeDate.toISOString().slice(0, 10),
-    basis: basis.name,
-    valueUsdPerMt: row.valueUsdPerMt.toNumber(),
-    changeAbs: row.changeAbsUsdPerMt?.toNumber() ?? 0,
-    changePct: row.changePct?.toNumber() ?? 0,
-    respondents: activeRespondentCount,
-    status: "published",
-  }));
+  return rows
+    .filter((row) => {
+      const basisConfig = getDeliveryBasisConfigForCommodityCode(
+        row.commodity.code,
+        activeIndex,
+      );
+      const basketCode = getDeliveryBasketCodeForCommodityCode(
+        row.commodity.code,
+        activeIndex,
+      );
+
+      return (
+        row.deliveryBasisId === basisByCode.get(basisConfig.code)?.id &&
+        row.basketId === basketByCode.get(basketCode)?.id
+      );
+    })
+    .map((row) => ({
+      commodityId: mockCommodityIdByCode[row.commodity.code] ?? "corn",
+      commodityCode: row.commodity.code,
+      commodityNameUk: row.commodity.nameUk,
+      commodityNameEn: row.commodity.nameEn,
+      date: row.tradeDate.toISOString().slice(0, 10),
+      basis: getDeliveryBasisConfigForCommodityCode(row.commodity.code, activeIndex)
+        .name,
+      valueUsdPerMt: row.valueUsdPerMt.toNumber(),
+      changeAbs: row.changeAbsUsdPerMt?.toNumber() ?? 0,
+      changePct: row.changePct?.toNumber() ?? 0,
+      respondents: activeRespondentCount,
+      status: "published",
+    }));
 }
 
 function roundOne(value: number) {

@@ -1,4 +1,5 @@
 import { allowMockFallback, db, hasDatabaseUrl } from "@/lib/db";
+import { getActiveIndexConfig, type IndexTenantId } from "@/lib/index-platform";
 
 export type RespondentStatus = "active" | "pending";
 export type RespondentCollectionMode = "self_service" | "manual_outreach";
@@ -55,18 +56,30 @@ type RespondentDirectoryState = {
   schedule: RespondentEmailScheduleSettings;
 };
 
-const defaultRespondentEmailSchedule = {
-  enabled: true,
-  replyTo: "inbox@uga.ua",
-  sender: "UGA Index <onboarding@resend.dev>",
-  sendTime: "16:30",
-  subject: "UGA Index daily price survey",
-  surveyUrl: "/respondent",
-  template:
-    "Please submit today's CPT UA Black Sea price indicatives for UGA Index. Open your daily survey form using the personal link in this email.",
-  timezone: "Europe/Kyiv",
-  workdays: "Monday-Friday",
-} satisfies RespondentEmailScheduleSettings;
+function createDefaultRespondentEmailSchedule() {
+  const activeIndex = getActiveIndexConfig();
+
+  return {
+    enabled: true,
+    replyTo: activeIndex.id === "spike-ua" ? "info@spike.broker" : "inbox@uga.ua",
+    sender:
+      activeIndex.id === "spike-ua"
+        ? "Spike Index <onboarding@resend.dev>"
+        : "UGA Index <onboarding@resend.dev>",
+    sendTime: "16:30",
+    subject:
+      activeIndex.id === "spike-ua"
+        ? "Spike Index daily price survey"
+        : "UGA Index daily price survey",
+    surveyUrl: "/respondent",
+    template:
+      activeIndex.id === "spike-ua"
+        ? "Please submit today's CPT Odesa / CPT parity Odesa spot price indicatives for SPIKE Spot Commodity Index Ukraine. Open your daily survey form using the personal link in this email."
+        : "Please submit today's CPT UA Black Sea price indicatives for UGA Index. Open your daily survey form using the personal link in this email.",
+    timezone: "Europe/Kyiv",
+    workdays: "Monday-Friday",
+  } satisfies RespondentEmailScheduleSettings;
+}
 
 const initialRespondents: RespondentDirectoryEntry[] = [
   createRespondentSeed(
@@ -180,16 +193,20 @@ const initialRespondents: RespondentDirectoryEntry[] = [
 ];
 
 const globalDirectory = globalThis as typeof globalThis & {
-  __ugaRespondentDirectory?: RespondentDirectoryState;
+  __indexPlatformRespondentDirectory?: Partial<
+    Record<IndexTenantId, RespondentDirectoryState>
+  >;
 };
 
 function getState() {
-  globalDirectory.__ugaRespondentDirectory ??= {
-    respondents: initialRespondents.map(cloneRespondent),
-    schedule: { ...defaultRespondentEmailSchedule },
+  const tenantId = getActiveIndexConfig().id;
+  globalDirectory.__indexPlatformRespondentDirectory ??= {};
+  globalDirectory.__indexPlatformRespondentDirectory[tenantId] ??= {
+    respondents: createInitialRespondents().map(cloneRespondent),
+    schedule: createDefaultRespondentEmailSchedule(),
   };
 
-  return globalDirectory.__ugaRespondentDirectory;
+  return globalDirectory.__indexPlatformRespondentDirectory[tenantId];
 }
 
 export function getRespondentDirectory() {
@@ -234,7 +251,7 @@ export async function getRespondentEmailScheduleData() {
     });
 
     if (!schedule) {
-      return defaultRespondentEmailSchedule;
+      return createDefaultRespondentEmailSchedule();
     }
 
     return {
@@ -306,7 +323,7 @@ export async function getRespondentDirectoryData() {
           respondent.createdAt.toISOString(),
         loginEmail:
           respondent.authAccount?.loginEmail ??
-          `${respondent.id}@uga-index.demo`,
+          createDemoRespondentEmail(respondent.id),
         passwordSetupStatus:
           respondent.authAccount?.passwordSetupStatus === "active"
             ? "active"
@@ -388,7 +405,7 @@ export async function addRespondentDirectoryEntryData(
   }
 
   const loginEmail =
-    input.contactEmail.trim().toLowerCase() || `${id}@uga-index.demo`;
+    input.contactEmail.trim().toLowerCase() || createDemoRespondentEmail(id);
   const temporaryPassword = generateTemporaryPassword(id);
 
   await db.$transaction(async (tx) => {
@@ -697,7 +714,7 @@ export function addRespondentDirectoryEntry(input: {
     auth: {
       lastGeneratedAt: new Date().toISOString(),
       loginEmail:
-        input.contactEmail.trim().toLowerCase() || `${id}@uga-index.demo`,
+        input.contactEmail.trim().toLowerCase() || createDemoRespondentEmail(id),
       passwordSetupStatus: "temporary",
       temporaryPassword: generateTemporaryPassword(id),
     },
@@ -868,7 +885,27 @@ export function deleteRespondentContact(input: {
   }
 }
 
-export const respondentEmailSchedule = defaultRespondentEmailSchedule;
+export const respondentEmailSchedule = createDefaultRespondentEmailSchedule();
+
+function createInitialRespondents() {
+  const activeIndex = getActiveIndexConfig();
+
+  if (activeIndex.id !== "spike-ua") {
+    return initialRespondents;
+  }
+
+  return activeIndex.respondents.map((respondent, index) =>
+    createRespondentSeed(
+      respondent.id,
+      respondent.legalName,
+      `Partner contact ${index + 1}`,
+      "",
+      `respondent-${index + 1}@spike-ua.demo`,
+      "active",
+      "self_service",
+    ),
+  );
+}
 
 function createRespondentSeed(
   id: string,
@@ -928,27 +965,34 @@ function normalizeId(value: string) {
 
 function generateTemporaryPassword(seed: string) {
   const fragment = Math.random().toString(36).slice(2, 8).toUpperCase();
-  return `UGA-${normalizeId(seed).slice(0, 4).toUpperCase()}-${fragment}`;
+  const prefix = getActiveIndexConfig().id === "spike-ua" ? "SPIKE" : "UGA";
+  return `${prefix}-${normalizeId(seed).slice(0, 4).toUpperCase()}-${fragment}`;
+}
+
+function createDemoRespondentEmail(id: string) {
+  return `${id}@${getActiveIndexConfig().id === "spike-ua" ? "spike-ua" : "uga-index"}.demo`;
 }
 
 function normalizeScheduleInput(
   input: RespondentEmailScheduleSettings,
 ): RespondentEmailScheduleSettings {
+  const defaultSchedule = createDefaultRespondentEmailSchedule();
+
   return {
     enabled: input.enabled,
     replyTo: input.replyTo.trim(),
-    sender: input.sender.trim() || defaultRespondentEmailSchedule.sender,
+    sender: input.sender.trim() || defaultSchedule.sender,
     sendTime: normalizeSendTime(input.sendTime),
-    subject: input.subject.trim() || defaultRespondentEmailSchedule.subject,
-    surveyUrl: input.surveyUrl.trim() || defaultRespondentEmailSchedule.surveyUrl,
-    template: input.template.trim() || defaultRespondentEmailSchedule.template,
-    timezone: input.timezone.trim() || defaultRespondentEmailSchedule.timezone,
-    workdays: input.workdays.trim() || defaultRespondentEmailSchedule.workdays,
+    subject: input.subject.trim() || defaultSchedule.subject,
+    surveyUrl: input.surveyUrl.trim() || defaultSchedule.surveyUrl,
+    template: input.template.trim() || defaultSchedule.template,
+    timezone: input.timezone.trim() || defaultSchedule.timezone,
+    workdays: input.workdays.trim() || defaultSchedule.workdays,
   };
 }
 
 function normalizeSendTime(value: string) {
   return /^\d{2}:\d{2}$/.test(value.trim())
     ? value.trim()
-    : defaultRespondentEmailSchedule.sendTime;
+    : createDefaultRespondentEmailSchedule().sendTime;
 }

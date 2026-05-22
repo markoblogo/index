@@ -37,8 +37,7 @@ const noticeText: Record<string, string> = {
     "Publish action completed. Published values are locked in the current dev session.",
   published_database:
     "Publish action completed. PublishedIndex rows, changes, locks, and audit logs were created.",
-  locked:
-    "Published UGA Index values for this trade date are locked and cannot be recalculated or republished.",
+  locked: `Published ${SITE_CONFIG.name} values for this trade date are locked and cannot be recalculated or republished.`,
 };
 
 export default async function AdminCalculatePage({
@@ -54,6 +53,7 @@ export default async function AdminCalculatePage({
       !commodity.published?.locked &&
       !data.lockedForPublication,
   ).length;
+  const showBenchmark = SITE_CONFIG.features.externalIndicative;
 
   async function recalculate(formData: FormData) {
     "use server";
@@ -78,11 +78,11 @@ export default async function AdminCalculatePage({
               Admin publication workflow
             </p>
             <h1 className="mt-3 text-3xl font-semibold tracking-tight">
-              Publish UGA Index
+              Publish {SITE_CONFIG.name}
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-black/65">
               Review grouped index calculations for all commodities and publish
-              all eligible UGA Index values in one locked publication action.
+              all eligible {SITE_CONFIG.name} values in one locked publication action.
             </p>
             <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.12em]">
               <span className="rounded-full bg-uga-mist px-3 py-1 text-uga-green">
@@ -142,8 +142,9 @@ export default async function AdminCalculatePage({
       <div className="grid gap-3 rounded-[1.5rem] border border-black/10 bg-white p-4 shadow-sm lg:grid-cols-[1fr_auto] lg:items-center">
         <div className="grid gap-2 text-sm leading-6 text-black/60">
           <p>
-            Benchmark is shown only as an external reference. Insufficient
-            baskets are not published automatically.
+            {showBenchmark
+              ? "Benchmark is shown only as an external reference. Insufficient baskets are not published automatically."
+              : "This tenant publishes only calculated respondent-based index values. Insufficient baskets are not published automatically."}
           </p>
           <p className="font-semibold text-uga-dark">
             Final publication is performed for all eligible commodities in one
@@ -177,9 +178,10 @@ export default async function AdminCalculatePage({
             </h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-black/60">
               Each row shows the respondent basket, included sample, median,
-              calculated UGA Index value and benchmark reference. Optional
-              benchmark blend averages the UGA calculation with benchmark before
-              publication.
+              calculated {SITE_CONFIG.name} value
+              {showBenchmark
+                ? " and benchmark reference. Optional benchmark blend averages the calculation with benchmark before publication."
+                : " and publication lock status."}
             </p>
           </div>
           <button
@@ -187,7 +189,7 @@ export default async function AdminCalculatePage({
             disabled={publishableCount === 0}
             type="submit"
           >
-            Publish UGA Index
+            Publish {SITE_CONFIG.name}
           </button>
         </div>
 
@@ -199,15 +201,23 @@ export default async function AdminCalculatePage({
                 <th className="px-4 py-3 font-semibold">Basket</th>
                 <th className="px-4 py-3 font-semibold">Included</th>
                 <th className="px-4 py-3 font-semibold">Median</th>
-                <th className="px-4 py-3 font-semibold">UGA Index</th>
-                <th className="px-4 py-3 font-semibold">Benchmark</th>
-                <th className="px-4 py-3 font-semibold">Blend</th>
+                <th className="px-4 py-3 font-semibold">{SITE_CONFIG.name}</th>
+                {showBenchmark ? (
+                  <>
+                    <th className="px-4 py-3 font-semibold">Benchmark</th>
+                    <th className="px-4 py-3 font-semibold">Blend</th>
+                  </>
+                ) : null}
                 <th className="px-4 py-3 font-semibold">Lock</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-black/10">
               {data.commodities.map((commodity) => (
-                <CalculationRow commodity={commodity} key={commodity.id} />
+                <CalculationRow
+                  commodity={commodity}
+                  key={commodity.id}
+                  showBenchmark={showBenchmark}
+                />
               ))}
             </tbody>
           </table>
@@ -219,10 +229,13 @@ export default async function AdminCalculatePage({
 
 function CalculationRow({
   commodity,
+  showBenchmark,
 }: {
   commodity: AdminCalculationCommodity;
+  showBenchmark: boolean;
 }) {
   const canBlend =
+    showBenchmark &&
     commodity.status === "publishable" &&
     commodity.value !== null &&
     commodity.spikeIndicative !== null &&
@@ -261,28 +274,32 @@ function CalculationRow({
         <td className="px-4 py-4">
           <Metric label="Calculated" value={formatUsd(commodity.value)} strong />
         </td>
-        <td className="px-4 py-4">
-          <Metric label="Reference" value={formatUsd(commodity.spikeIndicative)} />
-        </td>
-        <td className="px-4 py-4">
-          <label className="grid max-w-[14rem] gap-2 text-sm">
-            <span className="flex items-center gap-2 font-semibold text-uga-dark">
-              <input
-                className="size-4 rounded-none border-black/20 text-uga-green"
-                disabled={!canBlend}
-                name="benchmarkBlendCommodityIds"
-                type="checkbox"
-                value={commodity.id}
-              />
-              Use benchmark blend
-            </span>
-            <span className="text-xs leading-5 text-black/55">
-              {commodity.benchmarkBlendedValue === null
-                ? "Unavailable"
-                : `Publish value if on: ${formatUsd(commodity.benchmarkBlendedValue)}`}
-            </span>
-          </label>
-        </td>
+        {showBenchmark ? (
+          <>
+            <td className="px-4 py-4">
+              <Metric label="Reference" value={formatUsd(commodity.spikeIndicative)} />
+            </td>
+            <td className="px-4 py-4">
+              <label className="grid max-w-[14rem] gap-2 text-sm">
+                <span className="flex items-center gap-2 font-semibold text-uga-dark">
+                  <input
+                    className="size-4 rounded-none border-black/20 text-uga-green"
+                    disabled={!canBlend}
+                    name="benchmarkBlendCommodityIds"
+                    type="checkbox"
+                    value={commodity.id}
+                  />
+                  Use benchmark blend
+                </span>
+                <span className="text-xs leading-5 text-black/55">
+                  {commodity.benchmarkBlendedValue === null
+                    ? "Unavailable"
+                    : `Publish value if on: ${formatUsd(commodity.benchmarkBlendedValue)}`}
+                </span>
+              </label>
+            </td>
+          </>
+        ) : null}
         <td className="px-4 py-4">
           {commodity.published?.locked ? (
             <div className="grid gap-2">
@@ -300,7 +317,7 @@ function CalculationRow({
       </tr>
       {commodity.excluded.length > 0 ? (
         <tr>
-          <td className="px-4 pb-4 pt-0" colSpan={8}>
+          <td className="px-4 pb-4 pt-0" colSpan={showBenchmark ? 8 : 6}>
             <div className="border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">
               Excluded outliers:{" "}
               {commodity.excluded

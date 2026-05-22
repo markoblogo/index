@@ -13,6 +13,11 @@ import {
   getActiveRespondentCount,
   getActiveRespondentCountData,
 } from "@/lib/respondent-directory";
+import {
+  getConfiguredDeliveryBasisCodes,
+  getDeliveryBasketCodeForCommodityCode,
+  getDeliveryBasisConfigForCommodityCode,
+} from "@/lib/tenant-basis";
 
 export type PublicIndexSnapshot = {
   commodities: Commodity[];
@@ -22,8 +27,6 @@ export type PublicIndexSnapshot = {
 
 const activeIndex = getActiveIndexConfig();
 const primaryDeliveryBasis = activeIndex.deliveryBases[0];
-const BASIS_CODE = primaryDeliveryBasis.code;
-const BASKET_CODE = primaryDeliveryBasis.basketCode;
 const MOCK_BASIS_ID = primaryDeliveryBasis.code.toLowerCase().replaceAll("_", "-");
 const commodityCodeByMockId: Record<CommodityId, string> = Object.fromEntries(
   activeIndex.commodities.map((commodity) => [commodity.id, commodity.dbCode]),
@@ -104,17 +107,25 @@ function getMockPublicIndexSnapshot(): PublicIndexSnapshot {
 
 async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
   const activeRespondentCount = await getActiveRespondentCountData();
-  const [basis, basket] = await Promise.all([
-    db.deliveryBasis.findUnique({ where: { code: BASIS_CODE } }),
-    db.basket.findUnique({ where: { code: BASKET_CODE } }),
+  const [bases, baskets] = await Promise.all([
+    db.deliveryBasis.findMany({
+      where: { code: { in: getConfiguredDeliveryBasisCodes(activeIndex) } },
+    }),
+    db.basket.findMany({
+      where: {
+        code: { in: activeIndex.deliveryBases.map((basis) => basis.basketCode) },
+      },
+    }),
   ]);
+  const basisByCode = new Map(bases.map((basis) => [basis.code, basis]));
+  const basketByCode = new Map(baskets.map((basket) => [basket.code, basket]));
 
-  if (!basis || !basket) {
+  if (bases.length === 0 || baskets.length === 0) {
     if (allowMockFallback()) {
       return getMockPublicIndexSnapshot();
     }
 
-    throw new Error(`Missing basis or basket for ${BASIS_CODE}/${BASKET_CODE}.`);
+    throw new Error("Missing configured basis or basket.");
   }
 
   const dbCommodities = await db.commodity.findMany({
@@ -122,8 +133,23 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
     where: { status: "published" },
   });
   const published = await Promise.all(
-    dbCommodities.map((commodity) =>
-      db.publishedIndex.findFirst({
+    dbCommodities.map((commodity) => {
+      const basisConfig = getDeliveryBasisConfigForCommodityCode(
+        commodity.code,
+        activeIndex,
+      );
+      const basketCode = getDeliveryBasketCodeForCommodityCode(
+        commodity.code,
+        activeIndex,
+      );
+      const basis = basisByCode.get(basisConfig.code);
+      const basket = basketByCode.get(basketCode);
+
+      if (!basis || !basket) {
+        return null;
+      }
+
+      return db.publishedIndex.findFirst({
         where: {
           commodityId: commodity.id,
           deliveryBasisId: basis.id,
@@ -132,8 +158,8 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
           locked: true,
         },
         orderBy: { tradeDate: "desc" },
-      }),
-    ),
+      });
+    }),
   );
   const publishedByCommodityId = new Map(
     published
@@ -167,6 +193,10 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
   const publicLatestQuotes = dbCommodities.map((commodity) => {
     const mockCommodity = mockCommodityByCode.get(commodity.code) ?? commodities[0];
     const publishedIndex = publishedByCommodityId.get(commodity.id);
+    const basisConfig = getDeliveryBasisConfigForCommodityCode(
+      commodity.code,
+      activeIndex,
+    );
 
     if (!publishedIndex) {
       const quote = latestQuotes.find(
@@ -179,7 +209,7 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
       id: `${mockCommodity.id}-${publishedIndex.tradeDate.toISOString()}`,
       commodityId: mockCommodity.id,
       date: publishedIndex.tradeDate.toISOString().slice(0, 10),
-      basis: basis.name,
+      basis: basisConfig.name,
       price: publishedIndex.valueUsdPerMt.toNumber(),
       absoluteChange: publishedIndex.changeAbsUsdPerMt?.toNumber() ?? 0,
       percentChange: publishedIndex.changePct?.toNumber() ?? 0,

@@ -6,6 +6,11 @@ import { allowMockFallback, db, hasDatabaseUrl } from "@/lib/db";
 import type { DemoUser } from "@/lib/demo-auth";
 import { getDemoSubmission, setDemoSubmission } from "@/lib/demo-submission-store";
 import { commodities, respondents, type CommodityId } from "@/lib/mock-data";
+import {
+  getActiveIndexTenant,
+  getConfiguredDeliveryBasisCodes,
+  getDeliveryBasisConfigForCommodityCode,
+} from "@/lib/tenant-basis";
 
 export type DailyInputStatus =
   | "missing"
@@ -51,13 +56,13 @@ export type DailyInputData = {
   cells: DailyInputCell[];
 };
 
-const BASIS_CODE = "FOB_BLACK_SEA";
 const WARNING_THRESHOLD = 0.02;
 const commodityCodeByMockId: Record<CommodityId, string> = {
   corn: "CORN",
   "wheat-115": "WHT_115",
   "feed-wheat": "FEED_WHT",
   "gmo-soybean": "GMO_SOY",
+  sunflower: "SUNFLOWER",
 };
 
 export function todayInputDate() {
@@ -136,8 +141,10 @@ export async function saveDailyInputs(formData: FormData, user: DemoUser) {
 
 async function getDatabaseDailyInputData(date: string): Promise<DailyInputData> {
   const tradeDate = dateToUtcDate(date);
-  const [basis, dbCommodities, dbRespondents] = await Promise.all([
-    db.deliveryBasis.findUnique({ where: { code: BASIS_CODE } }),
+  const activeIndex = getActiveIndexTenant();
+  const basisCodes = getConfiguredDeliveryBasisCodes(activeIndex);
+  const [bases, dbCommodities, dbRespondents] = await Promise.all([
+    db.deliveryBasis.findMany({ where: { code: { in: basisCodes } } }),
     db.commodity.findMany({
       orderBy: { sortOrder: "asc" },
       where: { status: "published" },
@@ -148,7 +155,25 @@ async function getDatabaseDailyInputData(date: string): Promise<DailyInputData> 
     }),
   ]);
 
-  if (!basis || dbCommodities.length === 0 || dbRespondents.length === 0) {
+  const basisByCode = new Map(bases.map((basis) => [basis.code, basis]));
+  const basisByCommodityId = new Map(
+    dbCommodities
+      .map((commodity) => {
+        const basisConfig = getDeliveryBasisConfigForCommodityCode(
+          commodity.code,
+          activeIndex,
+        );
+        const basis = basisByCode.get(basisConfig.code);
+
+        return basis ? ([commodity.id, basis] as const) : null;
+      })
+      .filter((entry): entry is readonly [string, (typeof bases)[number]] =>
+        Boolean(entry),
+      ),
+  );
+  const basisIds = [...new Set([...basisByCommodityId.values()].map((basis) => basis.id))];
+
+  if (basisIds.length === 0 || dbCommodities.length === 0 || dbRespondents.length === 0) {
     if (allowMockFallback()) {
       return getMockDailyInputData(date);
     }
@@ -160,20 +185,20 @@ async function getDatabaseDailyInputData(date: string): Promise<DailyInputData> 
     db.priceSubmission.findMany({
       where: {
         tradeDate,
-        deliveryBasisId: basis.id,
+        deliveryBasisId: { in: basisIds },
       },
     }),
     db.externalIndicative.findMany({
       where: {
         tradeDate,
-        deliveryBasisId: basis.id,
+        deliveryBasisId: { in: basisIds },
         source: "spike",
       },
     }),
     db.publishedIndex.count({
       where: {
         tradeDate,
-        deliveryBasisId: basis.id,
+        deliveryBasisId: { in: basisIds },
         locked: true,
       },
     }),
@@ -182,14 +207,18 @@ async function getDatabaseDailyInputData(date: string): Promise<DailyInputData> 
 
   const indicativeByCommodity = new Map(
     indicatives.map((indicative) => [
-      indicative.commodityId,
+      cellKey(indicative.commodityId, indicative.deliveryBasisId, "spike"),
       indicative.priceUsdPerMt.toNumber(),
     ]),
   );
   const submissionsByCell = new Map<string, typeof submissions>();
 
   for (const submission of submissions) {
-    const key = cellKey(submission.commodityId, submission.respondentId);
+    const key = cellKey(
+      submission.commodityId,
+      submission.deliveryBasisId,
+      submission.respondentId,
+    );
     const current = submissionsByCell.get(key) ?? [];
     current.push(submission);
     submissionsByCell.set(key, current);
@@ -197,8 +226,11 @@ async function getDatabaseDailyInputData(date: string): Promise<DailyInputData> 
 
   const cells = dbCommodities.flatMap((commodity) =>
     dbRespondents.map((respondent) => {
+      const basis = basisByCommodityId.get(commodity.id);
       const cellSubmissions =
-        submissionsByCell.get(cellKey(commodity.id, respondent.id)) ?? [];
+        basis
+          ? (submissionsByCell.get(cellKey(commodity.id, basis.id, respondent.id)) ?? [])
+          : [];
       const adminSubmission = cellSubmissions.find(
         (submission) => submission.source === "admin",
       );
@@ -210,7 +242,9 @@ async function getDatabaseDailyInputData(date: string): Promise<DailyInputData> 
         respondentSubmission,
       );
       const spikeIndicative =
-        indicativeByCommodity.get(commodity.id) ??
+        (basis
+          ? indicativeByCommodity.get(cellKey(commodity.id, basis.id, "spike"))
+          : null) ??
         fallbackSpikeForCommodityCode(commodity.code, date);
       const price = selectedSubmission?.priceUsdPerMt.toNumber() ?? null;
 
@@ -230,7 +264,7 @@ async function getDatabaseDailyInputData(date: string): Promise<DailyInputData> 
 
   return {
     date,
-    basisLabel: basis.name,
+    basisLabel: activeIndex.defaultDeliveryBasis,
     lockReason: lockedForEditing ? lockedInputReason() : null,
     lockedForEditing,
     publicationStatus: lockedPublishedCount > 0 ? "published_locked" : "not_published",
@@ -338,18 +372,11 @@ async function isDatabaseDailyInputLocked(date: string) {
   }
 
   const tradeDate = dateToUtcDate(date);
-  const basis = await db.deliveryBasis.findUnique({
-    where: { code: BASIS_CODE },
-  });
-
-  if (!basis) {
-    return false;
-  }
-
+  const basisCodes = getConfiguredDeliveryBasisCodes();
   const lockedPublishedCount = await db.publishedIndex.count({
     where: {
       tradeDate,
-      deliveryBasisId: basis.id,
+      deliveryBasis: { code: { in: basisCodes } },
       locked: true,
     },
   });
@@ -371,15 +398,34 @@ async function saveDatabaseDailyInputs(
   user: DemoUser,
 ) {
   const tradeDate = dateToUtcDate(date);
-  const basis = await db.deliveryBasis.findUnique({
-    where: { code: BASIS_CODE },
-  });
+  const [bases, dbCommodities] = await Promise.all([
+    db.deliveryBasis.findMany({
+      where: { code: { in: getConfiguredDeliveryBasisCodes() } },
+    }),
+    db.commodity.findMany({
+      where: { id: { in: [...new Set(entries.map((entry) => entry.commodityId))] } },
+    }),
+  ]);
+  const basisByCode = new Map(bases.map((basis) => [basis.code, basis]));
+  const commodityById = new Map(
+    dbCommodities.map((commodity) => [commodity.id, commodity]),
+  );
 
-  if (!basis) {
-    throw new Error("CPT UA Black Sea delivery basis is not seeded.");
+  if (bases.length === 0) {
+    throw new Error("Delivery bases are not seeded.");
   }
 
   for (const entry of entries) {
+    const commodity = commodityById.get(entry.commodityId);
+    const basisCode = commodity
+      ? getDeliveryBasisConfigForCommodityCode(commodity.code).code
+      : getConfiguredDeliveryBasisCodes()[0];
+    const basis = basisByCode.get(basisCode);
+
+    if (!basis) {
+      throw new Error(`Delivery basis ${basisCode} is not seeded.`);
+    }
+
     const existing = await db.priceSubmission.findUnique({
       where: {
         tradeDate_commodityId_deliveryBasisId_respondentId_source: {
@@ -565,8 +611,8 @@ function fallbackSpikeForCommodityCode(code: string, date: string) {
   return roundMoney(base + ((seed % 7) - 3) * 0.35);
 }
 
-function cellKey(commodityId: string, respondentId: string) {
-  return `${commodityId}:${respondentId}`;
+function cellKey(commodityId: string, deliveryBasisId: string, respondentId: string) {
+  return `${commodityId}:${deliveryBasisId}:${respondentId}`;
 }
 
 function selectLatestDatabaseSubmission<T extends { updatedAt: Date }>(

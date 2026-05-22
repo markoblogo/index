@@ -9,19 +9,21 @@ export default async function AdminEmbedPage() {
   await requireDemoRole("admin");
   const activeIndex = getActiveIndexConfig();
   const siteUrl = normalizeSiteUrl(activeIndex.publicSiteUrl);
+  const embedId = `${activeIndex.id}-index-embed`;
+  const embedTheme = activeIndex.id === "spike-ua" ? "dark" : "light";
   const iframeCode = `<iframe
-  src="${siteUrl}/embed/site?locale=uk&theme=light&view=index"
-  title="UGA Index"
+  src="${siteUrl}/embed/site?locale=uk&theme=${embedTheme}&view=index"
+  title="${activeIndex.name}"
   loading="lazy"
   allowfullscreen
   style="width:100%;height:820px;border:0;display:block;"
 ></iframe>`;
-  const jsCode = `<div id="uga-index-embed"></div>
+  const jsCode = `<div id="${embedId}"></div>
 <script
   src="${siteUrl}/embed/uga-index.js"
-  data-target="#uga-index-embed"
+  data-target="#${embedId}"
   data-locale="uk"
-  data-theme="light"
+  data-theme="${embedTheme}"
   data-layout="site"
 ></script>`;
 
@@ -29,13 +31,13 @@ export default async function AdminEmbedPage() {
     <section className="grid gap-6">
       <div className="border border-black bg-white p-5">
         <p className="text-sm font-semibold uppercase tracking-[0.18em] text-uga-green">
-          UGA website embed
+          Website embed
         </p>
         <h1 className="mt-3 text-3xl font-black uppercase leading-tight">
-          Embed UGA Index on UGA.ua
+          Embed {activeIndex.name}
         </h1>
         <p className="mt-3 max-w-4xl text-sm leading-6 text-black/65">
-          Use this full-site iframe when UGA creates a section on its website.
+          Use this full-site iframe when {activeIndex.legalName.en} creates a section on its website.
           The embedded area has no footer, keeps a hidden hover header, syncs
           language through the URL, supports light/dark theme switching,
           fullscreen mode, internal pages, and opening the standalone index site.
@@ -54,7 +56,7 @@ export default async function AdminEmbedPage() {
           </div>
           <a
             className="border border-black bg-white px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-black transition hover:bg-uga-lime"
-            href={`${siteUrl}/embed/site?locale=uk&theme=light&view=index`}
+            href={`${siteUrl}/embed/site?locale=uk&theme=${embedTheme}&view=index`}
             rel="noopener noreferrer"
             target="_blank"
           >
@@ -66,8 +68,8 @@ export default async function AdminEmbedPage() {
             allowFullScreen
             className="block h-[640px] w-full border-0"
             loading="lazy"
-            src={`${siteUrl}/embed/site?locale=uk&theme=light&view=index`}
-            title="UGA Index embed preview"
+            src={`${siteUrl}/embed/site?locale=uk&theme=${embedTheme}&view=index`}
+            title={`${activeIndex.name} embed preview`}
           />
         </div>
       </div>

@@ -21,6 +21,7 @@ import {
   type RespondentStatus,
 } from "@/lib/respondent-directory";
 import { sendRespondentSurveyEmails } from "@/lib/respondent-email";
+import { SITE_CONFIG } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -35,6 +36,7 @@ export default async function AdminRespondentsPage() {
   const selfServiceCount = respondents.filter(
     (respondent) => respondent.collectionMode === "self_service",
   ).length;
+  const isSpike = SITE_CONFIG.tenantId === "spike-ua";
 
   return (
     <section className="grid gap-6">
@@ -45,11 +47,11 @@ export default async function AdminRespondentsPage() {
               Respondent management
             </p>
             <h1 className="mt-3 text-3xl font-black uppercase leading-tight tracking-normal">
-              Respondents
+              {isSpike ? "Partner respondents" : "Respondents"}
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-black/65">
               Maintain respondent companies, contact people and collection mode
-              for daily UGA Index price submissions.
+              for daily {SITE_CONFIG.name} price submissions.
             </p>
           </div>
           <div className="grid grid-cols-3 border border-black text-sm font-semibold">
@@ -174,7 +176,7 @@ function SurveyNotificationSettings({
                 className="admin-field"
                 defaultValue={schedule.replyTo}
                 name="replyTo"
-                placeholder="admin@uga.ua"
+                placeholder={SITE_CONFIG.tenantId === "spike-ua" ? "info@spike.broker" : "admin@uga.ua"}
                 type="email"
               />
             </Field>
