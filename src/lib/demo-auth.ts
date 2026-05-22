@@ -3,6 +3,7 @@ import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { db, hasDatabaseUrl } from "@/lib/db";
 
 export const DEMO_SESSION_COOKIE = "uga_demo_session";
 
@@ -50,14 +51,101 @@ export async function requireDemoRole(role: DemoRole) {
   const user = await getCurrentDemoUser();
 
   if (!user) {
+    const openAccessUser = await getOpenDemoAccessUser(role);
+
+    if (openAccessUser) {
+      return openAccessUser;
+    }
+
     redirect(`/login?next=${encodeURIComponent(getRoleHome(role))}`);
   }
 
   if (user.role !== role) {
+    const openAccessUser = await getOpenDemoAccessUser(role);
+
+    if (openAccessUser) {
+      return openAccessUser;
+    }
+
     redirect(getRoleHome(user.role));
   }
 
   return user;
+}
+
+async function getOpenDemoAccessUser(role: DemoRole): Promise<DemoUser | null> {
+  if (process.env.UGA_INDEX_OPEN_DEMO_ACCESS !== "enabled") {
+    return null;
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+
+  if (role === "admin") {
+    const dbUser = await findOpenDemoDbUser("admin");
+
+    return {
+      userId: dbUser?.id ?? "open-demo-admin",
+      email: dbUser?.email ?? "admin@uga.ua",
+      name: dbUser?.name ?? "UGA Administrator",
+      username: dbUser?.email ?? "admin@uga.ua",
+      role: "admin",
+      passwordSetupStatus: "active",
+      issuedAt: now,
+      expiresAt: now + DEMO_SESSION_TTL_SECONDS,
+    };
+  }
+
+  if (role === "respondent") {
+    const dbUser = await findOpenDemoDbUser("respondent");
+    const respondent = dbUser?.respondent;
+
+    return {
+      userId: dbUser?.id ?? "open-demo-respondent",
+      email: dbUser?.email ?? "bunge@uga-index.demo",
+      name: dbUser?.name ?? "Bunge Ukraine respondent",
+      username: dbUser?.email ?? "bunge@uga-index.demo",
+      role: "respondent",
+      respondentId: dbUser?.respondentId ?? "bunge-ukraine",
+      companyName: respondent?.legalName ?? "ПІІ «БУНГЕ ЮКРЕЙН»",
+      respondentName: respondent?.legalName ?? "ПІІ «БУНГЕ ЮКРЕЙН»",
+      passwordSetupStatus: "active",
+      issuedAt: now,
+      expiresAt: now + DEMO_SESSION_TTL_SECONDS,
+    };
+  }
+
+  return null;
+}
+
+async function findOpenDemoDbUser(role: Exclude<DemoRole, "member">) {
+  if (!hasDatabaseUrl()) {
+    return null;
+  }
+
+  try {
+    return await db.user.findFirst({
+      include: {
+        respondent: true,
+      },
+      orderBy: {
+        createdAt: "asc",
+      },
+      where: {
+        active: true,
+        role,
+        ...(role === "respondent"
+          ? {
+              respondent: {
+                status: "active",
+              },
+            }
+          : {}),
+      },
+    });
+  } catch (error) {
+    console.warn("Open demo access DB lookup failed.", error);
+    return null;
+  }
 }
 
 type SessionSourceUser = {
