@@ -14,6 +14,9 @@ export function SiteFooter({ locale }: { locale: Locale }) {
     { href: `/${locale}/methodology`, label: dict.nav.methodology },
     { href: `/${locale}/analytics`, label: dict.nav.analytics },
     { href: `/${locale}/subscription`, label: dict.nav.subscription },
+    ...(isSpike
+      ? [{ href: `/${locale}/blog`, label: locale === "uk" ? "Блог" : "Blog" }]
+      : []),
   ];
   const legalItems = [
     {

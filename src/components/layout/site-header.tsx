@@ -15,6 +15,9 @@ export function SiteHeader({ locale }: { locale: Locale }) {
     { href: `/${locale}/methodology`, label: dict.nav.methodology },
     { href: `/${locale}/analytics`, label: dict.nav.analytics },
     { href: `/${locale}/subscription`, label: dict.nav.subscription },
+    ...(SITE_CONFIG.tenantId === "spike-ua"
+      ? [{ href: `/${locale}/blog`, label: locale === "uk" ? "Блог" : "Blog" }]
+      : []),
   ];
 
   const isSpike = SITE_CONFIG.tenantId === "spike-ua";
