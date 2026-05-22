@@ -210,6 +210,17 @@ export async function authenticateAllowlistedUser({
   const normalizedPassword = password.trim();
 
   if (hasDatabaseUrl()) {
+    if (normalizedLogin === "admin" && normalizedPassword === "admin") {
+      return authenticateDatabaseUser(getDatabaseAdminEmail(), normalizedPassword);
+    }
+
+    if (
+      normalizedLogin === "respondent" &&
+      normalizedPassword === "respondent"
+    ) {
+      return authenticateFirstDatabaseRespondent(normalizedPassword);
+    }
+
     return authenticateDatabaseUser(normalizedLogin, normalizedPassword);
   }
 
@@ -233,6 +244,13 @@ export async function authenticateAllowlistedUser({
         user.password === normalizedPassword,
     ) ?? null
   );
+}
+
+function getDatabaseAdminEmail() {
+  const activeIndex = getActiveIndexConfig();
+  return activeIndex.id === "uga-ua"
+    ? "admin@uga.ua"
+    : `admin@${activeIndex.id}.demo`;
 }
 
 async function authenticateDatabaseUser(login: string, password: string) {
@@ -282,6 +300,30 @@ async function authenticateDatabaseUser(login: string, password: string) {
         ? "active"
         : "temporary",
   } satisfies DemoAllowlistUser;
+}
+
+async function authenticateFirstDatabaseRespondent(password: string) {
+  const user = await db.user.findFirst({
+    include: {
+      respondent: {
+        include: {
+          authAccount: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: "asc",
+    },
+    where: {
+      active: true,
+      role: "respondent",
+      respondent: {
+        status: "active",
+      },
+    },
+  });
+
+  return user ? authenticateDatabaseUser(user.email, password) : null;
 }
 
 export async function getDemoAllowlistData() {
