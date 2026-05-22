@@ -238,78 +238,199 @@ body[data-index="spike"] .brand-logo {
   background: #050505;
 }
 
-.spike-analytics-page > section:first-child {
+.spike-static-page,
+.spike-analytics-page,
+.spike-subscription-page {
+  background:
+    linear-gradient(rgba(5, 5, 5, 0.1), rgba(5, 5, 5, 0.92)),
+    var(--spike-hero-bg);
+  color: #f8f8f2;
+}
+
+.spike-static-page > section:first-child,
+.spike-analytics-page > section:first-child,
+.spike-subscription-page > section:first-child {
   background: var(--spike-hero-bg);
 }
 
+.spike-static-page > section:nth-child(even),
 .spike-analytics-page > section:nth-child(3),
-.spike-analytics-page > section:nth-child(5) {
-  background: #090909;
+.spike-analytics-page > section:nth-child(5),
+.spike-subscription-page > section:nth-child(4) {
+  background:
+    radial-gradient(circle at 88% 12%, rgba(255, 63, 115, 0.16), transparent 22rem),
+    #090909;
 }
 
+.spike-static-page > section,
+.spike-analytics-page > section,
+.spike-subscription-page > section {
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.spike-static-page h1,
 .spike-analytics-page h1,
+.spike-subscription-page h1 {
+  max-width: 1080px;
+  color: #f8f8f2;
+  font-size: clamp(2.6rem, 5.7vw, 6.1rem);
+  line-height: 0.88;
+}
+
+.spike-static-page h2,
+.spike-static-page h3,
 .spike-analytics-page h2,
 .spike-analytics-page h3,
+.spike-subscription-page h2,
+.spike-subscription-page h3 {
+  color: #f8f8f2;
+}
+
+.spike-static-page p,
 .spike-analytics-page p,
+.spike-subscription-page p {
+  color: rgba(248, 248, 242, 0.64);
+}
+
+.spike-static-page span,
 .spike-analytics-page span,
+.spike-subscription-page span,
+.spike-subscription-page li,
+.spike-subscription-page label,
 .spike-analytics-page td,
 .spike-analytics-page th,
 .spike-analytics-page label {
   color: inherit;
 }
 
-.spike-analytics-page h1 {
-  max-width: 980px;
-  color: #f8f8f2;
-  font-size: clamp(2.6rem, 5.7vw, 6.1rem);
-  line-height: 0.88;
+.spike-static-page a,
+.spike-subscription-page a {
+  color: inherit;
 }
 
-.spike-analytics-page h2,
-.spike-analytics-page h3 {
-  color: #f8f8f2;
-}
-
-.spike-analytics-page p {
-  color: rgba(248, 248, 242, 0.62);
-}
-
+.spike-static-page input,
+.spike-static-page select,
+.spike-static-page textarea,
+.spike-static-page button,
 .spike-analytics-page select,
-.spike-analytics-page button {
+.spike-analytics-page button,
+.spike-subscription-page input,
+.spike-subscription-page select,
+.spike-subscription-page textarea,
+.spike-subscription-page button {
   border-color: rgba(255, 255, 255, 0.16);
   background: #050505;
   color: #f8f8f2;
+}
+
+.spike-static-page .bg-white,
+.spike-static-page .bg-uga-mist,
+.spike-static-page .bg-\[\#090909\],
+.spike-static-page .bg-\[\#101010\],
+.spike-subscription-page .bg-white,
+.spike-subscription-page .bg-uga-mist,
+.spike-analytics-page .bg-white,
+.spike-analytics-page .bg-uga-mist {
+  background:
+    radial-gradient(circle at 95% 0%, rgba(57, 255, 20, 0.08), transparent 18rem),
+    rgba(5, 5, 5, 0.82);
+}
+
+.spike-static-page .bg-\[\#f8f8f2\],
+.spike-subscription-page .bg-\[\#f8f8f2\] {
+  background:
+    radial-gradient(circle at 94% 8%, rgba(57, 255, 20, 0.11), transparent 16rem),
+    rgba(255, 255, 255, 0.065);
+  color: #f8f8f2;
+}
+
+.spike-static-page .bg-\[\#f8f8f2\] h2,
+.spike-static-page .bg-\[\#f8f8f2\] h3,
+.spike-static-page .bg-\[\#f8f8f2\] p,
+.spike-static-page .bg-\[\#f8f8f2\] span,
+.spike-subscription-page .bg-\[\#f8f8f2\] h2,
+.spike-subscription-page .bg-\[\#f8f8f2\] h3,
+.spike-subscription-page .bg-\[\#f8f8f2\] p,
+.spike-subscription-page .bg-\[\#f8f8f2\] span {
+  color: inherit;
+}
+
+.spike-static-page .text-\[\#050505\],
+.spike-static-page .text-black,
+.spike-subscription-page .text-black,
+.spike-subscription-page .text-black\/55,
+.spike-subscription-page .text-black\/65,
+.spike-subscription-page .text-black\/70 {
+  color: #f8f8f2;
+}
+
+.spike-static-page .text-black\/38,
+.spike-static-page .text-black\/60,
+.spike-static-page .text-black\/62,
+.spike-static-page .text-black\/65,
+.spike-subscription-page .text-black\/45,
+.spike-subscription-page .text-black\/55,
+.spike-subscription-page .text-black\/65,
+.spike-subscription-page .text-black\/70 {
+  color: rgba(248, 248, 242, 0.64);
 }
 
 .spike-analytics-page article,
 .spike-analytics-page table,
 .spike-analytics-page .min-w-0.overflow-hidden,
 .spike-analytics-page .grid.border,
-.spike-analytics-page .bg-uga-mist {
+.spike-analytics-page .bg-uga-mist,
+.spike-static-page article,
+.spike-static-page details,
+.spike-static-page .rounded-\[1\.4rem\],
+.spike-static-page .rounded-\[1\.35rem\],
+.spike-static-page .rounded-\[1\.15rem\],
+.spike-static-page .rounded-\[1\.5rem\],
+.spike-subscription-page article,
+.spike-subscription-page .grid.border {
   border-color: rgba(255, 255, 255, 0.12);
-  border-radius: 1.15rem;
-  background: rgba(255, 255, 255, 0.055);
+  border-radius: 1.2rem;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(255, 63, 115, 0.08), transparent 17rem),
+    rgba(255, 255, 255, 0.06);
+  box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.18);
 }
 
-.spike-analytics-page article {
+.spike-static-page article,
+.spike-static-page details,
+.spike-analytics-page article,
+.spike-subscription-page article {
   transition:
     border-color 180ms ease,
     transform 180ms ease;
 }
 
+.spike-static-page article:hover,
+.spike-static-page details:hover,
 .spike-analytics-page article:hover {
   border-color: var(--spike-accent);
   transform: translateY(-2px);
 }
 
+.spike-static-page .border,
+.spike-static-page .border-b,
+.spike-static-page .border-t,
+.spike-static-page .border-y,
+.spike-static-page .divide-y > :not([hidden]) ~ :not([hidden]),
 .spike-analytics-page .border,
 .spike-analytics-page .border-b,
 .spike-analytics-page .border-t,
 .spike-analytics-page .border-y,
-.spike-analytics-page .divide-y > :not([hidden]) ~ :not([hidden]) {
+.spike-analytics-page .divide-y > :not([hidden]) ~ :not([hidden]),
+.spike-subscription-page .border,
+.spike-subscription-page .border-b,
+.spike-subscription-page .border-t,
+.spike-subscription-page .border-y,
+.spike-subscription-page .divide-y > :not([hidden]) ~ :not([hidden]) {
   border-color: rgba(255, 255, 255, 0.12);
 }
 
+.spike-subscription-page table,
 .spike-analytics-page thead {
   background: #050505;
   color: rgba(248, 248, 242, 0.62);
@@ -319,15 +440,27 @@ body[data-index="spike"] .brand-logo {
   stroke: rgba(248, 248, 242, 0.14);
 }
 
-.spike-analytics-page .bg-uga-green {
+.spike-static-page .bg-uga-green,
+.spike-analytics-page .bg-uga-green,
+.spike-subscription-page .bg-uga-green {
   background: var(--spike-accent);
 }
 
-.spike-analytics-page .bg-uga-lime {
+.spike-static-page .bg-uga-lime,
+.spike-analytics-page .bg-uga-lime,
+.spike-subscription-page .bg-uga-lime {
   background: var(--spike-pink);
 }
 
+.spike-static-page .text-uga-green,
 .spike-analytics-page .text-uga-green {
+  color: var(--spike-accent);
+}
+
+.spike-static-page .text-\[var\(--spike-accent\)\],
+.spike-static-page .text-\[var\(--spike-pink\)\],
+.spike-subscription-page .text-uga-green,
+.spike-subscription-page .text-\[var\(--spike-accent\)\] {
   color: var(--spike-accent);
 }
 

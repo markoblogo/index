@@ -173,7 +173,7 @@ function SpikeMethodologyPage({
   dict: ReturnType<typeof getDictionary>;
 }) {
   return (
-    <main className="overflow-hidden bg-[#050505] text-[#f8f8f2]">
+    <main className="spike-static-page overflow-hidden bg-[#050505] text-[#f8f8f2]">
       <section className="border-b border-white/10 [background:var(--spike-hero-bg)]">
         <div className="mx-auto grid max-w-[1900px] gap-8 px-6 py-12 lg:grid-cols-[0.52fr_0.48fr] lg:px-8 lg:py-16">
           <div>

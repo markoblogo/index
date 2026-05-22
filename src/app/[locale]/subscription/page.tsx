@@ -8,9 +8,10 @@ export default async function SubscriptionPage({
 }) {
   const { locale } = await params;
   const copy = getSubscriptionCopy(locale);
+  const isSpike = getActiveIndexConfig().id === "spike-ua";
 
   return (
-    <>
+    <main className={isSpike ? "spike-subscription-page overflow-hidden bg-[#050505] text-[#f8f8f2]" : ""}>
       <section className="border-b border-black bg-white">
         <div className="mx-auto grid max-w-7xl gap-8 px-6 py-10 lg:grid-cols-[0.82fr_1.18fr] lg:px-8 lg:py-14">
           <p className="text-xs font-black uppercase tracking-[0.18em] text-uga-green">
@@ -41,7 +42,7 @@ export default async function SubscriptionPage({
           <AccessMatrix copy={copy} />
         </div>
       </section>
-    </>
+    </main>
   );
 }
 
