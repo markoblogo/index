@@ -6,12 +6,12 @@ import type { FxRates } from "@/lib/fx-rates";
 import type { Locale } from "@/lib/i18n";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import type { Commodity } from "@/lib/mock-data";
-import { getActiveRespondentCount } from "@/lib/respondent-directory";
 
 type HomeHeroProps = {
   commodities: Commodity[];
   fxRates: FxRates;
   locale: Locale;
+  respondentCount: number;
   updatedAt: string;
   labels: {
     analytics: string;
@@ -28,14 +28,14 @@ export function HomeHero({
   fxRates,
   labels,
   locale,
+  respondentCount,
   updatedAt,
 }: HomeHeroProps) {
   const activeIndex = getActiveIndexConfig();
   const copy = getHeroCopy(locale);
-  const activeRespondentCount = getActiveRespondentCount();
   const facts = copy.facts.map((fact) =>
     fact.kind === "respondents"
-      ? { ...fact, value: String(activeRespondentCount) }
+      ? { ...fact, value: String(respondentCount) }
       : fact,
   );
 
@@ -46,6 +46,7 @@ export function HomeHero({
         fxRates={fxRates}
         labels={labels}
         locale={locale}
+        respondentCount={respondentCount}
         updatedAt={updatedAt}
       />
     );
@@ -130,7 +131,7 @@ export function HomeHero({
             officialLabel={copy.officialLabel}
             officialNotice={copy.officialNotice}
             respondentLabel={copy.respondents}
-            respondentCount={activeRespondentCount}
+            respondentCount={respondentCount}
             updatedAt={updatedAt}
             updatedLabel={labels.updated}
           />

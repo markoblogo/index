@@ -13,16 +13,16 @@ UGA Index should use an allowlist-based authentication model in production.
 5. The user signs in and sets a permanent password.
 6. After login, the system redirects the user based on role.
 7. Respondents can only access their own company daily form.
-8. Admins can access all respondent submissions, Spike indicative comparison, calculation preview and publication workflow.
+8. Admins can access all respondent submissions, benchmark comparison, calculation preview and publication workflow.
 9. Future roles may include `UGA member`, `paid analytics user` and `API subscriber`.
 
-## Demo Behavior
+## Current Preview Behavior
 
-The current demo uses a local allowlist in `src/lib/demo-allowlist.ts`.
+The current preview uses an allowlist flow. With `DATABASE_URL`, respondent logins are read from the respondent directory/auth tables. Without a database, local development falls back to the allowlist in `src/lib/demo-allowlist.ts`.
 
 The login form accepts only email/login and password. Users do not choose roles manually. The role and respondent company are inferred from the demo allowlist.
 
-Demo credentials:
+Preview credentials:
 
 - Admin: `admin@uga.ua` / `admin`
 - Respondent: `bunge@uga-index.demo` / `respondent`
@@ -39,6 +39,6 @@ Production authentication can be implemented with:
 - Supabase Auth
 - Auth.js
 - custom credentials auth with hashed passwords
-- an email provider for password setup links or temporary-password delivery
+- Resend or another email provider for password setup links, temporary-password delivery and daily respondent survey requests
 
-Before production launch, passwords must be hashed, setup links must be time-limited, audit logging should cover account and role changes, and access control should be enforced at both page and data-access layers.
+Before production launch, passwords must be hashed, setup links must be time-limited, audit logging should cover account and role changes, and access control should be enforced at both page and data-access layers. Production deployments should set `UGA_INDEX_RUNTIME_MODE=production` and require `DATABASE_URL`.

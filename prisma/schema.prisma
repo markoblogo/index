@@ -39,6 +39,23 @@ enum UserRole {
   member
 }
 
+enum RespondentStatus {
+  active
+  pending
+  disabled
+}
+
+enum RespondentCollectionMode {
+  self_service
+  manual_outreach
+}
+
+enum PasswordSetupStatus {
+  temporary
+  active
+  reset_required
+}
+
 model Commodity {
   id                  String                 @id @default(cuid())
   code                String                 @unique
@@ -73,16 +90,87 @@ model DeliveryBasis {
 }
 
 model Respondent {
-  id                String             @id @default(cuid())
+  id                String                    @id @default(cuid())
   legalName         String
   displayName       String
-  active            Boolean            @default(true)
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
+  active            Boolean                   @default(true)
+  status            RespondentStatus          @default(active)
+  collectionMode    RespondentCollectionMode  @default(self_service)
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
   basketLinks       BasketRespondent[]
   users             User[]
+  contacts          RespondentContact[]
+  authAccount       RespondentAuthAccount?
+  emailDeliveries   RespondentEmailDelivery[]
   priceSubmissions  PriceSubmission[]
   calculationItems  IndexCalculationItem[]
+
+  @@index([status, collectionMode])
+}
+
+model RespondentContact {
+  id            String      @id @default(cuid())
+  respondentId  String
+  name          String
+  role          String      @default("Primary contact")
+  phone         String?
+  email         String?
+  primary       Boolean     @default(false)
+  active        Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  respondent    Respondent  @relation(fields: [respondentId], references: [id], onDelete: Cascade)
+
+  @@index([respondentId, primary, active])
+}
+
+model RespondentAuthAccount {
+  id                  String               @id @default(cuid())
+  respondentId        String               @unique
+  loginEmail          String               @unique
+  passwordHash        String?
+  temporaryPassword   String?
+  passwordSetupStatus PasswordSetupStatus  @default(temporary)
+  lastGeneratedAt     DateTime?
+  passwordSetAt       DateTime?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  respondent          Respondent           @relation(fields: [respondentId], references: [id], onDelete: Cascade)
+
+  @@index([passwordSetupStatus])
+}
+
+model RespondentEmailSchedule {
+  id        String   @id @default("default")
+  enabled   Boolean  @default(true)
+  workdays  String   @default("Monday-Friday")
+  sendTime  String   @default("16:30")
+  timezone  String   @default("Europe/Kyiv")
+  sender    String   @default("UGA Index <onboarding@resend.dev>")
+  replyTo   String?
+  subject   String   @default("UGA Index daily price survey")
+  surveyUrl String   @default("/respondent")
+  template  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RespondentEmailDelivery {
+  id           String      @id @default(cuid())
+  respondentId String
+  contactId    String?
+  email        String
+  subject      String
+  status       String
+  trigger      String
+  providerId   String?
+  error        String?
+  sentAt       DateTime    @default(now())
+  respondent   Respondent  @relation(fields: [respondentId], references: [id], onDelete: Cascade)
+
+  @@index([respondentId, sentAt])
+  @@index([status, trigger, sentAt])
 }
 
 model Basket {
@@ -226,6 +314,11 @@ model PublishedIndex {
   basketId              String
   calculationId         String             @unique
   status                SubmissionStatus   @default(published)
+  calculatedValueUsdPerMt Decimal?          @db.Decimal(12, 1)
+  benchmarkBlendEnabled Boolean             @default(false)
+  benchmarkValueUsdPerMt Decimal?           @db.Decimal(12, 1)
+  adjustmentMethod      String?
+  adjustmentReason      String?
   valueUsdPerMt         Decimal            @db.Decimal(12, 1)
   changeAbsUsdPerMt     Decimal?           @db.Decimal(12, 1)
   changePct             Decimal?           @db.Decimal(10, 2)

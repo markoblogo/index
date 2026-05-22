@@ -34,7 +34,7 @@ The public site includes:
 - automatic root locale redirect using locale cookie and country header
 - public homepage with current index cards and currency switching
 - About, Methodology, Analytics, Cooperation/Subscription and legal pages
-- compact footer with UGA contacts, disclaimer, legal links and partner attribution
+- compact footer with UGA contacts, disclaimer and legal links
 - embeddable cards, chart and full-site views for the UGA website
 - public JSON API routes for latest values, history and FX rates
 
@@ -112,13 +112,13 @@ Important modules:
 src/lib/index-platform.ts       tenant configuration
 src/lib/constants.ts            runtime site config
 src/lib/mock-data.ts            commodity and public fallback data
-src/lib/respondent-directory.ts respondent directory preview store
+src/lib/respondent-directory.ts DB-backed respondent directory with local fallback
 src/lib/admin-daily-inputs.ts   admin matrix data/actions
 src/lib/admin-calculate.ts      admin calculation/publication workflow
 src/lib/public-index-data.ts    homepage/analytics public data
 src/lib/fx-rates.ts             NBU FX server-side data layer
-src/lib/demo-auth.ts            simple preview auth/session helper
-src/lib/demo-allowlist.ts       tenant-aware preview users
+src/lib/demo-auth.ts            allowlist/session helper
+src/lib/demo-allowlist.ts       tenant-aware allowlist users
 ```
 
 Tenant-specific configuration controls:
@@ -170,6 +170,10 @@ INDEX_TENANT="uga-ua"
 NEXT_PUBLIC_INDEX_TENANT="uga-ua"
 ALLOWED_EMBED_ORIGINS="https://uga.ua https://www.uga.ua https://index-uga.cr0pto.com http://localhost:* http://127.0.0.1:*"
 DEMO_AUTH_SECRET="replace-with-a-long-random-secret"
+UGA_INDEX_RUNTIME_MODE="production"
+RESEND_API_KEY="set-in-vercel-or-local-env"
+RESPONDENT_EMAIL_CRON_SECRET="replace-with-a-long-random-cron-secret"
+CRON_SECRET="same-value-for-vercel-cron"
 ```
 
 Spike example:
@@ -188,9 +192,12 @@ Environment notes:
 - `NEXT_PUBLIC_SITE_URL` is used for absolute public URLs and embed code generation.
 - `INDEX_TENANT` is used by server-side code, seed scripts and build-time logic.
 - `NEXT_PUBLIC_INDEX_TENANT` is available to client/build-time code.
-- `DATABASE_URL` enables Prisma-backed persistence and seeding.
+- `DATABASE_URL` enables Prisma-backed persistence and is required in production runtime.
 - `ALLOWED_EMBED_ORIGINS` controls frame policy for `/embed/*`.
-- `DEMO_AUTH_SECRET` signs the simple preview session cookie.
+- `UGA_INDEX_RUNTIME_MODE=production` disables silent mock fallback when database reads fail.
+- `DEMO_AUTH_SECRET` signs the preview session cookie.
+- `RESEND_API_KEY` enables respondent survey email delivery through Resend. Do not commit the real key.
+- `RESPONDENT_EMAIL_CRON_SECRET` / `CRON_SECRET` protect the scheduled email endpoint.
 
 ## Routes
 
@@ -228,6 +235,7 @@ Embeds:
 Public API:
 
 - `GET /api/health`
+- `GET /api/cron/respondent-emails`
 - `GET /api/public/latest`
 - `GET /api/public/history`
 - `GET /api/public/fx-rates`
@@ -266,9 +274,9 @@ Full details:
 docs/embed.md
 ```
 
-## Demo Login
+## Login Preview
 
-Preview users are tenant-aware and live in:
+Preview users are tenant-aware. With `DATABASE_URL`, respondent users are read from the respondent directory/auth tables; without a database, local fallback users are used for development.
 
 ```txt
 src/lib/demo-allowlist.ts
@@ -325,7 +333,7 @@ npm run db:seed
 
 The seed is tenant-aware:
 
-- UGA seed creates CPT UA Black Sea basis, commodities, respondents, preview users, mock respondent submissions, external benchmark indicatives and published index values.
+- UGA seed creates CPT UA Black Sea basis, commodities, respondent directory contacts, login accounts, notification settings, respondent submissions, external benchmark indicatives and published index values.
 - Spike seed creates CPT Odesa export and CPT parity Odesa processing positions, partner respondents, preview users, mock submissions and published index values.
 
 More detail:
@@ -362,6 +370,14 @@ Recommended setup per tenant:
 5. Configure `ALLOWED_EMBED_ORIGINS` for tenant domains and trusted host sites.
 6. Run Prisma setup against the target PostgreSQL database.
 7. Run validation before deployment.
+8. Configure the Vercel cron secret and Resend API key for respondent emails.
+
+Respondent survey email delivery:
+
+- Admins configure status, workdays, Kyiv send time, sender, reply-to admin email, subject, survey URL and template in `/admin/respondents`.
+- Manual sending is available from the same page and ignores the schedule toggle.
+- Scheduled sending is exposed at `/api/cron/respondent-emails`; `vercel.json` checks it every 15 minutes on weekdays and the server sends only after the configured Kyiv time, once per day.
+- Replies go to the configured reply-to admin email.
 
 Health check:
 
@@ -399,10 +415,10 @@ docs/source/
 
 ## Current TODO
 
-- Replace preview auth with production auth, password setup and hashed credentials.
+- Replace preview auth with production auth, password setup emails and hashed credentials.
 - Decide whether each tenant uses a separate database or a shared database with strict tenant scoping.
-- Replace remaining mock/in-memory preview stores with durable database workflows where required.
-- Connect respondent notification settings to a real email provider and tokenized survey links.
+- Remove remaining development-only fallback stores from production deployments.
+- Replace current `/respondent` survey link emails with tokenized respondent-specific survey links.
 - Finalize production legal text with legal counsel.
 - Finalize paid analytics/API subscription terms.
 - Add production observability, backups and operational runbooks.

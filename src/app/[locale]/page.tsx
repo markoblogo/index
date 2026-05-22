@@ -4,6 +4,7 @@ import { getFxRates } from "@/lib/fx-rates";
 import { getDictionary, type Locale } from "@/lib/i18n";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import { getPublicIndexSnapshot } from "@/lib/public-index-data";
+import { getActiveRespondentCountData } from "@/lib/respondent-directory";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,7 @@ export default async function LocaleHome({
   const activeIndex = getActiveIndexConfig();
   const snapshot = await getPublicIndexSnapshot();
   const fxRates = await getFxRates();
+  const respondentCount = await getActiveRespondentCountData();
   const updatedAt = new Intl.DateTimeFormat(locale === "uk" ? "uk-UA" : "en-US", {
     dateStyle: "medium",
     timeStyle: "short",
@@ -38,6 +40,7 @@ export default async function LocaleHome({
           updated: dict.home.updatedLabel,
         }}
         locale={locale}
+        respondentCount={respondentCount}
         updatedAt={updatedAt}
       />
     </>

@@ -14,7 +14,7 @@ import {
   type Commodity,
   type CommodityId,
 } from "@/lib/mock-data";
-import { getActiveRespondentCount } from "@/lib/respondent-directory";
+import { getActiveRespondentCountData } from "@/lib/respondent-directory";
 
 type AnalyticsPoint = {
   date: string;
@@ -43,8 +43,9 @@ export default async function AnalyticsPage({
   const { locale } = await params;
   const copy = getAnalyticsCopy(locale);
   const fxRates = await getFxRates();
-  const history = buildAnalyticsHistory();
-  const snapshot = buildMarketSnapshot(history, locale);
+  const activeRespondentCount = await getActiveRespondentCountData();
+  const history = buildAnalyticsHistory(activeRespondentCount);
+  const snapshot = buildMarketSnapshot(history, locale, activeRespondentCount);
   const tableRows = history.slice(-14).reverse();
   const isSpike = getActiveIndexConfig().id === "spike-ua";
 
@@ -357,8 +358,7 @@ function PublishedValuesTable({
   );
 }
 
-function buildAnalyticsHistory(): AnalyticsPoint[] {
-  const activeRespondentCount = getActiveRespondentCount();
+function buildAnalyticsHistory(activeRespondentCount: number): AnalyticsPoint[] {
   const dates = Array.from({ length: 360 }, (_, index) => {
     const date = new Date("2026-05-08T00:00:00.000Z");
     date.setUTCDate(date.getUTCDate() - (359 - index));
@@ -401,7 +401,11 @@ function buildAnalyticsHistory(): AnalyticsPoint[] {
   );
 }
 
-function buildMarketSnapshot(history: AnalyticsPoint[], locale: Locale) {
+function buildMarketSnapshot(
+  history: AnalyticsPoint[],
+  locale: Locale,
+  activeRespondentCount: number,
+) {
   const latestRows = commodities.map((commodity) =>
     getCommodityHistory(history, commodity.id).at(-1),
   ).filter(Boolean) as AnalyticsPoint[];
@@ -460,7 +464,7 @@ function buildMarketSnapshot(history: AnalyticsPoint[], locale: Locale) {
     {
       label: copy.respondentCoverage,
       meta: copy.currentBasket,
-      value: String(getActiveRespondentCount()),
+      value: String(activeRespondentCount),
     },
   ];
 }

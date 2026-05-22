@@ -26,7 +26,7 @@ Data collection:
 - Respondents provide end-of-day fair market price assessments.
 - Prices should represent executable levels where the respondent is ready to transact.
 - Standard delivery period is up to 30 days, represented as T+30 in the calculation methodology.
-- Delivery basis is a required index parameter. Current demo default remains FOB Black Sea.
+- Delivery basis is a required index parameter. Current demo default remains CPT UA Black Sea.
 - Data is entered through the web UGA Index operational module by the index manager, with a future respondent workflow still useful for the demo.
 
 Calculation methodology:
@@ -130,7 +130,7 @@ Lower priority:
 1. Convert or trace the UGA logo to a cleaner transparent asset if no official SVG is provided.
 2. Add future quote type support for bid/offer/mid in the data model and UI labels.
 3. Add forward period filters for T+30, T+60, and T+90 after the demo path is stable.
-4. Add partner verification role after demo auth is replaced or extended.
+4. Add partner verification role after allowlist authentication is extended.
 
 ## Current Gap Summary
 

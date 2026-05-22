@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { db } from "@/lib/db";
+import { allowMockFallback, db, hasDatabaseUrl } from "@/lib/db";
 import type { DemoUser } from "@/lib/demo-auth";
 import {
   getDemoCalculationVersion,
@@ -15,11 +15,13 @@ import {
   type IndexCalculationStatus,
   type PriceSubmission,
 } from "@/lib/index-calculation";
-import { computePublishedChange } from "@/lib/index-publish";
+import {
+  computeBenchmarkBlend,
+  computePublishedChange,
+} from "@/lib/index-publish";
 import { commodities } from "@/lib/mock-data";
 import {
   getDailyInputData,
-  hasDatabaseUrl,
   todayInputDate,
 } from "@/lib/admin-daily-inputs";
 import { getActiveRespondentCount } from "@/lib/respondent-directory";
@@ -74,14 +76,23 @@ export async function getAdminCalculationData(
   date: string,
 ): Promise<AdminCalculationData> {
   if (!hasDatabaseUrl()) {
+    if (!allowMockFallback()) {
+      throw new Error("DATABASE_URL is required for production calculation data.");
+    }
+
     return getMockCalculationData(date);
   }
 
   try {
     return await getDatabaseCalculationData(date);
   } catch (error) {
-    console.warn("Falling back to mock calculation data.", error);
-    return getMockCalculationData(date);
+    if (allowMockFallback()) {
+      console.warn("Falling back to mock calculation data.", error);
+      return getMockCalculationData(date);
+    }
+
+    console.error("Failed to load database calculation data.", error);
+    throw error;
   }
 }
 
@@ -93,6 +104,10 @@ export async function recalculateAdminIndices(formData: FormData, user: DemoUser
   }
 
   if (!hasDatabaseUrl()) {
+    if (!allowMockFallback()) {
+      throw new Error("DATABASE_URL is required for production recalculation.");
+    }
+
     for (const commodity of commodities) {
       incrementDemoCalculationVersion({
         commodityId: commodity.id,
@@ -119,6 +134,10 @@ export async function publishAdminIndices(formData: FormData, user: DemoUser) {
   }
 
   if (!hasDatabaseUrl()) {
+    if (!allowMockFallback()) {
+      throw new Error("DATABASE_URL is required for production publication.");
+    }
+
     await publishMockIndices(date, benchmarkBlendCommodityIds);
     revalidatePath("/uk");
     revalidatePath("/en");
@@ -239,7 +258,11 @@ async function getDatabaseCalculationData(date: string): Promise<AdminCalculatio
   const context = await getDatabaseCalculationContext(date);
 
   if (!context) {
-    return getMockCalculationData(date);
+    if (allowMockFallback()) {
+      return getMockCalculationData(date);
+    }
+
+    throw new Error(`Missing calculation context for ${date}.`);
   }
 
   const { basis, basket, dbCommodities, existingCalculations, publishedIndices } =
@@ -466,31 +489,53 @@ async function publishDatabaseCalculations(
           },
         })
       : null;
-    const currentValue = benchmarkIndicative
-      ? roundToOneDecimal(
-          (calculatedValue + benchmarkIndicative.priceUsdPerMt.toNumber()) / 2,
-        )
-      : calculatedValue;
+    const benchmarkBlend = computeBenchmarkBlend(
+      calculatedValue,
+      benchmarkIndicative?.priceUsdPerMt.toNumber() ?? null,
+      Boolean(benchmarkIndicative),
+    );
+    const currentValue = benchmarkBlend.finalValue;
     const change = computePublishedChange(
       currentValue,
       previous?.valueUsdPerMt.toNumber() ?? null,
     );
 
-    const publishedIndex = await db.publishedIndex.create({
-      data: {
+    const publishedData = {
+      calculationId: calculation.id,
+      status: "published" as const,
+      calculatedValueUsdPerMt: new Prisma.Decimal(calculatedValue),
+      benchmarkBlendEnabled: benchmarkBlend.benchmarkBlendEnabled,
+      benchmarkValueUsdPerMt: benchmarkBlend.benchmarkValue
+        ? new Prisma.Decimal(benchmarkBlend.benchmarkValue)
+        : null,
+      adjustmentMethod: benchmarkBlend.method,
+      adjustmentReason: benchmarkBlend.benchmarkBlendEnabled
+        ? "Admin enabled benchmark blend before publication."
+        : null,
+      valueUsdPerMt: new Prisma.Decimal(currentValue),
+      changeAbsUsdPerMt:
+        change.changeAbs === null ? null : new Prisma.Decimal(change.changeAbs),
+      changePct:
+        change.changePct === null ? null : new Prisma.Decimal(change.changePct),
+      locked: true,
+      publishedById: publisherUserId,
+    };
+    const publishedIndex = await db.publishedIndex.upsert({
+      where: {
+        tradeDate_commodityId_deliveryBasisId_basketId: {
+          tradeDate: calculation.tradeDate,
+          commodityId: calculation.commodityId,
+          deliveryBasisId: calculation.deliveryBasisId,
+          basketId: calculation.basketId,
+        },
+      },
+      update: publishedData,
+      create: {
+        ...publishedData,
         tradeDate: calculation.tradeDate,
         commodityId: calculation.commodityId,
         deliveryBasisId: calculation.deliveryBasisId,
         basketId: calculation.basketId,
-        calculationId: calculation.id,
-        status: "published",
-        valueUsdPerMt: new Prisma.Decimal(currentValue),
-        changeAbsUsdPerMt:
-          change.changeAbs === null ? null : new Prisma.Decimal(change.changeAbs),
-        changePct:
-          change.changePct === null ? null : new Prisma.Decimal(change.changePct),
-        locked: true,
-        publishedById: publisherUserId,
       },
     });
 
@@ -512,9 +557,8 @@ async function publishDatabaseCalculations(
           tradeDate: date,
           commodityId: calculation.commodityId,
           valueUsdPerMt: currentValue,
-          benchmarkBlendApplied: Boolean(benchmarkIndicative),
-          benchmarkValueUsdPerMt:
-            benchmarkIndicative?.priceUsdPerMt.toNumber() ?? null,
+          benchmarkBlendApplied: benchmarkBlend.benchmarkBlendEnabled,
+          benchmarkValueUsdPerMt: benchmarkBlend.benchmarkValue,
           changeAbsUsdPerMt: change.changeAbs,
           changePct: change.changePct,
           locked: true,
@@ -536,7 +580,7 @@ async function getDatabaseCalculationContext(date: string) {
     }),
     db.respondent.findMany({
       orderBy: { legalName: "asc" },
-      where: { active: true },
+      where: { active: true, status: "active" },
     }),
   ]);
 

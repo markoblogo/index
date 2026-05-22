@@ -23,3 +23,14 @@ export const db =
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = db;
 }
+
+export function hasDatabaseUrl() {
+  return Boolean(process.env.DATABASE_URL);
+}
+
+export function allowMockFallback() {
+  return (
+    process.env.UGA_INDEX_RUNTIME_MODE !== "production" &&
+    process.env.NODE_ENV !== "production"
+  );
+}

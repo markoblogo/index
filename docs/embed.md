@@ -103,7 +103,7 @@ For WordPress, paste the iframe snippet into a Custom HTML block. If script tags
 
 ## Frame Security
 
-The demo sends a Content Security Policy for `/embed/*`. Allowed frame ancestors come from `ALLOWED_EMBED_ORIGINS`, for example:
+The app sends a Content Security Policy for `/embed/*`. Allowed frame ancestors come from `ALLOWED_EMBED_ORIGINS`, for example:
 
 ```bash
 ALLOWED_EMBED_ORIGINS="https://uga.ua https://www.uga.ua https://index-uga.cr0pto.com http://localhost:* http://127.0.0.1:*"

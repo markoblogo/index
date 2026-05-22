@@ -45,7 +45,7 @@ Recommended UGA Index adaptation:
   - Headline examples:
     - `UGA INDEX / EXPORT PRICING`
     - Ukrainian: `UGA INDEX / ЕКСПОРТНІ ЦІНИ`
-  - Keep short descriptor: fair Ukrainian export price benchmark, FOB Black Sea, T+30.
+  - Keep short descriptor: fair Ukrainian export price benchmark, CPT Black Sea Panamax Ports (POC), T+30.
   - Add a right-side commodity selector with the four UGA commodities.
   - Use one visual market panel, preferably a grain/port/commodity texture or a clean abstract market panel.
 

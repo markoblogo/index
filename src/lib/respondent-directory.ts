@@ -1,3 +1,5 @@
+import { allowMockFallback, db, hasDatabaseUrl } from "@/lib/db";
+
 export type RespondentStatus = "active" | "pending";
 export type RespondentCollectionMode = "self_service" | "manual_outreach";
 export type RespondentPasswordStatus = "temporary" | "active";
@@ -36,9 +38,35 @@ export type RespondentContact = {
   status: RespondentStatus;
 };
 
+export type RespondentEmailScheduleSettings = {
+  enabled: boolean;
+  replyTo: string;
+  sender: string;
+  sendTime: string;
+  subject: string;
+  surveyUrl: string;
+  template: string;
+  timezone: string;
+  workdays: string;
+};
+
 type RespondentDirectoryState = {
   respondents: RespondentDirectoryEntry[];
+  schedule: RespondentEmailScheduleSettings;
 };
+
+const defaultRespondentEmailSchedule = {
+  enabled: true,
+  replyTo: "inbox@uga.ua",
+  sender: "UGA Index <onboarding@resend.dev>",
+  sendTime: "16:30",
+  subject: "UGA Index daily price survey",
+  surveyUrl: "/respondent",
+  template:
+    "Please submit today's CPT UA Black Sea price indicatives for UGA Index. Open your daily survey form using the personal link in this email.",
+  timezone: "Europe/Kyiv",
+  workdays: "Monday-Friday",
+} satisfies RespondentEmailScheduleSettings;
 
 const initialRespondents: RespondentDirectoryEntry[] = [
   createRespondentSeed(
@@ -158,6 +186,7 @@ const globalDirectory = globalThis as typeof globalThis & {
 function getState() {
   globalDirectory.__ugaRespondentDirectory ??= {
     respondents: initialRespondents.map(cloneRespondent),
+    schedule: { ...defaultRespondentEmailSchedule },
   };
 
   return globalDirectory.__ugaRespondentDirectory;
@@ -189,6 +218,463 @@ export function getRespondentContactRows(): RespondentContact[] {
 }
 
 export const respondentContacts = getRespondentContactRows();
+
+export function getRespondentEmailSchedule() {
+  return { ...getState().schedule };
+}
+
+export async function getRespondentEmailScheduleData() {
+  if (!hasDatabaseUrl()) {
+    return getRespondentEmailSchedule();
+  }
+
+  try {
+    const schedule = await db.respondentEmailSchedule.findUnique({
+      where: { id: "default" },
+    });
+
+    if (!schedule) {
+      return defaultRespondentEmailSchedule;
+    }
+
+    return {
+      enabled: schedule.enabled,
+      replyTo: schedule.replyTo ?? "",
+      sender: schedule.sender,
+      sendTime: schedule.sendTime,
+      subject: schedule.subject,
+      surveyUrl: schedule.surveyUrl,
+      template: schedule.template,
+      timezone: schedule.timezone,
+      workdays: schedule.workdays,
+    } satisfies RespondentEmailScheduleSettings;
+  } catch (error) {
+    if (allowMockFallback()) {
+      console.warn("Falling back to mock respondent email schedule.", error);
+      return getRespondentEmailSchedule();
+    }
+
+    console.error("Failed to load respondent email schedule.", error);
+    throw error;
+  }
+}
+
+export async function updateRespondentEmailScheduleData(
+  input: RespondentEmailScheduleSettings,
+) {
+  const schedule = normalizeScheduleInput(input);
+
+  if (!hasDatabaseUrl()) {
+    getState().schedule = schedule;
+    return schedule;
+  }
+
+  await db.respondentEmailSchedule.upsert({
+    where: { id: "default" },
+    update: schedule,
+    create: {
+      id: "default",
+      ...schedule,
+    },
+  });
+
+  return schedule;
+}
+
+export async function getRespondentDirectoryData() {
+  if (!hasDatabaseUrl()) {
+    return getRespondentDirectory();
+  }
+
+  try {
+    const respondents = await db.respondent.findMany({
+      include: {
+        authAccount: true,
+        contacts: {
+          orderBy: [{ primary: "desc" }, { createdAt: "asc" }],
+          where: { active: true },
+        },
+      },
+      orderBy: [{ status: "asc" }, { legalName: "asc" }],
+      where: { NOT: { status: "disabled" } },
+    });
+
+    return respondents.map((respondent) => ({
+      auth: {
+        lastGeneratedAt:
+          respondent.authAccount?.lastGeneratedAt?.toISOString() ??
+          respondent.createdAt.toISOString(),
+        loginEmail:
+          respondent.authAccount?.loginEmail ??
+          `${respondent.id}@uga-index.demo`,
+        passwordSetupStatus:
+          respondent.authAccount?.passwordSetupStatus === "active"
+            ? "active"
+            : "temporary",
+        temporaryPassword:
+          respondent.authAccount?.temporaryPassword ?? "respondent",
+      },
+      collectionMode: respondent.collectionMode,
+      companyName: respondent.legalName,
+      contacts:
+        respondent.contacts.length > 0
+          ? respondent.contacts.map((contact) => ({
+              email: contact.email ?? "",
+              id: contact.id,
+              name: contact.name,
+              phone: contact.phone ?? "",
+              primary: contact.primary,
+              role: contact.role,
+            }))
+          : [
+              {
+                email: respondent.authAccount?.loginEmail ?? "",
+                id: `${respondent.id}-primary`,
+                name: respondent.displayName,
+                phone: "",
+                primary: true,
+                role: "Primary contact",
+              },
+            ],
+      id: respondent.id,
+      status: respondent.status === "pending" ? "pending" : "active",
+    })) satisfies RespondentDirectoryEntry[];
+  } catch (error) {
+    if (allowMockFallback()) {
+      console.warn("Falling back to mock respondent directory.", error);
+      return getRespondentDirectory();
+    }
+
+    console.error("Failed to load respondent directory.", error);
+    throw error;
+  }
+}
+
+export async function getActiveRespondentCountData() {
+  if (!hasDatabaseUrl()) {
+    return getActiveRespondentCount();
+  }
+
+  try {
+    return await db.respondent.count({
+      where: {
+        active: true,
+        status: "active",
+      },
+    });
+  } catch (error) {
+    if (allowMockFallback()) {
+      console.warn("Falling back to mock active respondent count.", error);
+      return getActiveRespondentCount();
+    }
+
+    console.error("Failed to count active respondents.", error);
+    throw error;
+  }
+}
+
+export async function addRespondentDirectoryEntryData(
+  input: Parameters<typeof addRespondentDirectoryEntry>[0],
+) {
+  if (!hasDatabaseUrl()) {
+    addRespondentDirectoryEntry(input);
+    return;
+  }
+
+  const id = normalizeId(input.id || input.companyName);
+
+  if (!id) {
+    return;
+  }
+
+  const loginEmail =
+    input.contactEmail.trim().toLowerCase() || `${id}@uga-index.demo`;
+  const temporaryPassword = generateTemporaryPassword(id);
+
+  await db.$transaction(async (tx) => {
+    await tx.respondent.upsert({
+      where: { id },
+      update: {
+        active: input.status === "active",
+        collectionMode: input.collectionMode,
+        displayName: input.companyName.trim(),
+        legalName: input.companyName.trim(),
+        status: input.status,
+      },
+      create: {
+        id,
+        active: input.status === "active",
+        collectionMode: input.collectionMode,
+        displayName: input.companyName.trim(),
+        legalName: input.companyName.trim(),
+        status: input.status,
+      },
+    });
+
+    await tx.respondentContact.create({
+      data: {
+        respondentId: id,
+        email: input.contactEmail.trim() || null,
+        name: input.contactName.trim(),
+        phone: input.contactPhone.trim() || null,
+        primary: true,
+        role: input.contactRole.trim() || "Primary contact",
+      },
+    });
+
+    await tx.respondentAuthAccount.upsert({
+      where: { respondentId: id },
+      update: {
+        loginEmail,
+        passwordSetupStatus: "temporary",
+        temporaryPassword,
+        lastGeneratedAt: new Date(),
+      },
+      create: {
+        respondentId: id,
+        loginEmail,
+        passwordSetupStatus: "temporary",
+        temporaryPassword,
+        lastGeneratedAt: new Date(),
+      },
+    });
+
+    await tx.user.upsert({
+      where: { email: loginEmail },
+      update: {
+        active: input.status === "active",
+        name: `${input.companyName.trim()} respondent`,
+        respondentId: id,
+        role: "respondent",
+      },
+      create: {
+        active: input.status === "active",
+        email: loginEmail,
+        name: `${input.companyName.trim()} respondent`,
+        respondentId: id,
+        role: "respondent",
+      },
+    });
+  });
+}
+
+export async function updateRespondentDirectoryEntryData(
+  input: Parameters<typeof updateRespondentDirectoryEntry>[0],
+) {
+  if (!hasDatabaseUrl()) {
+    updateRespondentDirectoryEntry(input);
+    return;
+  }
+
+  await db.respondent.update({
+    where: { id: input.id },
+    data: {
+      active: input.status === "active",
+      collectionMode: input.collectionMode,
+      displayName: input.companyName.trim(),
+      legalName: input.companyName.trim(),
+      status: input.status,
+    },
+  });
+}
+
+export async function deleteRespondentDirectoryEntryData(id: string) {
+  if (!hasDatabaseUrl()) {
+    deleteRespondentDirectoryEntry(id);
+    return;
+  }
+
+  await db.$transaction(async (tx) => {
+    await tx.user.deleteMany({ where: { respondentId: id } });
+    await tx.respondentAuthAccount.deleteMany({ where: { respondentId: id } });
+    await tx.respondentContact.updateMany({
+      where: { respondentId: id },
+      data: { active: false, primary: false },
+    });
+    await tx.basketRespondent.updateMany({
+      where: { respondentId: id },
+      data: { active: false },
+    });
+    await tx.respondent.update({
+      where: { id },
+      data: {
+        active: false,
+        status: "disabled",
+      },
+    });
+  });
+}
+
+export async function addRespondentContactData(
+  input: Parameters<typeof addRespondentContact>[0],
+) {
+  if (!hasDatabaseUrl()) {
+    addRespondentContact(input);
+    return;
+  }
+
+  await db.$transaction(async (tx) => {
+    if (input.primary) {
+      await tx.respondentContact.updateMany({
+        where: { respondentId: input.respondentId },
+        data: { primary: false },
+      });
+    }
+
+    await tx.respondentContact.create({
+      data: {
+        respondentId: input.respondentId,
+        email: input.email.trim() || null,
+        name: input.name.trim(),
+        phone: input.phone.trim() || null,
+        primary: input.primary,
+        role: input.role.trim() || "Contact",
+      },
+    });
+  });
+}
+
+export async function updateRespondentContactData(
+  input: Parameters<typeof updateRespondentContact>[0],
+) {
+  if (!hasDatabaseUrl()) {
+    updateRespondentContact(input);
+    return;
+  }
+
+  await db.$transaction(async (tx) => {
+    if (input.primary) {
+      await tx.respondentContact.updateMany({
+        where: { respondentId: input.respondentId },
+        data: { primary: false },
+      });
+    }
+
+    await tx.respondentContact.update({
+      where: { id: input.contactId },
+      data: {
+        email: input.email.trim() || null,
+        name: input.name.trim(),
+        phone: input.phone.trim() || null,
+        primary: input.primary,
+        role: input.role.trim() || "Contact",
+      },
+    });
+  });
+}
+
+export async function deleteRespondentContactData(input: {
+  contactId: string;
+  respondentId: string;
+}) {
+  if (!hasDatabaseUrl()) {
+    deleteRespondentContact(input);
+    return;
+  }
+
+  const contactCount = await db.respondentContact.count({
+    where: { respondentId: input.respondentId, active: true },
+  });
+
+  if (contactCount <= 1) {
+    return;
+  }
+
+  await db.respondentContact.update({
+    where: { id: input.contactId },
+    data: { active: false, primary: false },
+  });
+
+  const primaryCount = await db.respondentContact.count({
+    where: {
+      active: true,
+      primary: true,
+      respondentId: input.respondentId,
+    },
+  });
+
+  if (primaryCount === 0) {
+    const firstContact = await db.respondentContact.findFirst({
+      where: { active: true, respondentId: input.respondentId },
+      orderBy: { createdAt: "asc" },
+    });
+
+    if (firstContact) {
+      await db.respondentContact.update({
+        where: { id: firstContact.id },
+        data: { primary: true },
+      });
+    }
+  }
+}
+
+export async function updateRespondentAuthAccountData(
+  input: Parameters<typeof updateRespondentAuthAccount>[0],
+) {
+  if (!hasDatabaseUrl()) {
+    updateRespondentAuthAccount(input);
+    return;
+  }
+
+  const loginEmail = input.loginEmail.trim().toLowerCase();
+
+  await db.$transaction(async (tx) => {
+    const auth = await tx.respondentAuthAccount.upsert({
+      where: { respondentId: input.respondentId },
+      update: {
+        loginEmail,
+        passwordSetupStatus: input.passwordSetupStatus,
+      },
+      create: {
+        respondentId: input.respondentId,
+        loginEmail,
+        passwordSetupStatus: input.passwordSetupStatus,
+        temporaryPassword: generateTemporaryPassword(input.respondentId),
+        lastGeneratedAt: new Date(),
+      },
+    });
+    const respondent = await tx.respondent.findUnique({
+      where: { id: input.respondentId },
+    });
+
+    if (respondent) {
+      await tx.user.upsert({
+        where: { email: auth.loginEmail },
+        update: {
+          active: respondent.active,
+          name: `${respondent.legalName} respondent`,
+          respondentId: respondent.id,
+          role: "respondent",
+        },
+        create: {
+          active: respondent.active,
+          email: auth.loginEmail,
+          name: `${respondent.legalName} respondent`,
+          respondentId: respondent.id,
+          role: "respondent",
+        },
+      });
+    }
+  });
+}
+
+export async function regenerateRespondentTemporaryPasswordData(
+  respondentId: string,
+) {
+  if (!hasDatabaseUrl()) {
+    regenerateRespondentTemporaryPassword(respondentId);
+    return;
+  }
+
+  await db.respondentAuthAccount.update({
+    where: { respondentId },
+    data: {
+      lastGeneratedAt: new Date(),
+      passwordSetupStatus: "temporary",
+      temporaryPassword: generateTemporaryPassword(respondentId),
+    },
+  });
+}
 
 export function addRespondentDirectoryEntry(input: {
   collectionMode: RespondentCollectionMode;
@@ -382,14 +868,7 @@ export function deleteRespondentContact(input: {
   }
 }
 
-export const respondentEmailSchedule = {
-  days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-  enabled: true,
-  sender: "UGA Index <noreply@uga-index.demo>",
-  sendTime: "16:30",
-  surveyUrl: "/respondent",
-  timezone: "Europe/Kyiv",
-};
+export const respondentEmailSchedule = defaultRespondentEmailSchedule;
 
 function createRespondentSeed(
   id: string,
@@ -450,4 +929,26 @@ function normalizeId(value: string) {
 function generateTemporaryPassword(seed: string) {
   const fragment = Math.random().toString(36).slice(2, 8).toUpperCase();
   return `UGA-${normalizeId(seed).slice(0, 4).toUpperCase()}-${fragment}`;
+}
+
+function normalizeScheduleInput(
+  input: RespondentEmailScheduleSettings,
+): RespondentEmailScheduleSettings {
+  return {
+    enabled: input.enabled,
+    replyTo: input.replyTo.trim(),
+    sender: input.sender.trim() || defaultRespondentEmailSchedule.sender,
+    sendTime: normalizeSendTime(input.sendTime),
+    subject: input.subject.trim() || defaultRespondentEmailSchedule.subject,
+    surveyUrl: input.surveyUrl.trim() || defaultRespondentEmailSchedule.surveyUrl,
+    template: input.template.trim() || defaultRespondentEmailSchedule.template,
+    timezone: input.timezone.trim() || defaultRespondentEmailSchedule.timezone,
+    workdays: input.workdays.trim() || defaultRespondentEmailSchedule.workdays,
+  };
+}
+
+function normalizeSendTime(value: string) {
+  return /^\d{2}:\d{2}$/.test(value.trim())
+    ? value.trim()
+    : defaultRespondentEmailSchedule.sendTime;
 }

@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { SITE_CONFIG } from "@/lib/constants";
-import { db } from "@/lib/db";
+import { allowMockFallback, db, hasDatabaseUrl } from "@/lib/db";
 import type { DemoUser } from "@/lib/demo-auth";
 import { getDemoSubmission, setDemoSubmission } from "@/lib/demo-submission-store";
 import { commodities, respondents, type CommodityId } from "@/lib/mock-data";
@@ -60,10 +60,6 @@ const commodityCodeByMockId: Record<CommodityId, string> = {
   "gmo-soybean": "GMO_SOY",
 };
 
-export function hasDatabaseUrl() {
-  return Boolean(process.env.DATABASE_URL);
-}
-
 export function todayInputDate() {
   return new Intl.DateTimeFormat("en-CA", {
     day: "2-digit",
@@ -75,14 +71,23 @@ export function todayInputDate() {
 
 export async function getDailyInputData(date: string): Promise<DailyInputData> {
   if (!hasDatabaseUrl()) {
+    if (!allowMockFallback()) {
+      throw new Error("DATABASE_URL is required for production daily inputs.");
+    }
+
     return getMockDailyInputData(date);
   }
 
   try {
     return await getDatabaseDailyInputData(date);
   } catch (error) {
-    console.warn("Falling back to mock daily inputs.", error);
-    return getMockDailyInputData(date);
+    if (allowMockFallback()) {
+      console.warn("Falling back to mock daily inputs.", error);
+      return getMockDailyInputData(date);
+    }
+
+    console.error("Failed to load database daily inputs.", error);
+    throw error;
   }
 }
 
@@ -90,6 +95,10 @@ export async function saveDailyInputs(formData: FormData, user: DemoUser) {
   const date = String(formData.get("date") ?? todayInputDate());
 
   if (!hasDatabaseUrl()) {
+    if (!allowMockFallback()) {
+      throw new Error("DATABASE_URL is required for production daily input saves.");
+    }
+
     if (isPastTradeDate(date)) {
       redirect(`/admin/daily-inputs?date=${date}&saved=locked`);
     }
@@ -135,12 +144,16 @@ async function getDatabaseDailyInputData(date: string): Promise<DailyInputData> 
     }),
     db.respondent.findMany({
       orderBy: { legalName: "asc" },
-      where: { active: true },
+      where: { active: true, status: "active" },
     }),
   ]);
 
   if (!basis || dbCommodities.length === 0 || dbRespondents.length === 0) {
-    return getMockDailyInputData(date);
+    if (allowMockFallback()) {
+      return getMockDailyInputData(date);
+    }
+
+    throw new Error("Missing basis, commodities, or active respondents.");
   }
 
   const [submissions, indicatives, lockedPublishedCount] = await Promise.all([

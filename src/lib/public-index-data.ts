@@ -1,6 +1,5 @@
-import { db } from "@/lib/db";
+import { allowMockFallback, db, hasDatabaseUrl } from "@/lib/db";
 import { getLatestDemoPublishedIndices } from "@/lib/demo-published-index-store";
-import { hasDatabaseUrl } from "@/lib/admin-daily-inputs";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import {
   commodities,
@@ -10,7 +9,10 @@ import {
   type CommodityId,
   type LatestQuote,
 } from "@/lib/mock-data";
-import { getActiveRespondentCount } from "@/lib/respondent-directory";
+import {
+  getActiveRespondentCount,
+  getActiveRespondentCountData,
+} from "@/lib/respondent-directory";
 
 export type PublicIndexSnapshot = {
   commodities: Commodity[];
@@ -35,14 +37,23 @@ const mockCommodityByCode = new Map(
 
 export async function getPublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
   if (!hasDatabaseUrl()) {
+    if (!allowMockFallback()) {
+      throw new Error("DATABASE_URL is required for production public index data.");
+    }
+
     return getMockPublicIndexSnapshot();
   }
 
   try {
     return await getDatabasePublicIndexSnapshot();
   } catch (error) {
-    console.warn("Falling back to mock public index data.", error);
-    return getMockPublicIndexSnapshot();
+    if (allowMockFallback()) {
+      console.warn("Falling back to mock public index data.", error);
+      return getMockPublicIndexSnapshot();
+    }
+
+    console.error("Failed to load database public index data.", error);
+    throw error;
   }
 }
 
@@ -92,14 +103,18 @@ function getMockPublicIndexSnapshot(): PublicIndexSnapshot {
 }
 
 async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
-  const activeRespondentCount = getActiveRespondentCount();
+  const activeRespondentCount = await getActiveRespondentCountData();
   const [basis, basket] = await Promise.all([
     db.deliveryBasis.findUnique({ where: { code: BASIS_CODE } }),
     db.basket.findUnique({ where: { code: BASKET_CODE } }),
   ]);
 
   if (!basis || !basket) {
-    return getMockPublicIndexSnapshot();
+    if (allowMockFallback()) {
+      return getMockPublicIndexSnapshot();
+    }
+
+    throw new Error(`Missing basis or basket for ${BASIS_CODE}/${BASKET_CODE}.`);
   }
 
   const dbCommodities = await db.commodity.findMany({

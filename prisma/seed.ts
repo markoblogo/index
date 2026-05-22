@@ -20,6 +20,126 @@ const commodities = activeIndex.commodities.map((commodity) => ({
 }));
 
 const respondents = activeIndex.respondents;
+const contactSeedByRespondentId: Record<
+  string,
+  {
+    collectionMode: "self_service" | "manual_outreach";
+    email: string;
+    name: string;
+    phone: string;
+  }
+> = {
+  "bunge-ukraine": {
+    collectionMode: "self_service",
+    email: "bunge@uga-index.demo",
+    name: "Олена Коваль",
+    phone: "+38 (050) 410-12-01",
+  },
+  "adm-ukraine": {
+    collectionMode: "self_service",
+    email: "adm@uga-index.demo",
+    name: "Андрій Мельник",
+    phone: "+38 (067) 420-18-22",
+  },
+  "hermes-trading": {
+    collectionMode: "manual_outreach",
+    email: "hermes@uga-index.demo",
+    name: "Ірина Савчук",
+    phone: "+38 (063) 430-24-33",
+  },
+  "louis-dreyfus-ukraine": {
+    collectionMode: "self_service",
+    email: "ldc@uga-index.demo",
+    name: "Максим Бойко",
+    phone: "+38 (050) 440-31-44",
+  },
+  "kernel-trade": {
+    collectionMode: "self_service",
+    email: "kernel@uga-index.demo",
+    name: "Наталія Гончар",
+    phone: "+38 (067) 450-45-55",
+  },
+  "cofco-agri-resources-ukraine": {
+    collectionMode: "self_service",
+    email: "cofco@uga-index.demo",
+    name: "Дмитро Лисенко",
+    phone: "+38 (073) 460-58-66",
+  },
+  "new-world-grain-ukraine": {
+    collectionMode: "manual_outreach",
+    email: "nwg@uga-index.demo",
+    name: "Катерина Мороз",
+    phone: "+38 (050) 470-62-77",
+  },
+  nibulon: {
+    collectionMode: "self_service",
+    email: "nibulon@uga-index.demo",
+    name: "Сергій Ткаченко",
+    phone: "+38 (067) 480-74-88",
+  },
+};
+
+const directoryRespondents =
+  activeIndex.id === "uga-ua"
+    ? [
+        ...respondents.map((respondent) => ({
+          ...respondent,
+          contactName:
+            contactSeedByRespondentId[respondent.id]?.name ?? "Primary contact",
+          contactPhone: contactSeedByRespondentId[respondent.id]?.phone ?? "",
+          loginEmail:
+            contactSeedByRespondentId[respondent.id]?.email ??
+            `${respondent.id}@uga-index.demo`,
+          collectionMode:
+            contactSeedByRespondentId[respondent.id]?.collectionMode ??
+            "self_service",
+          status: "active",
+        })),
+        {
+          id: "agroprosperis",
+          legalName: "ТОВ «Агропросперіс Трейд»",
+          contactName: "Юлія Петренко",
+          contactPhone: "+38 (050) 490-86-19",
+          loginEmail: "agroprosperis@uga-index.demo",
+          collectionMode: "manual_outreach",
+          status: "pending",
+        },
+        {
+          id: "orom",
+          legalName: "ТОВ «ОРОМ-ІМПЕКС»",
+          contactName: "Віталій Шевченко",
+          contactPhone: "+38 (063) 510-92-40",
+          loginEmail: "orom@uga-index.demo",
+          collectionMode: "manual_outreach",
+          status: "pending",
+        },
+        {
+          id: "aeroc",
+          legalName: "ТОВ «АЕРОК АГРО»",
+          contactName: "Марина Романюк",
+          contactPhone: "+38 (067) 520-13-51",
+          loginEmail: "aeroc@uga-index.demo",
+          collectionMode: "manual_outreach",
+          status: "pending",
+        },
+        {
+          id: "grain-alliance",
+          legalName: "ТОВ «Грейн Альянс»",
+          contactName: "Павло Данилюк",
+          contactPhone: "+38 (050) 530-27-62",
+          loginEmail: "grain-alliance@uga-index.demo",
+          collectionMode: "manual_outreach",
+          status: "pending",
+        },
+      ]
+    : respondents.map((respondent, index) => ({
+        ...respondent,
+        contactName: `Partner contact ${index + 1}`,
+        contactPhone: "",
+        loginEmail: `respondent-${index + 1}@${activeIndex.id}.demo`,
+        collectionMode: "self_service",
+        status: "active",
+      }));
 
 async function main() {
   const deliveryBasisRecords = await Promise.all(
@@ -73,15 +193,76 @@ async function main() {
           legalName: respondent.legalName,
           displayName: respondent.legalName,
           active: true,
+          status: "active",
         },
         create: {
           id: respondent.id,
           legalName: respondent.legalName,
           displayName: respondent.legalName,
           active: true,
+          status: "active",
         },
       }),
     ),
+  );
+
+  await Promise.all(
+    directoryRespondents.map(async (respondent) => {
+      const status = respondent.status === "pending" ? "pending" : "active";
+      const collectionMode =
+        respondent.collectionMode === "manual_outreach"
+          ? "manual_outreach"
+          : "self_service";
+
+      await prisma.respondent.upsert({
+        where: { id: respondent.id },
+        update: {
+          active: status === "active",
+          collectionMode,
+          displayName: respondent.legalName,
+          legalName: respondent.legalName,
+          status,
+        },
+        create: {
+          id: respondent.id,
+          active: status === "active",
+          collectionMode,
+          displayName: respondent.legalName,
+          legalName: respondent.legalName,
+          status,
+        },
+      });
+
+      await prisma.respondentContact.deleteMany({
+        where: { respondentId: respondent.id },
+      });
+      await prisma.respondentContact.create({
+        data: {
+          respondentId: respondent.id,
+          email: respondent.loginEmail,
+          name: respondent.contactName,
+          phone: respondent.contactPhone,
+          primary: true,
+          role: "Primary contact",
+        },
+      });
+      await prisma.respondentAuthAccount.upsert({
+        where: { respondentId: respondent.id },
+        update: {
+          loginEmail: respondent.loginEmail,
+          passwordSetupStatus: "temporary",
+          temporaryPassword: "respondent",
+          lastGeneratedAt: new Date(Date.UTC(2026, 4, 20, 10)),
+        },
+        create: {
+          respondentId: respondent.id,
+          loginEmail: respondent.loginEmail,
+          passwordSetupStatus: "temporary",
+          temporaryPassword: "respondent",
+          lastGeneratedAt: new Date(Date.UTC(2026, 4, 20, 10)),
+        },
+      });
+    }),
   );
 
   const basketRecords = await Promise.all(
@@ -140,10 +321,18 @@ async function main() {
   );
 
   const adminUser = await prisma.user.upsert({
-    where: { email: `admin@${activeIndex.id}.demo` },
+    where: {
+      email:
+        activeIndex.id === "uga-ua"
+          ? "admin@uga.ua"
+          : `admin@${activeIndex.id}.demo`,
+    },
     update: { name: "Demo Admin", role: "admin", active: true },
     create: {
-      email: `admin@${activeIndex.id}.demo`,
+      email:
+        activeIndex.id === "uga-ua"
+          ? "admin@uga.ua"
+          : `admin@${activeIndex.id}.demo`,
       name: "Demo Admin",
       role: "admin",
       active: true,
@@ -162,21 +351,21 @@ async function main() {
   });
 
   await Promise.all(
-    respondentRecords.map((respondent, index) =>
+    directoryRespondents.map((respondent) =>
       prisma.user.upsert({
-        where: { email: `respondent-${index + 1}@${activeIndex.id}.demo` },
+        where: { email: respondent.loginEmail },
         update: {
-          name: `Respondent ${index + 1}`,
+          name: `${respondent.legalName} respondent`,
           role: "respondent",
           respondentId: respondent.id,
-          active: true,
+          active: respondent.status === "active",
         },
         create: {
-          email: `respondent-${index + 1}@${activeIndex.id}.demo`,
-          name: `Respondent ${index + 1}`,
+          email: respondent.loginEmail,
+          name: `${respondent.legalName} respondent`,
           role: "respondent",
           respondentId: respondent.id,
-          active: true,
+          active: respondent.status === "active",
         },
       }),
     ),
@@ -280,6 +469,35 @@ async function main() {
       }
     }
   }
+
+  await prisma.respondentEmailSchedule.upsert({
+    where: { id: "default" },
+    update: {
+      enabled: true,
+      replyTo: "inbox@uga.ua",
+      sender: "UGA Index <onboarding@resend.dev>",
+      sendTime: "16:30",
+      subject: "UGA Index daily price survey",
+      surveyUrl: "/respondent",
+      template:
+        "Please submit today's CPT UA Black Sea price indicatives for UGA Index. Open your daily survey form using the personal link in this email.",
+      timezone: "Europe/Kyiv",
+      workdays: "Monday-Friday",
+    },
+    create: {
+      id: "default",
+      enabled: true,
+      replyTo: "inbox@uga.ua",
+      sender: "UGA Index <onboarding@resend.dev>",
+      sendTime: "16:30",
+      subject: "UGA Index daily price survey",
+      surveyUrl: "/respondent",
+      template:
+        "Please submit today's CPT UA Black Sea price indicatives for UGA Index. Open your daily survey form using the personal link in this email.",
+      timezone: "Europe/Kyiv",
+      workdays: "Monday-Friday",
+    },
+  });
 
   await prisma.auditLog.create({
     data: {

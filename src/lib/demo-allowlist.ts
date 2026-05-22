@@ -1,5 +1,8 @@
 import { getActiveIndexConfig } from "@/lib/index-platform";
-import { getRespondentDirectory } from "@/lib/respondent-directory";
+import {
+  getRespondentDirectory,
+  getRespondentDirectoryData,
+} from "@/lib/respondent-directory";
 
 export type DemoAllowlistRole = "admin" | "respondent";
 
@@ -192,4 +195,57 @@ export function authenticateDemoUser({
         user.password === normalizedPassword,
     ) ?? null
   );
+}
+
+export async function authenticateAllowlistedUser({
+  login,
+  password,
+}: {
+  login: string;
+  password: string;
+}) {
+  const normalizedLogin = login.trim().toLowerCase();
+  const normalizedPassword = password.trim();
+  const allowlist = await getDemoAllowlistData();
+
+  if (normalizedLogin === "admin" && normalizedPassword === "admin") {
+    return allowlist.find((user) => user.role === "admin") ?? null;
+  }
+
+  if (
+    normalizedLogin === "respondent" &&
+    normalizedPassword === "respondent"
+  ) {
+    return allowlist.find((user) => user.role === "respondent") ?? null;
+  }
+
+  return (
+    allowlist.find(
+      (user) =>
+        user.email.toLowerCase() === normalizedLogin &&
+        user.password === normalizedPassword,
+    ) ?? null
+  );
+}
+
+export async function getDemoAllowlistData() {
+  if (getActiveIndexConfig().id === "spike-ua") {
+    return spikeAllowlist;
+  }
+
+  return [
+    ugaAllowlist[0],
+    ...(await getRespondentDirectoryData()).map(
+      (respondent): DemoAllowlistUser => ({
+        userId: `respondent-${respondent.id}`,
+        email: respondent.auth.loginEmail,
+        password: respondent.auth.temporaryPassword,
+        role: "respondent",
+        name: `${respondent.companyName} respondent`,
+        respondentId: respondent.id,
+        companyName: respondent.companyName,
+        passwordSetupStatus: respondent.auth.passwordSetupStatus,
+      }),
+    ),
+  ].filter((user): user is DemoAllowlistUser => Boolean(user));
 }

@@ -2,107 +2,50 @@
 
 ## Overview
 
-UGA Index is a standalone bilingual website for the Ukrainian Grain Association (UGA). It publishes a daily spot export price index for core Ukrainian grain and oilseed commodities, using market indicatives provided by Spike Brokers and technology delivered by Cropto/MN7R.
+UGA Index is a standalone bilingual platform for the Ukrainian Grain Association. It publishes a daily spot export price benchmark for core Ukrainian grain and oilseed commodities and provides the internal workflow for collecting respondent prices, validating calculations and publishing locked index values.
 
-The demo combines a public market-facing website, an embeddable widget for the UGA website, and a lightweight internal workflow that shows how respondent submissions become locked, published index values.
+## Current Product
 
-## Goals
+- Public bilingual website at `/uk` and `/en`.
+- Daily index cards for corn, wheat 11.5% protein, feed wheat and GMO soybean.
+- Official values in `USD/t`; UAH/t and EUR/t are display conversions.
+- Hero/methodology basis: `CPT Black Sea Panamax Ports (POC)`.
+- Cards, tables and forms basis: `CPT UA Black Sea`.
+- Delivery period: `T+30`.
+- Public pages: About, Methodology, Analytics, Cooperation/Subscription and legal pages.
+- Embeddable cards, chart and full-site iframe for the UGA website.
 
-- Present UGA as the official brand owner of a clear, repeatable daily export price index.
-- Publish daily FOB Black Sea spot index values for selected commodities.
-- Support Ukrainian and English audiences with automatic and manual localization.
-- Demonstrate respondent data collection, admin review, calculation, publication, and auditability.
-- Provide an embeddable index widget that can be placed on the existing UGA website.
+## Internal Operations
 
-## Audiences
+- Allowlist-style login preview: users sign in with email/password, and role is inferred from the account.
+- Admin daily input matrix for respondent prices and benchmark comparison.
+- Respondent directory with contacts, login email, temporary password status, collection mode and notification schedule.
+- Respondent daily survey form scoped to one company.
+- Publish UGA Index workflow that calculates all commodities and publishes eligible indices in one locked batch.
+- Audit log entries for calculation, publication and submission events.
 
-- Ukrainian grain market participants who need daily export price references.
-- UGA members who need trusted market benchmarks and analytics.
-- Media, analysts, and public stakeholders who need a concise published index.
-- UGA website visitors who consume the index through an embedded widget.
-- Internal demo users acting as admins, respondents, or members.
+## Respondents
 
-## Brand And Partner Roles
+The current active basket contains 8 respondent companies. The directory can also include pending/manual-outreach companies. The active respondent count is used in public index cards, analytics and API responses.
 
-- **UGA:** brand owner, public publisher, and institutional sponsor.
-- **Spike Brokers:** provider of market indicatives used for the demo index workflow.
-- **Cropto/MN7R:** technology partner responsible for the demo platform, calculation workflow, localization, and embeddable widget.
+## Methodology
 
-## Covered Commodities
-
-The demo index covers four commodities:
-
-- Кукурудза / Corn
-- Пшениця 11.5pro / Wheat 11.5% protein
-- Пшениця фураж / Feed wheat
-- Соя ГМО / GMO soybean
-
-The default delivery basis for the demo is **FOB Black Sea**.
-
-## Public Site
-
-The public site should include:
-
-- Homepage with one current index card per commodity.
-- Weekly charts for each commodity.
-- About page explaining the UGA Index purpose and partner roles.
-- Methodology page explaining the calculation rules in plain language.
-- Analytics page for weekly movement, commodity comparison, and recent history.
-- Ukrainian and English localization.
-- Automatic Ukrainian locale for visitors from Ukraine and English for all other visitors.
-- Manual language switch that overrides automatic locale selection.
-- Embeddable index widget for placement on the UGA website.
-
-## Internal Demo
-
-The internal demo should include:
-
-- Mock login where any username and password works.
-- Role selection or mock role assignment for `admin`, `respondent`, and `member`.
-- Admin daily input matrix with respondent companies as rows and the four commodities as columns.
-- Respondent daily survey form scoped to that respondent and the current date.
-- Calculation preview showing raw submissions, median, excluded outliers, cleaned sample, and final average.
-- Publish action that locks index values for the selected date.
-- Audit log showing demo events such as login, submission update, calculation preview, publication, and attempted edits to locked data.
-
-## Respondent Companies
-
-- ПІІ «БУНГЕ ЮКРЕЙН»
-- ТОВ «АДМ ЮКРЕЙН»
-- ТОВ «Гермес-Трейдінг»
-- ТОВ «Луї Дрейфус Україна»
-- ТОВ «Кернел-Трейд»
-- ТОВ «КОФКО АГРІ РЕСУРСІЗ УКРАЇНА»
-- ТОВ «Нью Ворлд Грейн Юкрейн»
-- ТОВ СП «НІБУЛОН»
-
-## Index Methodology
-
-For each date, commodity, and delivery basis:
+For each date, commodity and delivery basis:
 
 1. Collect respondent prices.
 2. Calculate the median price.
-3. Exclude prices that deviate by more than +/-2% from the median.
+3. Exclude values that deviate by more than +/-2% from the median.
 4. Calculate the arithmetic average of the cleaned sample.
-5. Treat the basket as publishable only when at least 5 valid respondent prices remain available.
-6. Publish the calculated value and lock it against direct edits.
+5. Publish only when at least 5 valid respondent prices remain.
+6. Lock published values.
 
-The demo uses a single basket with weight `1`. The product should be designed so future versions can support weighted baskets without changing the public concept.
+Benchmark values may be displayed as references. They are not silently published when respondent data are insufficient. If an admin enables benchmark blend before publication, the calculated UGA value, benchmark value, final adjusted value, method and audit event are persisted.
 
 ## Success Criteria
 
-- A visitor can understand today's index values and recent weekly movement from the homepage.
-- A visitor can switch between Ukrainian and English at any time.
-- Visitors from Ukraine are automatically served Ukrainian by default; all other visitors are served English by default.
-- A UGA website page can embed a compact index widget.
-- A respondent can submit daily commodity prices through the demo form.
-- An admin can review respondent prices, preview calculations, publish values, and inspect audit events.
-- Published values are visibly locked after publication.
-
-## Assumptions
-
-- The demo uses mock/static data until a later implementation request specifies a real backend.
-- FOB Black Sea is the only required delivery basis for the first demo, but the information model should allow additional bases.
-- Ukrainian and English are first-class locales.
-- Corrections to published values are not direct edits; they should be represented as future audited correction actions if needed.
-- The local project directory is currently empty. Git resolves to a parent repository with an unrelated remote, so repository initialization or remote correction should happen before committing or pushing this project.
+- Public users see current values, basis, delivery period, respondent count and update status immediately.
+- Ukrainian and English routes render consistently.
+- UGA can embed either compact widgets or the full-site iframe.
+- Respondents can save drafts and submit locked daily values.
+- Admin can edit same-day prices, review historical locked dates, manage respondents, and publish all eligible indices in one action.
+- Production deployments use PostgreSQL-backed data and do not silently fall back to mock data.

@@ -2,7 +2,7 @@ import "server-only";
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { demoAllowlist, type DemoAllowlistUser } from "@/lib/demo-allowlist";
+import type { DemoAllowlistUser } from "@/lib/demo-allowlist";
 
 export const DEMO_SESSION_COOKIE = "uga_demo_session";
 
@@ -49,10 +49,6 @@ export async function requireDemoRole(role: DemoRole) {
   const user = await getCurrentDemoUser();
 
   if (!user) {
-    if (role === "admin") {
-      return createDemoUserFromAllowlist(getFallbackAdminUser());
-    }
-
     redirect(`/login?next=${encodeURIComponent(getRoleHome(role))}`);
   }
 
@@ -114,33 +110,6 @@ export function createDemoSessionCookieValue(user: DemoAllowlistUser) {
   };
 
   return encodePayload(payload);
-}
-
-function createDemoUserFromAllowlist(user: DemoAllowlistUser): DemoUser {
-  const now = Math.floor(Date.now() / 1000);
-
-  return {
-    userId: user.userId,
-    email: user.email,
-    name: user.name,
-    username: user.email,
-    role: user.role,
-    respondentId: user.role === "respondent" ? user.respondentId : undefined,
-    companyName: user.role === "respondent" ? user.companyName : undefined,
-    respondentName: user.role === "respondent" ? user.companyName : undefined,
-    issuedAt: now,
-    expiresAt: now + DEMO_SESSION_TTL_SECONDS,
-  };
-}
-
-function getFallbackAdminUser() {
-  const admin = demoAllowlist.find((user) => user.role === "admin");
-
-  if (!admin) {
-    throw new Error("Demo admin user is not configured.");
-  }
-
-  return admin;
 }
 
 function encodePayload(payload: DemoSessionPayload) {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { authenticateDemoUser } from "@/lib/demo-allowlist";
+import { authenticateAllowlistedUser } from "@/lib/demo-allowlist";
 import {
   createDemoSessionCookieValue,
   DEMO_SESSION_COOKIE,
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
   const password = String(formData.get("password") ?? "");
   const locale = normalizeLocale(String(formData.get("locale") ?? ""));
   const next = String(formData.get("next") ?? "");
-  const user = authenticateDemoUser({ login, password });
+  const user = await authenticateAllowlistedUser({ login, password });
 
   if (!user) {
     const loginUrl = new URL("/login", request.url);

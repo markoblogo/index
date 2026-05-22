@@ -1,13 +1,16 @@
-import { db } from "@/lib/db";
-import { hasDatabaseUrl } from "@/lib/admin-daily-inputs";
+import { allowMockFallback, db, hasDatabaseUrl } from "@/lib/db";
 import { SITE_CONFIG } from "@/lib/constants";
+import { getActiveIndexConfig } from "@/lib/index-platform";
 import {
   commodities,
   weeklySeries,
   type CommodityId,
 } from "@/lib/mock-data";
 import { getPublicIndexSnapshot } from "@/lib/public-index-data";
-import { getActiveRespondentCount } from "@/lib/respondent-directory";
+import {
+  getActiveRespondentCount,
+  getActiveRespondentCountData,
+} from "@/lib/respondent-directory";
 
 export type PublicLatestItem = {
   commodityId: CommodityId;
@@ -26,8 +29,10 @@ export type PublicHistoryItem = PublicLatestItem & {
   status: "published";
 };
 
-const BASIS_CODE = "FOB_BLACK_SEA";
-const BASKET_CODE = "FOB_BLACK_SEA_DEMO";
+const activeIndex = getActiveIndexConfig();
+const primaryDeliveryBasis = activeIndex.deliveryBases[0];
+const BASIS_CODE = primaryDeliveryBasis.code;
+const BASKET_CODE = primaryDeliveryBasis.basketCode;
 const demoDates = [
   "2026-05-01",
   "2026-05-02",
@@ -51,27 +56,45 @@ const mockCommodityIdByCode: Record<string, CommodityId> = {
 
 export async function getPublicLatestData() {
   if (!hasDatabaseUrl()) {
+    if (!allowMockFallback()) {
+      throw new Error("DATABASE_URL is required for production public latest data.");
+    }
+
     return getMockLatestData();
   }
 
   try {
     return await getDatabaseLatestData();
   } catch (error) {
-    console.warn("Falling back to mock public latest data.", error);
-    return getMockLatestData();
+    if (allowMockFallback()) {
+      console.warn("Falling back to mock public latest data.", error);
+      return getMockLatestData();
+    }
+
+    console.error("Failed to load database public latest data.", error);
+    throw error;
   }
 }
 
 export async function getPublicHistoryData() {
   if (!hasDatabaseUrl()) {
+    if (!allowMockFallback()) {
+      throw new Error("DATABASE_URL is required for production public history data.");
+    }
+
     return getMockHistoryData();
   }
 
   try {
     return await getDatabaseHistoryData();
   } catch (error) {
-    console.warn("Falling back to mock public history data.", error);
-    return getMockHistoryData();
+    if (allowMockFallback()) {
+      console.warn("Falling back to mock public history data.", error);
+      return getMockHistoryData();
+    }
+
+    console.error("Failed to load database public history data.", error);
+    throw error;
   }
 }
 
@@ -133,8 +156,13 @@ async function getDatabaseLatestData(): Promise<PublicLatestItem[]> {
   ]);
 
   if (!basis || !basket) {
-    return getMockLatestData();
+    if (allowMockFallback()) {
+      return getMockLatestData();
+    }
+
+    throw new Error(`Missing basis or basket for ${BASIS_CODE}/${BASKET_CODE}.`);
   }
+  const activeRespondentCount = await getActiveRespondentCountData();
 
   const rows = await Promise.all(
     dbCommodities.map(async (commodity) => {
@@ -159,11 +187,11 @@ async function getDatabaseLatestData(): Promise<PublicLatestItem[]> {
         commodityNameUk: commodity.nameUk,
         commodityNameEn: commodity.nameEn,
         date: published.tradeDate.toISOString().slice(0, 10),
-        basis: SITE_CONFIG.defaultDeliveryBasis,
+        basis: basis.name,
         valueUsdPerMt: published.valueUsdPerMt.toNumber(),
         changeAbs: published.changeAbsUsdPerMt?.toNumber() ?? 0,
         changePct: published.changePct?.toNumber() ?? 0,
-        respondents: getActiveRespondentCount(),
+        respondents: activeRespondentCount,
       };
     }),
   );
@@ -178,8 +206,13 @@ async function getDatabaseHistoryData(): Promise<PublicHistoryItem[]> {
   ]);
 
   if (!basis || !basket) {
-    return getMockHistoryData();
+    if (allowMockFallback()) {
+      return getMockHistoryData();
+    }
+
+    throw new Error(`Missing basis or basket for ${BASIS_CODE}/${BASKET_CODE}.`);
   }
+  const activeRespondentCount = await getActiveRespondentCountData();
 
   const rows = await db.publishedIndex.findMany({
     include: { commodity: true },
@@ -199,11 +232,11 @@ async function getDatabaseHistoryData(): Promise<PublicHistoryItem[]> {
     commodityNameUk: row.commodity.nameUk,
     commodityNameEn: row.commodity.nameEn,
     date: row.tradeDate.toISOString().slice(0, 10),
-    basis: SITE_CONFIG.defaultDeliveryBasis,
+    basis: basis.name,
     valueUsdPerMt: row.valueUsdPerMt.toNumber(),
     changeAbs: row.changeAbsUsdPerMt?.toNumber() ?? 0,
     changePct: row.changePct?.toNumber() ?? 0,
-    respondents: getActiveRespondentCount(),
+    respondents: activeRespondentCount,
     status: "published",
   }));
 }

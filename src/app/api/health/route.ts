@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { hasDatabaseUrl } from "@/lib/admin-daily-inputs";
+import { allowMockFallback, db, hasDatabaseUrl } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   const databaseConfigured = hasDatabaseUrl();
+  const databaseRequired = !allowMockFallback();
   let database: "configured" | "ok" | "unavailable" | "not_configured" =
     databaseConfigured ? "configured" : "not_configured";
 
@@ -20,17 +20,21 @@ export async function GET() {
 
   return NextResponse.json(
     {
-      ok: database !== "unavailable",
+      ok: database !== "unavailable" && (databaseConfigured || !databaseRequired),
       service: "uga-index",
       timestamp: new Date().toISOString(),
       database,
+      databaseRequired,
       siteUrlConfigured: Boolean(process.env.NEXT_PUBLIC_SITE_URL),
     },
     {
       headers: {
         "Cache-Control": "no-store",
       },
-      status: database === "unavailable" ? 503 : 200,
+      status:
+        database === "unavailable" || (databaseRequired && !databaseConfigured)
+          ? 503
+          : 200,
     },
   );
 }

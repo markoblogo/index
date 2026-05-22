@@ -2,30 +2,36 @@ import { revalidatePath } from "next/cache";
 import type { ReactNode } from "react";
 import { requireDemoRole } from "@/lib/demo-auth";
 import {
-  addRespondentContact,
-  addRespondentDirectoryEntry,
-  deleteRespondentContact,
-  deleteRespondentDirectoryEntry,
-  getActiveRespondentCount,
-  getRespondentDirectory,
-  respondentEmailSchedule,
-  regenerateRespondentTemporaryPassword,
-  updateRespondentContact,
-  updateRespondentAuthAccount,
-  updateRespondentDirectoryEntry,
+  addRespondentContactData,
+  addRespondentDirectoryEntryData,
+  deleteRespondentContactData,
+  deleteRespondentDirectoryEntryData,
+  getActiveRespondentCountData,
+  getRespondentDirectoryData,
+  getRespondentEmailScheduleData,
+  regenerateRespondentTemporaryPasswordData,
+  updateRespondentEmailScheduleData,
+  updateRespondentContactData,
+  updateRespondentAuthAccountData,
+  updateRespondentDirectoryEntryData,
   type RespondentCollectionMode,
   type RespondentDirectoryEntry,
+  type RespondentEmailScheduleSettings,
   type RespondentPasswordStatus,
   type RespondentStatus,
 } from "@/lib/respondent-directory";
+import { sendRespondentSurveyEmails } from "@/lib/respondent-email";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function AdminRespondentsPage() {
   await requireDemoRole("admin");
-  const respondents = getRespondentDirectory();
-  const activeCount = getActiveRespondentCount();
+  const [respondents, activeCount, emailSchedule] = await Promise.all([
+    getRespondentDirectoryData(),
+    getActiveRespondentCountData(),
+    getRespondentEmailScheduleData(),
+  ]);
   const selfServiceCount = respondents.filter(
     (respondent) => respondent.collectionMode === "self_service",
   ).length;
@@ -69,7 +75,7 @@ export default async function AdminRespondentsPage() {
         </section>
       </div>
 
-      <SurveyNotificationSettings />
+      <SurveyNotificationSettings schedule={emailSchedule} />
     </section>
   );
 }
@@ -93,10 +99,14 @@ function Metric({
   );
 }
 
-function SurveyNotificationSettings() {
+function SurveyNotificationSettings({
+  schedule,
+}: {
+  schedule: RespondentEmailScheduleSettings;
+}) {
   return (
     <aside className="border border-black bg-white p-5">
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(15rem,0.6fr)_minmax(18rem,0.75fr)]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.25fr)]">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-uga-green">
             Daily email
@@ -109,35 +119,98 @@ function SurveyNotificationSettings() {
             self-service respondent. Manual-outreach companies remain visible
             for phone or email follow-up.
           </p>
+          <form action={sendSurveyEmailsNowAction} className="mt-4">
+            <button className="border border-black bg-uga-dark px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-white">
+              Send now
+            </button>
+          </form>
         </div>
 
-        <dl className="grid gap-3 text-sm">
-          <SettingRow
-            label="Status"
-            value={respondentEmailSchedule.enabled ? "enabled" : "disabled"}
-          />
-          <SettingRow label="Workdays" value="Monday-Friday" />
-          <SettingRow
-            label="Send time"
-            value={`${respondentEmailSchedule.sendTime} ${respondentEmailSchedule.timezone}`}
-          />
-          <SettingRow label="Sender" value={respondentEmailSchedule.sender} />
-          <SettingRow
-            label="Survey link"
-            value={respondentEmailSchedule.surveyUrl}
-          />
-        </dl>
-
-        <div className="border border-black bg-uga-mist p-4">
-          <p className="text-xs font-black uppercase tracking-[0.14em] text-black/45">
-            Email template
+        <form action={updateEmailScheduleAction} className="grid gap-4">
+          <div className="grid gap-3 lg:grid-cols-[0.5fr_0.55fr_0.7fr_1fr]">
+            <Field label="Status">
+              <select
+                className="admin-field"
+                defaultValue={schedule.enabled ? "enabled" : "disabled"}
+                name="enabled"
+              >
+                <option value="enabled">enabled</option>
+                <option value="disabled">disabled</option>
+              </select>
+            </Field>
+            <Field label="Workdays">
+              <input
+                className="admin-field"
+                defaultValue={schedule.workdays}
+                name="workdays"
+              />
+            </Field>
+            <Field label="Send time">
+              <input
+                className="admin-field"
+                defaultValue={schedule.sendTime}
+                name="sendTime"
+                type="time"
+              />
+            </Field>
+            <Field label="Timezone">
+              <input
+                className="admin-field"
+                defaultValue={schedule.timezone}
+                name="timezone"
+              />
+            </Field>
+          </div>
+          <div className="grid gap-3 lg:grid-cols-2">
+            <Field label="Sender">
+              <input
+                className="admin-field"
+                defaultValue={schedule.sender}
+                name="sender"
+              />
+            </Field>
+            <Field label="Reply-to admin email">
+              <input
+                className="admin-field"
+                defaultValue={schedule.replyTo}
+                name="replyTo"
+                placeholder="admin@uga.ua"
+                type="email"
+              />
+            </Field>
+          </div>
+          <div className="grid gap-3 lg:grid-cols-[1fr_0.65fr]">
+            <Field label="Subject">
+              <input
+                className="admin-field"
+                defaultValue={schedule.subject}
+                name="subject"
+              />
+            </Field>
+            <Field label="Survey link">
+              <input
+                className="admin-field"
+                defaultValue={schedule.surveyUrl}
+                name="surveyUrl"
+              />
+            </Field>
+          </div>
+          <Field label="Email template">
+            <textarea
+              className="admin-field min-h-32"
+              defaultValue={schedule.template}
+              name="template"
+            />
+          </Field>
+          <p className="text-xs font-semibold leading-5 text-black/55">
+            Template variables: {"{{companyName}}"}, {"{{surveyUrl}}"},{" "}
+            {"{{date}}"}. Scheduled delivery uses Monday-Friday workdays at the
+            configured Kyiv time. Manual sending ignores the schedule status.
           </p>
-          <p className="mt-2 text-sm font-semibold leading-6">
-            Please submit today&apos;s CPT UA Black Sea price indicatives for
-            UGA Index. Open your daily survey form using the personal link in
-            this email.
-          </p>
-        </div>
+          <button className="w-fit border border-black bg-uga-green px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-white">
+            Save email settings
+          </button>
+        </form>
       </div>
     </aside>
   );
@@ -547,21 +620,10 @@ function StatusPill({
   );
 }
 
-function SettingRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="border-b border-black/10 pb-3 last:border-b-0 last:pb-0">
-      <dt className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-black/45">
-        {label}
-      </dt>
-      <dd className="mt-1 font-semibold leading-5">{value}</dd>
-    </div>
-  );
-}
-
 async function addRespondentAction(formData: FormData) {
   "use server";
   await requireDemoRole("admin");
-  addRespondentDirectoryEntry({
+  await addRespondentDirectoryEntryData({
     collectionMode: parseCollectionMode(formData.get("collectionMode")),
     companyName: readFormString(formData, "companyName"),
     contactEmail: readFormString(formData, "contactEmail"),
@@ -576,7 +638,7 @@ async function addRespondentAction(formData: FormData) {
 async function updateRespondentAction(formData: FormData) {
   "use server";
   await requireDemoRole("admin");
-  updateRespondentDirectoryEntry({
+  await updateRespondentDirectoryEntryData({
     collectionMode: parseCollectionMode(formData.get("collectionMode")),
     companyName: readFormString(formData, "companyName"),
     id: readFormString(formData, "id"),
@@ -588,14 +650,14 @@ async function updateRespondentAction(formData: FormData) {
 async function deleteRespondentAction(formData: FormData) {
   "use server";
   await requireDemoRole("admin");
-  deleteRespondentDirectoryEntry(readFormString(formData, "id"));
+  await deleteRespondentDirectoryEntryData(readFormString(formData, "id"));
   revalidateRespondentPages();
 }
 
 async function addContactAction(formData: FormData) {
   "use server";
   await requireDemoRole("admin");
-  addRespondentContact({
+  await addRespondentContactData({
     email: readFormString(formData, "email"),
     name: readFormString(formData, "name"),
     phone: readFormString(formData, "phone"),
@@ -609,7 +671,7 @@ async function addContactAction(formData: FormData) {
 async function updateContactAction(formData: FormData) {
   "use server";
   await requireDemoRole("admin");
-  updateRespondentContact({
+  await updateRespondentContactData({
     contactId: readFormString(formData, "contactId"),
     email: readFormString(formData, "email"),
     name: readFormString(formData, "name"),
@@ -624,7 +686,7 @@ async function updateContactAction(formData: FormData) {
 async function deleteContactAction(formData: FormData) {
   "use server";
   await requireDemoRole("admin");
-  deleteRespondentContact({
+  await deleteRespondentContactData({
     contactId: readFormString(formData, "contactId"),
     respondentId: readFormString(formData, "respondentId"),
   });
@@ -634,7 +696,7 @@ async function deleteContactAction(formData: FormData) {
 async function updateAuthAction(formData: FormData) {
   "use server";
   await requireDemoRole("admin");
-  updateRespondentAuthAccount({
+  await updateRespondentAuthAccountData({
     loginEmail: readFormString(formData, "loginEmail"),
     passwordSetupStatus: parsePasswordStatus(
       formData.get("passwordSetupStatus"),
@@ -647,9 +709,33 @@ async function updateAuthAction(formData: FormData) {
 async function regeneratePasswordAction(formData: FormData) {
   "use server";
   await requireDemoRole("admin");
-  regenerateRespondentTemporaryPassword(
+  await regenerateRespondentTemporaryPasswordData(
     readFormString(formData, "respondentId"),
   );
+  revalidateRespondentPages();
+}
+
+async function updateEmailScheduleAction(formData: FormData) {
+  "use server";
+  await requireDemoRole("admin");
+  await updateRespondentEmailScheduleData({
+    enabled: formData.get("enabled") !== "disabled",
+    replyTo: readFormString(formData, "replyTo"),
+    sender: readFormString(formData, "sender"),
+    sendTime: readFormString(formData, "sendTime"),
+    subject: readFormString(formData, "subject"),
+    surveyUrl: readFormString(formData, "surveyUrl"),
+    template: readFormString(formData, "template"),
+    timezone: readFormString(formData, "timezone"),
+    workdays: readFormString(formData, "workdays"),
+  });
+  revalidateRespondentPages();
+}
+
+async function sendSurveyEmailsNowAction() {
+  "use server";
+  await requireDemoRole("admin");
+  await sendRespondentSurveyEmails("manual");
   revalidateRespondentPages();
 }
 

@@ -9,9 +9,9 @@ Open `/uk`.
 Show the UGA Index homepage in Ukrainian:
 
 - Four headline index cards for corn, wheat 11.5% protein, feed wheat, and GMO soybean.
-- Date, update status, and FOB Black Sea basis.
+- Date, update status, and CPT UA Black Sea basis.
 - Weekly comparison chart and latest quotations table.
-- Partner roles for UGA, Spike Brokers, and Cropto/MN7R.
+- Partner roles for UGA, UGA operational roles.
 
 Switch to English using the language switcher. Confirm the equivalent `/en` page keeps the same market data with English labels.
 
@@ -19,7 +19,7 @@ Switch to English using the language switcher. Confirm the equivalent `/en` page
 
 Open `/en/methodology` or `/uk/methodology`.
 
-Explain that UGA Index is calculated from respondent baskets using end-of-day FOB Black Sea price submissions. Highlight the median, +/-2% outlier filter, cleaned arithmetic average, minimum five respondent rule, locked publication values, and audit log.
+Explain that UGA Index is calculated from respondent baskets using end-of-day CPT UA Black Sea price submissions. Highlight the median, +/-2% outlier filter, cleaned arithmetic average, minimum five respondent rule, locked publication values, and audit log.
 
 Mention the signed methodology PDF placeholder as the future location for the official published method.
 
@@ -27,7 +27,7 @@ Mention the signed methodology PDF placeholder as the future location for the of
 
 Open `/login`.
 
-Enter any username and password, choose the `admin` role, and continue.
+Enter `admin@uga.ua` / `admin`. The role is inferred from the allowlist; there is no role selector.
 
 Open `/admin/daily-inputs`.
 
@@ -35,18 +35,18 @@ Show:
 
 - Date picker defaulting to today.
 - Matrix with four commodity rows and eight respondent company columns.
-- Per-cell Spike indicative, difference, deviation, warning state, and source/status label.
+- Per-cell benchmark value, warning state, and automatic source indicators.
 - Save action for admin-entered or reviewed prices.
 
 Stress that this page is for data collection only and does not publish the index.
 
 ## 4. Respondent Survey (1 minute)
 
-Log out, return to `/login`, choose the `respondent` role, select a respondent company, and continue.
+Log out, return to `/login`, enter a respondent allowlist email and password, and continue.
 
 Open `/respondent`.
 
-Enter four FOB Black Sea prices and submit. Show the submitted confirmation with the respondent company, date, basis, and values.
+Enter four CPT UA Black Sea prices and submit. Show the submitted confirmation with the respondent company, date, basis, and values.
 
 Log back in as admin and return to `/admin/daily-inputs`. Confirm the respondent-submitted values are visible in the matrix with respondent source/status.
 
@@ -59,10 +59,10 @@ Show each commodity calculation block:
 - Raw respondent count and included respondent count.
 - Median and UGA Index value.
 - Excluded outliers and deviation percentages.
-- Spike indicative comparison.
+- Benchmark reference comparison.
 - Publishability status and calculation version.
 
-Point out that Spike is displayed only as an external indicative. It is not silently used as a fallback when the basket has insufficient data.
+Point out that benchmark values are displayed only as external reference data unless an admin explicitly enables benchmark weighting for publication.
 
 Click `Publish all publishable indices`, then show the locked published values and audit-oriented publication state.
 
@@ -74,7 +74,7 @@ Confirm the homepage cards and latest quotations now reflect the published value
 
 Open `/en/analytics`.
 
-Show demo access labels, commodity/date/basis filters, historical line chart, day-over-day changes, commodity comparison, and published values table. Explain the future access levels: public visitor, registered user, UGA member, and paid access.
+Show the analytics access preview, historical line chart, day-over-day changes, commodity comparison, scenario model, and published values table. Explain the future access levels: public visitor, registered user, UGA member, and paid access.
 
 ## 7. Embeddable Widget (30-60 seconds)
 
@@ -86,8 +86,8 @@ Show the compact card widget without the public site shell. Mention that the wid
 
 Summarize the production path:
 
-- Replace demo auth with real accounts and role management.
+- Replace preview auth with production password setup emails and hashed credentials.
 - Connect the real PostgreSQL database and durable audit trail.
-- Integrate Spike indicative ingestion.
+- Integrate live benchmark indicative ingestion.
 - Add production entitlements for UGA members and paid analytics.
 - Finalize the signed methodology PDF and public domain migration.

@@ -173,7 +173,6 @@ const legalContent: Record<Locale, Record<LegalPageSlug, LegalPageContent>> = {
             "UGA Index is operated for the Ukrainian Grain Association.",
             "Contact details:\nUkrainian Grain Association\nUkraine, 01133, Kyiv,\n36D Yevhena Konovaltsia St.,\n6th floor",
             "E-mail:\ninbox@uga.ua",
-            "Technology support for the platform may be provided by Cropto/MN7R.",
           ],
         },
         {
@@ -427,7 +426,6 @@ const legalContent: Record<Locale, Record<LegalPageSlug, LegalPageContent>> = {
             "UGA Index функціонує для Української зернової асоціації.",
             "Контакти:\nУкраїнська зернова асоціація\nУкраїна, 01133, Київ,\nвул. Євгена Коновальця, 36Д,\n6 поверх",
             "E-mail:\ninbox@uga.ua",
-            "Технологічну підтримку платформи можуть надавати Cropto/MN7R.",
           ],
         },
         {

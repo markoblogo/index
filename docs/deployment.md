@@ -8,7 +8,7 @@ The app is ready to deploy on Vercel as a Next.js App Router project.
 2. Set the development domain in Vercel project domains.
 3. Configure environment variables from `.env.example`.
 4. Run a production build with `npm run build`.
-5. Run Prisma migration and seed against the target PostgreSQL database before demo use.
+5. Run Prisma migration and seed against the target PostgreSQL database before production use.
 
 ## Required Environment Variables
 
@@ -17,6 +17,10 @@ DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/uga_index?schema=public"
 NEXT_PUBLIC_SITE_URL="https://index-uga.cr0pto.com"
 ALLOWED_EMBED_ORIGINS="https://uga.ua https://www.uga.ua https://index-uga.cr0pto.com http://localhost:* http://127.0.0.1:*"
 DEMO_AUTH_SECRET="replace-with-a-long-random-secret"
+UGA_INDEX_RUNTIME_MODE="production"
+RESEND_API_KEY="set-in-vercel-or-local-env"
+RESPONDENT_EMAIL_CRON_SECRET="replace-with-a-long-random-cron-secret"
+CRON_SECRET="same-value-for-vercel-cron"
 ```
 
 `NEXT_PUBLIC_SITE_URL` is the canonical public URL used by embeds, metadata, and absolute public links. Change it when migrating from the development domain to the final domain.
@@ -42,7 +46,18 @@ npx prisma migrate deploy
 npm run db:seed
 ```
 
-The seed creates commodities, FOB Black Sea basis, respondents, demo users, mock respondent submissions, Spike indicatives, and published demo indices.
+The seed creates commodities, CPT UA Black Sea basis, respondent directory records, contacts, login accounts, notification settings, respondent submissions, benchmark indicatives, and published indices.
+
+## Respondent Email Delivery
+
+Respondent survey requests are sent through Resend.
+
+- Store the Resend key only in `RESEND_API_KEY`; never commit the real key.
+- Configure sender, reply-to admin email, subject, survey URL and template in `/admin/respondents`.
+- Manual sending is available from `/admin/respondents`.
+- Scheduled sending is handled by `GET /api/cron/respondent-emails`.
+- `vercel.json` checks the endpoint every 15 minutes on weekdays. The route sends only after the configured Kyiv time and only once per day.
+- Set `CRON_SECRET` or `RESPONDENT_EMAIL_CRON_SECRET` in Vercel so the cron endpoint is protected.
 
 ## Public API
 
@@ -62,8 +77,8 @@ Health uses `Cache-Control: no-store`.
 
 ## Production TODO
 
-- Replace demo authentication with production auth and role management.
-- Integrate real Spike Brokers indicative ingestion.
+- Replace preview authentication with production auth, password setup emails and hashed credentials.
+- Integrate real benchmark indicative ingestion.
 - Add payment and entitlement flows for paid access.
 - Add member-only analytics and access control for UGA members.
-- Replace demo in-memory stores with durable database-backed workflows.
+- Keep `UGA_INDEX_RUNTIME_MODE=production` enabled so database failures do not silently show mock data.

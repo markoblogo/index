@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { SITE_CONFIG } from "@/lib/constants";
-import { db } from "@/lib/db";
+import { allowMockFallback, db, hasDatabaseUrl } from "@/lib/db";
 import type { DemoUser } from "@/lib/demo-auth";
 import {
   getDemoSubmission,
@@ -10,7 +10,7 @@ import {
   type DemoSubmissionStatus,
 } from "@/lib/demo-submission-store";
 import { commodities, respondents } from "@/lib/mock-data";
-import { hasDatabaseUrl, todayInputDate } from "@/lib/admin-daily-inputs";
+import { todayInputDate } from "@/lib/admin-daily-inputs";
 
 export type SurveyLocale = "uk" | "en";
 
@@ -106,14 +106,23 @@ export async function getRespondentSurveyData({
   respondentId: string;
 }): Promise<RespondentSurveyData> {
   if (!hasDatabaseUrl()) {
+    if (!allowMockFallback()) {
+      throw new Error("DATABASE_URL is required for production respondent survey.");
+    }
+
     return getMockRespondentSurveyData({ date, locale, respondentId });
   }
 
   try {
     return await getDatabaseRespondentSurveyData({ date, locale, respondentId });
   } catch (error) {
-    console.warn("Falling back to mock respondent survey.", error);
-    return getMockRespondentSurveyData({ date, locale, respondentId });
+    if (allowMockFallback()) {
+      console.warn("Falling back to mock respondent survey.", error);
+      return getMockRespondentSurveyData({ date, locale, respondentId });
+    }
+
+    console.error("Failed to load database respondent survey.", error);
+    throw error;
   }
 }
 
@@ -137,6 +146,10 @@ export async function saveRespondentSurvey(formData: FormData, user: DemoUser) {
   const entries = parsePrices(formData);
 
   if (!hasDatabaseUrl()) {
+    if (!allowMockFallback()) {
+      throw new Error("DATABASE_URL is required for production respondent saves.");
+    }
+
     for (const entry of entries) {
       setDemoSubmission({
         commodityId: entry.commodityId,
@@ -221,7 +234,11 @@ async function getDatabaseRespondentSurveyData({
   ]);
 
   if (!basis || !respondent || dbCommodities.length === 0) {
-    return getMockRespondentSurveyData({ date, locale, respondentId });
+    if (allowMockFallback()) {
+      return getMockRespondentSurveyData({ date, locale, respondentId });
+    }
+
+    throw new Error("Missing basis, respondent, or commodities.");
   }
 
   const submissions = await db.priceSubmission.findMany({

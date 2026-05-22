@@ -289,8 +289,8 @@ export const INDEX_CONFIGS: Record<IndexTenantId, IndexConfig> = {
       },
       footerDemo: { uk: "Платформа:", en: "Platform for the" },
       partnersLine: {
-        uk: "Індикативи: Spike Brokers · Технологія: Cropto/MN7R",
-        en: "Indicatives: Spike Brokers · Technology: Cropto/MN7R",
+        uk: "",
+        en: "",
       },
     },
     contacts: {
