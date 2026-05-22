@@ -383,7 +383,7 @@ Respondent survey email delivery:
 
 - Admins configure status, workdays, Kyiv send time, sender, reply-to admin email, subject, survey URL and template in `/admin/respondents`.
 - Manual sending is available from the same page and ignores the schedule toggle.
-- Scheduled sending is exposed at `/api/cron/respondent-emails`; `vercel.json` checks it every 15 minutes on weekdays and the server sends only after the configured Kyiv time, once per day.
+- Scheduled sending is exposed at `/api/cron/respondent-emails`; `vercel.json` runs it once per weekday at 14:30 UTC. The server still checks the configured Kyiv send time and sends at most once per day.
 - Replies go to the configured reply-to admin email.
 
 Health check:

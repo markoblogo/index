@@ -57,7 +57,7 @@ Respondent survey requests are sent through Resend.
 - Configure sender, reply-to admin email, subject, survey URL and template in `/admin/respondents`.
 - Manual sending is available from `/admin/respondents`.
 - Scheduled sending is handled by `GET /api/cron/respondent-emails`.
-- `vercel.json` checks the endpoint every 15 minutes on weekdays. The route sends only after the configured Kyiv time and only once per day.
+- `vercel.json` runs the endpoint once per weekday at 14:30 UTC. The route still checks the configured Kyiv time and sends at most once per day.
 - Set `CRON_SECRET` or `RESPONDENT_EMAIL_CRON_SECRET` in Vercel so the cron endpoint is protected.
 
 ## Public API
