@@ -29,8 +29,13 @@ export function hasDatabaseUrl() {
 }
 
 export function allowMockFallback() {
-  return (
-    process.env.UGA_INDEX_RUNTIME_MODE !== "production" &&
-    process.env.NODE_ENV !== "production"
-  );
+  if (process.env.UGA_INDEX_RUNTIME_MODE === "production") {
+    return false;
+  }
+
+  if (process.env.UGA_INDEX_RUNTIME_MODE === "demo") {
+    return true;
+  }
+
+  return process.env.NODE_ENV !== "production";
 }
