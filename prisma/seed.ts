@@ -1,6 +1,7 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import { calculateIndexValue } from "../src/lib/index-calculation";
 import { getActiveIndexConfig } from "../src/lib/index-platform";
+import { hashPassword } from "../src/lib/password-hash";
 
 const prisma = new PrismaClient();
 const activeIndex = getActiveIndexConfig();
@@ -327,7 +328,14 @@ async function main() {
           ? "admin@uga.ua"
           : `admin@${activeIndex.id}.demo`,
     },
-    update: { name: "Demo Admin", role: "admin", active: true },
+    update: {
+      name: "Demo Admin",
+      role: "admin",
+      active: true,
+      temporaryPassword: "admin",
+      passwordSetupStatus: "temporary",
+      lastGeneratedAt: new Date(),
+    },
     create: {
       email:
         activeIndex.id === "uga-ua"
@@ -336,17 +344,30 @@ async function main() {
       name: "Demo Admin",
       role: "admin",
       active: true,
+      temporaryPassword: "admin",
+      passwordSetupStatus: "temporary",
+      lastGeneratedAt: new Date(),
     },
   });
 
   await prisma.user.upsert({
     where: { email: `member@${activeIndex.id}.demo` },
-    update: { name: "Demo Member", role: "member", active: true },
+    update: {
+      name: "Demo Member",
+      role: "member",
+      active: true,
+      passwordHash: hashPassword("member"),
+      passwordSetupStatus: "active",
+      passwordSetAt: new Date(),
+    },
     create: {
       email: `member@${activeIndex.id}.demo`,
       name: "Demo Member",
       role: "member",
       active: true,
+      passwordHash: hashPassword("member"),
+      passwordSetupStatus: "active",
+      passwordSetAt: new Date(),
     },
   });
 
@@ -359,6 +380,9 @@ async function main() {
           role: "respondent",
           respondentId: respondent.id,
           active: respondent.status === "active",
+          temporaryPassword: "respondent",
+          passwordSetupStatus: "temporary",
+          lastGeneratedAt: new Date(),
         },
         create: {
           email: respondent.loginEmail,
@@ -366,6 +390,9 @@ async function main() {
           role: "respondent",
           respondentId: respondent.id,
           active: respondent.status === "active",
+          temporaryPassword: "respondent",
+          passwordSetupStatus: "temporary",
+          lastGeneratedAt: new Date(),
         },
       }),
     ),

@@ -41,12 +41,13 @@ npm run db:seed
 For production, prefer a migration workflow once the schema is stable:
 
 ```bash
-npx prisma migrate dev --name init
 npx prisma migrate deploy
 npm run db:seed
 ```
 
 The seed creates commodities, CPT UA Black Sea basis, respondent directory records, contacts, login accounts, notification settings, respondent submissions, benchmark indicatives, and published indices.
+
+The repository includes a baseline migration at `prisma/migrations/20260522113000_production_foundation/migration.sql` for fresh PostgreSQL databases. If a database was previously created with `prisma db push`, baseline it before switching to `migrate deploy`.
 
 ## Respondent Email Delivery
 

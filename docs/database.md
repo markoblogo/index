@@ -36,6 +36,7 @@ Set `UGA_INDEX_RUNTIME_MODE=production` in production. In that mode, database-ba
 - `RespondentAuthAccount`: login email, temporary password state, password setup status and password generation timestamps.
 - `RespondentEmailSchedule`: daily workday survey email settings, reply-to admin email, subject and editable template.
 - `RespondentEmailDelivery`: delivery log for scheduled and manual respondent survey emails.
+- `RespondentSurveyToken`: short-lived personal survey access links generated for email delivery.
 - `Basket` and `BasketRespondent`: active respondent baskets and future weighting support.
 - `User`: admin/respondent/member users used by internal workflows.
 - `PriceSubmission`: respondent or admin-entered USD per metric ton prices by trade date.

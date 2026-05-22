@@ -9,6 +9,8 @@
     "postinstall": "prisma generate",
     "lint": "eslint .",
     "test": "vitest run",
+    "test:e2e": "playwright test",
+    "check:production-env": "node scripts/check-production-env.mjs",
     "db:generate": "prisma generate",
     "db:seed": "prisma db seed"
   },
@@ -25,6 +27,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
+    "@playwright/test": "^1.60.0",
     "@tailwindcss/forms": "^0.5.10",
     "@types/node": "^22.15.3",
     "@types/pg": "^8.20.0",

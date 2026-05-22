@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateAllowlistedUser } from "@/lib/demo-allowlist";
+import { hasDatabaseUrl } from "@/lib/db";
 import {
   createDemoSessionCookieValue,
   DEMO_SESSION_COOKIE,
@@ -28,7 +29,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.redirect(loginUrl, 303);
   }
 
-  const redirectUrl = new URL(getSafeRoleRedirect(user.role, next), request.url);
+  const target =
+    hasDatabaseUrl() && user.passwordSetupStatus === "temporary"
+      ? `/setup-password?next=${encodeURIComponent(
+          getSafeRoleRedirect(user.role, next),
+        )}`
+      : getSafeRoleRedirect(user.role, next);
+  const redirectUrl = new URL(target, request.url);
   const response = NextResponse.redirect(redirectUrl, 303);
 
   response.cookies.set({

@@ -18,7 +18,7 @@ UGA Index should use an allowlist-based authentication model in production.
 
 ## Current Preview Behavior
 
-The current preview uses an allowlist flow. With `DATABASE_URL`, respondent logins are read from the respondent directory/auth tables. Without a database, local development falls back to the allowlist in `src/lib/demo-allowlist.ts`.
+The current preview uses an allowlist flow. With `DATABASE_URL`, admin/respondent logins are read from the database auth tables where available. Respondents can sign in with a temporary password and set a permanent password. Without a database, local development falls back to the allowlist in `src/lib/demo-allowlist.ts`.
 
 The login form accepts only email/login and password. Users do not choose roles manually. The role and respondent company are inferred from the demo allowlist.
 
@@ -41,4 +41,4 @@ Production authentication can be implemented with:
 - custom credentials auth with hashed passwords
 - Resend or another email provider for password setup links, temporary-password delivery and daily respondent survey requests
 
-Before production launch, passwords must be hashed, setup links must be time-limited, audit logging should cover account and role changes, and access control should be enforced at both page and data-access layers. Production deployments should set `UGA_INDEX_RUNTIME_MODE=production` and require `DATABASE_URL`.
+Before production launch, temporary passwords should be replaced with one-time setup links, audit logging should cover all account and role changes, and access control should be enforced at both page and data-access layers. Production deployments should set `UGA_INDEX_RUNTIME_MODE=production` and require `DATABASE_URL`.

@@ -352,6 +352,13 @@ npm run test
 npm run build
 ```
 
+Optional browser smoke tests:
+
+```bash
+npx playwright install chromium
+npm run test:e2e
+```
+
 Validate tenant builds explicitly:
 
 ```bash
@@ -416,9 +423,10 @@ docs/source/
 ## Current TODO
 
 - Replace preview auth with production auth, password setup emails and hashed credentials.
+- Run `npx prisma migrate deploy` against the production database and verify `/api/health`.
 - Decide whether each tenant uses a separate database or a shared database with strict tenant scoping.
 - Remove remaining development-only fallback stores from production deployments.
-- Replace current `/respondent` survey link emails with tokenized respondent-specific survey links.
+- Replace temporary password display in admin with one-time setup links before production launch.
 - Finalize production legal text with legal counsel.
 - Finalize paid analytics/API subscription terms.
 - Add production observability, backups and operational runbooks.

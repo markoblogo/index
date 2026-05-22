@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { allowMockFallback, db, hasDatabaseUrl } from "@/lib/db";
 import {
   getRespondentDirectoryData,
@@ -123,13 +124,14 @@ async function sendRespondentEmail({
   }
 
   try {
+    const surveyUrl = await getRecipientSurveyUrl(schedule, recipient);
     const response = await fetch("https://api.resend.com/emails", {
       body: JSON.stringify({
         from: schedule.sender,
-        html: renderHtmlEmail(schedule, recipient),
+        html: renderHtmlEmail(schedule, recipient, surveyUrl),
         reply_to: schedule.replyTo || undefined,
         subject: schedule.subject,
-        text: renderTextEmail(schedule, recipient),
+        text: renderTextEmail(schedule, recipient, surveyUrl),
         to: [recipient.email],
       }),
       headers: {
@@ -241,15 +243,17 @@ async function wasScheduledEmailAlreadySentToday(
 function renderTextEmail(
   schedule: RespondentEmailScheduleSettings,
   recipient: RespondentEmailRecipient,
+  surveyUrl: string,
 ) {
-  return interpolateTemplate(schedule.template, schedule, recipient);
+  return interpolateTemplate(schedule.template, recipient, surveyUrl);
 }
 
 function renderHtmlEmail(
   schedule: RespondentEmailScheduleSettings,
   recipient: RespondentEmailRecipient,
+  surveyUrl: string,
 ) {
-  const text = renderTextEmail(schedule, recipient)
+  const text = renderTextEmail(schedule, recipient, surveyUrl)
     .split("\n")
     .map((line) => `<p>${escapeHtml(line)}</p>`)
     .join("");
@@ -258,7 +262,7 @@ function renderHtmlEmail(
     <div style="font-family:Arial,sans-serif;color:#06150d;line-height:1.5">
       ${text}
       <p>
-        <a href="${escapeHtml(getSurveyUrl(schedule))}" style="color:#0b6b3a;font-weight:700">
+        <a href="${escapeHtml(surveyUrl)}" style="color:#0b6b3a;font-weight:700">
           Open daily survey
         </a>
       </p>
@@ -268,25 +272,48 @@ function renderHtmlEmail(
 
 function interpolateTemplate(
   template: string,
-  schedule: RespondentEmailScheduleSettings,
   recipient: RespondentEmailRecipient,
+  surveyUrl: string,
 ) {
   return template
     .replaceAll("{{companyName}}", recipient.companyName)
-    .replaceAll("{{surveyUrl}}", getSurveyUrl(schedule))
+    .replaceAll("{{surveyUrl}}", surveyUrl)
     .replaceAll("{{date}}", new Date().toISOString().slice(0, 10));
 }
 
-function getSurveyUrl(schedule: RespondentEmailScheduleSettings) {
-  if (/^https?:\/\//.test(schedule.surveyUrl)) {
-    return schedule.surveyUrl;
+async function getRecipientSurveyUrl(
+  schedule: RespondentEmailScheduleSettings,
+  recipient: RespondentEmailRecipient,
+) {
+  if (!hasDatabaseUrl()) {
+    return absoluteUrl(schedule.surveyUrl);
   }
 
+  const token = randomBytes(24).toString("base64url");
+  const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 48);
+
+  await db.respondentSurveyToken.create({
+    data: {
+      contactId: recipient.contactId,
+      email: recipient.email,
+      expiresAt,
+      respondentId: recipient.respondentId,
+      token,
+    },
+  });
+
+  return absoluteUrl(`/respondent/access/${token}`);
+}
+
+function absoluteUrl(pathOrUrl: string) {
+  if (/^https?:\/\//.test(pathOrUrl)) {
+    return pathOrUrl;
+  }
   const siteUrl =
     process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
     "http://localhost:3000";
 
-  return `${siteUrl}${schedule.surveyUrl.startsWith("/") ? "" : "/"}${schedule.surveyUrl}`;
+  return `${siteUrl}${pathOrUrl.startsWith("/") ? "" : "/"}${pathOrUrl}`;
 }
 
 function getZonedDateParts(date: Date, timezone: string) {

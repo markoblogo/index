@@ -1,8 +1,8 @@
 import "server-only";
 
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import type { DemoAllowlistUser } from "@/lib/demo-allowlist";
 
 export const DEMO_SESSION_COOKIE = "uga_demo_session";
 
@@ -17,6 +17,7 @@ export type DemoUser = {
   respondentId?: string;
   companyName?: string;
   respondentName?: string;
+  passwordSetupStatus?: "temporary" | "active";
   issuedAt: number;
   expiresAt: number;
 };
@@ -59,7 +60,17 @@ export async function requireDemoRole(role: DemoRole) {
   return user;
 }
 
-export async function setDemoSession(user: DemoAllowlistUser) {
+type SessionSourceUser = {
+  companyName?: string;
+  email: string;
+  name: string;
+  passwordSetupStatus?: "temporary" | "active";
+  respondentId?: string;
+  role: DemoRole;
+  userId: string;
+};
+
+export async function setDemoSession(user: SessionSourceUser) {
   const cookieStore = await cookies();
   cookieStore.set(DEMO_SESSION_COOKIE, createDemoSessionCookieValue(user), {
     httpOnly: true,
@@ -95,7 +106,7 @@ export function getSafeRoleRedirect(role: DemoRole, next?: string | null) {
   return getRoleHome(role);
 }
 
-export function createDemoSessionCookieValue(user: DemoAllowlistUser) {
+export function createDemoSessionCookieValue(user: SessionSourceUser) {
   const now = Math.floor(Date.now() / 1000);
   const payload: DemoSessionPayload = {
     userId: user.userId,
@@ -105,6 +116,7 @@ export function createDemoSessionCookieValue(user: DemoAllowlistUser) {
     role: user.role,
     respondentId: user.role === "respondent" ? user.respondentId : undefined,
     companyName: user.role === "respondent" ? user.companyName : undefined,
+    passwordSetupStatus: user.passwordSetupStatus,
     issuedAt: now,
     expiresAt: now + DEMO_SESSION_TTL_SECONDS,
   };
@@ -113,13 +125,16 @@ export function createDemoSessionCookieValue(user: DemoAllowlistUser) {
 }
 
 function encodePayload(payload: DemoSessionPayload) {
-  return `demo.${Buffer.from(JSON.stringify(payload)).toString("base64url")}`;
+  const encodedPayload = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  return `session.${encodedPayload}.${signPayload(encodedPayload)}`;
 }
 
 function verifySessionCookie(value: string): DemoSessionPayload | null {
-  const encodedPayload = value.startsWith("demo.")
-    ? value.slice("demo.".length)
-    : verifyLegacySignedCookie(value);
+  const encodedPayload = value.startsWith("session.")
+    ? verifySignedCookie(value)
+    : value.startsWith("demo.")
+      ? value.slice("demo.".length)
+      : verifyLegacySignedCookie(value);
 
   if (!encodedPayload) {
     return null;
@@ -160,6 +175,8 @@ function parseSessionPayload(encodedPayload: string): DemoSessionPayload | null 
         parsed.role === "respondent" && typeof parsed.companyName === "string"
           ? parsed.companyName
           : undefined,
+      passwordSetupStatus:
+        parsed.passwordSetupStatus === "active" ? "active" : "temporary",
       issuedAt: parsed.issuedAt,
       expiresAt: parsed.expiresAt,
     };
@@ -168,9 +185,42 @@ function parseSessionPayload(encodedPayload: string): DemoSessionPayload | null 
   }
 }
 
+function verifySignedCookie(value: string) {
+  const [, encodedPayload, signature] = value.split(".");
+
+  if (!encodedPayload || !signature) {
+    return null;
+  }
+
+  const expected = signPayload(encodedPayload);
+  const actualSignature = Buffer.from(signature);
+  const expectedSignature = Buffer.from(expected);
+
+  if (
+    actualSignature.length !== expectedSignature.length ||
+    !timingSafeEqual(actualSignature, expectedSignature)
+  ) {
+    return null;
+  }
+
+  return encodedPayload;
+}
+
 function verifyLegacySignedCookie(value: string) {
   const [encodedPayload, signature] = value.split(".");
   return encodedPayload && signature ? encodedPayload : null;
+}
+
+function signPayload(encodedPayload: string) {
+  const secret = process.env.DEMO_AUTH_SECRET;
+
+  if (!secret && process.env.NODE_ENV === "production") {
+    throw new Error("DEMO_AUTH_SECRET is required in production.");
+  }
+
+  return createHmac("sha256", secret || "local-preview-secret")
+    .update(encodedPayload)
+    .digest("base64url");
 }
 
 function isStoredRole(value: unknown): value is DemoRole {

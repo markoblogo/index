@@ -103,6 +103,7 @@ model Respondent {
   contacts          RespondentContact[]
   authAccount       RespondentAuthAccount?
   emailDeliveries   RespondentEmailDelivery[]
+  surveyTokens      RespondentSurveyToken[]
   priceSubmissions  PriceSubmission[]
   calculationItems  IndexCalculationItem[]
 
@@ -173,6 +174,20 @@ model RespondentEmailDelivery {
   @@index([status, trigger, sentAt])
 }
 
+model RespondentSurveyToken {
+  id           String      @id @default(cuid())
+  token        String      @unique
+  respondentId String
+  contactId    String?
+  email        String
+  expiresAt    DateTime
+  usedAt       DateTime?
+  createdAt    DateTime    @default(now())
+  respondent   Respondent  @relation(fields: [respondentId], references: [id], onDelete: Cascade)
+
+  @@index([respondentId, expiresAt])
+}
+
 model Basket {
   id                String             @id @default(cuid())
   code              String             @unique
@@ -211,6 +226,11 @@ model User {
   role              UserRole
   respondentId      String?
   active            Boolean            @default(true)
+  passwordHash      String?
+  temporaryPassword String?
+  passwordSetupStatus PasswordSetupStatus @default(temporary)
+  lastGeneratedAt   DateTime?
+  passwordSetAt     DateTime?
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
   respondent        Respondent?        @relation(fields: [respondentId], references: [id])

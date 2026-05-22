@@ -1,4 +1,6 @@
 import { getActiveIndexConfig } from "@/lib/index-platform";
+import { db, hasDatabaseUrl } from "@/lib/db";
+import { verifyPassword } from "@/lib/password-hash";
 import {
   getRespondentDirectory,
   getRespondentDirectoryData,
@@ -206,6 +208,11 @@ export async function authenticateAllowlistedUser({
 }) {
   const normalizedLogin = login.trim().toLowerCase();
   const normalizedPassword = password.trim();
+
+  if (hasDatabaseUrl()) {
+    return authenticateDatabaseUser(normalizedLogin, normalizedPassword);
+  }
+
   const allowlist = await getDemoAllowlistData();
 
   if (normalizedLogin === "admin" && normalizedPassword === "admin") {
@@ -226,6 +233,55 @@ export async function authenticateAllowlistedUser({
         user.password === normalizedPassword,
     ) ?? null
   );
+}
+
+async function authenticateDatabaseUser(login: string, password: string) {
+  const user = await db.user.findFirst({
+    include: {
+      respondent: {
+        include: {
+          authAccount: true,
+        },
+      },
+    },
+    where: {
+      active: true,
+      email: login,
+      role: { in: ["admin", "respondent"] },
+    },
+  });
+
+  if (!user) {
+    return null;
+  }
+
+  const respondentAuth = user.respondent?.authAccount;
+  const passwordHash = respondentAuth?.passwordHash ?? user.passwordHash;
+  const temporaryPassword =
+    respondentAuth?.temporaryPassword ?? user.temporaryPassword;
+
+  const passwordMatches =
+    verifyPassword(password, passwordHash) ||
+    (temporaryPassword !== null && temporaryPassword === password);
+
+  if (!passwordMatches) {
+    return null;
+  }
+
+  return {
+    userId: user.id,
+    email: user.email,
+    password,
+    role: user.role === "respondent" ? "respondent" : "admin",
+    name: user.name,
+    respondentId: user.respondentId ?? undefined,
+    companyName: user.respondent?.legalName,
+    passwordSetupStatus:
+      respondentAuth?.passwordSetupStatus === "active" ||
+      user.passwordSetupStatus === "active"
+        ? "active"
+        : "temporary",
+  } satisfies DemoAllowlistUser;
 }
 
 export async function getDemoAllowlistData() {
