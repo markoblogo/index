@@ -285,6 +285,7 @@ async function getDatabaseDailyInputData(date: string): Promise<DailyInputData> 
 }
 
 function getMockDailyInputData(date: string): DailyInputData {
+  const isSpikeIndex = getActiveIndexTenant().id === "spike-ua";
   const dateSeed = dateToSeed(date);
   const orderedRespondents = orderDailyInputRespondents(respondents);
   const cells = commodities.flatMap((commodity, commodityIndex) =>
@@ -330,21 +331,26 @@ function getMockDailyInputData(date: string): DailyInputData {
             : "submitted_by_respondent";
       const status = selectedSubmission
         ? getMockSubmissionStatus(selectedSubmission)
-        : fallbackStatus;
+        : isSpikeIndex
+          ? "missing"
+          : fallbackStatus;
 
       return buildCell({
         commodityId: commodity.id,
         adminChanged: Boolean(adminSubmission && respondentSubmission),
         enteredByAdmin:
           Boolean(adminSubmission) ||
-          (!selectedSubmission &&
+          (!isSpikeIndex &&
+            !selectedSubmission &&
             (fallbackStatus === "edited_by_admin" || fallbackStatus === "saved")),
         enteredByRespondent:
           Boolean(respondentSubmission) ||
-          (!selectedSubmission && fallbackStatus === "submitted_by_respondent"),
+          (!isSpikeIndex &&
+            !selectedSubmission &&
+            fallbackStatus === "submitted_by_respondent"),
         excluded: Boolean(selectedSubmission?.excluded),
         respondentId: respondent.id,
-        price: selectedSubmission?.price ?? price,
+        price: selectedSubmission?.price ?? (isSpikeIndex ? null : price),
         spikeIndicative,
         status,
       });
