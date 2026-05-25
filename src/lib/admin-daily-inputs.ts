@@ -11,6 +11,7 @@ import {
   getConfiguredDeliveryBasisCodes,
   getDeliveryBasisConfigForCommodityCode,
 } from "@/lib/tenant-basis";
+import { orderDailyInputRespondents } from "@/lib/respondent-ordering";
 
 export type DailyInputStatus =
   | "missing"
@@ -224,8 +225,9 @@ async function getDatabaseDailyInputData(date: string): Promise<DailyInputData> 
     submissionsByCell.set(key, current);
   }
 
+  const orderedRespondents = orderDailyInputRespondents(dbRespondents);
   const cells = dbCommodities.flatMap((commodity) =>
-    dbRespondents.map((respondent) => {
+    orderedRespondents.map((respondent) => {
       const basis = basisByCommodityId.get(commodity.id);
       const cellSubmissions =
         basis
@@ -274,7 +276,7 @@ async function getDatabaseDailyInputData(date: string): Promise<DailyInputData> 
       code: commodity.code,
       name: commodity.nameUk,
     })),
-    respondents: dbRespondents.map((respondent) => ({
+    respondents: orderedRespondents.map((respondent) => ({
       id: respondent.id,
       name: respondent.legalName,
     })),
@@ -284,13 +286,16 @@ async function getDatabaseDailyInputData(date: string): Promise<DailyInputData> 
 
 function getMockDailyInputData(date: string): DailyInputData {
   const dateSeed = dateToSeed(date);
+  const orderedRespondents = orderDailyInputRespondents(respondents);
   const cells = commodities.flatMap((commodity, commodityIndex) =>
-    respondents.map((respondent, respondentIndex) => {
+    orderedRespondents.map((respondent, respondentIndex) => {
+      const isMn7rMonitor = respondent.id === "MN7R_MONITOR";
       const spikeIndicative = fallbackSpikeForCommodityCode(
         commodityCodeByMockId[commodity.id],
         date,
       );
-      const missing = (commodityIndex + respondentIndex + dateSeed) % 11 === 0;
+      const missing =
+        !isMn7rMonitor && (commodityIndex + respondentIndex + dateSeed) % 11 === 0;
       const rawOffset = (respondentIndex - 3.5) * 0.45 + commodityIndex * 0.2;
       const largeOffset =
         (commodityIndex === 1 && respondentIndex === 6) ||
@@ -358,7 +363,7 @@ function getMockDailyInputData(date: string): DailyInputData {
       code: commodity.code,
       name: commodity.name.uk,
     })),
-    respondents: respondents.map((respondent) => ({
+    respondents: orderedRespondents.map((respondent) => ({
       id: respondent.id,
       name: respondent.legalName,
     })),
