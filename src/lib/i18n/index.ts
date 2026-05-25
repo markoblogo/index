@@ -774,7 +774,7 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
         ...base.methodology,
         title: "Як розраховується SPIKE SPOT INDEX",
         description:
-          "SPIKE SPOT INDEX використовує повторюваний щоденний процес, який перетворює цінові оцінки партнерів-респондентів на перевірені та зафіксовані значення індексу для кожної позиції, базису та дати розрахунку.",
+          "SPIKE Spot Commodity Index Ukraine використовує повторюваний щоденний процес, який перетворює цінові оцінки партнерів-респондентів на перевірені та репрезентативні значення індексу для кожної позиції, базису та дати розрахунку.",
         coreTitle: "Від EOD-оцінок партнерів до опублікованого спотового бенчмарку",
         coreNarrative: [
           "Індекс розраховується на основі щоденних цінових оцінок, які надає визначена група партнерів-респондентів Spike Brokers. Кожне подане значення має відображати справедливий ринковий рівень на кінець торгового дня для відповідної культури та базису.",
@@ -902,7 +902,7 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
       ...base.methodology,
       title: "How SPIKE SPOT INDEX is calculated",
       description:
-        "SPIKE SPOT INDEX uses a repeatable daily process to turn respondent-partner price assessments into verified and locked index values for each position, basis and calculation date.",
+        "SPIKE Spot Commodity Index Ukraine uses a repeatable daily process that turns respondent-partner price assessments into verified and representative index values for each position, basis and calculation date.",
       coreTitle: "From partner EOD assessments to a published spot benchmark",
       coreNarrative: [
         "The index is calculated from daily price assessments submitted by a defined group of Spike Brokers respondent partners. Each submitted value should reflect a fair end-of-day market level for the relevant commodity and basis.",

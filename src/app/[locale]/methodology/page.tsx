@@ -175,12 +175,12 @@ function SpikeMethodologyPage({
   return (
     <main className="spike-static-page overflow-hidden bg-[#050505] text-[#f8f8f2]">
       <section className="border-b border-white/10 [background:var(--spike-hero-bg)]">
-        <div className="mx-auto grid max-w-[1900px] gap-8 px-6 py-12 lg:grid-cols-[0.52fr_0.48fr] lg:px-8 lg:py-16">
+        <div className="mx-auto grid max-w-[1900px] gap-7 px-6 py-8 lg:grid-cols-[0.52fr_0.48fr] lg:px-8 lg:py-10">
           <div>
             <p className="text-sm font-black uppercase tracking-[0.24em] text-[var(--spike-accent)]">
               {dict.methodology.label}
             </p>
-            <h1 className="mt-5 max-w-5xl text-[clamp(2.05rem,4.55vw,4.75rem)] font-black uppercase leading-[0.94] tracking-normal text-white">
+            <h1 className="mt-4 max-w-5xl text-[clamp(1.85rem,3.75vw,3.95rem)] font-black uppercase leading-[0.96] tracking-normal text-white">
               {dict.methodology.title}
             </h1>
           </div>
