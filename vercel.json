@@ -10,7 +10,7 @@
     },
     {
       "path": "/api/cron/spike-auto-publish",
-      "schedule": "0 16,17 * * *"
+      "schedule": "0 16 * * *"
     }
   ]
 }
