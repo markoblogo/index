@@ -1,8 +1,13 @@
+import Image from "next/image";
+
 import { SITE_CONFIG } from "@/lib/constants";
 import { getDictionary, type Locale } from "@/lib/i18n";
 import { respondents } from "@/lib/mock-data";
 
+const MN7R_RESPONDENT_ID = "MN7R_MONITOR";
+
 const respondentLinks = new Map([
+  [MN7R_RESPONDENT_ID, "https://mn7r.com/"],
   ["bunge-ukraine", "https://www.bunge.com/Ukraine"],
   ["adm-ukraine", "https://www.adm.com/"],
   ["hermes-trading", "http://www.ukragrocom.com/index.php/"],
@@ -155,6 +160,11 @@ function SpikeAboutPage({
 }: {
   dict: ReturnType<typeof getDictionary>;
 }) {
+  const spikeRespondents = [
+    ...respondents.filter((respondent) => respondent.id === MN7R_RESPONDENT_ID),
+    ...respondents.filter((respondent) => respondent.id !== MN7R_RESPONDENT_ID),
+  ];
+
   return (
     <main className="spike-static-page overflow-hidden bg-[#050505] text-[#f8f8f2]">
       <section className="relative border-b border-white/10 [background:var(--spike-hero-bg)]">
@@ -234,13 +244,14 @@ function SpikeAboutPage({
             </p>
           </div>
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-            {respondents.map((respondent, index) => {
+            {spikeRespondents.map((respondent, index) => {
               const respondentHref = respondentLinks.get(respondent.id) ?? "#";
               const hasExternalLink = respondentHref !== "#";
+              const isMn7rMonitor = respondent.id === MN7R_RESPONDENT_ID;
 
               return (
                 <a
-                  className={`rounded-[1rem] border border-white/10 bg-[#f8f8f2] px-4 py-4 text-sm font-black text-[#050505] transition ${
+                  className={`group rounded-[1rem] border border-white/10 bg-[#f8f8f2] px-4 py-4 text-sm font-black text-[#050505] transition ${
                     hasExternalLink
                       ? "hover:border-[var(--spike-accent)] hover:bg-white"
                       : "pointer-events-none"
@@ -253,7 +264,25 @@ function SpikeAboutPage({
                   <span className="mb-5 block text-[0.64rem] uppercase tracking-[0.18em] text-black/38">
                     Partner {String(index + 1).padStart(2, "0")}
                   </span>
-                  {respondent.legalName}
+                  {isMn7rMonitor ? (
+                    <span className="block">
+                      <span className="flex min-h-12 items-center">
+                        <Image
+                          alt="MN7R"
+                          className="h-8 w-auto object-contain transition group-hover:scale-[1.03]"
+                          height={819}
+                          priority={false}
+                          src="/brand/mn7r-logo.png"
+                          width={1920}
+                        />
+                      </span>
+                      <span className="mt-3 block text-xs font-black uppercase tracking-[0.16em] text-black/45">
+                        Monitor
+                      </span>
+                    </span>
+                  ) : (
+                    respondent.legalName
+                  )}
                 </a>
               );
             })}
