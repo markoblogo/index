@@ -330,6 +330,10 @@ function buildScenario(series: Array<{ date: string; value: number }>, period: n
 }
 
 function standardDeviation(values: number[]) {
+  if (values.length === 0) {
+    return 0;
+  }
+
   const average = values.reduce((sum, value) => sum + value, 0) / values.length;
   const variance =
     values.reduce((sum, value) => sum + (value - average) ** 2, 0) /

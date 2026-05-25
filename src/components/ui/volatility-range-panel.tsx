@@ -26,17 +26,22 @@ export function VolatilityRangePanel({
   const [period, setPeriod] = useState<(typeof periodOptions)[number]>(30);
 
   const rows = useMemo(() => {
-    return commodities.map((commodity) => {
+    return commodities.flatMap((commodity) => {
       const commodityHistory = history
         .filter((point) => point.commodityId === commodity.id)
         .slice(-period);
+
+      if (commodityHistory.length === 0) {
+        return [];
+      }
+
       const volatility = standardDeviation(
         commodityHistory.map((point) => point.percentChange),
       );
       const min = Math.min(...commodityHistory.map((point) => point.value));
       const max = Math.max(...commodityHistory.map((point) => point.value));
 
-      return { commodity, max, min, volatility };
+      return [{ commodity, max, min, volatility }];
     });
   }, [commodities, history, period]);
 
@@ -93,6 +98,10 @@ export function VolatilityRangePanel({
 }
 
 function standardDeviation(values: number[]) {
+  if (values.length === 0) {
+    return 0;
+  }
+
   const average = values.reduce((sum, value) => sum + value, 0) / values.length;
   const variance =
     values.reduce((sum, value) => sum + (value - average) ** 2, 0) /

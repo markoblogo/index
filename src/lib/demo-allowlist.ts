@@ -239,8 +239,13 @@ export async function authenticateAllowlistedUser({
   }
 
   const allowlist = await getDemoAllowlistData();
+  const isSpike = getActiveIndexConfig().id === "spike-ua";
 
   if (normalizedLogin === "admin" && normalizedPassword === "admin") {
+    if (isSpike) {
+      return null;
+    }
+
     return allowlist.find((user) => user.role === "admin") ?? null;
   }
 

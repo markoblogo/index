@@ -251,9 +251,13 @@ function SpikeAboutPage({
 
               return (
                 <a
-                  className={`group rounded-[1rem] border border-white/10 bg-[#f8f8f2] px-4 py-4 text-sm font-black text-[#050505] transition ${
+                  className={`group rounded-[1rem] border border-white/10 px-4 py-4 text-sm font-black transition ${
+                    isMn7rMonitor
+                      ? "bg-[radial-gradient(circle_at_80%_10%,rgba(49,255,30,0.22),transparent_18rem),#080808] text-white"
+                      : "bg-[#f8f8f2] text-[#050505]"
+                  } ${
                     hasExternalLink
-                      ? "hover:border-[var(--spike-accent)] hover:bg-white"
+                      ? "hover:border-[var(--spike-accent)]"
                       : "pointer-events-none"
                   }`}
                   href={respondentHref}
@@ -261,24 +265,23 @@ function SpikeAboutPage({
                   rel="noopener noreferrer"
                   target="_blank"
                 >
-                  <span className="mb-5 block text-[0.64rem] uppercase tracking-[0.18em] text-black/38">
+                  <span
+                    className={`mb-5 block text-[0.64rem] uppercase tracking-[0.18em] ${
+                      isMn7rMonitor ? "text-white/55" : "text-black/38"
+                    }`}
+                  >
                     Partner {String(index + 1).padStart(2, "0")}
                   </span>
                   {isMn7rMonitor ? (
-                    <span className="block">
-                      <span className="flex min-h-12 items-center">
+                    <span className="flex min-h-24 items-center justify-center">
                         <Image
                           alt="MN7R"
-                          className="h-8 w-auto object-contain transition group-hover:scale-[1.03]"
+                          className="h-16 w-auto object-contain transition group-hover:scale-[1.03]"
                           height={819}
                           priority={false}
-                          src="/brand/mn7r-logo.png"
+                          src="/brand/mn7r-logo-white.png"
                           width={1920}
                         />
-                      </span>
-                      <span className="mt-3 block text-xs font-black uppercase tracking-[0.16em] text-black/45">
-                        Monitor
-                      </span>
                     </span>
                   ) : (
                     respondent.legalName

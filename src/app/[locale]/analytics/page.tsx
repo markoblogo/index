@@ -5,15 +5,16 @@ import { ScenarioModelPanel } from "@/components/ui/scenario-model-panel";
 import { SpreadAnalysisPanel } from "@/components/ui/spread-analysis-panel";
 import { VolatilityRangePanel } from "@/components/ui/volatility-range-panel";
 import { SITE_CONFIG } from "@/lib/constants";
+import { allowMockFallback, hasDatabaseUrl } from "@/lib/db";
 import { getFxRates } from "@/lib/fx-rates";
 import type { Locale } from "@/lib/i18n";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import {
   commodities,
-  indexUpdatedAt,
   type Commodity,
   type CommodityId,
 } from "@/lib/mock-data";
+import { getPublicHistoryData } from "@/lib/public-api-data";
 import { getActiveRespondentCountData } from "@/lib/respondent-directory";
 
 type AnalyticsPoint = {
@@ -44,10 +45,11 @@ export default async function AnalyticsPage({
   const copy = getAnalyticsCopy(locale);
   const fxRates = await getFxRates();
   const activeRespondentCount = await getActiveRespondentCountData();
-  const history = buildAnalyticsHistory(activeRespondentCount);
+  const history = await getAnalyticsHistory(activeRespondentCount);
   const snapshot = buildMarketSnapshot(history, locale, activeRespondentCount);
   const tableRows = history.slice(-14).reverse();
   const isSpike = getActiveIndexConfig().id === "spike-ua";
+  const hasHistory = history.length > 0;
 
   return (
     <main className={isSpike ? "spike-analytics-page overflow-hidden bg-[#050505] text-[#f8f8f2]" : ""}>
@@ -71,41 +73,58 @@ export default async function AnalyticsPage({
         <KpiStrip items={snapshot} />
       </section>
 
-      <section className="border-y border-black bg-uga-mist">
-        <div className="mx-auto grid max-w-7xl gap-5 px-6 py-12 lg:grid-cols-[1.25fr_0.75fr] lg:px-8 lg:py-14">
-          <AnalyticsPanel
-            description={copy.trendDescription}
-            title={copy.trendTitle}
-          >
-            <AnalyticsTrendChart
-              commodities={commodities}
-              history={history}
-              locale={locale}
-            />
-          </AnalyticsPanel>
-          <AnalyticsPanel
-            description={copy.movementDescription}
-            title={copy.movementTitle}
-          >
-            <MovementSummary history={history} locale={locale} />
-          </AnalyticsPanel>
-          <AnalyticsPanel
-            description={copy.volatilityDescription}
-            title={copy.volatilityTitle}
-          >
-            <VolatilityRangePanel
-              commodities={commodities}
-              history={history}
-              locale={locale}
-            />
-          </AnalyticsPanel>
-        </div>
-      </section>
+      {hasHistory ? (
+        <>
+          <section className="border-y border-black bg-uga-mist">
+            <div className="mx-auto grid max-w-7xl gap-5 px-6 py-12 lg:grid-cols-[1.25fr_0.75fr] lg:px-8 lg:py-14">
+              <AnalyticsPanel
+                description={copy.trendDescription}
+                title={copy.trendTitle}
+              >
+                <AnalyticsTrendChart
+                  commodities={commodities}
+                  history={history}
+                  locale={locale}
+                />
+              </AnalyticsPanel>
+              <AnalyticsPanel
+                description={copy.movementDescription}
+                title={copy.movementTitle}
+              >
+                <MovementSummary history={history} locale={locale} />
+              </AnalyticsPanel>
+              <AnalyticsPanel
+                description={copy.volatilityDescription}
+                title={copy.volatilityTitle}
+              >
+                <VolatilityRangePanel
+                  commodities={commodities}
+                  history={history}
+                  locale={locale}
+                />
+              </AnalyticsPanel>
+            </div>
+          </section>
 
-      <SpreadAnalysisPanel
-        history={history}
-        locale={locale}
-      />
+          <SpreadAnalysisPanel
+            history={history}
+            locale={locale}
+          />
+        </>
+      ) : (
+        <section className="border-y border-black bg-uga-mist">
+          <div className="mx-auto max-w-7xl px-6 py-12 lg:px-8 lg:py-14">
+            <AnalyticsPanel
+              description={copy.noRealDataDescription}
+              title={copy.noRealDataTitle}
+            >
+              <p className="text-sm font-semibold leading-6 text-black/60">
+                {copy.noRealDataBody}
+              </p>
+            </AnalyticsPanel>
+          </div>
+        </section>
+      )}
 
       <section className="mx-auto max-w-7xl px-6 py-12 lg:px-8 lg:py-14">
         <div className="grid gap-8 lg:grid-cols-[0.78fr_1.22fr]">
@@ -124,11 +143,13 @@ export default async function AnalyticsPage({
             </p>
           </div>
 
-          <ScenarioModelPanel
-            commodities={commodities}
-            history={history}
-            locale={locale}
-          />
+          {hasHistory ? (
+            <ScenarioModelPanel
+              commodities={commodities}
+              history={history}
+              locale={locale}
+            />
+          ) : null}
         </div>
       </section>
 
@@ -228,10 +249,15 @@ function MovementSummary({
     <div className="grid gap-3">
       {commodities.map((commodity) => {
         const commodityHistory = getCommodityHistory(history, commodity.id);
-        const latest = commodityHistory.at(-1) ?? commodityHistory[0];
+        const latest = commodityHistory.at(-1);
+
+        if (!latest) {
+          return null;
+        }
+
         const latestDate = formatShortDate(latest.date, locale);
-        const sevenDay = latest.value - commodityHistory.at(-8)!.value;
-        const thirtyDay = latest.value - commodityHistory.at(-31)!.value;
+        const sevenDay = latest.value - getPointBack(commodityHistory, 8).value;
+        const thirtyDay = latest.value - getPointBack(commodityHistory, 31).value;
         const ninetyDay = latest.value - commodityHistory[0].value;
 
         return (
@@ -358,7 +384,42 @@ function PublishedValuesTable({
   );
 }
 
-function buildAnalyticsHistory(activeRespondentCount: number): AnalyticsPoint[] {
+async function getAnalyticsHistory(activeRespondentCount: number) {
+  if (hasDatabaseUrl()) {
+    const realHistory = await getRealAnalyticsHistory();
+
+    if (realHistory.length > 0 || !allowMockFallback()) {
+      return realHistory;
+    }
+  }
+
+  if (!hasDatabaseUrl() || allowMockFallback()) {
+    return buildDemoAnalyticsHistory(activeRespondentCount);
+  }
+
+  return [];
+}
+
+async function getRealAnalyticsHistory(): Promise<AnalyticsPoint[]> {
+  const rows = await getPublicHistoryData();
+
+  return rows
+    .map((row) => ({
+      commodityId: row.commodityId,
+      date: row.date,
+      dayChange: row.changeAbs,
+      percentChange: row.changePct,
+      respondents: row.respondents,
+      value: row.valueUsdPerMt,
+    }))
+    .sort((a, b) =>
+      a.date === b.date
+        ? a.commodityId.localeCompare(b.commodityId)
+        : a.date.localeCompare(b.date),
+    );
+}
+
+function buildDemoAnalyticsHistory(activeRespondentCount: number): AnalyticsPoint[] {
   const dates = Array.from({ length: 360 }, (_, index) => {
     const date = new Date("2026-05-08T00:00:00.000Z");
     date.setUTCDate(date.getUTCDate() - (359 - index));
@@ -411,12 +472,31 @@ function buildMarketSnapshot(
   ).filter(Boolean) as AnalyticsPoint[];
   const monthlyRows = latestRows.map((row) => {
     const commodityHistory = getCommodityHistory(history, row.commodityId);
+    const previousMonthlyPoint = getPointBack(commodityHistory, 31);
     return {
       commodity: getCommodity(row.commodityId),
-      change: roundOne(row.value - commodityHistory.at(-31)!.value),
+      change: roundOne(row.value - previousMonthlyPoint.value),
       volatility: standardDeviation(commodityHistory.slice(-30).map((point) => point.percentChange)),
     };
   });
+
+  if (monthlyRows.length === 0) {
+    const copy = getAnalyticsCopy(locale);
+
+    return [
+      { label: copy.highestWeeklyGain, meta: copy.noRealDataMeta, value: "n/a" },
+      { label: copy.largestWeeklyDecline, meta: copy.noRealDataMeta, value: "n/a" },
+      { label: copy.mostVolatileCommodity, meta: copy.noRealDataMeta, value: "n/a" },
+      { label: copy.latestPublication, meta: SITE_CONFIG.defaultDeliveryBasis, value: "n/a" },
+      { label: copy.volatilityRange, meta: copy.last30DaysMeta, value: "n/a" },
+      {
+        label: copy.respondentCoverage,
+        meta: copy.currentBasket,
+        value: String(activeRespondentCount),
+      },
+    ];
+  }
+
   const highestGain = monthlyRows.reduce((max, row) =>
     row.change > max.change ? row : max,
   );
@@ -430,10 +510,12 @@ function buildMarketSnapshot(
   const volatilityValues = monthlyRows.map((row) => row.volatility);
   const minVolatility = Math.min(...volatilityValues).toFixed(2);
   const maxVolatility = Math.max(...volatilityValues).toFixed(2);
+  const latestDate = latestRows
+    .map((row) => row.date)
+    .sort((first, second) => second.localeCompare(first))[0];
   const updatedAt = new Intl.DateTimeFormat(locale === "uk" ? "uk-UA" : "en-US", {
     dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(indexUpdatedAt));
+  }).format(new Date(`${latestDate}T00:00:00.000Z`));
 
   return [
     {
@@ -473,6 +555,17 @@ function getCommodityHistory(history: AnalyticsPoint[], commodityId: CommodityId
   return history.filter((point) => point.commodityId === commodityId);
 }
 
+function getPointBack(history: AnalyticsPoint[], countFromEnd: number) {
+  return history.at(-countFromEnd) ?? history[0] ?? {
+    commodityId: "corn" as CommodityId,
+    date: "",
+    dayChange: 0,
+    percentChange: 0,
+    respondents: 0,
+    value: 0,
+  };
+}
+
 function getCommodity(commodityId: CommodityId): Commodity {
   return commodities.find((commodity) => commodity.id === commodityId) ?? commodities[0];
 }
@@ -509,6 +602,10 @@ function formatShortDate(date: string, locale: Locale) {
 }
 
 function standardDeviation(values: number[]) {
+  if (values.length === 0) {
+    return 0;
+  }
+
   const average = values.reduce((sum, value) => sum + value, 0) / values.length;
   const variance =
     values.reduce((sum, value) => sum + (value - average) ** 2, 0) /
@@ -582,6 +679,12 @@ function getAnalyticsCopy(locale: Locale) {
       movementDescription:
         "Останнє значення індексу та зміни за 1, 7, 30 і 90 днів.",
       movementTitle: "Підсумок цінових змін",
+      noRealDataBody:
+        "Після першої публікації індексу тут з'являться реальні історичні значення, спреди, волатильність і сценарні зрізи. Demo-серії використовуються лише в demo-режимі.",
+      noRealDataDescription:
+        "У production-режимі аналітика читає тільки реальні опубліковані значення з бази даних.",
+      noRealDataMeta: "реальні дані ще не опубліковані",
+      noRealDataTitle: "Очікуємо першу реальну публікацію",
       officialLabel: "офіційно",
       outlookDescription:
         "Місячний сценарний діапазон для довшого аналітичного горизонту.",
@@ -702,6 +805,12 @@ function getAnalyticsCopy(locale: Locale) {
     movementDescription:
       "Latest index value and 1, 7, 30, and 90-day changes by commodity.",
     movementTitle: "Price movement summary",
+    noRealDataBody:
+      "After the first index publication, this page will show real historical values, spreads, volatility and scenario views. Demo series are used only in demo mode.",
+    noRealDataDescription:
+      "In production mode, analytics reads only real published database values.",
+    noRealDataMeta: "real data not published yet",
+    noRealDataTitle: "Waiting for the first real publication",
     officialLabel: "official",
     outlookDescription:
       "Monthly scenario range for a longer analytical horizon.",
