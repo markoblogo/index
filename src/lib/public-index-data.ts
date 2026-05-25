@@ -1,10 +1,13 @@
 import { allowMockFallback, db, hasDatabaseUrl } from "@/lib/db";
 import { getLatestDemoPublishedIndices } from "@/lib/demo-published-index-store";
+import { getDemoSubmission } from "@/lib/demo-submission-store";
 import { getActiveIndexConfig } from "@/lib/index-platform";
+import { buildLiveSubmissionValues } from "@/lib/live-submission-values";
 import {
   commodities,
   indexUpdatedAt,
   latestQuotes,
+  respondents,
   type Commodity,
   type CommodityId,
   type LatestQuote,
@@ -63,8 +66,24 @@ export async function getPublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
 function getMockPublicIndexSnapshot(): PublicIndexSnapshot {
   const latestPublished = getLatestDemoPublishedIndices(MOCK_BASIS_ID);
   const activeRespondentCount = getActiveRespondentCount();
+  const today = todayKyivDate();
+  const liveValues = getMockLiveSubmissionValues(today);
   const publicCommodities = commodities.map((commodity) => {
+    const liveValue = liveValues.get(commodity.id);
     const published = latestPublished.get(commodity.id);
+
+    if (liveValue) {
+      const previous = published?.value ?? commodity.latest;
+      const latest = liveValue.value;
+
+      return {
+        ...commodity,
+        latest,
+        absoluteChange: roundToOneDecimal(latest - previous),
+        percentChange: calculatePercentChange(latest, previous),
+        sparkline: [...commodity.sparkline.slice(1), latest],
+      };
+    }
 
     if (!published) {
       return commodity;
@@ -82,7 +101,22 @@ function getMockPublicIndexSnapshot(): PublicIndexSnapshot {
   return {
     commodities: publicCommodities,
     latestQuotes: latestQuotes.map((quote) => {
+      const liveValue = liveValues.get(quote.commodityId);
       const published = latestPublished.get(quote.commodityId);
+
+      if (liveValue) {
+        const previous = published?.value ?? quote.price;
+
+        return {
+          ...quote,
+          id: `${quote.commodityId}-${today}`,
+          date: today,
+          price: liveValue.value,
+          absoluteChange: roundToOneDecimal(liveValue.value - previous),
+          percentChange: calculatePercentChange(liveValue.value, previous),
+          respondents: liveValue.respondentCount,
+        };
+      }
 
       if (!published) {
         return { ...quote, respondents: activeRespondentCount };
@@ -99,14 +133,57 @@ function getMockPublicIndexSnapshot(): PublicIndexSnapshot {
       };
     }),
     updatedAt:
+      getLatestPublicUpdate(liveValues, []) ??
       [...latestPublished.values()].sort((first, second) =>
         second.publishedAt.localeCompare(first.publishedAt),
       )[0]?.publishedAt ?? indexUpdatedAt,
   };
 }
 
+function getMockLiveSubmissionValues(date: string) {
+  const submissions = commodities.flatMap((commodity) =>
+    respondents.flatMap((respondent) =>
+      (["admin", "respondent"] as const)
+        .map((source) => {
+          const submission = getDemoSubmission({
+            commodityId: commodity.id,
+            date,
+            respondentId: respondent.id,
+            source,
+          });
+
+          if (!submission) {
+            return null;
+          }
+
+          return {
+            commodityId: commodity.id,
+            deliveryBasisId: MOCK_BASIS_ID,
+            price: submission.price,
+            respondentId: respondent.id,
+            source,
+            status: submission.status,
+            updatedAt: new Date(submission.updatedAt),
+          };
+        })
+        .filter((submission): submission is NonNullable<typeof submission> =>
+          Boolean(submission),
+        ),
+    ),
+  );
+
+  return buildLiveSubmissionValues({
+    basisByCommodityId: new Map(
+      commodities.map((commodity) => [commodity.id, MOCK_BASIS_ID]),
+    ),
+    submissions,
+  });
+}
+
 async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
   const activeRespondentCount = await getActiveRespondentCountData();
+  const today = todayKyivDate();
+  const todayTradeDate = dateToUtcDate(today);
   const [bases, baskets] = await Promise.all([
     db.deliveryBasis.findMany({
       where: { code: { in: getConfiguredDeliveryBasisCodes(activeIndex) } },
@@ -132,18 +209,45 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
     orderBy: { sortOrder: "asc" },
     where: { status: "published" },
   });
+  const basisByCommodityId = new Map(
+    dbCommodities
+      .map((commodity) => {
+        const basisConfig = getDeliveryBasisConfigForCommodityCode(
+          commodity.code,
+          activeIndex,
+        );
+        const basis = basisByCode.get(basisConfig.code);
+
+        return basis ? ([commodity.id, basis] as const) : null;
+      })
+      .filter((entry): entry is readonly [string, (typeof bases)[number]] =>
+        Boolean(entry),
+      ),
+  );
+  const basketByCommodityId = new Map(
+    dbCommodities
+      .map((commodity) => {
+        const basketCode = getDeliveryBasketCodeForCommodityCode(
+          commodity.code,
+          activeIndex,
+        );
+        const basket = basketByCode.get(basketCode);
+
+        return basket ? ([commodity.id, basket] as const) : null;
+      })
+      .filter((entry): entry is readonly [string, (typeof baskets)[number]] =>
+        Boolean(entry),
+      ),
+  );
+  const basisIds = [...new Set([...basisByCommodityId.values()].map((basis) => basis.id))];
   const published = await Promise.all(
     dbCommodities.map((commodity) => {
       const basisConfig = getDeliveryBasisConfigForCommodityCode(
         commodity.code,
         activeIndex,
       );
-      const basketCode = getDeliveryBasketCodeForCommodityCode(
-        commodity.code,
-        activeIndex,
-      );
       const basis = basisByCode.get(basisConfig.code);
-      const basket = basketByCode.get(basketCode);
+      const basket = basketByCommodityId.get(commodity.id);
 
       if (!basis || !basket) {
         return null;
@@ -161,14 +265,89 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
       });
     }),
   );
+  const liveSubmissions =
+    activeIndex.id === "spike-ua" && basisIds.length > 0
+      ? await db.priceSubmission.findMany({
+          where: {
+            deliveryBasisId: { in: basisIds },
+            status: { in: ["submitted", "verified", "published"] },
+            tradeDate: todayTradeDate,
+          },
+        })
+      : [];
+  const liveValues = buildLiveSubmissionValues({
+    basisByCommodityId: new Map(
+      [...basisByCommodityId.entries()].map(([commodityId, basis]) => [
+        commodityId,
+        basis.id,
+      ]),
+    ),
+    submissions: liveSubmissions.map((submission) => ({
+      commodityId: submission.commodityId,
+      deliveryBasisId: submission.deliveryBasisId,
+      price: submission.priceUsdPerMt.toNumber(),
+      respondentId: submission.respondentId,
+      source: submission.source,
+      status: submission.status,
+      updatedAt: submission.updatedAt,
+    })),
+  });
+  const previousPublished = await Promise.all(
+    activeIndex.id === "spike-ua" && liveValues.size > 0
+      ? dbCommodities.map((commodity) => {
+          const basis = basisByCommodityId.get(commodity.id);
+          const basket = basketByCommodityId.get(commodity.id);
+
+          if (!basis || !basket) {
+            return null;
+          }
+
+          return db.publishedIndex.findFirst({
+            where: {
+              basketId: basket.id,
+              commodityId: commodity.id,
+              deliveryBasisId: basis.id,
+              status: "published",
+              locked: true,
+              tradeDate: { lt: todayTradeDate },
+            },
+            orderBy: { tradeDate: "desc" },
+          });
+        })
+      : [],
+  );
   const publishedByCommodityId = new Map(
     published
       .filter((index): index is NonNullable<typeof index> => Boolean(index))
       .map((index) => [index.commodityId, index]),
   );
+  const previousPublishedByCommodityId = new Map(
+    previousPublished
+      .filter((index): index is NonNullable<typeof index> => Boolean(index))
+      .map((index) => [index.commodityId, index]),
+  );
   const publicCommodities = dbCommodities.map((commodity) => {
     const mockCommodity = mockCommodityByCode.get(commodity.code) ?? commodities[0];
+    const liveValue = liveValues.get(commodity.id);
     const publishedIndex = publishedByCommodityId.get(commodity.id);
+
+    if (liveValue) {
+      const previous =
+        previousPublishedByCommodityId.get(commodity.id)?.valueUsdPerMt.toNumber() ??
+        publishedIndex?.valueUsdPerMt.toNumber() ??
+        mockCommodity.latest;
+      const latest = liveValue.value;
+
+      return {
+        ...mockCommodity,
+        code: commodity.code,
+        name: { uk: commodity.nameUk, en: commodity.nameEn },
+        latest,
+        absoluteChange: roundToOneDecimal(latest - previous),
+        percentChange: calculatePercentChange(latest, previous),
+        sparkline: [...mockCommodity.sparkline.slice(1), latest],
+      };
+    }
 
     if (!publishedIndex) {
       return {
@@ -192,11 +371,30 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
   });
   const publicLatestQuotes = dbCommodities.map((commodity) => {
     const mockCommodity = mockCommodityByCode.get(commodity.code) ?? commodities[0];
+    const liveValue = liveValues.get(commodity.id);
     const publishedIndex = publishedByCommodityId.get(commodity.id);
     const basisConfig = getDeliveryBasisConfigForCommodityCode(
       commodity.code,
       activeIndex,
     );
+
+    if (liveValue) {
+      const previous =
+        previousPublishedByCommodityId.get(commodity.id)?.valueUsdPerMt.toNumber() ??
+        publishedIndex?.valueUsdPerMt.toNumber() ??
+        mockCommodity.latest;
+
+      return {
+        id: `${mockCommodity.id}-${today}`,
+        commodityId: mockCommodity.id,
+        date: today,
+        basis: basisConfig.name,
+        price: liveValue.value,
+        absoluteChange: roundToOneDecimal(liveValue.value - previous),
+        percentChange: calculatePercentChange(liveValue.value, previous),
+        respondents: liveValue.respondentCount,
+      };
+    }
 
     if (!publishedIndex) {
       const quote = latestQuotes.find(
@@ -221,12 +419,49 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
     commodities: publicCommodities,
     latestQuotes: publicLatestQuotes,
     updatedAt:
-      published
-        .filter((index): index is NonNullable<typeof index> => Boolean(index))
-        .sort(
-          (first, second) =>
-            second.publishedAt.getTime() - first.publishedAt.getTime(),
-        )[0]
-        ?.publishedAt.toISOString() ?? indexUpdatedAt,
+      getLatestPublicUpdate(liveValues, published) ?? indexUpdatedAt,
   };
+}
+
+function getLatestPublicUpdate(
+  liveValues: Map<string, { latestUpdatedAt: Date }>,
+  published: Array<{ publishedAt: Date } | null>,
+) {
+  const liveUpdatedAt = [...liveValues.values()]
+    .map((value) => value.latestUpdatedAt)
+    .sort((first, second) => second.getTime() - first.getTime())[0];
+  const publishedAt = published
+    .filter((index): index is NonNullable<typeof index> => Boolean(index))
+    .map((index) => index.publishedAt)
+    .sort((first, second) => second.getTime() - first.getTime())[0];
+  const latest = [liveUpdatedAt, publishedAt]
+    .filter((date): date is Date => Boolean(date))
+    .sort((first, second) => second.getTime() - first.getTime())[0];
+
+  return latest?.toISOString();
+}
+
+function todayKyivDate() {
+  return new Intl.DateTimeFormat("en-CA", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "Europe/Kyiv",
+    year: "numeric",
+  }).format(new Date());
+}
+
+function dateToUtcDate(date: string) {
+  return new Date(`${date}T00:00:00.000Z`);
+}
+
+function calculatePercentChange(latest: number, previous: number) {
+  if (!Number.isFinite(previous) || previous === 0) {
+    return 0;
+  }
+
+  return Math.round(((latest - previous) / previous) * 1000) / 10;
+}
+
+function roundToOneDecimal(value: number) {
+  return Math.round(value * 10) / 10;
 }
