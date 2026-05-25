@@ -273,8 +273,8 @@ body[data-index="spike"] .brand-logo {
 .spike-subscription-page h1 {
   max-width: 1080px;
   color: #f8f8f2;
-  font-size: clamp(2.6rem, 5.7vw, 6.1rem);
-  line-height: 0.88;
+  font-size: clamp(2.05rem, 4.55vw, 4.75rem);
+  line-height: 0.94;
 }
 
 .spike-static-page h2,

@@ -180,7 +180,7 @@ function SpikeMethodologyPage({
             <p className="text-sm font-black uppercase tracking-[0.24em] text-[var(--spike-accent)]">
               {dict.methodology.label}
             </p>
-            <h1 className="mt-5 max-w-5xl text-[clamp(2.55rem,5.7vw,6rem)] font-black uppercase leading-[0.88] tracking-normal text-white">
+            <h1 className="mt-5 max-w-5xl text-[clamp(2.05rem,4.55vw,4.75rem)] font-black uppercase leading-[0.94] tracking-normal text-white">
               {dict.methodology.title}
             </h1>
           </div>

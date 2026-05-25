@@ -163,7 +163,7 @@ function SpikeAboutPage({
             <p className="text-sm font-black uppercase tracking-[0.24em] text-[var(--spike-accent)]">
               {dict.about.label}
             </p>
-            <h1 className="mt-5 max-w-5xl text-[clamp(2.6rem,6vw,6.4rem)] font-black uppercase leading-[0.88] tracking-normal text-[#f8f8f2]">
+            <h1 className="mt-5 max-w-5xl text-[clamp(2.05rem,4.55vw,4.75rem)] font-black uppercase leading-[0.94] tracking-normal text-[#f8f8f2]">
               {dict.about.title}
             </h1>
           </div>

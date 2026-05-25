@@ -94,7 +94,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                   </Link>
                 ))}
               </div>
-              <h1 className="mt-5 text-5xl font-black uppercase leading-[0.9] tracking-normal text-white sm:text-6xl lg:text-7xl">
+              <h1 className="mt-5 text-4xl font-black uppercase leading-[0.94] tracking-normal text-white sm:text-5xl lg:text-6xl">
                 {post.title}
               </h1>
               </div>

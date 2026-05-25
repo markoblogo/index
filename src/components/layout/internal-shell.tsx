@@ -40,7 +40,7 @@ export function InternalShell({ children, user }: InternalShellProps) {
     }
 
     if (item.href === "/admin/calculate") {
-      return { ...item, label: "Publish Spike Index" };
+      return { ...item, label: "Publish SPIKE SPOT INDEX" };
     }
 
     if (item.href === "/admin/embed") {

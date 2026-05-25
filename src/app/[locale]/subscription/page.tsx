@@ -241,10 +241,10 @@ function getSubscriptionCopy(locale: Locale) {
         row[0] === "UGA member" ? ["Spike partner", row[1], row[2], row[3]] : row,
       ),
       accessText:
-        "Аналітична панель доступна як preview для SPIKE Spot Commodity Index Ukraine. Розширена історія, API-доступ і комерційні аналітичні зрізи можуть бути оформлені як окремі рівні доступу після запуску.",
+        "Аналітична панель доступна як preview для SPIKE SPOT INDEX. Розширена історія, API-доступ і комерційні аналітичні зрізи можуть бути оформлені як окремі рівні доступу після запуску.",
       body:
-        "У цьому розділі зібрані майбутні формати співпраці, підписки, API-доступу та розширеної аналітики SPIKE Spot Commodity Index Ukraine.",
-      title: "Співпраця та підписка Spike Index",
+        "У цьому розділі зібрані майбутні формати співпраці, підписки, API-доступу та розширеної аналітики SPIKE SPOT INDEX.",
+      title: "Співпраця та підписка SPIKE SPOT INDEX",
     };
   }
 
@@ -314,9 +314,9 @@ function getSubscriptionCopy(locale: Locale) {
       row[0] === "UGA member" ? ["Spike partner", row[1], row[2], row[3]] : row,
     ),
     accessText:
-      "The analytics dashboard is available as a preview for SPIKE Spot Commodity Index Ukraine. Extended history, API access and commercial analytics views can be introduced as separate access levels after launch.",
+      "The analytics dashboard is available as a preview for SPIKE SPOT INDEX. Extended history, API access and commercial analytics views can be introduced as separate access levels after launch.",
     body:
-      "This section collects future cooperation formats, subscription access, API access, and extended SPIKE Spot Commodity Index Ukraine analytics options.",
-    title: "Spike Index cooperation and subscription",
+      "This section collects future cooperation formats, subscription access, API access, and extended SPIKE SPOT INDEX analytics options.",
+    title: "SPIKE SPOT INDEX cooperation and subscription",
   };
 }

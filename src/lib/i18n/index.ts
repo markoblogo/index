@@ -712,14 +712,14 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
       home: {
         ...base.home,
         partnerLine: "Spike Brokers · партнери ринку · Cropto/MN7R",
-        title: "SPIKE Spot Commodity Index Ukraine",
+        title: "SPIKE SPOT INDEX",
         description:
-          "Щоденний спотовий індекс Spike Brokers для ключових експортних і переробних позицій українського аграрного ринку.",
-        boardTitle: "SPIKE Index / Спотові ціни",
+          "SPIKE SPOT INDEX - спотовий бенчмарк цін для українського аграрного ринку.",
+        boardTitle: "SPIKE SPOT INDEX / Спотові ціни",
         boardDescription:
           "Ринковий бенчмарк у USD/т для CPT Одеса та CPT parity Одеса, що публікується після щоденної перевірки даних партнерів.",
         heroSubtitle:
-          "Щоденні значення для експортних і переробних базисів України від Spike Brokers.",
+          "Спотовий бенчмарк цін для українського аграрного ринку.",
         heroMeta: "CPT Одеса · spot · USD/т · публікація після EOD-перевірки",
         heroAttribution:
           "Публікується Spike Brokers. Дані: партнери ринку. Технологія: Cropto/MN7R.",
@@ -727,16 +727,16 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
         heroTrustStrip:
           "Дані партнерів Spike Brokers · медіанна валідація · +/-2% фільтр викидів · мінімум 5 респондентів · фіксація після публікації",
         heroTrustStripShort: "партнери Spike · медіана · +/-2% · 5+ · фіксація",
-        partnersTitle: "Ролі в екосистемі SPIKE Spot Commodity Index Ukraine",
+        partnersTitle: "Ролі в екосистемі SPIKE SPOT INDEX",
         partnersDescription:
           "Spike Brokers відповідає за бренд, публікацію та ринкову експертизу; партнери-респонденти надають щоденні цінові оцінки; Cropto/MN7R забезпечує технологічну платформу.",
       },
       about: {
         ...base.about,
         title:
-          "Спотовий бенчмарк Spike Brokers для українського аграрного ринку",
+          "SPIKE SPOT INDEX - спотовий бенчмарк цін для українського аграрного ринку",
         descriptionBeforeLink:
-          "SPIKE Spot Commodity Index Ukraine — це окрема індексна платформа ",
+          "SPIKE SPOT INDEX - це окрема індексна платформа ",
         descriptionLinkText: "Spike Brokers",
         descriptionAfterLink:
           " для щоденної публікації агрегованих спотових цін за ключовими експортними та переробними позиціями України. Індекс створений, щоб дати ринку прозорий і порівнюваний орієнтир для CPT Одеса та CPT parity Одеса.",
@@ -744,7 +744,7 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
         whyTitle: "Операційний ціновий орієнтир для угод, логістики та переробки",
         whyBody: [
           "Український аграрний ринок щодня реагує на попит експортерів, переробників, логістику, портову інфраструктуру, валюту, фрахт і якісні параметри продукції. Для роботи з такими потоками учасникам потрібен спільний орієнтир, прив'язаний до реальних торгових базисів.",
-          "SPIKE Spot Commodity Index Ukraine агрегує ринкові оцінки партнерів Spike Brokers і перетворює їх на зіставні значення для публікації. Індекс не розкриває індивідуальні подання компаній, а показує очищений агрегований результат.",
+          "SPIKE SPOT INDEX агрегує ринкові оцінки партнерів Spike Brokers і перетворює їх на зіставні значення для публікації. Індекс не розкриває індивідуальні подання компаній, а показує очищений агрегований результат.",
           "Платформа охоплює експортні позиції CPT Одеса та переробні позиції CPT parity Одеса. Для сої ГМО та соняшнику публічні значення відображаються з ПДВ, відповідно до логіки ринку переробки.",
         ],
         whyFeatures: [
@@ -768,13 +768,13 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
         respondentsDescription:
           "Корзина респондентів відображає партнерів Spike Brokers, представлених у щоденному зборі цінових даних. Індивідуальні подання не публікуються; у відкритому доступі відображаються лише агреговані значення індексу.",
         disclaimer:
-          "Значення SPIKE Spot Commodity Index Ukraine публікуються виключно з інформаційною та аналітичною метою. Вони не є інвестиційною порадою, публічною офертою або рекомендацією купувати чи продавати будь-який товар. Значення агрегуються з даних партнерів-респондентів і публікуються відповідно до методології; індивідуальні дані компаній не розкриваються. Spike Brokers, партнери проєкту та технологічні провайдери не несуть відповідальності за рішення, прийняті на основі цих даних.",
+          "Значення SPIKE SPOT INDEX публікуються виключно з інформаційною та аналітичною метою. Вони не є інвестиційною порадою, публічною офертою або рекомендацією купувати чи продавати будь-який товар. Значення агрегуються з даних партнерів-респондентів і публікуються відповідно до методології; індивідуальні дані компаній не розкриваються. Spike Brokers, партнери проєкту та технологічні провайдери не несуть відповідальності за рішення, прийняті на основі цих даних.",
       },
       methodology: {
         ...base.methodology,
-        title: "Як розраховується SPIKE Spot Commodity Index Ukraine",
+        title: "Як розраховується SPIKE SPOT INDEX",
         description:
-          "SPIKE Spot Commodity Index Ukraine використовує повторюваний щоденний процес, який перетворює цінові оцінки партнерів-респондентів на перевірені та зафіксовані значення індексу для кожної позиції, базису та дати розрахунку.",
+          "SPIKE SPOT INDEX використовує повторюваний щоденний процес, який перетворює цінові оцінки партнерів-респондентів на перевірені та зафіксовані значення індексу для кожної позиції, базису та дати розрахунку.",
         coreTitle: "Від EOD-оцінок партнерів до опублікованого спотового бенчмарку",
         coreNarrative: [
           "Індекс розраховується на основі щоденних цінових оцінок, які надає визначена група партнерів-респондентів Spike Brokers. Кожне подане значення має відображати справедливий ринковий рівень на кінець торгового дня для відповідної культури та базису.",
@@ -791,10 +791,10 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
           { value: "Фіксація", label: "Фінальне значення після публікації" },
         ],
         pdfDescription:
-          "Завантажте документ методології, використаний як основа для SPIKE Spot Commodity Index Ukraine. Production-версія може бути замінена на затверджену Spike Brokers редакцію.",
+          "Завантажте документ методології, використаний як основа для SPIKE SPOT INDEX. Production-версія може бути замінена на затверджену Spike Brokers редакцію.",
         faq: [
           {
-            question: "Що таке SPIKE Spot Commodity Index Ukraine?",
+            question: "Що таке SPIKE SPOT INDEX?",
             answer:
               "Це щоденний спотовий бенчмарк Spike Brokers для ключових українських аграрних позицій на експортних і переробних базисах.",
           },
@@ -814,7 +814,7 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
       },
       analytics: {
         ...base.analytics,
-        title: "Аналітика SPIKE Spot Commodity Index Ukraine",
+        title: "Аналітика SPIKE SPOT INDEX",
         description:
           "Аналітична сторінка готує основу для порівняння спотових позицій, перегляду трендів та історії публікацій Spike Brokers.",
         accessLevels: base.analytics.accessLevels.map((level) =>
@@ -841,14 +841,14 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
     home: {
       ...base.home,
       partnerLine: "Spike Brokers · market partners · Cropto/MN7R",
-      title: "SPIKE Spot Commodity Index Ukraine",
+      title: "SPIKE SPOT INDEX",
       description:
-        "Daily Spike Brokers spot index for core Ukrainian export and processing commodity positions.",
-      boardTitle: "SPIKE Index / Spot Pricing",
+        "SPIKE SPOT INDEX is a spot price benchmark for the Ukrainian agricultural market.",
+      boardTitle: "SPIKE SPOT INDEX / Spot Pricing",
       boardDescription:
         "USD/t market benchmark for CPT Odesa and CPT parity Odesa, published after daily partner-data review.",
       heroSubtitle:
-        "Daily values for Ukrainian export and processing bases from Spike Brokers.",
+        "Spot price benchmark for the Ukrainian agricultural market.",
       heroMeta: "CPT Odesa · spot · USD/t · published after EOD review",
       heroAttribution:
         "Published by Spike Brokers. Data: market partners. Technology: Cropto/MN7R.",
@@ -856,15 +856,15 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
       heroTrustStrip:
         "Spike Brokers partner data · median validation · +/-2% outlier filter · minimum 5 respondents · locked publication",
       heroTrustStripShort: "Spike partners · median · +/-2% · 5+ · locked",
-      partnersTitle: "Roles in the SPIKE Spot Commodity Index Ukraine ecosystem",
+      partnersTitle: "Roles in the SPIKE SPOT INDEX ecosystem",
       partnersDescription:
         "Spike Brokers owns the brand, publication and market expertise; respondent partners provide daily price assessments; Cropto/MN7R powers the technology platform.",
     },
     about: {
       ...base.about,
-      title: "A Spike Brokers spot benchmark for Ukrainian agricultural markets",
+      title: "SPIKE SPOT INDEX - spot price benchmark for the Ukrainian agricultural market",
       descriptionBeforeLink:
-        "SPIKE Spot Commodity Index Ukraine is a dedicated index platform by ",
+        "SPIKE SPOT INDEX is a dedicated index platform by ",
       descriptionLinkText: "Spike Brokers",
       descriptionAfterLink:
         " for publishing daily aggregated spot prices across selected Ukrainian export and processing positions. The index gives the market a transparent and comparable reference for CPT Odesa and CPT parity Odesa levels.",
@@ -872,7 +872,7 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
       whyTitle: "An operational price reference for trade, logistics and processing",
       whyBody: [
         "Ukraine's agricultural market reacts daily to exporter and processor demand, logistics, port infrastructure, currency, freight and product quality. Market participants need a shared reference linked to executable trading bases.",
-        "SPIKE Spot Commodity Index Ukraine aggregates market assessments from Spike Brokers partners and turns them into comparable public values. The index does not disclose individual company submissions; it shows a cleaned aggregated result.",
+        "SPIKE SPOT INDEX aggregates market assessments from Spike Brokers partners and turns them into comparable public values. The index does not disclose individual company submissions; it shows a cleaned aggregated result.",
         "The platform covers CPT Odesa export positions and CPT parity Odesa processing positions. GMO soybean and sunflower seed public values are shown VAT-included, reflecting processing-market convention.",
       ],
       whyFeatures: [
@@ -896,13 +896,13 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
       respondentsDescription:
         "The respondent basket reflects Spike Brokers partners represented in the daily price collection workflow. Individual submissions are not published; the public index displays aggregated values only.",
       disclaimer:
-        "SPIKE Spot Commodity Index Ukraine values are published for informational and analytical purposes only. They are not investment advice, a public offer, or a recommendation to buy or sell any commodity. Values are aggregated from respondent-partner data and published according to the index methodology; individual company submissions are not disclosed. Spike Brokers, project partners and technology providers are not liable for decisions made on the basis of these data.",
+        "SPIKE SPOT INDEX values are published for informational and analytical purposes only. They are not investment advice, a public offer, or a recommendation to buy or sell any commodity. Values are aggregated from respondent-partner data and published according to the index methodology; individual company submissions are not disclosed. Spike Brokers, project partners and technology providers are not liable for decisions made on the basis of these data.",
     },
     methodology: {
       ...base.methodology,
-      title: "How SPIKE Spot Commodity Index Ukraine is calculated",
+      title: "How SPIKE SPOT INDEX is calculated",
       description:
-        "SPIKE Spot Commodity Index Ukraine uses a repeatable daily process to turn respondent-partner price assessments into verified and locked index values for each position, basis and calculation date.",
+        "SPIKE SPOT INDEX uses a repeatable daily process to turn respondent-partner price assessments into verified and locked index values for each position, basis and calculation date.",
       coreTitle: "From partner EOD assessments to a published spot benchmark",
       coreNarrative: [
         "The index is calculated from daily price assessments submitted by a defined group of Spike Brokers respondent partners. Each submitted value should reflect a fair end-of-day market level for the relevant commodity and basis.",
@@ -919,10 +919,10 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
         { value: "Locked", label: "Final value after publication" },
       ],
       pdfDescription:
-        "Download the methodology document used as the basis for SPIKE Spot Commodity Index Ukraine. The production site can replace this file with the approved Spike Brokers version.",
+        "Download the methodology document used as the basis for SPIKE SPOT INDEX. The production site can replace this file with the approved Spike Brokers version.",
       faq: [
         {
-          question: "What is SPIKE Spot Commodity Index Ukraine?",
+          question: "What is SPIKE SPOT INDEX?",
           answer:
             "It is a daily Spike Brokers spot benchmark for selected Ukrainian agricultural export and processing positions.",
         },
@@ -942,7 +942,7 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
     },
     analytics: {
       ...base.analytics,
-      title: "SPIKE Spot Commodity Index Ukraine analytics",
+      title: "SPIKE SPOT INDEX analytics",
       description:
         "The analytics page prepares the surface for comparing spot positions, reviewing trends and reading Spike Brokers publication history.",
       accessLevels: base.analytics.accessLevels.map((level) =>

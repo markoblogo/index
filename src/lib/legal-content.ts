@@ -48,17 +48,17 @@ function getSpikeLegalPageContent(
       ...mapped,
       description:
         locale === "uk"
-          ? "Політика конфіденційності SPIKE Spot Commodity Index Ukraine"
-          : "SPIKE Spot Commodity Index Ukraine Privacy Policy",
+          ? "Політика конфіденційності SPIKE SPOT INDEX"
+          : "SPIKE SPOT INDEX Privacy Policy",
       intro:
         locale === "uk"
           ? [
-              "Ця Політика конфіденційності пояснює, як SPIKE Spot Commodity Index Ukraine збирає, використовує та захищає інформацію під час взаємодії відвідувачів, респондентів, адміністраторів та користувачів аналітики з платформою.",
-              "SPIKE Spot Commodity Index Ukraine — це платформа Spike Brokers для публікації агрегованих ринкових значень індексу та пов'язаної аналітики щодо українських аграрних спотових цін.",
+              "Ця Політика конфіденційності пояснює, як SPIKE SPOT INDEX збирає, використовує та захищає інформацію під час взаємодії відвідувачів, респондентів, адміністраторів та користувачів аналітики з платформою.",
+              "SPIKE SPOT INDEX - це платформа Spike Brokers для публікації агрегованих ринкових значень індексу та пов'язаної аналітики щодо українських аграрних спотових цін.",
             ]
           : [
-              "This Privacy Policy explains how SPIKE Spot Commodity Index Ukraine collects, uses and protects information when visitors, respondents, administrators and analytics users interact with the platform.",
-              "SPIKE Spot Commodity Index Ukraine is a Spike Brokers platform for publishing aggregated market index values and related analytics for Ukrainian agricultural spot prices.",
+              "This Privacy Policy explains how SPIKE SPOT INDEX collects, uses and protects information when visitors, respondents, administrators and analytics users interact with the platform.",
+              "SPIKE SPOT INDEX is a Spike Brokers platform for publishing aggregated market index values and related analytics for Ukrainian agricultural spot prices.",
             ],
     };
   }
@@ -68,16 +68,16 @@ function getSpikeLegalPageContent(
       ...mapped,
       description:
         locale === "uk"
-          ? "Умови використання SPIKE Spot Commodity Index Ukraine"
-          : "SPIKE Spot Commodity Index Ukraine Terms of Use",
+          ? "Умови використання SPIKE SPOT INDEX"
+          : "SPIKE SPOT INDEX Terms of Use",
       intro:
         locale === "uk"
           ? [
-              "Ці Умови використання регулюють доступ до платформи SPIKE Spot Commodity Index Ukraine та її використання, включно з публічними значеннями індексу, аналітикою, процесами для респондентів, embedded-віджетами та пов'язаним контентом.",
+              "Ці Умови використання регулюють доступ до платформи SPIKE SPOT INDEX та її використання, включно з публічними значеннями індексу, аналітикою, процесами для респондентів, embedded-віджетами та пов'язаним контентом.",
               "Користуючись платформою, ви погоджуєтеся з цими Умовами.",
             ]
           : [
-              "These Terms of Use govern access to and use of SPIKE Spot Commodity Index Ukraine, including public index values, analytics, respondent workflows, embedded widgets and related content.",
+              "These Terms of Use govern access to and use of SPIKE SPOT INDEX, including public index values, analytics, respondent workflows, embedded widgets and related content.",
               "By using the platform, you agree to these Terms.",
             ],
     };
@@ -87,15 +87,15 @@ function getSpikeLegalPageContent(
     ...mapped,
     description:
       locale === "uk"
-        ? "Розкриття ризиків SPIKE Spot Commodity Index Ukraine"
-        : "SPIKE Spot Commodity Index Ukraine Risk Disclosure",
+        ? "Розкриття ризиків SPIKE SPOT INDEX"
+        : "SPIKE SPOT INDEX Risk Disclosure",
     intro:
       locale === "uk"
         ? [
-            "Це Розкриття ризиків пояснює важливі обмеження та ризики, пов'язані з використанням значень SPIKE Spot Commodity Index Ukraine, аналітики, сценарних результатів та пов'язаних даних.",
+            "Це Розкриття ризиків пояснює важливі обмеження та ризики, пов'язані з використанням значень SPIKE SPOT INDEX, аналітики, сценарних результатів та пов'язаних даних.",
           ]
         : [
-            "This Risk Disclosure explains important limitations and risks related to the use of SPIKE Spot Commodity Index Ukraine values, analytics, scenario outputs and related data.",
+            "This Risk Disclosure explains important limitations and risks related to the use of SPIKE SPOT INDEX values, analytics, scenario outputs and related data.",
           ],
   };
 }
@@ -119,7 +119,7 @@ function mapLegalContentText(
 
 function mapSpikeEnLegalText(text: string) {
   return text
-    .replaceAll("UGA Index", "SPIKE Spot Commodity Index Ukraine")
+    .replaceAll("UGA Index", "SPIKE SPOT INDEX")
     .replaceAll("the Ukrainian Grain Association", "Spike Brokers")
     .replaceAll("Ukrainian Grain Association", "Spike Brokers")
     .replaceAll("UGA", "Spike Brokers")
@@ -131,14 +131,14 @@ function mapSpikeEnLegalText(text: string) {
       "Ukraine, 04070, Kyiv,\n8 Illinska St.,\nIllinskyi Business Center",
     )
     .replaceAll(
-      "External market indicatives, including partner indicatives, may be displayed as reference information. They should not be treated as official SPIKE Spot Commodity Index Ukraine values unless expressly published as such.",
+      "External market indicatives, including partner indicatives, may be displayed as reference information. They should not be treated as official SPIKE SPOT INDEX values unless expressly published as such.",
       "This Spike Brokers tenant does not use a separate Spike external indicative. Any third-party reference values, if introduced later, should be displayed separately and should not be treated as official index values unless expressly published as such.",
     );
 }
 
 function mapSpikeUkLegalText(text: string) {
   return text
-    .replaceAll("UGA Index", "SPIKE Spot Commodity Index Ukraine")
+    .replaceAll("UGA Index", "SPIKE SPOT INDEX")
     .replaceAll("Української зернової асоціації", "Spike Brokers")
     .replaceAll("Українська зернова асоціація", "Spike Brokers")
     .replaceAll("Української зернової асоціації", "Spike Brokers")
@@ -151,7 +151,7 @@ function mapSpikeUkLegalText(text: string) {
       "Україна, 04070, Київ,\nвул. Іллінська, 8,\nБЦ «Іллінський»",
     )
     .replaceAll(
-      "Зовнішні ринкові індикативи, включно з індикативами партнерів, можуть відображатися як довідкова інформація. Вони не повинні вважатися офіційними значеннями SPIKE Spot Commodity Index Ukraine, якщо прямо не опубліковані як такі.",
+      "Зовнішні ринкові індикативи, включно з індикативами партнерів, можуть відображатися як довідкова інформація. Вони не повинні вважатися офіційними значеннями SPIKE SPOT INDEX, якщо прямо не опубліковані як такі.",
       "У цьому інстансі Spike Brokers не використовується окремий зовнішній індикатив Spike. Будь-які сторонні довідкові значення, якщо вони будуть додані пізніше, мають відображатися окремо і не повинні вважатися офіційними значеннями індексу, якщо прямо не опубліковані як такі.",
     );
 }

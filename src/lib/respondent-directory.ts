@@ -64,17 +64,17 @@ function createDefaultRespondentEmailSchedule() {
     replyTo: activeIndex.id === "spike-ua" ? "info@spike.broker" : "inbox@uga.ua",
     sender:
       activeIndex.id === "spike-ua"
-        ? "Spike Index <onboarding@resend.dev>"
+        ? "SPIKE SPOT INDEX <onboarding@resend.dev>"
         : "UGA Index <onboarding@resend.dev>",
     sendTime: "16:30",
     subject:
       activeIndex.id === "spike-ua"
-        ? "Spike Index daily price survey"
+        ? "SPIKE SPOT INDEX daily price survey"
         : "UGA Index daily price survey",
     surveyUrl: "/respondent",
     template:
       activeIndex.id === "spike-ua"
-        ? "Please submit today's CPT Odesa / CPT parity Odesa spot price indicatives for SPIKE Spot Commodity Index Ukraine. Open your daily survey form using the personal link in this email."
+        ? "Please submit today's CPT Odesa / CPT parity Odesa spot price indicatives for SPIKE SPOT INDEX. Open your daily survey form using the personal link in this email."
         : "Please submit today's CPT UA Black Sea price indicatives for UGA Index. Open your daily survey form using the personal link in this email.",
     timezone: "Europe/Kyiv",
     workdays: "Monday-Friday",

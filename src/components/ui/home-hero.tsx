@@ -168,8 +168,8 @@ function SpikeHomeHero({
       <div className="mx-auto flex max-w-[1900px] flex-col px-4 py-5 sm:px-6 lg:min-h-[calc(100svh-57px)] lg:px-8">
         <div className="grid gap-5 border-b border-white/18 pb-5 lg:grid-cols-[minmax(0,1fr)_34rem] lg:items-end">
           <div className="min-w-0">
-            <SpikeHeroSubtitle locale={locale} text={activeIndex.home.subtitle[locale]} />
-            <h1 className="mt-3 max-w-[calc(100vw-2rem)] break-words text-[clamp(2rem,8.4vw,3.35rem)] font-black uppercase leading-[0.9] tracking-normal sm:text-[clamp(2.6rem,7vw,4.9rem)] lg:max-w-5xl lg:text-[clamp(3.4rem,5.25vw,6.25rem)]">
+            <SpikeHeroSubtitle text={activeIndex.home.subtitle[locale]} />
+            <h1 className="mt-3 max-w-[calc(100vw-2rem)] break-words text-[clamp(1.9rem,7.4vw,2.9rem)] font-black uppercase leading-[0.92] tracking-normal sm:text-[clamp(2.35rem,5.8vw,3.85rem)] lg:max-w-5xl lg:text-[clamp(2.85rem,4.25vw,4.8rem)]">
               <SpikeHeroTitle />
             </h1>
           </div>
@@ -253,21 +253,10 @@ function SpikeHomeHero({
   );
 }
 
-function SpikeHeroSubtitle({ locale, text }: { locale: Locale; text: string }) {
-  if (locale !== "en") {
-    return (
-      <p className="max-w-[20rem] text-sm font-black leading-5 text-[var(--spike-accent)] sm:max-w-4xl sm:text-base sm:leading-6">
-        {text}
-      </p>
-    );
-  }
-
+function SpikeHeroSubtitle({ text }: { text: string }) {
   return (
     <p className="max-w-[20rem] text-sm font-black leading-5 text-[var(--spike-accent)] sm:max-w-4xl sm:text-base sm:leading-6">
-      <span className="block sm:inline">Daily Spike Brokers spot indices</span>{" "}
-      <span className="block sm:inline">
-        for Ukrainian export and processing bases.
-      </span>
+      {text}
     </p>
   );
 }
@@ -276,10 +265,7 @@ function SpikeHeroTitle() {
   return (
     <>
       <span className="block">SPIKE SPOT</span>
-      <span className="block">COMMODITY</span>
-      <span className="block sm:hidden">INDEX</span>
-      <span className="block sm:hidden">UKRAINE</span>
-      <span className="hidden sm:block">INDEX UKRAINE</span>
+      <span className="block">INDEX</span>
     </>
   );
 }

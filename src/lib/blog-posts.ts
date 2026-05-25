@@ -18,7 +18,7 @@ export const spikeBlogPosts: BlogPost[] = [
     body: [
       "Ukraine's agricultural export market moves quickly. Prices are influenced by global commodity trends, port logistics, freight costs, currency movements, local supply, farmer selling activity and daily trade flow.",
       "In such an environment, market participants need more than scattered quotes or one-off conversations. They need a clear daily reference point that helps them compare price levels across commodities, bases and market segments.",
-      "The SPIKE Spot Commodity Index Ukraine is designed to provide that reference. It brings together spot market information into a structured daily format, showing index values for key Ukrainian agricultural commodities across relevant export and processing bases.",
+      "The SPIKE SPOT INDEX is designed to provide that reference. It brings together spot market information into a structured daily format, showing index values for key Ukrainian agricultural commodities across relevant export and processing bases.",
       "The purpose is not to replace negotiation or individual market judgment. Instead, the index gives producers, traders, processors, analysts and institutions a common benchmark for reading the market.",
       "A transparent daily index can help reduce information gaps, improve price discovery and make market discussion more disciplined. For a market as important and dynamic as Ukraine's, this kind of reference is becoming increasingly necessary.",
     ],
@@ -29,7 +29,7 @@ export const spikeBlogPosts: BlogPost[] = [
     readingMinutes: 3,
     seoDescription:
       "A short overview of why daily spot commodity indices matter for Ukrainian grain and oilseed markets.",
-    seoTitle: "Why Ukraine Needs a Daily Spot Commodity Index",
+    seoTitle: "Why Ukraine Needs a Daily Spot Index",
     slug: "why-ukraine-needs-daily-spot-commodity-index",
     tags: [
       "Market index",
@@ -38,7 +38,7 @@ export const spikeBlogPosts: BlogPost[] = [
       "Price discovery",
       "Spike Brokers",
     ],
-    title: "Why Ukraine Needs a Daily Spot Commodity Index",
+    title: "Why Ukraine Needs a Daily Spot Index",
   },
   {
     body: [
@@ -46,7 +46,7 @@ export const spikeBlogPosts: BlogPost[] = [
       "A spot index helps turn daily market signals into a more readable format. By publishing values for selected commodities and bases, the index gives users a clearer view of where the market stands at a specific point in time.",
       "For Ukrainian grain and oilseed markets, this is especially useful because price formation depends on several moving parts at once. Export demand, port availability, delivery basis, quality parameters and processing demand can all affect the final price level.",
       "The value of a spot index is in consistency. When the same methodology is applied every day, market participants can track movement over time, compare commodities and identify changes in direction more easily.",
-      "The SPIKE Spot Commodity Index Ukraine is built to support this kind of daily market reading. It provides a compact view of current values while leaving space for deeper analytics, historical comparison and future data products.",
+      "The SPIKE SPOT INDEX is built to support this kind of daily market reading. It provides a compact view of current values while leaving space for deeper analytics, historical comparison and future data products.",
       "As with any market data, index values should be used as information, not as a trading instruction. The strongest use case is as a disciplined reference point for analysis, discussion and decision-making.",
     ],
     coverImage: "/blog/how-spot-indices-help-read-daily-grain-market-movement.png",
@@ -95,9 +95,9 @@ export function getBlogLabels(locale: Locale) {
       searchPlaceholder: "Пошук за темою, тегом або текстом",
       share: "Поділитися",
       subtitle:
-        "Market notes, methodology context and practical explanations for the SPIKE Spot Commodity Index Ukraine.",
+        "Market notes, methodology context and practical explanations for the SPIKE SPOT INDEX.",
       tagCloud: "Хмара тегів",
-      title: "Блог SPIKE Index",
+      title: "Блог SPIKE SPOT INDEX",
     } as const;
   }
 
@@ -115,8 +115,8 @@ export function getBlogLabels(locale: Locale) {
     searchPlaceholder: "Search by topic, tag or article text",
     share: "Share",
     subtitle:
-      "Market notes, methodology context and practical explanations for the SPIKE Spot Commodity Index Ukraine.",
+      "Market notes, methodology context and practical explanations for the SPIKE SPOT INDEX.",
     tagCloud: "Tag cloud",
-    title: "SPIKE Index Blog",
+    title: "SPIKE SPOT INDEX Blog",
   } as const;
 }

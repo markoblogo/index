@@ -66,7 +66,7 @@ export default async function BlogPage({ params, searchParams }: BlogPageProps) 
             <p className="text-sm font-black uppercase tracking-[0.26em] text-[var(--spike-accent)]">
               {labels.blog}
             </p>
-            <h1 className="mt-4 max-w-5xl text-5xl font-black uppercase leading-[0.92] tracking-normal text-white sm:text-6xl lg:text-7xl">
+            <h1 className="mt-4 max-w-5xl text-4xl font-black uppercase leading-[0.94] tracking-normal text-white sm:text-5xl lg:text-6xl">
               {labels.title}
             </h1>
             <p className="mt-5 max-w-3xl text-base font-semibold leading-7 text-white/70 sm:text-lg">

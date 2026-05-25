@@ -60,7 +60,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           <h1
             className={
               isSpike
-                ? "mt-4 text-[clamp(2.4rem,7vw,4rem)] font-black uppercase leading-[0.9] tracking-normal text-[#f8f8f2]"
+                ? "mt-4 text-[clamp(2rem,5.9vw,3.35rem)] font-black uppercase leading-[0.94] tracking-normal text-[#f8f8f2]"
                 : "mt-3 text-3xl font-black uppercase leading-tight tracking-normal text-black"
             }
           >
@@ -257,7 +257,7 @@ const spikeLoginCopy: Record<Locale, LoginCopy> = {
   en: {
     adminCredentials: "Admin: admin / admin",
     back: "Back to public site",
-    brand: "SPIKE Spot Commodity Index Ukraine",
+    brand: "SPIKE SPOT INDEX",
     demoTitle: "Spike access preview",
     email: "Email",
     emailPlaceholder: "admin",
@@ -268,12 +268,12 @@ const spikeLoginCopy: Record<Locale, LoginCopy> = {
     respondentCredentials: "Respondent: respondent / respondent",
     shortCredentials: "Short aliases: admin/admin or respondent/respondent",
     submit: "Sign in",
-    title: "Sign in to Spike Index",
+    title: "Sign in to SPIKE SPOT INDEX",
   },
   uk: {
     adminCredentials: "Адміністратор: admin / admin",
     back: "Назад до публічного сайту",
-    brand: "SPIKE Spot Commodity Index Ukraine",
+    brand: "SPIKE SPOT INDEX",
     demoTitle: "Попередній доступ Spike",
     email: "Email",
     emailPlaceholder: "admin",
@@ -284,7 +284,7 @@ const spikeLoginCopy: Record<Locale, LoginCopy> = {
     respondentCredentials: "Респондент: respondent / respondent",
     shortCredentials: "Швидкий вхід: admin/admin або respondent/respondent",
     submit: "Увійти",
-    title: "Вхід до Spike Index",
+    title: "Вхід до SPIKE SPOT INDEX",
   },
 };
 

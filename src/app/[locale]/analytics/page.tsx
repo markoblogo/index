@@ -632,17 +632,17 @@ function getAnalyticsCopy(locale: Locale) {
         row[0] === "UGA member" ? ["Spike partner", row[1], row[2], row[3]] : row,
       ),
       accessText:
-        "Аналітична панель доступна як preview для SPIKE Spot Commodity Index Ukraine. Розширена історія, API-доступ і комерційні аналітичні зрізи можуть бути оформлені як окремі рівні доступу після запуску.",
+        "Аналітична панель доступна як preview для SPIKE SPOT INDEX. Розширена історія, API-доступ і комерційні аналітичні зрізи можуть бути оформлені як окремі рівні доступу після запуску.",
       heroBody:
         "Порівнюйте динаміку спотових позицій, аналізуйте експортні та переробні базиси, відстежуйте волатильність і переглядайте сценарії для українських аграрних цін Spike Brokers.",
-      heroTitle: "Аналітика SPIKE Spot Commodity Index Ukraine",
+      heroTitle: "Аналітика SPIKE SPOT INDEX",
       scenarioBody:
         "Аналітична preview-модель будує можливі траєкторії індексів на основі історичної динаміки, короткострокового імпульсу та волатильності окремих позицій. Результат є сценарним діапазоном, а не гарантією майбутніх цін.",
       spreadDescription:
         "Відносні спреди показують, як експортні та переробні позиції рухаються одна відносно одної.",
       spreadTitle: "Спреди та премії між позиціями",
       trendDescription:
-        "30-денна історія для опублікованих позицій SPIKE Spot Commodity Index Ukraine у режимі аналітичного preview.",
+        "30-денна історія для опублікованих позицій SPIKE SPOT INDEX у режимі аналітичного preview.",
       trendTitle: "Динаміка індексів за позиціями",
     };
   }
@@ -752,17 +752,17 @@ function getAnalyticsCopy(locale: Locale) {
       row[0] === "UGA member" ? ["Spike partner", row[1], row[2], row[3]] : row,
     ),
     accessText:
-      "The analytics dashboard is available as a preview for SPIKE Spot Commodity Index Ukraine. Extended history, API access and commercial analytics views can be introduced as separate access levels after launch.",
+      "The analytics dashboard is available as a preview for SPIKE SPOT INDEX. Extended history, API access and commercial analytics views can be introduced as separate access levels after launch.",
     heroBody:
       "Compare spot-position dynamics, review export and processing bases, track volatility and explore analytical scenarios for Spike Brokers Ukrainian agricultural prices.",
-    heroTitle: "SPIKE Spot Commodity Index Ukraine analytics",
+    heroTitle: "SPIKE SPOT INDEX analytics",
     scenarioBody:
       "An analytical preview model projects possible index paths using historical index movement, short-term momentum and position-specific volatility. The output is a scenario range, not a guarantee of future prices.",
     spreadDescription:
       "Relative spreads help show how export and processing positions move against each other.",
     spreadTitle: "Position spreads and premiums",
     trendDescription:
-      "30-day analytics preview history for published SPIKE Spot Commodity Index Ukraine positions.",
+      "30-day analytics preview history for published SPIKE SPOT INDEX positions.",
     trendTitle: "Index dynamics by position",
   };
 }

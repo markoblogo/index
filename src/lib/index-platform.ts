@@ -320,7 +320,7 @@ export const INDEX_CONFIGS: Record<IndexTenantId, IndexConfig> = {
   },
   "spike-ua": {
     id: "spike-ua",
-    name: "SPIKE Spot Commodity Index Ukraine",
+    name: "SPIKE SPOT INDEX",
     legalName: { uk: "Spike Brokers", en: "Spike Brokers" },
     publicSiteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "https://spike-ua.cr0pto.com",
     brandUrl: "https://spike.broker/en/",
@@ -337,16 +337,16 @@ export const INDEX_CONFIGS: Record<IndexTenantId, IndexConfig> = {
     theme: { dataAttribute: "spike" },
     home: {
       subtitle: {
-        uk: "Щоденні спотові індекси Spike Brokers для експортних і переробних базисів України.",
-        en: "Daily Spike Brokers spot indices for Ukrainian export and processing bases.",
+        uk: "Спотовий бенчмарк цін для українського аграрного ринку.",
+        en: "Spot price benchmark for the Ukrainian agricultural market.",
       },
       trustStrip: {
         uk: "Дані партнерів Spike Brokers · медіанна валідація · +/-2% фільтр викидів · мінімум 5 респондентів · фіксація після публікації",
         en: "Spike Brokers partner data · median validation · +/-2% outlier filter · minimum 5 respondents · locked publication",
       },
       heroTitle: {
-        uk: "SPIKE Spot Commodity Index Ukraine",
-        en: "SPIKE Spot Commodity Index Ukraine",
+        uk: "SPIKE SPOT INDEX",
+        en: "SPIKE SPOT INDEX",
       },
       editorialLine: {
         uk: "/ CPT Одеса · експорт і переробка",
