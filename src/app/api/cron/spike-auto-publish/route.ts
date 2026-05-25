@@ -4,6 +4,7 @@ import {
   formatDateKyiv,
   isKyivAutoPublishHour,
 } from "@/lib/auto-publish";
+import { importMn7rMonitorRespondentPrices } from "@/lib/mn7r-monitor-import";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +33,26 @@ export async function GET(request: Request) {
   }
 
   const date = url.searchParams.get("date") ?? formatDateKyiv();
+  const shouldImportMonitor = url.searchParams.get("import") !== "0";
+  let monitorImport:
+    | Awaited<ReturnType<typeof importMn7rMonitorRespondentPrices>>
+    | null = null;
+  let monitorImportError: string | null = null;
+
+  if (shouldImportMonitor) {
+    try {
+      monitorImport = await importMn7rMonitorRespondentPrices(date);
+    } catch (error) {
+      monitorImportError =
+        error instanceof Error ? error.message : "Unknown MN7R import error";
+    }
+  }
+
   const result = await autoPublishSpikeDailyIndices(date);
 
-  return NextResponse.json(result);
+  return NextResponse.json({
+    ...result,
+    monitorImport,
+    monitorImportError,
+  });
 }
