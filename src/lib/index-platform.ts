@@ -413,6 +413,7 @@ export const INDEX_CONFIGS: Record<IndexTenantId, IndexConfig> = {
       { id: "spike-partner-6", legalName: "Spike Brokers Partner 6" },
       { id: "spike-partner-7", legalName: "Spike Brokers Partner 7" },
       { id: "spike-partner-8", legalName: "Spike Brokers Partner 8" },
+      { id: "MN7R_MONITOR", legalName: "MN7R Monitor" },
     ],
     commodities: spikeCommodities,
   },

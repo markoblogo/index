@@ -252,6 +252,7 @@ model PriceSubmission {
   source            SubmissionSource
   status            SubmissionStatus   @default(draft)
   priceUsdPerMt     Decimal            @db.Decimal(12, 2)
+  metadata          Json?
   submittedAt       DateTime?
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt

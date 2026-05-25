@@ -223,6 +223,10 @@ Environment notes:
 - `DEMO_AUTH_SECRET` signs the preview session cookie.
 - `RESEND_API_KEY` enables respondent survey email delivery through Resend. Do not commit the real key.
 - `RESPONDENT_EMAIL_CRON_SECRET` / `CRON_SECRET` protect the scheduled email endpoint.
+- `MN7R_API_URL` points to MN7R Monitor for protected daily BID/OFFER exports.
+- `MN7R_INDEX_EXPORT_TOKEN` is sent as the Bearer token for MN7R Monitor export requests.
+- `MN7R_INDEX_RESPONDENT_CODE` identifies the monitor import respondent, currently `MN7R_MONITOR`.
+- `MN7R_IMPORT_CRON_SECRET` / `CRON_SECRET` protect the scheduled MN7R import endpoint.
 
 ## Routes
 
@@ -260,6 +264,7 @@ Embeds:
 Public API:
 
 - `GET /api/health`
+- `GET /api/cron/mn7r-monitor-prices`
 - `GET /api/cron/respondent-emails`
 - `GET /api/public/latest`
 - `GET /api/public/history`
