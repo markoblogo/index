@@ -10,6 +10,8 @@ const connectionString =
 const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 const activeIndex = getActiveIndexConfig();
+const seedDemoHistory = shouldSeedDemoFeature("SEED_DEMO_HISTORY");
+const seedDemoAdminPassword = shouldSeedDemoFeature("SEED_DEMO_ADMIN_PASSWORD");
 
 const BASE_DATE =
   activeIndex.id === "spike-ua"
@@ -356,7 +358,7 @@ async function main() {
           active: true,
           name: admin.name,
           role: "admin",
-          temporaryPassword: "admin",
+          temporaryPassword: getAdminTemporaryPassword(),
           passwordSetupStatus: "temporary",
           lastGeneratedAt: new Date(),
         },
@@ -366,7 +368,7 @@ async function main() {
           name: admin.name,
           passwordSetupStatus: "temporary",
           role: "admin",
-          temporaryPassword: "admin",
+          temporaryPassword: getAdminTemporaryPassword(),
           lastGeneratedAt: new Date(),
         },
       }),
@@ -425,101 +427,103 @@ async function main() {
     ),
   );
 
-  for (let dayOffset = 13; dayOffset >= 0; dayOffset -= 1) {
-    const tradeDate = dateDaysBefore(dayOffset);
+  if (seedDemoHistory) {
+    for (let dayOffset = 13; dayOffset >= 0; dayOffset -= 1) {
+      const tradeDate = dateDaysBefore(dayOffset);
 
-    for (const commodity of commodityRecords) {
-      const commoditySeed = commodities.find(({ code }) => code === commodity.code);
+      for (const commodity of commodityRecords) {
+        const commoditySeed = commodities.find(({ code }) => code === commodity.code);
 
-      if (!commoditySeed) {
-        continue;
-      }
+        if (!commoditySeed) {
+          continue;
+        }
 
-      const basisConfig =
-        commoditySeed.group === "processing"
-          ? activeIndex.deliveryBases[1] ?? activeIndex.deliveryBases[0]
-          : activeIndex.deliveryBases[0];
-      const deliveryBasis = deliveryBasisByCode.get(basisConfig.code);
-      const basket = basketByBasisCode.get(basisConfig.code);
+        const basisConfig =
+          commoditySeed.group === "processing"
+            ? activeIndex.deliveryBases[1] ?? activeIndex.deliveryBases[0]
+            : activeIndex.deliveryBases[0];
+        const deliveryBasis = deliveryBasisByCode.get(basisConfig.code);
+        const basket = basketByBasisCode.get(basisConfig.code);
 
-      if (!deliveryBasis || !basket) {
-        throw new Error(`Missing seed basket for ${basisConfig.code}`);
-      }
+        if (!deliveryBasis || !basket) {
+          throw new Error(`Missing seed basket for ${basisConfig.code}`);
+        }
 
-      const basePrice = commoditySeed.basePrice - dayOffset * 0.65;
-      const submissions = await Promise.all(
-        respondentRecords.map((respondent, respondentIndex) => {
-          const price = roundMoney(basePrice + respondentIndex * 0.3 - 1.05);
+        const basePrice = commoditySeed.basePrice - dayOffset * 0.65;
+        const submissions = await Promise.all(
+          respondentRecords.map((respondent, respondentIndex) => {
+            const price = roundMoney(basePrice + respondentIndex * 0.3 - 1.05);
 
-          return prisma.priceSubmission.upsert({
-            where: {
-              tradeDate_commodityId_deliveryBasisId_respondentId_source: {
+            return prisma.priceSubmission.upsert({
+              where: {
+                tradeDate_commodityId_deliveryBasisId_respondentId_source: {
+                  tradeDate,
+                  commodityId: commodity.id,
+                  deliveryBasisId: deliveryBasis.id,
+                  respondentId: respondent.id,
+                  source: "respondent",
+                },
+              },
+              update: {
+                priceUsdPerMt: new Prisma.Decimal(price),
+                status: "verified",
+                submittedAt: noonUtc(tradeDate),
+              },
+              create: {
                 tradeDate,
                 commodityId: commodity.id,
                 deliveryBasisId: deliveryBasis.id,
                 respondentId: respondent.id,
+                submittedById: adminUser.id,
                 source: "respondent",
+                status: "verified",
+                priceUsdPerMt: new Prisma.Decimal(price),
+                submittedAt: noonUtc(tradeDate),
+              },
+            });
+          }),
+        );
+
+        if (activeIndex.features.externalIndicative) {
+          await prisma.externalIndicative.upsert({
+            where: {
+              tradeDate_commodityId_deliveryBasisId_source: {
+                tradeDate,
+                commodityId: commodity.id,
+                deliveryBasisId: deliveryBasis.id,
+                source: "spike",
               },
             },
             update: {
-              priceUsdPerMt: new Prisma.Decimal(price),
-              status: "verified",
-              submittedAt: noonUtc(tradeDate),
+              priceUsdPerMt: new Prisma.Decimal(roundMoney(basePrice + 0.4)),
+              status: "submitted",
+              receivedAt: noonUtc(tradeDate),
+              metadata: { provider: "Spike Brokers", basis: deliveryBasis.name },
             },
             create: {
               tradeDate,
               commodityId: commodity.id,
               deliveryBasisId: deliveryBasis.id,
-              respondentId: respondent.id,
-              submittedById: adminUser.id,
-              source: "respondent",
-              status: "verified",
-              priceUsdPerMt: new Prisma.Decimal(price),
-              submittedAt: noonUtc(tradeDate),
+              source: "spike",
+              status: "submitted",
+              priceUsdPerMt: new Prisma.Decimal(roundMoney(basePrice + 0.4)),
+              receivedAt: noonUtc(tradeDate),
+              metadata: { provider: "Spike Brokers", basis: deliveryBasis.name },
             },
           });
-        }),
-      );
+        }
 
-      if (activeIndex.features.externalIndicative) {
-        await prisma.externalIndicative.upsert({
-          where: {
-            tradeDate_commodityId_deliveryBasisId_source: {
-              tradeDate,
-              commodityId: commodity.id,
-              deliveryBasisId: deliveryBasis.id,
-              source: "spike",
-            },
-          },
-          update: {
-            priceUsdPerMt: new Prisma.Decimal(roundMoney(basePrice + 0.4)),
-            status: "submitted",
-            receivedAt: noonUtc(tradeDate),
-            metadata: { provider: "Spike Brokers", basis: deliveryBasis.name },
-          },
-          create: {
-            tradeDate,
+        if (dayOffset >= 1 && dayOffset <= 7) {
+          await seedPublishedIndex({
+            adminUserId: adminUser.id,
+            basketId: basket.id,
+            basketWeight: basket.weight,
             commodityId: commodity.id,
             deliveryBasisId: deliveryBasis.id,
-            source: "spike",
-            status: "submitted",
-            priceUsdPerMt: new Prisma.Decimal(roundMoney(basePrice + 0.4)),
-            receivedAt: noonUtc(tradeDate),
-            metadata: { provider: "Spike Brokers", basis: deliveryBasis.name },
-          },
-        });
-      }
-
-      if (dayOffset >= 1 && dayOffset <= 7) {
-        await seedPublishedIndex({
-          adminUserId: adminUser.id,
-          basketId: basket.id,
-          basketWeight: basket.weight,
-          commodityId: commodity.id,
-          deliveryBasisId: deliveryBasis.id,
-          submissions,
-          tradeDate,
-        });
+            submissions,
+            tradeDate,
+          });
+        }
       }
     }
   }
@@ -559,14 +563,17 @@ async function main() {
       actorRole: "admin",
       action: "seed.completed",
       entityType: "database",
-      summary: `Seeded ${activeIndex.name} demo data.`,
+      summary: `Seeded ${activeIndex.name} ${seedDemoHistory ? "demo" : "production"} data.`,
       beforeJson: Prisma.JsonNull,
       afterJson: {
         commodities: commodityRecords.length,
         respondents: respondentRecords.length,
-        daysOfSubmissions: 14,
-        daysOfSpikeIndicatives: activeIndex.features.externalIndicative ? 14 : 0,
-        daysOfPublishedIndices: 7,
+        daysOfSubmissions: seedDemoHistory ? 14 : 0,
+        daysOfSpikeIndicatives:
+          seedDemoHistory && activeIndex.features.externalIndicative ? 14 : 0,
+        daysOfPublishedIndices: seedDemoHistory ? 7 : 0,
+        seedDemoAdminPassword,
+        seedDemoHistory,
       },
     },
   });
@@ -798,6 +805,24 @@ function computePublishedChange(currentValue: number, previousValue: number) {
   const changePct = Math.round((changeAbs / previousValue) * 10000) / 100;
 
   return { changeAbs, changePct };
+}
+
+function shouldSeedDemoFeature(name: string) {
+  const value = process.env[name];
+
+  if (value === "1" || value === "true") {
+    return true;
+  }
+
+  if (value === "0" || value === "false") {
+    return false;
+  }
+
+  return process.env.UGA_INDEX_RUNTIME_MODE !== "production";
+}
+
+function getAdminTemporaryPassword() {
+  return seedDemoAdminPassword ? "admin" : null;
 }
 
 main()

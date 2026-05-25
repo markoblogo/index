@@ -354,6 +354,18 @@ Seed the Spike tenant:
 INDEX_TENANT=spike-ua NEXT_PUBLIC_INDEX_TENANT=spike-ua npm run db:seed
 ```
 
+Seed the Spike tenant for production without demo price history or the `admin`
+temporary password:
+
+```bash
+UGA_INDEX_RUNTIME_MODE=production \
+SEED_DEMO_HISTORY=0 \
+SEED_DEMO_ADMIN_PASSWORD=0 \
+INDEX_TENANT=spike-ua \
+NEXT_PUBLIC_INDEX_TENANT=spike-ua \
+npm run db:seed
+```
+
 Production-style migration flow after migrations are committed:
 
 ```bash
@@ -369,12 +381,21 @@ Current UGA production database:
 - `npm run db:seed` has been run successfully against the Neon database.
 - Vercel has been redeployed with `UGA_INDEX_RUNTIME_MODE=production`.
 
+Current Spike production database:
+
+- Supabase project `spike-ua-index` has been provisioned in `ABV_Creative`.
+- Project ref: `meupvomzqqxwpuworyhc`.
+- Region: `eu-central-1`.
+- Production still requires `DATABASE_URL` to be set in the Vercel
+  `spike-ua-index` project before real MN7R imports, publication, admin invites
+  and analytics persistence can work.
+
 Do not commit the production connection string. Use Vercel Environment Variables or a local untracked `.env` file for operational commands.
 
 The seed is tenant-aware:
 
 - UGA seed creates CPT UA Black Sea basis, commodities, respondent directory contacts, login accounts, notification settings, respondent submissions, external benchmark indicatives and published index values.
-- Spike seed creates CPT Odesa export and CPT parity Odesa processing positions, partner respondents, preview users, mock submissions and published index values.
+- Spike seed creates CPT Odesa export and CPT parity Odesa processing positions, partner respondents and preview users. Demo submissions and published values are seeded only when `SEED_DEMO_HISTORY` is enabled. The demo `admin` temporary password is seeded only when `SEED_DEMO_ADMIN_PASSWORD` is enabled.
 
 More detail:
 
