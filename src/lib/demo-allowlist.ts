@@ -5,6 +5,10 @@ import {
   getRespondentDirectory,
   getRespondentDirectoryData,
 } from "@/lib/respondent-directory";
+import {
+  ensureSpikeAdminUsers,
+  isSpikeAdminEmail,
+} from "@/lib/spike-admin-access";
 
 export type DemoAllowlistRole = "admin" | "respondent";
 
@@ -210,7 +214,17 @@ export async function authenticateAllowlistedUser({
   const normalizedPassword = password.trim();
 
   if (hasDatabaseUrl()) {
+    const isSpike = getActiveIndexConfig().id === "spike-ua";
+
+    if (isSpike) {
+      await ensureSpikeAdminUsers();
+    }
+
     if (normalizedLogin === "admin" && normalizedPassword === "admin") {
+      if (isSpike) {
+        return null;
+      }
+
       return authenticateDatabaseUser(getDatabaseAdminEmail(), normalizedPassword);
     }
 
@@ -254,6 +268,7 @@ function getDatabaseAdminEmail() {
 }
 
 async function authenticateDatabaseUser(login: string, password: string) {
+  const activeIndex = getActiveIndexConfig();
   const user = await db.user.findFirst({
     include: {
       respondent: {
@@ -270,6 +285,14 @@ async function authenticateDatabaseUser(login: string, password: string) {
   });
 
   if (!user) {
+    return null;
+  }
+
+  if (
+    activeIndex.id === "spike-ua" &&
+    user.role === "admin" &&
+    !isSpikeAdminEmail(user.email)
+  ) {
     return null;
   }
 

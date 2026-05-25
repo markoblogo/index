@@ -326,34 +326,56 @@ async function main() {
     ),
   );
 
-  const adminUser = await prisma.user.upsert({
-    where: {
-      email:
-        activeIndex.id === "uga-ua"
-          ? "admin@uga.ua"
-          : `admin@${activeIndex.id}.demo`,
-    },
-    update: {
-      name: "Demo Admin",
-      role: "admin",
-      active: true,
-      temporaryPassword: "admin",
-      passwordSetupStatus: "temporary",
-      lastGeneratedAt: new Date(),
-    },
-    create: {
-      email:
-        activeIndex.id === "uga-ua"
-          ? "admin@uga.ua"
-          : `admin@${activeIndex.id}.demo`,
-      name: "Demo Admin",
-      role: "admin",
-      active: true,
-      temporaryPassword: "admin",
-      passwordSetupStatus: "temporary",
-      lastGeneratedAt: new Date(),
-    },
-  });
+  const adminUsers =
+    activeIndex.id === "spike-ua"
+      ? [
+          {
+            email: "a.biletskiy@gmail.com",
+            name: "ABV - Anton Biletskiy",
+          },
+          {
+            email: "an@spike.broker",
+            name: "AN - Arina Nimanikhina",
+          },
+          {
+            email: "os@spike.broker",
+            name: "OS - Oleksandr Solovey",
+          },
+        ]
+      : [
+          {
+            email: "admin@uga.ua",
+            name: "Demo Admin",
+          },
+        ];
+  const [adminUser] = await Promise.all(
+    adminUsers.map((admin) =>
+      prisma.user.upsert({
+        where: { email: admin.email },
+        update: {
+          active: true,
+          name: admin.name,
+          role: "admin",
+          temporaryPassword: "admin",
+          passwordSetupStatus: "temporary",
+          lastGeneratedAt: new Date(),
+        },
+        create: {
+          active: true,
+          email: admin.email,
+          name: admin.name,
+          passwordSetupStatus: "temporary",
+          role: "admin",
+          temporaryPassword: "admin",
+          lastGeneratedAt: new Date(),
+        },
+      }),
+    ),
+  );
+
+  if (!adminUser) {
+    throw new Error("Admin user was not seeded.");
+  }
 
   await prisma.user.upsert({
     where: { email: `member@${activeIndex.id}.demo` },

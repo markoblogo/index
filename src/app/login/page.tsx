@@ -255,7 +255,7 @@ const ugaLoginCopy: Record<
 
 const spikeLoginCopy: Record<Locale, LoginCopy> = {
   en: {
-    adminCredentials: "Admin: admin / admin",
+    adminCredentials: "Admins: use your assigned email and temporary password",
     back: "Back to public site",
     brand: "SPIKE SPOT INDEX",
     demoTitle: "Spike access preview",
@@ -263,15 +263,15 @@ const spikeLoginCopy: Record<Locale, LoginCopy> = {
     emailPlaceholder: "admin",
     error: "Invalid Spike credentials.",
     helper:
-      "Use Spike preview credentials to open administrator or respondent-partner workflows.",
+      "Administrators sign in with their email and password. Respondent survey access remains in demo mode for now.",
     password: "Password",
     respondentCredentials: "Respondent: respondent / respondent",
-    shortCredentials: "Short aliases: admin/admin or respondent/respondent",
+    shortCredentials: "Respondent demo alias: respondent/respondent",
     submit: "Sign in",
     title: "Sign in to SPIKE SPOT INDEX",
   },
   uk: {
-    adminCredentials: "Адміністратор: admin / admin",
+    adminCredentials: "Адміністратори: вхід через призначений email і тимчасовий пароль",
     back: "Назад до публічного сайту",
     brand: "SPIKE SPOT INDEX",
     demoTitle: "Попередній доступ Spike",
@@ -279,10 +279,10 @@ const spikeLoginCopy: Record<Locale, LoginCopy> = {
     emailPlaceholder: "admin",
     error: "Невірні дані Spike для входу.",
     helper:
-      "Використайте облікові дані попереднього доступу Spike для перегляду сценарію адміністратора або партнера-респондента.",
+      "Адміністратори входять через email і пароль. Вхід до анкети респондента поки залишається в демо-режимі.",
     password: "Пароль",
     respondentCredentials: "Респондент: respondent / respondent",
-    shortCredentials: "Швидкий вхід: admin/admin або respondent/respondent",
+    shortCredentials: "Демо-вхід респондента: respondent/respondent",
     submit: "Увійти",
     title: "Вхід до SPIKE SPOT INDEX",
   },

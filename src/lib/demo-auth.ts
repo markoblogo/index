@@ -4,6 +4,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { db, hasDatabaseUrl } from "@/lib/db";
+import { getActiveIndexConfig } from "@/lib/index-platform";
 
 export const DEMO_SESSION_COOKIE = "uga_demo_session";
 
@@ -70,11 +71,25 @@ export async function requireDemoRole(role: DemoRole) {
     redirect(getRoleHome(user.role));
   }
 
+  if (
+    role === "admin" &&
+    hasDatabaseUrl() &&
+    user.passwordSetupStatus !== "active"
+  ) {
+    redirect(
+      `/setup-password?next=${encodeURIComponent(getRoleHome(role))}`,
+    );
+  }
+
   return user;
 }
 
 async function getOpenDemoAccessUser(role: DemoRole): Promise<DemoUser | null> {
   if (process.env.UGA_INDEX_OPEN_DEMO_ACCESS !== "enabled") {
+    return null;
+  }
+
+  if (getActiveIndexConfig().id === "spike-ua" && role === "admin") {
     return null;
   }
 
