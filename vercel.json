@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/mn7r-monitor-prices",
       "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/cron/spike-auto-publish",
+      "schedule": "0 16,17 * * *"
     }
   ]
 }
