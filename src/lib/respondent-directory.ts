@@ -702,13 +702,31 @@ export async function regenerateRespondentTemporaryPasswordData(
     return;
   }
 
-  await db.respondentAuthAccount.update({
-    where: { respondentId },
-    data: {
-      lastGeneratedAt: new Date(),
-      passwordSetupStatus: "temporary",
-      temporaryPassword: generateTemporaryPassword(respondentId),
-    },
+  const temporaryPassword = generateTemporaryPassword(respondentId);
+  const generatedAt = new Date();
+
+  await db.$transaction(async (tx) => {
+    const auth = await tx.respondentAuthAccount.update({
+      where: { respondentId },
+      data: {
+        lastGeneratedAt: generatedAt,
+        passwordHash: null,
+        passwordSetAt: null,
+        passwordSetupStatus: "temporary",
+        temporaryPassword,
+      },
+    });
+
+    await tx.user.updateMany({
+      where: { OR: [{ respondentId }, { email: auth.loginEmail }] },
+      data: {
+        lastGeneratedAt: generatedAt,
+        passwordHash: null,
+        passwordSetAt: null,
+        passwordSetupStatus: "temporary",
+        temporaryPassword,
+      },
+    });
   });
 }
 

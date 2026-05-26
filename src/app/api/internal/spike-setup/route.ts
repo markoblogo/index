@@ -44,7 +44,10 @@ export async function POST(request: Request) {
   const url = new URL(request.url);
   const shouldDebug = url.searchParams.get("debug") === "1";
   const cleanupDate = url.searchParams.get("cleanupNonMonitorDate");
+  const forceTemporary = url.searchParams.get("forceTemporary") === "1";
   const shouldSendOnboarding = url.searchParams.get("sendOnboarding") === "1";
+  const shouldSendTelegramOnboarding =
+    url.searchParams.get("sendTelegramOnboarding") === "1";
   const shouldExposeTemporaryPassword =
     url.searchParams.get("exposeTemporaryPassword") === "1";
 
@@ -59,6 +62,7 @@ export async function POST(request: Request) {
     where: { respondentId: fopSolovey.id },
   });
   const shouldSetTemporary =
+    forceTemporary ||
     !existingAuth ||
     existingAuth.passwordSetupStatus !== "active" ||
     !existingAuth.passwordHash;
@@ -141,6 +145,7 @@ export async function POST(request: Request) {
           ? {
               lastGeneratedAt: new Date(),
               passwordHash: null,
+              passwordSetAt: null,
               passwordSetupStatus: "temporary" as const,
               temporaryPassword: activeTemporaryPassword,
             }
@@ -167,7 +172,9 @@ export async function POST(request: Request) {
         role: "respondent",
         ...(shouldSetTemporary
           ? {
+              lastGeneratedAt: new Date(),
               passwordHash: null,
+              passwordSetAt: null,
               passwordSetupStatus: "temporary" as const,
               temporaryPassword: activeTemporaryPassword,
             }
@@ -203,6 +210,12 @@ export async function POST(request: Request) {
     onboardingSent = true;
   }
 
+  let telegramOnboardingSent = false;
+  if (shouldSendTelegramOnboarding && activeTemporaryPassword) {
+    await sendOnboardingTelegram(activeTemporaryPassword);
+    telegramOnboardingSent = true;
+  }
+
   return NextResponse.json({
     cleanup: cleanupDate ? await cleanupNonMonitorSubmissions(cleanupDate) : undefined,
     debug: shouldDebug ? await getDebugSnapshot() : undefined,
@@ -214,6 +227,7 @@ export async function POST(request: Request) {
       ? activeTemporaryPassword
       : undefined,
     temporaryPasswordGenerated: shouldSetTemporary,
+    telegramOnboardingSent,
   });
 }
 
@@ -333,6 +347,77 @@ async function sendOnboardingEmail(temporaryPassword: string) {
   if (!response.ok) {
     throw new Error(
       `Resend onboarding failed: ${response.status} ${await response.text()}`,
+    );
+  }
+}
+
+async function sendOnboardingTelegram(temporaryPassword: string) {
+  const token = process.env.SPIKE_TELEGRAM_BOT_TOKEN;
+
+  if (!token) {
+    throw new Error("SPIKE_TELEGRAM_BOT_TOKEN is not configured.");
+  }
+
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
+    "https://spike-ua.cr0pto.com";
+  const text = [
+    "Доступ до SPIKE SPOT INDEX оновлено.",
+    "",
+    "Ваш попередній пароль скинуто. Для входу використайте новий тимчасовий пароль, після входу система попросить встановити власний постійний пароль двічі.",
+    "",
+    `Логін: ${fopSolovey.email}`,
+    `Тимчасовий пароль: ${temporaryPassword}`,
+    "",
+    `Сторінка входу: ${siteUrl}/login`,
+    "",
+    "Після встановлення власного пароля надалі входьте саме з ним.",
+  ].join("\n");
+
+  const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    body: JSON.stringify({
+      chat_id: fopSolovey.telegramChatId,
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: "Відкрити вхід",
+              url: `${siteUrl}/login`,
+            },
+          ],
+        ],
+      },
+      text,
+    }),
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+  });
+  const payload = (await response.json().catch(() => ({}))) as {
+    description?: string;
+    ok?: boolean;
+    result?: { message_id?: number };
+  };
+  const status = response.ok && payload.ok ? "sent" : "failed";
+
+  await db.respondentEmailDelivery.create({
+    data: {
+      email: `telegram:${fopSolovey.telegramChatId}`,
+      error: status === "failed" ? payload.description ?? response.statusText : null,
+      providerId: payload.result?.message_id
+        ? String(payload.result.message_id)
+        : null,
+      respondentId: fopSolovey.id,
+      status,
+      subject: "Telegram respondent re-onboarding",
+      trigger: "telegram_manual_reonboarding",
+    },
+  });
+
+  if (status === "failed") {
+    throw new Error(
+      `Telegram onboarding failed: ${response.status} ${
+        payload.description ?? response.statusText
+      }`,
     );
   }
 }
