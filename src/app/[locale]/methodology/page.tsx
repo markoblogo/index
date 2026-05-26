@@ -10,7 +10,7 @@ export default async function MethodologyPage({
   const dict = getDictionary(locale);
 
   if (SITE_CONFIG.tenantId === "spike-ua") {
-    return <SpikeMethodologyPage dict={dict} />;
+    return <SpikeMethodologyPage dict={dict} locale={locale} />;
   }
 
   return (
@@ -169,9 +169,16 @@ export default async function MethodologyPage({
 
 function SpikeMethodologyPage({
   dict,
+  locale,
 }: {
   dict: ReturnType<typeof getDictionary>;
+  locale: Locale;
 }) {
+  const methodologyPdfPath =
+    locale === "uk"
+      ? "/files/spike-index-methodology-uk.pdf"
+      : "/files/spike-index-methodology-en.pdf";
+
   return (
     <main className="spike-static-page overflow-hidden bg-[#050505] text-[#f8f8f2]">
       <section className="border-b border-white/10 [background:var(--spike-hero-bg)]">
@@ -272,15 +279,15 @@ function SpikeMethodologyPage({
           </div>
           <div className="flex flex-wrap gap-3">
             <a
-              className="inline-flex rounded-full bg-[var(--spike-accent)] px-5 py-2.5 text-sm font-black text-[#050505] transition hover:bg-white"
+              className="inline-flex rounded-full bg-[var(--spike-accent)] px-5 py-2.5 text-sm font-black !text-[#050505] transition hover:bg-white hover:!text-[#050505]"
               download
-              href={SITE_CONFIG.methodologyPdfPath}
+              href={methodologyPdfPath}
             >
               {dict.methodology.pdfDownload}
             </a>
             <a
-              className="inline-flex rounded-full border border-white/22 bg-[#f8f8f2] px-5 py-2.5 text-sm font-black text-[#050505] transition hover:bg-white"
-              href={SITE_CONFIG.methodologyPdfPath}
+              className="inline-flex rounded-full border border-white/22 bg-[#f8f8f2] px-5 py-2.5 text-sm font-black !text-[#050505] transition hover:bg-white hover:!text-[#050505]"
+              href={methodologyPdfPath}
               rel="noopener noreferrer"
               target="_blank"
             >
