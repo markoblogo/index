@@ -12,7 +12,8 @@ export async function setPermanentPasswordForUser(
     return;
   }
 
-  const passwordHash = hashPassword(password);
+  const normalizedPassword = password.trim();
+  const passwordHash = hashPassword(normalizedPassword);
   const now = new Date();
 
   if (user.role === "respondent" && user.respondentId) {
@@ -50,8 +51,21 @@ export async function setPermanentPasswordForUser(
   }
 
   await db.$transaction(async (tx) => {
+    const dbUser = await tx.user.findFirst({
+      where: {
+        active: true,
+        role: user.role,
+        OR: [{ id: user.userId }, { email: user.email }],
+      },
+      select: { id: true, email: true },
+    });
+
+    if (!dbUser) {
+      throw new Error(`Password setup user was not found for ${user.email}.`);
+    }
+
     await tx.user.update({
-      where: { id: user.userId },
+      where: { id: dbUser.id },
       data: {
         passwordHash,
         passwordSetAt: now,
@@ -61,12 +75,12 @@ export async function setPermanentPasswordForUser(
     });
     await tx.auditLog.create({
       data: {
-        actorUserId: user.userId,
+        actorUserId: dbUser.id,
         actorRole: user.role,
         action: "auth.password_setup_completed",
         entityType: "User",
-        entityId: user.userId,
-        summary: `Password setup completed for ${user.email}.`,
+        entityId: dbUser.id,
+        summary: `Password setup completed for ${dbUser.email}.`,
       },
     });
   });
