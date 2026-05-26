@@ -73,7 +73,7 @@ function getMockPublicIndexSnapshot(): PublicIndexSnapshot {
     const published = latestPublished.get(commodity.id);
 
     if (liveValue) {
-      const previous = published?.value ?? commodity.latest;
+      const previous = published?.value ?? commodity.latest ?? liveValue.value;
       const latest = liveValue.value;
 
       return {
@@ -105,7 +105,7 @@ function getMockPublicIndexSnapshot(): PublicIndexSnapshot {
       const published = latestPublished.get(quote.commodityId);
 
       if (liveValue) {
-        const previous = published?.value ?? quote.price;
+        const previous = published?.value ?? quote.price ?? liveValue.value;
 
         return {
           ...quote,
@@ -335,7 +335,8 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
       const previous =
         previousPublishedByCommodityId.get(commodity.id)?.valueUsdPerMt.toNumber() ??
         publishedIndex?.valueUsdPerMt.toNumber() ??
-        mockCommodity.latest;
+        mockCommodity.latest ??
+        liveValue.value;
       const latest = liveValue.value;
 
       return {
@@ -354,6 +355,9 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
         ...mockCommodity,
         code: commodity.code,
         name: { uk: commodity.nameUk, en: commodity.nameEn },
+        latest: null,
+        absoluteChange: 0,
+        percentChange: 0,
       };
     }
 
@@ -382,7 +386,8 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
       const previous =
         previousPublishedByCommodityId.get(commodity.id)?.valueUsdPerMt.toNumber() ??
         publishedIndex?.valueUsdPerMt.toNumber() ??
-        mockCommodity.latest;
+        mockCommodity.latest ??
+        liveValue.value;
 
       return {
         id: `${mockCommodity.id}-${today}`,
@@ -400,7 +405,15 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
       const quote = latestQuotes.find(
         (item) => item.commodityId === mockCommodity.id,
       )!;
-      return { ...quote, respondents: activeRespondentCount };
+      return {
+        ...quote,
+        basis: basisConfig.name,
+        date: today,
+        price: null,
+        absoluteChange: 0,
+        percentChange: 0,
+        respondents: activeRespondentCount,
+      };
     }
 
     return {

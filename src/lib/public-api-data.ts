@@ -24,14 +24,15 @@ export type PublicLatestItem = {
   commodityNameEn: string;
   date: string;
   basis: string;
-  valueUsdPerMt: number;
+  valueUsdPerMt: number | null;
   changeAbs: number;
   changePct: number;
   respondents: number;
 };
 
-export type PublicHistoryItem = PublicLatestItem & {
+export type PublicHistoryItem = Omit<PublicLatestItem, "valueUsdPerMt"> & {
   status: "published";
+  valueUsdPerMt: number;
 };
 
 const activeIndex = getActiveIndexConfig();
@@ -204,20 +205,16 @@ async function getDatabaseLatestData(): Promise<PublicLatestItem[]> {
         },
       });
 
-      if (!published) {
-        return null;
-      }
-
       return {
         commodityId: mockCommodityIdByCode[commodity.code] ?? "corn",
         commodityCode: commodity.code,
         commodityNameUk: commodity.nameUk,
         commodityNameEn: commodity.nameEn,
-        date: published.tradeDate.toISOString().slice(0, 10),
+        date: published?.tradeDate.toISOString().slice(0, 10) ?? todayKyivDate(),
         basis: basisConfig.name,
-        valueUsdPerMt: published.valueUsdPerMt.toNumber(),
-        changeAbs: published.changeAbsUsdPerMt?.toNumber() ?? 0,
-        changePct: published.changePct?.toNumber() ?? 0,
+        valueUsdPerMt: published?.valueUsdPerMt.toNumber() ?? null,
+        changeAbs: published?.changeAbsUsdPerMt?.toNumber() ?? 0,
+        changePct: published?.changePct?.toNumber() ?? 0,
         respondents: activeRespondentCount,
       };
     }),
@@ -301,4 +298,13 @@ function roundOne(value: number) {
 
 function roundTwo(value: number) {
   return Math.round(value * 100) / 100;
+}
+
+function todayKyivDate() {
+  return new Intl.DateTimeFormat("en-CA", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "Europe/Kyiv",
+    year: "numeric",
+  }).format(new Date());
 }

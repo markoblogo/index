@@ -90,7 +90,7 @@ export default async function EmbedCardsPage({
                 </div>
                 <div className={compact ? "text-right" : "mt-3"}>
                   <p className="text-2xl font-semibold tracking-tight text-uga-dark">
-                    ${commodity.latest.toFixed(1)}
+                    {commodity.latest === null ? "-" : `$${commodity.latest.toFixed(1)}`}
                   </p>
                   <p
                     className={

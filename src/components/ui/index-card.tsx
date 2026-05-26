@@ -36,7 +36,7 @@ export function IndexCard({
       <div className="mt-5 flex items-end justify-between gap-4">
         <div>
           <p className="text-4xl font-black tracking-tight text-black">
-            ${commodity.latest}
+            {commodity.latest === null ? "-" : `$${commodity.latest}`}
           </p>
           <p className="mt-1 text-xs font-black uppercase tracking-[0.16em] text-black/45">
             {SITE_CONFIG.currency}/{SITE_CONFIG.unit}

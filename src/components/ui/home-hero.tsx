@@ -281,11 +281,14 @@ function SpikeCommodityCard({
   locale: Locale;
   officialLabel: string;
 }) {
-  const isPositive = commodity.absoluteChange > 0;
-  const isFlat = commodity.absoluteChange === 0;
+  const hasValue = commodity.latest !== null;
+  const isPositive = hasValue && commodity.absoluteChange > 0;
+  const isFlat = hasValue && commodity.absoluteChange === 0;
   const trend = isFlat ? "flat" : isPositive ? "up" : "down";
   const changePrefix = isPositive ? "+" : "";
-  const changeLabel = isFlat
+  const changeLabel = !hasValue
+    ? "-"
+    : isFlat
     ? "0"
     : `${changePrefix}${commodity.absoluteChange}`;
   const isProcessing = commodity.group === "processing";
@@ -339,7 +342,7 @@ function SpikeCommodityCard({
         />
         <div
           className={`mt-5 inline-flex rounded-full px-4 py-2 text-sm font-black ${
-            isFlat
+            !hasValue || isFlat
               ? "bg-white/12 text-[#f8f8f2]/70"
               : isPositive
                 ? isProcessing
@@ -348,8 +351,10 @@ function SpikeCommodityCard({
                 : "bg-red-500 text-[#050505]"
           }`}
         >
-          <span aria-hidden="true">{isFlat ? "→" : isPositive ? "↗" : "↘"}</span>
-          <span className="ml-2">{changeLabel}$</span>
+          <span aria-hidden="true">
+            {!hasValue || isFlat ? "→" : isPositive ? "↗" : "↘"}
+          </span>
+          <span className="ml-2">{hasValue ? `${changeLabel}$` : changeLabel}</span>
         </div>
       </div>
 

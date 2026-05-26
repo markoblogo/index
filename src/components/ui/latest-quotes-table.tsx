@@ -49,6 +49,7 @@ export function LatestQuotesTable({
           <tbody className="divide-y divide-black">
             {quotes.map((quote) => {
               const commodity = commodityById.get(quote.commodityId);
+              const hasValue = quote.price !== null;
               const isPositive = quote.absoluteChange >= 0;
 
               if (!commodity) {
@@ -74,14 +75,22 @@ export function LatestQuotesTable({
                   </td>
                   <td
                     className={
-                      isPositive
+                      !hasValue
+                        ? "px-5 py-4 font-semibold text-black/40"
+                        : isPositive
                         ? "px-5 py-4 font-semibold text-uga-green"
                         : "px-5 py-4 font-semibold text-black"
                     }
                   >
-                    {isPositive ? "+" : ""}
-                    {quote.absoluteChange} USD · {isPositive ? "+" : ""}
-                    {quote.percentChange}%
+                    {hasValue ? (
+                      <>
+                        {isPositive ? "+" : ""}
+                        {quote.absoluteChange} USD · {isPositive ? "+" : ""}
+                        {quote.percentChange}%
+                      </>
+                    ) : (
+                      "-"
+                    )}
                   </td>
                   <td className="px-5 py-4 text-black/60">
                     {quote.respondents}

@@ -40,7 +40,7 @@ export default async function EmbedChartPage({
           </div>
           <div className="text-right">
             <p className="text-2xl font-semibold tracking-tight text-uga-dark">
-              ${commodity.latest.toFixed(1)}
+              {commodity.latest === null ? "-" : `$${commodity.latest.toFixed(1)}`}
             </p>
             <p
               className={

@@ -161,19 +161,23 @@ export function resolveCommodityConfig(
 
 function getAdditionalAliases(commodity: IndexCommodityConfig) {
   if (commodity.dbCode === "WHT_115") {
-    return ["WHEAT_115", "WHEAT_11_5", "WHT_11_5"];
+    return ["WHEAT_115", "WHEAT_11_5", "WHT_11_5", "WHTEX"];
   }
 
   if (commodity.dbCode === "FEED_WHT") {
-    return ["FEED_WHEAT"];
+    return ["FEED_WHEAT", "FWTEX"];
   }
 
   if (commodity.dbCode === "GMO_SOY") {
-    return ["GMO_SOYBEAN", "SOY_GMO"];
+    return ["GMO_SOYBEAN", "SOY_GMO", "SOYEX", "SOYPR"];
   }
 
   if (commodity.dbCode === "SUNFLOWER") {
-    return ["SUN", "SUNFLOWER_SEED"];
+    return ["SUN", "SUNFLOWER_SEED", "SUNPR"];
+  }
+
+  if (commodity.dbCode === "CORN") {
+    return ["CRNEX"];
   }
 
   return [];

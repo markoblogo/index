@@ -11,7 +11,7 @@ export type Commodity = {
   code: string;
   marker: string;
   name: Record<Locale, string>;
-  latest: number;
+  latest: number | null;
   absoluteChange: number;
   percentChange: number;
   sparkline: number[];
@@ -33,7 +33,7 @@ export type LatestQuote = {
   commodityId: CommodityId;
   date: string;
   basis: string;
-  price: number;
+  price: number | null;
   absoluteChange: number;
   percentChange: number;
   respondents: number;

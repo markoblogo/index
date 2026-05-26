@@ -428,16 +428,17 @@ function buildDemoAnalyticsHistory(activeRespondentCount: number): AnalyticsPoin
 
   const rows = commodities.flatMap((commodity) => {
     const profile = getCommodityProfile(commodity.id);
+    const latest = commodity.latest ?? 0;
     const values = dates.map((_, index) => {
       const reverseIndex = 359 - index;
       const wave =
         Math.sin(index * 0.72 + profile.phase) * profile.volatility +
         Math.cos(index * 0.31 + profile.phase) * profile.volatility * 0.45;
 
-      return roundOne(commodity.latest - reverseIndex * profile.drift + wave);
+      return roundOne(latest - reverseIndex * profile.drift + wave);
     });
 
-    values[values.length - 1] = commodity.latest;
+    values[values.length - 1] = latest;
 
     return values.map((value, index) => {
       const previousValue = values[index - 1] ?? value;

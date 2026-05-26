@@ -47,7 +47,7 @@ export function CurrencyToggle({ label }: CurrencyToggleProps) {
 }
 
 type CurrencyValueProps = {
-  officialUsd: number;
+  officialUsd: number | null;
   fxRates: FxRates;
   locale: Locale;
   officialLabel: string;
@@ -64,6 +64,15 @@ export function CurrencyValue({
   compact = false,
 }: CurrencyValueProps) {
   const [currency] = useDisplayCurrency();
+
+  if (officialUsd === null) {
+    return (
+      <span className={className} data-currency={currency}>
+        -
+      </span>
+    );
+  }
+
   const value = convertUsdPerTonne(officialUsd, currency, fxRates);
   const formattedValue = formatCurrencyValue(value, currency, locale);
   const officialValue = `${formatCurrencyValue(officialUsd, "USD", locale)} USD/t`;
