@@ -214,7 +214,21 @@ function normalizeMonitorPriceToUsd(
 }
 
 function normalizeCurrency(currency: string | null) {
-  return (currency || "USD").trim().toUpperCase();
+  const normalized = (currency || "USD").trim().toUpperCase();
+
+  if (normalized.includes("UAH") || normalized.includes("₴")) {
+    return "UAH";
+  }
+
+  if (normalized.includes("EUR") || normalized.includes("€")) {
+    return "EUR";
+  }
+
+  if (normalized.includes("USD") || normalized.includes("$")) {
+    return "USD";
+  }
+
+  return normalized;
 }
 
 function buildFxMeta(fxRates: FxRates) {

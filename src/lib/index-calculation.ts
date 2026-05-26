@@ -74,13 +74,15 @@ export function calculateIndexValue({
   }
 
   const median = calculateMedian(validSubmissions.map(({ price }) => price));
+  const shouldApplyOutlierFilter =
+    validSubmissions.length >= MINIMUM_PUBLISHABLE_COUNT;
   const included: ValidSubmission[] = [];
   const excluded: ExcludedPrice[] = [];
 
   for (const submission of validSubmissions) {
     const deviationRatio = Math.abs(submission.price - median) / median;
 
-    if (deviationRatio > OUTLIER_THRESHOLD) {
+    if (shouldApplyOutlierFilter && deviationRatio > OUTLIER_THRESHOLD) {
       excluded.push({
         respondentId: submission.respondentId,
         price: submission.price,

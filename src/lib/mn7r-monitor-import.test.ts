@@ -140,7 +140,7 @@ describe("importMn7rMonitorRespondentPrices", () => {
       positions: [
         {
           indexCode: "CRNEX",
-          currency: "UAH",
+          currency: "UAH INCL. VAT",
           avgBid: null,
           avgOffer: 35000,
           monitorPrice: 35000,

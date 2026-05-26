@@ -49,7 +49,7 @@ export default async function AdminCalculatePage({
   const data = await getAdminCalculationData(date);
   const publishableCount = data.commodities.filter(
     (commodity) =>
-      commodity.status === "publishable" &&
+      isPublishableForTenant(commodity) &&
       !commodity.published?.locked &&
       !data.lockedForPublication,
   ).length;
@@ -224,6 +224,21 @@ export default async function AdminCalculatePage({
         </div>
       </form>
     </section>
+  );
+}
+
+function isPublishableForTenant(commodity: AdminCalculationCommodity) {
+  if (commodity.value === null) {
+    return false;
+  }
+
+  if (commodity.status === "publishable") {
+    return true;
+  }
+
+  return (
+    SITE_CONFIG.tenantId === "spike-ua" &&
+    commodity.status === "insufficient_data"
   );
 }
 

@@ -470,7 +470,7 @@ async function publishDatabaseCalculations(
 
   for (const calculation of calculations) {
     if (
-      calculation.status !== "verified" ||
+      !isPublishableDatabaseCalculation(calculation.status) ||
       calculation.publicValueUsdPerMt === null
     ) {
       continue;
@@ -591,6 +591,14 @@ async function publishDatabaseCalculations(
       },
     });
   }
+}
+
+function isPublishableDatabaseCalculation(status: string) {
+  if (status === "verified") {
+    return true;
+  }
+
+  return getActiveIndexTenant().id === "spike-ua" && status === "insufficient_data";
 }
 
 async function getDatabaseCalculationContext(date: string) {

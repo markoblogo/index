@@ -110,6 +110,23 @@ describe("calculateIndexValue", () => {
     expect(result.value).toBe(211.5);
   });
 
+  it("does not run the outlier filter on an insufficient respondent sample", () => {
+    const result = calculateIndexValue({
+      ...baseInput,
+      submissions: [
+        submission("mn7r", 791.1),
+        submission("fop-solovey", 740),
+      ],
+    });
+
+    expect(result.status).toBe("insufficient_data");
+    expect(result.rawCount).toBe(2);
+    expect(result.usedCount).toBe(2);
+    expect(result.median).toBe(765.55);
+    expect(result.value).toBe(765.6);
+    expect(result.excluded).toEqual([]);
+  });
+
   it("returns no_data when there are no valid prices", () => {
     const result = calculateIndexValue({
       ...baseInput,
