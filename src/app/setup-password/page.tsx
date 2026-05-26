@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getCurrentDemoUser, getSafeRoleRedirect } from "@/lib/demo-auth";
+import {
+  createDemoSessionCookieValue,
+  getCurrentDemoUser,
+  getSafeRoleRedirect,
+} from "@/lib/demo-auth";
 import { SITE_CONFIG } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
@@ -62,6 +66,11 @@ export default async function SetupPasswordPage({
         ) : null}
         <form action="/api/setup-password" className="mt-5 grid gap-4" method="post">
           <input name="next" type="hidden" value={next ?? ""} />
+          <input
+            name="setupSession"
+            type="hidden"
+            value={createDemoSessionCookieValue(user)}
+          />
           <label
             className={
               isSpike

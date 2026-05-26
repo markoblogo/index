@@ -11,8 +11,10 @@ import { setPermanentPasswordForUser } from "@/lib/password-setup";
 
 export async function POST(request: NextRequest) {
   const formData = await request.formData();
+  const setupSession = String(formData.get("setupSession") ?? "");
   const user =
     parseDemoSessionCookieValue(request.cookies.get(DEMO_SESSION_COOKIE)?.value) ??
+    parseDemoSessionCookieValue(setupSession) ??
     (await getCurrentDemoUser());
 
   if (!user) {
