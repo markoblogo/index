@@ -270,6 +270,10 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
       ? await db.priceSubmission.findMany({
           where: {
             deliveryBasisId: { in: basisIds },
+            respondent: {
+              active: true,
+              status: "active",
+            },
             status: { in: ["submitted", "verified", "published"] },
             tradeDate: todayTradeDate,
           },
@@ -319,6 +323,9 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
   const publishedByCommodityId = new Map(
     published
       .filter((index): index is NonNullable<typeof index> => Boolean(index))
+      .filter(
+        (index) => index.tradeDate.toISOString().slice(0, 10) === latestPublishedDate,
+      )
       .map((index) => [index.commodityId, index]),
   );
   const latestPublishedDate =

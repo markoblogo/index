@@ -211,6 +211,7 @@ async function getDatabaseLatestData(): Promise<PublicLatestItem[]> {
           basketId: basket.id,
           locked: true,
           status: "published",
+          ...(latestPublished ? { tradeDate: latestPublished.tradeDate } : {}),
         },
       });
 

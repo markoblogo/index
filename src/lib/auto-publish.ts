@@ -118,6 +118,10 @@ export async function autoPublishSpikeDailyIndices(
   const submissions = await db.priceSubmission.findMany({
     where: {
       deliveryBasisId: { in: basisIds },
+      respondent: {
+        active: true,
+        status: "active",
+      },
       status: { in: ["submitted", "verified", "published"] },
       tradeDate,
     },
@@ -146,6 +150,22 @@ export async function autoPublishSpikeDailyIndices(
   }
 
   let published = 0;
+
+  if (options.replaceExisting) {
+    await db.publishedIndex.updateMany({
+      data: {
+        locked: false,
+        status: "draft",
+      },
+      where: {
+        basketId: { in: basketIds },
+        deliveryBasisId: { in: basisIds },
+        locked: true,
+        status: "published",
+        tradeDate,
+      },
+    });
+  }
 
   for (const commodity of dbCommodities) {
     const planItem = plan.get(commodity.id);
