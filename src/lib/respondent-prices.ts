@@ -33,7 +33,7 @@ export async function upsertRespondentPrice(input: RespondentPriceInput) {
   const commodityConfig = resolveCommodityConfig(input.indexCode, activeIndex.commodities);
 
   if (!commodityConfig) {
-    throw new Error(`Unknown index code: ${input.indexCode}`);
+    return null;
   }
 
   const [commodity, basis, respondent] = await Promise.all([
@@ -252,7 +252,7 @@ function getAdditionalAliases(commodity: IndexCommodityConfig) {
   }
 
   if (commodity.dbCode === "SUNFLOWER") {
-    return ["SUN", "SUNFLOWER_SEED", "SUNPR"];
+    return ["SUN", "SUNEX", "SUNFLOWER_SEED", "SUNPR"];
   }
 
   if (commodity.dbCode === "CORN") {

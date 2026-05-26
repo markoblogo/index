@@ -139,7 +139,7 @@ describe("importMn7rMonitorRespondentPrices", () => {
       methodologyVersion: "mn7r-monitor-index-v1",
       positions: [
         {
-          indexCode: "SUNPR",
+          indexCode: "CRNEX",
           currency: "UAH",
           avgBid: null,
           avgOffer: 35000,
@@ -150,7 +150,7 @@ describe("importMn7rMonitorRespondentPrices", () => {
           quality: "ok",
         },
         {
-          indexCode: "SOYPR",
+          indexCode: "WHTEX",
           currency: "EUR",
           avgBid: null,
           avgOffer: 1105,
@@ -185,7 +185,7 @@ describe("importMn7rMonitorRespondentPrices", () => {
     expect(calls).toHaveLength(2);
     expect(calls[0]).toMatchObject({
       currency: "USD",
-      indexCode: "SUNPR",
+      indexCode: "CRNEX",
       price: 833.33,
     });
     expect(calls[0].meta).toMatchObject({
@@ -194,9 +194,51 @@ describe("importMn7rMonitorRespondentPrices", () => {
     });
     expect(calls[1]).toMatchObject({
       currency: "USD",
-      indexCode: "SOYPR",
+      indexCode: "WHTEX",
       price: 1183.93,
     });
+  });
+
+  it("skips unsupported MN7R positions without failing the import", async () => {
+    process.env.MN7R_API_URL = "http://monitor.test";
+    process.env.MN7R_INDEX_EXPORT_TOKEN = "token";
+
+    const payload: Mn7rPayload = {
+      source: "MN7R_MONITOR",
+      respondentCode: "MN7R_MONITOR",
+      asOfDate: "2026-05-26",
+      generatedAt: "2026-05-26T13:00:00.000Z",
+      timezone: "Europe/Kyiv",
+      methodologyVersion: "mn7r-monitor-index-v1",
+      positions: [
+        {
+          indexCode: "RAPPR",
+          currency: "EUR",
+          avgBid: null,
+          avgOffer: 536,
+          monitorPrice: 536,
+          bidCount: 0,
+          offerCount: 1,
+          sampleCount: 1,
+          quality: "ok",
+        },
+      ],
+    };
+    const calls: RespondentPriceInput[] = [];
+
+    const result = await importMn7rMonitorRespondentPrices("2026-05-26", {
+      fetchImpl: async () =>
+        new Response(JSON.stringify(payload), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      upsertRespondentPriceImpl: async (input) => {
+        calls.push(input);
+      },
+    });
+
+    expect(result).toEqual({ date: "2026-05-26", imported: 0, skipped: 1 });
+    expect(calls).toEqual([]);
   });
 });
 

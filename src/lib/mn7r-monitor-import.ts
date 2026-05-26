@@ -2,6 +2,7 @@ import type { RespondentPriceInput } from "@/lib/respondent-prices";
 import { getFxRates, type FxRates } from "@/lib/fx-rates";
 import {
   clearRespondentPrice,
+  resolveCommodityConfig,
   type ClearRespondentPriceInput,
   upsertRespondentPrice,
 } from "@/lib/respondent-prices";
@@ -93,6 +94,11 @@ export async function importMn7rMonitorRespondentPrices(
   let skipped = 0;
 
   for (const position of payload.positions) {
+    if (!resolveCommodityConfig(position.indexCode)) {
+      skipped += 1;
+      continue;
+    }
+
     if (position.monitorPrice == null || position.quality === "no_data") {
       await clear({
         date: payload.asOfDate,
@@ -152,7 +158,11 @@ async function getFxRatesForPayload(
   getFxRatesImpl: GetFxRatesLike = getFxRates,
 ) {
   const hasNonUsdPrice = payload.positions.some((position) => {
-    if (position.monitorPrice == null || position.quality === "no_data") {
+    if (
+      !resolveCommodityConfig(position.indexCode) ||
+      position.monitorPrice == null ||
+      position.quality === "no_data"
+    ) {
       return false;
     }
 
