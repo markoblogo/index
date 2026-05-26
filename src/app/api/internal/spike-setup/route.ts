@@ -50,6 +50,9 @@ export async function POST(request: Request) {
     url.searchParams.get("sendTelegramOnboarding") === "1";
   const shouldExposeTemporaryPassword =
     url.searchParams.get("exposeTemporaryPassword") === "1";
+  const submitDraftsDate = url.searchParams.get("submitDraftsDate");
+  const submitDraftsRespondentId =
+    url.searchParams.get("submitDraftsRespondentId") ?? fopSolovey.id;
 
   await db.$executeRawUnsafe(`
     ALTER TABLE "RespondentContact"
@@ -223,6 +226,12 @@ export async function POST(request: Request) {
     onboardingSent,
     respondentId: fopSolovey.id,
     schemaReady: true,
+    submittedDrafts: submitDraftsDate
+      ? await submitRespondentDrafts({
+          date: submitDraftsDate,
+          respondentId: submitDraftsRespondentId,
+        })
+      : undefined,
     temporaryPassword: shouldExposeTemporaryPassword
       ? activeTemporaryPassword
       : undefined,
@@ -248,6 +257,33 @@ async function cleanupNonMonitorSubmissions(date: string) {
   });
 
   return { skippedReason: null, updated: result.count };
+}
+
+async function submitRespondentDrafts({
+  date,
+  respondentId,
+}: {
+  date: string;
+  respondentId: string;
+}) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return { skippedReason: "invalid_date", updated: 0 };
+  }
+
+  const result = await db.priceSubmission.updateMany({
+    data: {
+      status: "submitted",
+      submittedAt: new Date(),
+    },
+    where: {
+      respondentId,
+      source: "respondent",
+      status: "draft",
+      tradeDate: new Date(`${date}T00:00:00.000Z`),
+    },
+  });
+
+  return { respondentId, skippedReason: null, updated: result.count };
 }
 
 async function getDebugSnapshot() {
@@ -276,7 +312,6 @@ async function getDebugSnapshot() {
       },
       orderBy: [{ commodity: { sortOrder: "asc" } }, { respondentId: "asc" }],
       where: {
-        status: { in: ["submitted", "verified", "published"] },
         tradeDate,
       },
     }),

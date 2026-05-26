@@ -672,7 +672,7 @@ function getDatabaseSubmissionStatus(
   }
 
   if (submission.source === "respondent") {
-    return "submitted_by_respondent";
+    return submission.status === "draft" ? "saved" : "submitted_by_respondent";
   }
 
   if (submission.source === "admin") {
