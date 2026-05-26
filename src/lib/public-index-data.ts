@@ -16,6 +16,7 @@ import {
   getActiveRespondentCount,
   getActiveRespondentCountData,
 } from "@/lib/respondent-directory";
+import { buildRealSparkline } from "@/lib/sparkline";
 import {
   getConfiguredDeliveryBasisCodes,
   getDeliveryBasketCodeForCommodityCode,
@@ -265,6 +266,39 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
       });
     }),
   );
+  const recentPublished = await Promise.all(
+    dbCommodities.map((commodity) => {
+      const basis = basisByCommodityId.get(commodity.id);
+      const basket = basketByCommodityId.get(commodity.id);
+
+      if (!basis || !basket) {
+        return Promise.resolve([]);
+      }
+
+      return db.publishedIndex.findMany({
+        orderBy: { tradeDate: "desc" },
+        take: 14,
+        where: {
+          basketId: basket.id,
+          commodityId: commodity.id,
+          deliveryBasisId: basis.id,
+          locked: true,
+          status: "published",
+        },
+      });
+    }),
+  );
+  const recentPublishedByCommodityId = new Map(
+    dbCommodities.map((commodity, index) => [
+      commodity.id,
+      recentPublished[index]
+        .map((publishedIndex) => ({
+          date: publishedIndex.tradeDate.toISOString().slice(0, 10),
+          value: publishedIndex.valueUsdPerMt.toNumber(),
+        }))
+        .reverse(),
+    ]),
+  );
   const liveSubmissions =
     activeIndex.id === "spike-ua" && basisIds.length > 0
       ? await db.priceSubmission.findMany({
@@ -320,6 +354,12 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
         })
       : [],
   );
+  const latestPublishedDate =
+    published
+      .filter((index): index is NonNullable<typeof index> => Boolean(index))
+      .map((index) => index.tradeDate.toISOString().slice(0, 10))
+      .sort()
+      .at(-1) ?? today;
   const publishedByCommodityId = new Map(
     published
       .filter((index): index is NonNullable<typeof index> => Boolean(index))
@@ -328,12 +368,6 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
       )
       .map((index) => [index.commodityId, index]),
   );
-  const latestPublishedDate =
-    published
-      .filter((index): index is NonNullable<typeof index> => Boolean(index))
-      .map((index) => index.tradeDate.toISOString().slice(0, 10))
-      .sort()
-      .at(-1) ?? today;
   const previousPublishedByCommodityId = new Map(
     previousPublished
       .filter((index): index is NonNullable<typeof index> => Boolean(index))
@@ -343,6 +377,7 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
     const mockCommodity = mockCommodityByCode.get(commodity.code) ?? commodities[0];
     const liveValue = liveValues.get(commodity.id);
     const publishedIndex = publishedByCommodityId.get(commodity.id);
+    const history = recentPublishedByCommodityId.get(commodity.id) ?? [];
 
     if (liveValue) {
       const previous =
@@ -359,7 +394,10 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
         latest,
         absoluteChange: roundToOneDecimal(latest - previous),
         percentChange: calculatePercentChange(latest, previous),
-        sparkline: [...mockCommodity.sparkline.slice(1), latest],
+        sparkline: buildRealSparkline(history, latest, {
+          date: today,
+          value: latest,
+        }),
       };
     }
 
@@ -371,6 +409,7 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
         latest: null,
         absoluteChange: 0,
         percentChange: 0,
+        sparkline: buildRealSparkline(history, null),
       };
     }
 
@@ -383,7 +422,7 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
       latest,
       absoluteChange: publishedIndex.changeAbsUsdPerMt?.toNumber() ?? 0,
       percentChange: publishedIndex.changePct?.toNumber() ?? 0,
-      sparkline: [...mockCommodity.sparkline.slice(1), latest],
+      sparkline: buildRealSparkline(history, latest),
     };
   });
   const publicLatestQuotes = dbCommodities.map((commodity) => {
