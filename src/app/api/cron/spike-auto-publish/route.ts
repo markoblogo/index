@@ -34,6 +34,7 @@ export async function GET(request: Request) {
 
   const date = url.searchParams.get("date") ?? formatDateKyiv();
   const shouldImportMonitor = url.searchParams.get("import") !== "0";
+  const replaceExisting = url.searchParams.get("replace") === "1";
   let monitorImport:
     | Awaited<ReturnType<typeof importMn7rMonitorRespondentPrices>>
     | null = null;
@@ -48,7 +49,7 @@ export async function GET(request: Request) {
     }
   }
 
-  const result = await autoPublishSpikeDailyIndices(date);
+  const result = await autoPublishSpikeDailyIndices(date, { replaceExisting });
 
   return NextResponse.json({
     ...result,

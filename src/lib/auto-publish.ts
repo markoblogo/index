@@ -36,6 +36,7 @@ export type AutoPublishResult = {
 
 export async function autoPublishSpikeDailyIndices(
   date = formatDateKyiv(),
+  options: { replaceExisting?: boolean } = {},
 ): Promise<AutoPublishResult> {
   const activeIndex = getActiveIndexConfig();
 
@@ -110,7 +111,7 @@ export async function autoPublishSpikeDailyIndices(
     },
   });
 
-  if (existingPublishedCount > 0) {
+  if (existingPublishedCount > 0 && !options.replaceExisting) {
     return { date, published: 0, skippedReason: "already_published" };
   }
 

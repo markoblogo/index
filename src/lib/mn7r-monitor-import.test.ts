@@ -117,6 +117,79 @@ describe("importMn7rMonitorRespondentPrices", () => {
     expect(result).toEqual({ date: "2026-05-25", imported: 0, skipped: 2 });
     expect(calls).toEqual([]);
   });
+
+  it("converts non-USD monitor prices to USD before saving", async () => {
+    process.env.MN7R_API_URL = "http://monitor.test";
+    process.env.MN7R_INDEX_EXPORT_TOKEN = "token";
+
+    const payload: Mn7rPayload = {
+      source: "MN7R_MONITOR",
+      respondentCode: "MN7R_MONITOR",
+      asOfDate: "2026-05-26",
+      generatedAt: "2026-05-26T13:00:00.000Z",
+      timezone: "Europe/Kyiv",
+      methodologyVersion: "mn7r-monitor-index-v1",
+      positions: [
+        {
+          indexCode: "SUNPR",
+          currency: "UAH",
+          avgBid: null,
+          avgOffer: 35000,
+          monitorPrice: 35000,
+          bidCount: 0,
+          offerCount: 1,
+          sampleCount: 1,
+          quality: "ok",
+        },
+        {
+          indexCode: "SOYPR",
+          currency: "EUR",
+          avgBid: null,
+          avgOffer: 1105,
+          monitorPrice: 1105,
+          bidCount: 0,
+          offerCount: 1,
+          sampleCount: 1,
+          quality: "thin",
+        },
+      ],
+    };
+    const calls: RespondentPriceInput[] = [];
+
+    await importMn7rMonitorRespondentPrices("2026-05-26", {
+      fetchImpl: async () =>
+        new Response(JSON.stringify(payload), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      getFxRatesImpl: async () => ({
+        eurUah: 45,
+        fetchedAt: "2026-05-26T13:00:00.000Z",
+        rateDate: "2026-05-26",
+        source: "NBU",
+        usdUah: 42,
+      }),
+      upsertRespondentPriceImpl: async (input) => {
+        calls.push(input);
+      },
+    });
+
+    expect(calls).toHaveLength(2);
+    expect(calls[0]).toMatchObject({
+      currency: "USD",
+      indexCode: "SUNPR",
+      price: 833.33,
+    });
+    expect(calls[0].meta).toMatchObject({
+      originalCurrency: "UAH",
+      originalMonitorPrice: 35000,
+    });
+    expect(calls[1]).toMatchObject({
+      currency: "USD",
+      indexCode: "SOYPR",
+      price: 1183.93,
+    });
+  });
 });
 
 describe("formatDateKyiv", () => {

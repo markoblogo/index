@@ -1,4 +1,5 @@
 import type { RespondentPriceInput } from "@/lib/respondent-prices";
+import { getFxRates, type FxRates } from "@/lib/fx-rates";
 import { upsertRespondentPrice } from "@/lib/respondent-prices";
 
 export type Mn7rPosition = {
@@ -30,6 +31,7 @@ export type Mn7rImportResult = {
 };
 
 type FetchLike = typeof fetch;
+type GetFxRatesLike = (date?: string) => Promise<FxRates>;
 type UpsertLike = (input: RespondentPriceInput) => Promise<unknown>;
 
 export function formatDateKyiv(date = new Date()) {
@@ -45,6 +47,7 @@ export async function importMn7rMonitorRespondentPrices(
   date = formatDateKyiv(),
   options: {
     fetchImpl?: FetchLike;
+    getFxRatesImpl?: GetFxRatesLike;
     upsertRespondentPriceImpl?: UpsertLike;
   } = {},
 ): Promise<Mn7rImportResult> {
@@ -75,6 +78,7 @@ export async function importMn7rMonitorRespondentPrices(
   }
 
   const payload = (await response.json()) as Mn7rPayload;
+  const fxRates = await getFxRatesForPayload(payload, options.getFxRatesImpl);
   const upsert = options.upsertRespondentPriceImpl ?? upsertRespondentPrice;
   const respondentCode =
     process.env.MN7R_INDEX_RESPONDENT_CODE ?? payload.respondentCode;
@@ -87,12 +91,19 @@ export async function importMn7rMonitorRespondentPrices(
       continue;
     }
 
+    const normalized = normalizeMonitorPriceToUsd(position, fxRates);
+
+    if (!normalized) {
+      skipped += 1;
+      continue;
+    }
+
     await upsert({
       date: payload.asOfDate,
       respondentCode,
       indexCode: position.indexCode,
-      price: position.monitorPrice,
-      currency: position.currency || "USD",
+      price: normalized.priceUsd,
+      currency: "USD",
       meta: {
         source: payload.source,
         generatedAt: payload.generatedAt,
@@ -100,6 +111,9 @@ export async function importMn7rMonitorRespondentPrices(
         avgBid: position.avgBid,
         avgOffer: position.avgOffer,
         bidCount: position.bidCount,
+        fxRates: normalized.fxMeta,
+        originalCurrency: normalized.originalCurrency,
+        originalMonitorPrice: position.monitorPrice,
         offerCount: position.offerCount,
         sampleCount: position.sampleCount,
         quality: position.quality,
@@ -109,4 +123,77 @@ export async function importMn7rMonitorRespondentPrices(
   }
 
   return { date: payload.asOfDate, imported, skipped };
+}
+
+async function getFxRatesForPayload(
+  payload: Mn7rPayload,
+  getFxRatesImpl: GetFxRatesLike = getFxRates,
+) {
+  const hasNonUsdPrice = payload.positions.some((position) => {
+    if (position.monitorPrice == null || position.quality === "no_data") {
+      return false;
+    }
+
+    return normalizeCurrency(position.currency) !== "USD";
+  });
+
+  return hasNonUsdPrice ? getFxRatesImpl(payload.asOfDate) : null;
+}
+
+function normalizeMonitorPriceToUsd(
+  position: Mn7rPosition,
+  fxRates: FxRates | null,
+) {
+  const originalCurrency = normalizeCurrency(position.currency);
+
+  if (position.monitorPrice == null) {
+    return null;
+  }
+
+  if (originalCurrency === "USD") {
+    return {
+      fxMeta: null,
+      originalCurrency,
+      priceUsd: position.monitorPrice,
+    };
+  }
+
+  if (!fxRates) {
+    return null;
+  }
+
+  if (originalCurrency === "UAH") {
+    return {
+      fxMeta: buildFxMeta(fxRates),
+      originalCurrency,
+      priceUsd: roundToTwoDecimals(position.monitorPrice / fxRates.usdUah),
+    };
+  }
+
+  if (originalCurrency === "EUR") {
+    return {
+      fxMeta: buildFxMeta(fxRates),
+      originalCurrency,
+      priceUsd: roundToTwoDecimals((position.monitorPrice * fxRates.eurUah) / fxRates.usdUah),
+    };
+  }
+
+  return null;
+}
+
+function normalizeCurrency(currency: string | null) {
+  return (currency || "USD").trim().toUpperCase();
+}
+
+function buildFxMeta(fxRates: FxRates) {
+  return {
+    eurUah: fxRates.eurUah,
+    rateDate: fxRates.rateDate,
+    source: fxRates.source,
+    usdUah: fxRates.usdUah,
+  };
+}
+
+function roundToTwoDecimals(value: number) {
+  return Math.round(value * 100) / 100;
 }
