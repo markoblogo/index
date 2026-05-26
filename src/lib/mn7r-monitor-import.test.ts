@@ -102,8 +102,12 @@ describe("importMn7rMonitorRespondentPrices", () => {
       ],
     };
     const calls: RespondentPriceInput[] = [];
+    const cleared: string[] = [];
 
     const result = await importMn7rMonitorRespondentPrices("2026-05-25", {
+      clearRespondentPriceImpl: async (input) => {
+        cleared.push(`${input.date}:${input.indexCode}:${input.reason}`);
+      },
       fetchImpl: async () =>
         new Response(JSON.stringify(payload), {
           status: 200,
@@ -116,6 +120,10 @@ describe("importMn7rMonitorRespondentPrices", () => {
 
     expect(result).toEqual({ date: "2026-05-25", imported: 0, skipped: 2 });
     expect(calls).toEqual([]);
+    expect(cleared).toEqual([
+      "2026-05-25:CORN_CPT_CHORNOMORSK:mn7r_monitor_price_null",
+      "2026-05-25:WHT_115_CPT_CHORNOMORSK:mn7r_no_data",
+    ]);
   });
 
   it("converts non-USD monitor prices to USD before saving", async () => {

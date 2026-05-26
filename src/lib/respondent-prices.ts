@@ -17,6 +17,13 @@ export type RespondentPriceInput = {
   meta?: Prisma.InputJsonValue;
 };
 
+export type ClearRespondentPriceInput = {
+  date: string;
+  respondentCode: string;
+  indexCode: string;
+  reason: string;
+};
+
 export async function upsertRespondentPrice(input: RespondentPriceInput) {
   if (!Number.isFinite(input.price) || input.price <= 0) {
     throw new Error("Respondent price must be a positive number.");
@@ -135,6 +142,78 @@ export async function upsertRespondentPrice(input: RespondentPriceInput) {
   });
 
   return saved;
+}
+
+export async function clearRespondentPrice(input: ClearRespondentPriceInput) {
+  const activeIndex = getActiveIndexConfig();
+  const commodityConfig = resolveCommodityConfig(input.indexCode, activeIndex.commodities);
+
+  if (!commodityConfig) {
+    throw new Error(`Unknown index code: ${input.indexCode}`);
+  }
+
+  const [commodity, basis] = await Promise.all([
+    db.commodity.findUnique({ where: { code: commodityConfig.dbCode } }),
+    db.deliveryBasis.findUnique({
+      where: {
+        code: getDeliveryBasisConfigForCommodityCode(commodityConfig.dbCode, activeIndex).code,
+      },
+    }),
+  ]);
+
+  if (!commodity || !basis) {
+    return null;
+  }
+
+  const tradeDate = dateToUtcDate(input.date);
+  const existing = await db.priceSubmission.findUnique({
+    where: {
+      tradeDate_commodityId_deliveryBasisId_respondentId_source: {
+        tradeDate,
+        commodityId: commodity.id,
+        deliveryBasisId: basis.id,
+        respondentId: input.respondentCode,
+        source: "respondent",
+      },
+    },
+  });
+
+  if (!existing || existing.status === "draft") {
+    return existing;
+  }
+
+  const updated = await db.priceSubmission.update({
+    data: {
+      metadata: {
+        ...(isJsonObject(existing.metadata) ? existing.metadata : {}),
+        clearedAt: new Date().toISOString(),
+        clearReason: input.reason,
+        indexCode: input.indexCode,
+        respondentCode: input.respondentCode,
+      },
+      status: "draft",
+    },
+    where: { id: existing.id },
+  });
+
+  await db.auditLog.create({
+    data: {
+      actorRole: "respondent",
+      action: "mn7r_monitor.price_submission.cleared",
+      afterJson: {
+        status: updated.status,
+      },
+      beforeJson: {
+        priceUsdPerMt: existing.priceUsdPerMt.toNumber(),
+        status: existing.status,
+      },
+      entityId: existing.id,
+      entityType: "PriceSubmission",
+      summary: `MN7R Monitor cleared ${input.indexCode} for ${input.date}: ${input.reason}.`,
+    },
+  });
+
+  return updated;
 }
 
 export function resolveCommodityConfig(

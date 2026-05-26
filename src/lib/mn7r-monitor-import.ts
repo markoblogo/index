@@ -1,6 +1,10 @@
 import type { RespondentPriceInput } from "@/lib/respondent-prices";
 import { getFxRates, type FxRates } from "@/lib/fx-rates";
-import { upsertRespondentPrice } from "@/lib/respondent-prices";
+import {
+  clearRespondentPrice,
+  type ClearRespondentPriceInput,
+  upsertRespondentPrice,
+} from "@/lib/respondent-prices";
 
 export type Mn7rPosition = {
   indexCode: string;
@@ -31,6 +35,7 @@ export type Mn7rImportResult = {
 };
 
 type FetchLike = typeof fetch;
+type ClearLike = (input: ClearRespondentPriceInput) => Promise<unknown>;
 type GetFxRatesLike = (date?: string) => Promise<FxRates>;
 type UpsertLike = (input: RespondentPriceInput) => Promise<unknown>;
 
@@ -46,6 +51,7 @@ export function formatDateKyiv(date = new Date()) {
 export async function importMn7rMonitorRespondentPrices(
   date = formatDateKyiv(),
   options: {
+    clearRespondentPriceImpl?: ClearLike;
     fetchImpl?: FetchLike;
     getFxRatesImpl?: GetFxRatesLike;
     upsertRespondentPriceImpl?: UpsertLike;
@@ -80,6 +86,7 @@ export async function importMn7rMonitorRespondentPrices(
   const payload = (await response.json()) as Mn7rPayload;
   const fxRates = await getFxRatesForPayload(payload, options.getFxRatesImpl);
   const upsert = options.upsertRespondentPriceImpl ?? upsertRespondentPrice;
+  const clear = options.clearRespondentPriceImpl ?? clearRespondentPrice;
   const respondentCode =
     process.env.MN7R_INDEX_RESPONDENT_CODE ?? payload.respondentCode;
   let imported = 0;
@@ -87,6 +94,15 @@ export async function importMn7rMonitorRespondentPrices(
 
   for (const position of payload.positions) {
     if (position.monitorPrice == null || position.quality === "no_data") {
+      await clear({
+        date: payload.asOfDate,
+        indexCode: position.indexCode,
+        reason:
+          position.quality === "no_data"
+            ? "mn7r_no_data"
+            : "mn7r_monitor_price_null",
+        respondentCode,
+      });
       skipped += 1;
       continue;
     }
@@ -94,6 +110,12 @@ export async function importMn7rMonitorRespondentPrices(
     const normalized = normalizeMonitorPriceToUsd(position, fxRates);
 
     if (!normalized) {
+      await clear({
+        date: payload.asOfDate,
+        indexCode: position.indexCode,
+        reason: `mn7r_unsupported_currency_${position.currency ?? "null"}`,
+        respondentCode,
+      });
       skipped += 1;
       continue;
     }

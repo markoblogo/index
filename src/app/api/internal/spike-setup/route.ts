@@ -43,6 +43,7 @@ export async function POST(request: Request) {
 
   const url = new URL(request.url);
   const shouldDebug = url.searchParams.get("debug") === "1";
+  const cleanupDate = url.searchParams.get("cleanupNonMonitorDate");
   const shouldSendOnboarding = url.searchParams.get("sendOnboarding") === "1";
   const shouldExposeTemporaryPassword =
     url.searchParams.get("exposeTemporaryPassword") === "1";
@@ -203,6 +204,7 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json({
+    cleanup: cleanupDate ? await cleanupNonMonitorSubmissions(cleanupDate) : undefined,
     debug: shouldDebug ? await getDebugSnapshot() : undefined,
     disabledSeedRespondents: true,
     onboardingSent,
@@ -213,6 +215,25 @@ export async function POST(request: Request) {
       : undefined,
     temporaryPasswordGenerated: shouldSetTemporary,
   });
+}
+
+async function cleanupNonMonitorSubmissions(date: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return { skippedReason: "invalid_date", updated: 0 };
+  }
+
+  const result = await db.priceSubmission.updateMany({
+    data: {
+      status: "draft",
+    },
+    where: {
+      respondentId: { not: "MN7R_MONITOR" },
+      status: { in: ["submitted", "verified", "published"] },
+      tradeDate: new Date(`${date}T00:00:00.000Z`),
+    },
+  });
+
+  return { skippedReason: null, updated: result.count };
 }
 
 async function getDebugSnapshot() {
