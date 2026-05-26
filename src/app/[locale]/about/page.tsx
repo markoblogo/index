@@ -5,6 +5,7 @@ import { getDictionary, type Locale } from "@/lib/i18n";
 import { respondents } from "@/lib/mock-data";
 
 const MN7R_RESPONDENT_ID = "MN7R_MONITOR";
+const HIDDEN_PUBLIC_RESPONDENT_IDS = new Set(["fop-solovey"]);
 
 const respondentLinks = new Map([
   [MN7R_RESPONDENT_ID, "https://mn7r.com/"],
@@ -160,9 +161,16 @@ function SpikeAboutPage({
 }: {
   dict: ReturnType<typeof getDictionary>;
 }) {
+  const publicRespondents = respondents.filter(
+    (respondent) => !HIDDEN_PUBLIC_RESPONDENT_IDS.has(respondent.id),
+  );
   const spikeRespondents = [
-    ...respondents.filter((respondent) => respondent.id === MN7R_RESPONDENT_ID),
-    ...respondents.filter((respondent) => respondent.id !== MN7R_RESPONDENT_ID),
+    ...publicRespondents.filter(
+      (respondent) => respondent.id === MN7R_RESPONDENT_ID,
+    ),
+    ...publicRespondents.filter(
+      (respondent) => respondent.id !== MN7R_RESPONDENT_ID,
+    ),
   ];
 
   return (
