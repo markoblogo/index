@@ -143,6 +143,11 @@ export default async function RespondentPage({
                   <span className="text-xs font-semibold uppercase tracking-[0.14em] text-black/45">
                     {labels.price}
                   </span>
+                  <span className="grid gap-0.5 text-[0.68rem] font-semibold leading-4 text-black/50">
+                    {labels.priceHintLines.map((line) => (
+                      <span key={line}>• {line}</span>
+                    ))}
+                  </span>
                   <input
                     className="box-border w-full min-w-0 border border-black/20 px-3 py-2.5 text-base font-semibold focus:border-uga-green focus:ring-uga-green"
                     defaultValue={commodity.price ?? ""}

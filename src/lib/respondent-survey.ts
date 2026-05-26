@@ -54,6 +54,10 @@ const labels = {
         : "Submit today’s CPT UA Black Sea price indicatives for your company. Individual submissions are used for index calculation and are not published publicly.",
     notPublished: "Not published",
     price: "Price",
+    priceHintLines: [
+      "corn, wheat, soybean $/t, excl. VAT (export)",
+      "sunflower $/t, incl. VAT (processing)",
+    ],
     publication: "Publication",
     saveDraft: "Save as draft",
     source: "Source",
@@ -83,6 +87,10 @@ const labels = {
         : "Подайте сьогоднішні цінові індикативи CPT UA Black Sea від вашої компанії. Індивідуальні значення використовуються для розрахунку індексу і не публікуються відкрито.",
     notPublished: "Не опубліковано",
     price: "Ціна",
+    priceHintLines: [
+      "corn, wheat, soybean $/t, excl. VAT (export)",
+      "sunflower $/t, incl. VAT (processing)",
+    ],
     publication: "Публікація",
     saveDraft: "Зберегти чернетку",
     source: "Джерело",
