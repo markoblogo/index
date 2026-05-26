@@ -74,9 +74,6 @@ export async function POST(request: Request) {
         id: {
           notIn: ["MN7R_MONITOR", fopSolovey.id],
         },
-        legalName: {
-          startsWith: "Spike Brokers Partner",
-        },
       },
     });
 
