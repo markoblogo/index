@@ -46,6 +46,7 @@ const labels = {
     company: "Company",
     date: "Date",
     draftSaved: "Draft saved.",
+    editSubmitted: "Return to form and edit",
     lockedSubmitted: `Submitted values are locked and already transferred to ${isSpike ? "Spike Brokers" : "UGA"}.`,
     intro:
       isSpike
@@ -63,8 +64,8 @@ const labels = {
     submit: "Submit",
     submitted: "Submitted",
     submittedLocked:
-      `Prices are fixed in this form and transferred to ${isSpike ? "Spike Brokers" : "UGA"} for processing.`,
-    submittedMessage: "Submitted values",
+      `Your data has been submitted successfully. Below is the summary that was transferred to ${isSpike ? "Spike Brokers" : "UGA"}.`,
+    submittedMessage: "Data submitted successfully",
     title: "Daily respondent survey",
     unit: "Unit",
   },
@@ -74,6 +75,7 @@ const labels = {
     company: "Компанія",
     date: "Дата",
     draftSaved: "Чернетку збережено.",
+    editSubmitted: "Повернутися до анкети та редагувати",
     lockedSubmitted: `Подані значення зафіксовані та вже передані ${isSpike ? "Spike Brokers" : "в УЗА"}.`,
     intro:
       isSpike
@@ -91,8 +93,8 @@ const labels = {
     submit: "Подати",
     submitted: "Подано",
     submittedLocked:
-      `Ціни зафіксовані у формі та передані ${isSpike ? "Spike Brokers" : "в УЗА"} для обробки.`,
-    submittedMessage: "Подані значення",
+      `Ви успішно заповнили дані. Нижче показано значення, які передані ${isSpike ? "Spike Brokers" : "в УЗА"} для обробки.`,
+    submittedMessage: "Дані успішно подано",
     title: "Щоденна форма респондента",
     unit: "Одиниця",
   },
@@ -145,12 +147,6 @@ export async function saveRespondentSurvey(formData: FormData, user: DemoUser) {
 
   if (!respondentId) {
     redirect(`/respondent?locale=${locale}&error=respondent`);
-  }
-
-  const currentData = await getRespondentSurveyData({ date, locale, respondentId });
-
-  if (currentData.status === "submitted") {
-    redirect(`/respondent?locale=${locale}&saved=locked`);
   }
 
   const entries = parsePrices(formData);

@@ -11,6 +11,7 @@ import {
 
 type RespondentPageProps = {
   searchParams: Promise<{
+    edit?: string;
     locale?: string;
     saved?: string;
   }>;
@@ -33,6 +34,9 @@ export default async function RespondentPage({
     respondentId: user.respondentId ?? "",
   });
   const isSubmitted = data.status === "submitted";
+  const isEditingSubmitted = isSubmitted && params.edit === "1";
+  const showSubmittedConfirmation = isSubmitted && !isEditingSubmitted;
+  const editHref = `/respondent?locale=${locale}&edit=1`;
   const statusLabel =
     data.status === "submitted"
       ? labels.statusSubmitted
@@ -104,72 +108,82 @@ export default async function RespondentPage({
               : labels.draftSaved}
           </div>
         ) : null}
-        {isSubmitted ? (
+        {isEditingSubmitted ? (
+          <div className="mt-5 border border-uga-green bg-uga-mist px-4 py-3 text-sm font-semibold text-uga-green">
+            {locale === "uk"
+              ? "Ви редагуєте вже подані значення. Після повторного подання система оновить ваші дані."
+              : "You are editing already submitted values. Submitting again will update your data."}
+          </div>
+        ) : showSubmittedConfirmation ? (
           <div className="mt-5 border border-black bg-white px-4 py-3 text-sm font-semibold text-uga-dark">
             {labels.submittedLocked}
           </div>
         ) : null}
       </div>
 
-      <form action={save} className="border border-black bg-white p-5">
-        <input name="date" type="hidden" value={data.date} />
-        <input name="locale" type="hidden" value={locale} />
-        <div className="grid gap-4">
-          {data.commodities.map((commodity) => (
-            <label
-              className="grid min-w-0 gap-3 border-b border-black/10 py-4 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_minmax(11rem,14rem)] sm:items-center"
-              key={commodity.id}
+      {showSubmittedConfirmation ? null : (
+        <form action={save} className="border border-black bg-white p-5">
+          <input name="date" type="hidden" value={data.date} />
+          <input name="locale" type="hidden" value={locale} />
+          <div className="grid gap-4">
+            {data.commodities.map((commodity) => (
+              <label
+                className="grid min-w-0 gap-3 border-b border-black/10 py-4 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_minmax(11rem,14rem)] sm:items-center"
+                key={commodity.id}
+              >
+                <span className="min-w-0">
+                  <span className="block text-base font-semibold text-uga-dark">
+                    {commodity.name}
+                  </span>
+                  <span className="mt-1 block text-xs font-semibold uppercase tracking-[0.14em] text-black/45">
+                    {commodity.code} · {data.basisLabel}
+                  </span>
+                </span>
+                <span className="grid min-w-0 gap-1">
+                  <span className="text-xs font-semibold uppercase tracking-[0.14em] text-black/45">
+                    {labels.price}
+                  </span>
+                  <input
+                    className="box-border w-full min-w-0 border border-black/20 px-3 py-2.5 text-base font-semibold focus:border-uga-green focus:ring-uga-green"
+                    defaultValue={commodity.price ?? ""}
+                    inputMode="decimal"
+                    name={`price:${commodity.id}`}
+                    placeholder="USD/t"
+                    type="text"
+                  />
+                </span>
+              </label>
+            ))}
+          </div>
+
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
+            <button
+              className="rounded-[3px] border border-black px-5 py-3 text-sm font-semibold text-uga-dark transition hover:border-uga-green hover:text-uga-green"
+              name="intent"
+              type="submit"
+              value="draft"
             >
-              <span className="min-w-0">
-                <span className="block text-base font-semibold text-uga-dark">
-                  {commodity.name}
-                </span>
-                <span className="mt-1 block text-xs font-semibold uppercase tracking-[0.14em] text-black/45">
-                  {commodity.code} · {data.basisLabel}
-                </span>
-              </span>
-              <span className="grid min-w-0 gap-1">
-                <span className="text-xs font-semibold uppercase tracking-[0.14em] text-black/45">
-                  {labels.price}
-                </span>
-                <input
-                  className="box-border w-full min-w-0 border border-black/20 px-3 py-2.5 text-base font-semibold focus:border-uga-green focus:ring-uga-green"
-                  defaultValue={commodity.price ?? ""}
-                  disabled={isSubmitted}
-                  inputMode="decimal"
-                  name={`price:${commodity.id}`}
-                  placeholder="USD/t"
-                  type="text"
-                />
-              </span>
-            </label>
-          ))}
-        </div>
+              {labels.saveDraft}
+            </button>
+            <button
+              className="rounded-[3px] bg-uga-green px-5 py-3 text-sm font-semibold text-white transition hover:bg-uga-dark"
+              name="intent"
+              type="submit"
+              value="submit"
+            >
+              {labels.submit}
+            </button>
+          </div>
+        </form>
+      )}
 
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
-          <button
-            className="rounded-[3px] border border-black px-5 py-3 text-sm font-semibold text-uga-dark transition hover:border-uga-green hover:text-uga-green disabled:cursor-not-allowed disabled:opacity-45"
-            disabled={isSubmitted}
-            name="intent"
-            type="submit"
-            value="draft"
-          >
-            {labels.saveDraft}
-          </button>
-          <button
-            className="rounded-[3px] bg-uga-green px-5 py-3 text-sm font-semibold text-white transition hover:bg-uga-dark disabled:cursor-not-allowed disabled:opacity-45"
-            disabled={isSubmitted}
-            name="intent"
-            type="submit"
-            value="submit"
-          >
-            {labels.submit}
-          </button>
-        </div>
-      </form>
-
-      {data.status === "submitted" ? (
-        <SubmittedValues data={data} title={labels.submittedMessage} />
+      {showSubmittedConfirmation ? (
+        <SubmittedValues
+          data={data}
+          editHref={editHref}
+          editLabel={labels.editSubmitted}
+          title={labels.submittedMessage}
+        />
       ) : null}
     </section>
   );
@@ -188,9 +202,13 @@ function InfoItem({ label, value }: { label: string; value: string }) {
 
 function SubmittedValues({
   data,
+  editHref,
+  editLabel,
   title,
 }: {
   data: RespondentSurveyData;
+  editHref: string;
+  editLabel: string;
   title: string;
 }) {
   return (
@@ -210,6 +228,14 @@ function SubmittedValues({
             </span>
           </div>
         ))}
+      </div>
+      <div className="mt-5 flex justify-end">
+        <Link
+          className="rounded-[3px] border border-black bg-uga-dark px-5 py-3 text-sm font-semibold text-white transition hover:border-uga-green hover:text-uga-green"
+          href={editHref}
+        >
+          {editLabel}
+        </Link>
       </div>
     </section>
   );
