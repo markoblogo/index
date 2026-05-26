@@ -53,6 +53,7 @@ type CurrencyValueProps = {
   officialLabel: string;
   className?: string;
   compact?: boolean;
+  maximumFractionDigits?: Partial<Record<DisplayCurrency, number>>;
 };
 
 export function CurrencyValue({
@@ -62,6 +63,7 @@ export function CurrencyValue({
   locale,
   className = "",
   compact = false,
+  maximumFractionDigits,
 }: CurrencyValueProps) {
   const [currency] = useDisplayCurrency();
 
@@ -74,8 +76,18 @@ export function CurrencyValue({
   }
 
   const value = convertUsdPerTonne(officialUsd, currency, fxRates);
-  const formattedValue = formatCurrencyValue(value, currency, locale);
-  const officialValue = `${formatCurrencyValue(officialUsd, "USD", locale)} USD/t`;
+  const formattedValue = formatCurrencyValue(
+    value,
+    currency,
+    locale,
+    maximumFractionDigits?.[currency],
+  );
+  const officialValue = `${formatCurrencyValue(
+    officialUsd,
+    "USD",
+    locale,
+    maximumFractionDigits?.USD,
+  )} USD/t`;
 
   if (currency === "USD") {
     return (
@@ -192,9 +204,11 @@ function formatCurrencyValue(
   value: number,
   currency: DisplayCurrency,
   locale: Locale,
+  maximumFractionDigits?: number,
 ) {
   return new Intl.NumberFormat(locale === "uk" ? "uk-UA" : "en-US", {
-    maximumFractionDigits: currency === "USD" ? 1 : 0,
+    maximumFractionDigits:
+      maximumFractionDigits ?? (currency === "USD" ? 1 : 0),
     minimumFractionDigits: 0,
   }).format(value);
 }

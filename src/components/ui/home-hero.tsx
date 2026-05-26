@@ -312,18 +312,18 @@ function SpikeCommodityCard({
 
   return (
     <article
-      className={`relative flex min-w-[15.5rem] flex-[1_1_0] flex-col overflow-hidden rounded-[2rem] border border-white/10 bg-[#050505] p-5 text-[#f8f8f2] transition-[flex-grow,transform,border-color] duration-500 ease-out hover:flex-[1.75_1_0] hover:-translate-y-1 sm:min-w-[17rem] lg:min-w-0 ${tone.border}`}
+      className={`relative grid min-w-[15.5rem] flex-[1_1_0] grid-rows-[8.25rem_12.5rem_4.25rem_1fr] overflow-hidden rounded-[2rem] border border-white/10 bg-[#050505] p-5 text-[#f8f8f2] transition-[flex-grow,transform,border-color] duration-500 ease-out hover:flex-[1.75_1_0] hover:-translate-y-1 sm:min-w-[17rem] lg:min-w-0 ${tone.border}`}
     >
       <div
         aria-hidden="true"
         className={`pointer-events-none absolute inset-x-0 top-0 h-36 opacity-80 ${tone.glow}`}
       />
-      <div className="relative z-10">
+      <div className="relative z-10 min-w-0">
         <p className={`text-[0.68rem] font-black uppercase tracking-[0.24em] ${tone.label}`}>
           {commodity.group === "processing" ? "Processing" : "Export"}
         </p>
         <div className="mt-5 flex items-start justify-between gap-3">
-          <h3 className="max-w-[11rem] text-2xl font-black uppercase leading-none tracking-normal text-[#f8f8f2]">
+          <h3 className="max-w-[11rem] text-[1.42rem] font-black uppercase leading-[0.98] tracking-normal text-[#f8f8f2] sm:text-2xl">
             {commodity.name[locale]}
           </h3>
           <span className={`rounded-full bg-white/10 px-2 py-1 text-[0.66rem] font-black ${tone.chip}`}>
@@ -332,11 +332,12 @@ function SpikeCommodityCard({
         </div>
       </div>
 
-      <div className="relative z-10 mt-9">
+      <div className="relative z-10 min-w-0 self-start">
         <CurrencyValue
-          className="block max-w-full overflow-hidden text-[clamp(3.6rem,7vw,6.4rem)] font-black leading-[0.84] tracking-normal text-white data-[currency=EUR]:text-[clamp(3rem,5vw,5.6rem)] data-[currency=UAH]:text-[clamp(2.15rem,3.45vw,4.05rem)] [&_.currency-unit]:text-base [&_.currency-unit]:text-white/45"
+          className="w-full max-w-full whitespace-nowrap text-[clamp(3.35rem,5.35vw,5.25rem)] font-black leading-[0.84] tracking-normal text-white data-[currency=EUR]:text-[clamp(3rem,4.35vw,4.75rem)] data-[currency=UAH]:text-[clamp(2.05rem,3.05vw,3.45rem)] [&_.currency-unit]:text-base [&_.currency-unit]:text-white/45"
           fxRates={fxRates}
           locale={locale}
+          maximumFractionDigits={{ EUR: 0, UAH: 0, USD: 0 }}
           officialLabel={officialLabel}
           officialUsd={commodity.latest}
         />
@@ -358,7 +359,7 @@ function SpikeCommodityCard({
         </div>
       </div>
 
-      <div className="relative z-10 my-7">
+      <div className="relative z-10 self-center">
         <IndexSparkline
           heightClassName="h-12"
           values={commodity.sparkline}
