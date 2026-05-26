@@ -280,6 +280,20 @@ function AddRespondentPanel() {
             <input className="admin-field" name="contactEmail" type="email" />
           </Field>
         </div>
+        <div className="mt-3 grid gap-3 lg:grid-cols-[1fr_1fr_0.55fr]">
+          <Field label="Telegram username">
+            <input className="admin-field" name="telegramUsername" placeholder="@username" />
+          </Field>
+          <Field label="Telegram chat / peer id">
+            <input className="admin-field" name="telegramChatId" />
+          </Field>
+          <Field label="Language">
+            <select className="admin-field" defaultValue="uk" name="preferredLocale">
+              <option value="uk">uk</option>
+              <option value="en">en</option>
+            </select>
+          </Field>
+        </div>
         <button className="mt-3 border border-black bg-uga-dark px-4 py-2 text-sm font-black uppercase tracking-[0.12em] text-white">
           Add respondent
         </button>
@@ -432,7 +446,7 @@ function ContactEditor({
     <div className="border border-black/15 p-3">
       <form
         action={updateContactAction}
-        className="grid gap-3 xl:grid-cols-[minmax(9rem,1fr)_minmax(8rem,0.75fr)_minmax(9rem,0.85fr)_minmax(13rem,1.15fr)_auto] xl:items-end"
+        className="grid gap-3 xl:grid-cols-[minmax(9rem,1fr)_minmax(8rem,0.75fr)_minmax(9rem,0.85fr)_minmax(13rem,1.15fr)_minmax(9rem,0.75fr)_minmax(9rem,0.75fr)_minmax(5rem,0.45fr)_auto] xl:items-end"
       >
         <input name="respondentId" type="hidden" value={respondentId} />
         <input name="contactId" type="hidden" value={contact.id} />
@@ -461,6 +475,31 @@ function ContactEditor({
             name="email"
             type="email"
           />
+        </Field>
+        <Field label="Telegram">
+          <input
+            className="admin-field"
+            defaultValue={contact.telegramUsername ? `@${contact.telegramUsername}` : ""}
+            name="telegramUsername"
+            placeholder="@username"
+          />
+        </Field>
+        <Field label="Chat ID">
+          <input
+            className="admin-field"
+            defaultValue={contact.telegramChatId}
+            name="telegramChatId"
+          />
+        </Field>
+        <Field label="Lang">
+          <select
+            className="admin-field"
+            defaultValue={contact.preferredLocale}
+            name="preferredLocale"
+          >
+            <option value="uk">uk</option>
+            <option value="en">en</option>
+          </select>
         </Field>
         <div className="flex flex-wrap items-end gap-2 xl:flex-col xl:items-start">
           <label className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.1em] text-black/55">
@@ -496,7 +535,7 @@ function AddContactForm({ respondentId }: { respondentId: string }) {
   return (
     <form action={addContactAction} className="mt-3 border border-black/25 p-3">
       <input name="respondentId" type="hidden" value={respondentId} />
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(9rem,1fr)_minmax(8rem,0.75fr)_minmax(9rem,0.85fr)_minmax(13rem,1.15fr)]">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(9rem,1fr)_minmax(8rem,0.75fr)_minmax(9rem,0.85fr)_minmax(13rem,1.15fr)_minmax(9rem,0.75fr)_minmax(9rem,0.75fr)_minmax(5rem,0.45fr)]">
         <Field label="New contact">
           <input className="admin-field" name="name" required />
         </Field>
@@ -508,6 +547,18 @@ function AddContactForm({ respondentId }: { respondentId: string }) {
         </Field>
         <Field label="Email">
           <input className="admin-field" name="email" type="email" />
+        </Field>
+        <Field label="Telegram">
+          <input className="admin-field" name="telegramUsername" placeholder="@username" />
+        </Field>
+        <Field label="Chat ID">
+          <input className="admin-field" name="telegramChatId" />
+        </Field>
+        <Field label="Lang">
+          <select className="admin-field" defaultValue="uk" name="preferredLocale">
+            <option value="uk">uk</option>
+            <option value="en">en</option>
+          </select>
         </Field>
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -632,7 +683,10 @@ async function addRespondentAction(formData: FormData) {
     contactName: readFormString(formData, "contactName"),
     contactPhone: readFormString(formData, "contactPhone"),
     contactRole: readFormString(formData, "contactRole"),
+    preferredLocale: readFormString(formData, "preferredLocale"),
     status: parseStatus(formData.get("status")),
+    telegramChatId: readFormString(formData, "telegramChatId"),
+    telegramUsername: readFormString(formData, "telegramUsername"),
   });
   revalidateRespondentPages();
 }
@@ -663,9 +717,12 @@ async function addContactAction(formData: FormData) {
     email: readFormString(formData, "email"),
     name: readFormString(formData, "name"),
     phone: readFormString(formData, "phone"),
+    preferredLocale: readFormString(formData, "preferredLocale"),
     primary: formData.get("primary") === "true",
     respondentId: readFormString(formData, "respondentId"),
     role: readFormString(formData, "role"),
+    telegramChatId: readFormString(formData, "telegramChatId"),
+    telegramUsername: readFormString(formData, "telegramUsername"),
   });
   revalidateRespondentPages();
 }
@@ -678,9 +735,12 @@ async function updateContactAction(formData: FormData) {
     email: readFormString(formData, "email"),
     name: readFormString(formData, "name"),
     phone: readFormString(formData, "phone"),
+    preferredLocale: readFormString(formData, "preferredLocale"),
     primary: formData.get("primary") === "true",
     respondentId: readFormString(formData, "respondentId"),
     role: readFormString(formData, "role"),
+    telegramChatId: readFormString(formData, "telegramChatId"),
+    telegramUsername: readFormString(formData, "telegramUsername"),
   });
   revalidateRespondentPages();
 }

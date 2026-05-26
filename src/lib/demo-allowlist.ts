@@ -229,6 +229,7 @@ export async function authenticateAllowlistedUser({
     }
 
     if (
+      !isSpike &&
       normalizedLogin === "respondent" &&
       normalizedPassword === "respondent"
     ) {
@@ -250,6 +251,7 @@ export async function authenticateAllowlistedUser({
   }
 
   if (
+    !isSpike &&
     normalizedLogin === "respondent" &&
     normalizedPassword === "respondent"
   ) {

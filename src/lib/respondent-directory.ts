@@ -16,9 +16,12 @@ export type RespondentContactPerson = {
   email: string;
   id: string;
   name: string;
+  preferredLocale: "uk" | "en";
   phone: string;
   primary: boolean;
   role: string;
+  telegramChatId: string;
+  telegramUsername: string;
 };
 
 export type RespondentDirectoryEntry = {
@@ -339,18 +342,25 @@ export async function getRespondentDirectoryData() {
               email: contact.email ?? "",
               id: contact.id,
               name: contact.name,
+              preferredLocale:
+                contact.preferredLocale === "en" ? "en" : "uk",
               phone: contact.phone ?? "",
               primary: contact.primary,
               role: contact.role,
+              telegramChatId: contact.telegramChatId ?? "",
+              telegramUsername: contact.telegramUsername ?? "",
             }))
           : [
               {
                 email: respondent.authAccount?.loginEmail ?? "",
                 id: `${respondent.id}-primary`,
                 name: respondent.displayName,
+                preferredLocale: "uk",
                 phone: "",
                 primary: true,
                 role: "Primary contact",
+                telegramChatId: "",
+                telegramUsername: "",
               },
             ],
       id: respondent.id,
@@ -434,8 +444,11 @@ export async function addRespondentDirectoryEntryData(
         email: input.contactEmail.trim() || null,
         name: input.contactName.trim(),
         phone: input.contactPhone.trim() || null,
+        preferredLocale: normalizeContactLocale(input.preferredLocale),
         primary: true,
         role: input.contactRole.trim() || "Primary contact",
+        telegramChatId: normalizeTelegramChatId(input.telegramChatId),
+        telegramUsername: normalizeTelegramUsername(input.telegramUsername),
       },
     });
 
@@ -544,8 +557,11 @@ export async function addRespondentContactData(
         email: input.email.trim() || null,
         name: input.name.trim(),
         phone: input.phone.trim() || null,
+        preferredLocale: normalizeContactLocale(input.preferredLocale),
         primary: input.primary,
         role: input.role.trim() || "Contact",
+        telegramChatId: normalizeTelegramChatId(input.telegramChatId),
+        telegramUsername: normalizeTelegramUsername(input.telegramUsername),
       },
     });
   });
@@ -573,8 +589,11 @@ export async function updateRespondentContactData(
         email: input.email.trim() || null,
         name: input.name.trim(),
         phone: input.phone.trim() || null,
+        preferredLocale: normalizeContactLocale(input.preferredLocale),
         primary: input.primary,
         role: input.role.trim() || "Contact",
+        telegramChatId: normalizeTelegramChatId(input.telegramChatId),
+        telegramUsername: normalizeTelegramUsername(input.telegramUsername),
       },
     });
   });
@@ -700,6 +719,9 @@ export function addRespondentDirectoryEntry(input: {
   contactName: string;
   contactPhone: string;
   contactRole: string;
+  preferredLocale?: string;
+  telegramChatId?: string;
+  telegramUsername?: string;
   id?: string;
   status: RespondentStatus;
 }) {
@@ -725,9 +747,12 @@ export function addRespondentDirectoryEntry(input: {
         email: input.contactEmail.trim(),
         id: `${id}-primary`,
         name: input.contactName.trim(),
+        preferredLocale: normalizeContactLocale(input.preferredLocale),
         phone: input.contactPhone.trim(),
         primary: true,
         role: input.contactRole.trim() || "Primary contact",
+        telegramChatId: normalizeTelegramChatId(input.telegramChatId) ?? "",
+        telegramUsername: normalizeTelegramUsername(input.telegramUsername) ?? "",
       },
     ],
     id,
@@ -795,9 +820,12 @@ export function addRespondentContact(input: {
   email: string;
   name: string;
   phone: string;
+  preferredLocale?: string;
   primary: boolean;
   respondentId: string;
   role: string;
+  telegramChatId?: string;
+  telegramUsername?: string;
 }) {
   const respondent = getState().respondents.find(
     (item) => item.id === input.respondentId,
@@ -818,9 +846,12 @@ export function addRespondentContact(input: {
     email: input.email.trim(),
     id: `${input.respondentId}-${Date.now().toString(36)}`,
     name: input.name.trim(),
+    preferredLocale: normalizeContactLocale(input.preferredLocale),
     phone: input.phone.trim(),
     primary: input.primary || respondent.contacts.length === 0,
     role: input.role.trim() || "Contact",
+    telegramChatId: normalizeTelegramChatId(input.telegramChatId) ?? "",
+    telegramUsername: normalizeTelegramUsername(input.telegramUsername) ?? "",
   });
 }
 
@@ -829,9 +860,12 @@ export function updateRespondentContact(input: {
   email: string;
   name: string;
   phone: string;
+  preferredLocale?: string;
   primary: boolean;
   respondentId: string;
   role: string;
+  telegramChatId?: string;
+  telegramUsername?: string;
 }) {
   const respondent = getState().respondents.find(
     (item) => item.id === input.respondentId,
@@ -850,9 +884,12 @@ export function updateRespondentContact(input: {
       ...contact,
       email: input.email.trim(),
       name: input.name.trim() || contact.name,
+      preferredLocale: normalizeContactLocale(input.preferredLocale),
       phone: input.phone.trim(),
       primary: input.primary,
       role: input.role.trim() || contact.role,
+      telegramChatId: normalizeTelegramChatId(input.telegramChatId) ?? "",
+      telegramUsername: normalizeTelegramUsername(input.telegramUsername) ?? "",
     };
   });
 
@@ -927,13 +964,16 @@ function createRespondentSeed(
     companyName,
     contacts: [
       {
-        email,
-        id: `${id}-primary`,
-        name: contactName,
-        phone,
-        primary: true,
-        role: "Primary contact",
-      },
+          email,
+          id: `${id}-primary`,
+          name: contactName,
+          preferredLocale: "uk",
+          phone,
+          primary: true,
+          role: "Primary contact",
+          telegramChatId: "",
+          telegramUsername: "",
+        },
     ],
     id,
     status,
@@ -971,6 +1011,20 @@ function generateTemporaryPassword(seed: string) {
 
 function createDemoRespondentEmail(id: string) {
   return `${id}@${getActiveIndexConfig().id === "spike-ua" ? "spike-ua" : "uga-index"}.demo`;
+}
+
+function normalizeTelegramUsername(value?: string) {
+  const normalized = value?.trim().replace(/^@/, "") ?? "";
+  return normalized || null;
+}
+
+function normalizeTelegramChatId(value?: string) {
+  const normalized = value?.trim() ?? "";
+  return normalized || null;
+}
+
+function normalizeContactLocale(value?: string): "uk" | "en" {
+  return value === "en" ? "en" : "uk";
 }
 
 function normalizeScheduleInput(

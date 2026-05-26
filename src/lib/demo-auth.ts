@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { db, hasDatabaseUrl } from "@/lib/db";
 import { getActiveIndexConfig } from "@/lib/index-platform";
+import { isSpikeAdminEmail } from "@/lib/spike-admin-access";
 
 export const LEGACY_DEMO_SESSION_COOKIE = "uga_demo_session";
 export const DEMO_SESSION_COOKIE =
@@ -74,6 +75,19 @@ export async function requireDemoRole(role: DemoRole) {
   }
 
   if (user.role !== role) {
+    if (
+      role === "respondent" &&
+      user.role === "admin" &&
+      getActiveIndexConfig().id === "spike-ua" &&
+      isSpikeAdminEmail(user.email)
+    ) {
+      const previewUser = await getSpikeAdminRespondentPreviewUser(user);
+
+      if (previewUser) {
+        return previewUser;
+      }
+    }
+
     const openAccessUser = await getOpenDemoAccessUser(role);
 
     if (openAccessUser) {
@@ -84,7 +98,7 @@ export async function requireDemoRole(role: DemoRole) {
   }
 
   if (
-    role === "admin" &&
+    (role === "admin" || role === "respondent") &&
     hasDatabaseUrl() &&
     user.passwordSetupStatus !== "active"
   ) {
@@ -101,7 +115,7 @@ async function getOpenDemoAccessUser(role: DemoRole): Promise<DemoUser | null> {
     return null;
   }
 
-  if (getActiveIndexConfig().id === "spike-ua" && role === "admin") {
+  if (getActiveIndexConfig().id === "spike-ua") {
     return null;
   }
 
@@ -142,6 +156,42 @@ async function getOpenDemoAccessUser(role: DemoRole): Promise<DemoUser | null> {
   }
 
   return null;
+}
+
+async function getSpikeAdminRespondentPreviewUser(
+  adminUser: DemoUser,
+): Promise<DemoUser | null> {
+  if (!hasDatabaseUrl()) {
+    return null;
+  }
+
+  const respondent = await db.respondent.findFirst({
+    orderBy: { createdAt: "asc" },
+    where: {
+      active: true,
+      collectionMode: "self_service",
+      id: { not: process.env.MN7R_INDEX_RESPONDENT_CODE ?? "MN7R_MONITOR" },
+      status: "active",
+    },
+  });
+
+  if (!respondent) {
+    return null;
+  }
+
+  return {
+    userId: adminUser.userId,
+    email: adminUser.email,
+    name: `${adminUser.name} respondent preview`,
+    username: adminUser.email,
+    role: "respondent",
+    respondentId: respondent.id,
+    companyName: respondent.legalName,
+    respondentName: respondent.legalName,
+    passwordSetupStatus: "active",
+    issuedAt: adminUser.issuedAt,
+    expiresAt: adminUser.expiresAt,
+  };
 }
 
 async function findOpenDemoDbUser(role: Exclude<DemoRole, "member">) {

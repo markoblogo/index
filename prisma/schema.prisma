@@ -117,6 +117,9 @@ model RespondentContact {
   role          String      @default("Primary contact")
   phone         String?
   email         String?
+  telegramUsername String?
+  telegramChatId   String?
+  preferredLocale  String      @default("uk")
   primary       Boolean     @default(false)
   active        Boolean     @default(true)
   createdAt     DateTime    @default(now())

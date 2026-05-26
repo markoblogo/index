@@ -1,0 +1,4 @@
+ALTER TABLE "RespondentContact"
+ADD COLUMN IF NOT EXISTS "telegramUsername" TEXT,
+ADD COLUMN IF NOT EXISTS "telegramChatId" TEXT,
+ADD COLUMN IF NOT EXISTS "preferredLocale" TEXT NOT NULL DEFAULT 'uk';

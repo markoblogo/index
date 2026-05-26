@@ -49,7 +49,10 @@ export async function GET(
     },
   });
 
-  const response = NextResponse.redirect(new URL("/respondent", request.url), 303);
+  const locale = request.nextUrl.searchParams.get("locale") === "en" ? "en" : "uk";
+  const respondentUrl = new URL("/respondent", request.url);
+  respondentUrl.searchParams.set("locale", locale);
+  const response = NextResponse.redirect(respondentUrl, 303);
   const sessionValue = createDemoSessionCookieValue({
     userId: user?.id ?? `respondent-${surveyToken.respondentId}`,
     email: surveyToken.respondent.authAccount?.loginEmail ?? surveyToken.email,

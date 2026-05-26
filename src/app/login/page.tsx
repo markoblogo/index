@@ -266,8 +266,9 @@ const spikeLoginCopy: Record<Locale, LoginCopy> = {
     helper:
       "Administrators sign in with their email and password. Respondent survey access remains in demo mode for now.",
     password: "Password",
-    respondentCredentials: "Respondent: respondent / respondent",
-    shortCredentials: "Respondent demo alias: respondent/respondent",
+    respondentCredentials:
+      "Respondents: use your assigned email and current password. First-time access uses the temporary password from onboarding.",
+    shortCredentials: "Respondent demo aliases are disabled for Spike.",
     submit: "Sign in",
     title: "Sign in to SPIKE SPOT INDEX",
   },
@@ -283,8 +284,9 @@ const spikeLoginCopy: Record<Locale, LoginCopy> = {
     helper:
       "Адміністратори входять через email і пароль. Вхід до анкети респондента поки залишається в демо-режимі.",
     password: "Пароль",
-    respondentCredentials: "Респондент: respondent / respondent",
-    shortCredentials: "Демо-вхід респондента: respondent/respondent",
+    respondentCredentials:
+      "Респонденти: вхід через призначений email і поточний пароль. Для першого входу використовується тимчасовий пароль з онбордингу.",
+    shortCredentials: "Демо-вхід респондента для Spike вимкнено.",
     submit: "Увійти",
     title: "Вхід до SPIKE SPOT INDEX",
   },
