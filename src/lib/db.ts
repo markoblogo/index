@@ -8,7 +8,11 @@ const globalForPrisma = globalThis as unknown as {
 const connectionString =
   process.env.DATABASE_URL ??
   "postgresql://user:password@localhost:5432/uga_index?schema=public";
-const adapter = new PrismaPg({ connectionString });
+const adapter = new PrismaPg({
+  connectionString,
+  idleTimeoutMillis: 10_000,
+  max: Number(process.env.DATABASE_POOL_MAX ?? 2),
+});
 
 export const db =
   globalForPrisma.prisma ??
