@@ -308,6 +308,10 @@ export async function autoPublishSpikeDailyIndices(
 
   revalidatePath("/uk");
   revalidatePath("/en");
+  revalidatePath("/uk/analytics");
+  revalidatePath("/en/analytics");
+  revalidatePath("/api/public/latest");
+  revalidatePath("/api/public/history");
 
   return {
     date,

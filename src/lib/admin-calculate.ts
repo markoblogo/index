@@ -143,16 +143,23 @@ export async function publishAdminIndices(formData: FormData, user: DemoUser) {
     }
 
     await publishMockIndices(date, benchmarkBlendCommodityIds);
-    revalidatePath("/uk");
-    revalidatePath("/en");
+    revalidatePublishedIndexViews();
     redirect(`/admin/calculate?date=${date}&notice=published_mock`);
   }
 
   const calculations = await persistDatabaseCalculations(date, user);
   await publishDatabaseCalculations(date, calculations, user, benchmarkBlendCommodityIds);
+  revalidatePublishedIndexViews();
+  redirect(`/admin/calculate?date=${date}&notice=published_database`);
+}
+
+function revalidatePublishedIndexViews() {
   revalidatePath("/uk");
   revalidatePath("/en");
-  redirect(`/admin/calculate?date=${date}&notice=published_database`);
+  revalidatePath("/uk/analytics");
+  revalidatePath("/en/analytics");
+  revalidatePath("/api/public/latest");
+  revalidatePath("/api/public/history");
 }
 
 async function getMockCalculationData(date: string): Promise<AdminCalculationData> {
