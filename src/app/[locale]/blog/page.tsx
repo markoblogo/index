@@ -199,22 +199,12 @@ export default async function BlogPage({ params, searchParams }: BlogPageProps) 
                       <div className="relative aspect-[1672/941] overflow-hidden border-b border-white/12">
                         <Image
                           alt={post.title}
-                          className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+                          className="h-full w-full object-cover object-top transition duration-500 group-hover:scale-[1.03]"
                           height={941}
                           src={post.coverImage}
                           width={1672}
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#050505]/74 via-[#050505]/12 to-transparent" />
-                        <div className="absolute left-5 top-5 flex flex-wrap gap-2">
-                          {post.tags.slice(0, 3).map((tag) => (
-                            <span
-                              className="rounded-full bg-[#050505]/75 px-3 py-1 text-[0.64rem] font-black uppercase tracking-[0.12em] text-white"
-                              key={tag}
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
+                        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#050505]/52 to-transparent" />
                       </div>
                       <div className="grid gap-4 p-5">
                         <div className="flex flex-wrap gap-3 text-[0.68rem] font-black uppercase tracking-[0.16em] text-white/45">
@@ -223,6 +213,16 @@ export default async function BlogPage({ params, searchParams }: BlogPageProps) 
                           </span>
                           <span>{formatDate(post.publishedAt, locale)}</span>
                           <span>{post.readingMinutes} {labels.minutes}</span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {post.tags.slice(0, 3).map((tag) => (
+                            <span
+                              className="rounded-full border border-white/16 bg-white/7 px-3 py-1 text-[0.64rem] font-black uppercase tracking-[0.12em] text-white/58"
+                              key={tag}
+                            >
+                              {tag}
+                            </span>
+                          ))}
                         </div>
                         <h2 className="text-2xl font-black uppercase leading-[0.98] text-white transition group-hover:text-[var(--spike-accent)]">
                           {post.title}

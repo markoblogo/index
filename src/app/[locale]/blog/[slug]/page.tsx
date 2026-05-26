@@ -71,22 +71,12 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
         </Link>
 
         <header className="mt-6 overflow-hidden rounded-[1.5rem] border border-white/18 bg-[#050505]/86 shadow-2xl shadow-black/25">
-          <div className="relative min-h-[25rem] overflow-hidden border-b border-white/12">
-            <Image
-              alt={post.title}
-              className="absolute inset-0 h-full w-full object-cover"
-              height={941}
-              priority
-              src={post.coverImage}
-              width={1672}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/38 to-[#050505]/8" />
-            <div className="relative grid min-h-[25rem] content-end p-5 sm:p-7 lg:p-9">
-              <div className="max-w-5xl">
+          <div className="grid gap-7 border-b border-white/12 p-5 sm:p-7 lg:grid-cols-[minmax(0,1fr)_24rem] lg:p-9">
+            <div className="max-w-6xl">
               <div className="flex flex-wrap gap-2">
                 {post.tags.map((tag) => (
                   <Link
-                    className="rounded-full bg-[#050505]/78 px-3 py-1 text-[0.64rem] font-black uppercase tracking-[0.12em] text-white transition hover:bg-[var(--spike-accent)] hover:text-[#050505]"
+                    className="rounded-full border border-white/18 bg-white/8 px-3 py-1.5 text-[0.64rem] font-black uppercase tracking-[0.12em] text-white/72 transition hover:border-[var(--spike-accent)] hover:bg-[var(--spike-accent)] hover:text-[#050505]"
                     href={`/${locale}/blog?tag=${encodeURIComponent(tag)}`}
                     key={tag}
                   >
@@ -94,16 +84,13 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                   </Link>
                 ))}
               </div>
-              <h1 className="mt-5 text-4xl font-black uppercase leading-[0.94] tracking-normal text-white sm:text-5xl lg:text-6xl">
+              <h1 className="mt-6 max-w-6xl text-4xl font-black uppercase leading-[0.92] tracking-normal text-white sm:text-5xl lg:text-6xl">
                 {post.title}
               </h1>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid gap-6 p-5 sm:p-7 lg:grid-cols-[minmax(0,1fr)_24rem] lg:p-9">
-            <div>
-              <div className="flex flex-wrap gap-3 text-[0.68rem] font-black uppercase tracking-[0.16em] text-white/45">
+              <div className="mt-6 flex flex-wrap gap-3 text-[0.68rem] font-black uppercase tracking-[0.16em] text-white/45">
+                <span className="text-[var(--spike-accent)]">
+                  {post.language.toUpperCase()}
+                </span>
                 <span>{labels.published}: {formatDate(post.publishedAt, locale)}</span>
                 <span>{post.readingMinutes} {labels.minutes}</span>
               </div>
@@ -111,7 +98,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                 {post.excerpt}
               </p>
             </div>
-            <div className="lg:justify-self-end">
+            <div className="lg:justify-self-end lg:self-end">
               <BlogShareTools
                 copiedLabel={labels.copied}
                 copyLabel={labels.copy}
@@ -120,6 +107,18 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                 url={absoluteUrl}
               />
             </div>
+          </div>
+
+          <div className="relative aspect-[1672/720] max-h-[34rem] overflow-hidden">
+            <Image
+              alt={post.title}
+              className="absolute inset-0 h-full w-full object-cover object-top"
+              height={941}
+              priority
+              src={post.coverImage}
+              width={1672}
+            />
+            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#050505]/62 to-transparent" />
           </div>
         </header>
 
