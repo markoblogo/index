@@ -536,6 +536,13 @@ body[data-index="spike"] .spike-internal-shell .text-uga-green {
   color: var(--spike-accent);
 }
 
+body[data-index="spike"] .spike-internal-shell .bg-uga-green,
+body[data-index="spike"] .spike-internal-shell .bg-uga-lime,
+body[data-index="spike"] .spike-internal-shell .admin-contrast-pill,
+body[data-index="spike"] .spike-internal-shell .hover\:bg-uga-green:hover {
+  color: #050505 !important;
+}
+
 body[data-index="spike"] .spike-internal-shell .text-red-700,
 body[data-index="spike"] .spike-internal-shell .text-amber-800 {
   color: #ff8aa8;
