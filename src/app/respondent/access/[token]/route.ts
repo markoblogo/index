@@ -3,6 +3,7 @@ import {
   createDemoSessionCookieValue,
   DEMO_SESSION_COOKIE,
   DEMO_SESSION_TTL_SECONDS,
+  LEGACY_DEMO_SESSION_COOKIE,
 } from "@/lib/demo-auth";
 import { db, hasDatabaseUrl } from "@/lib/db";
 
@@ -70,6 +71,17 @@ export async function GET(
     path: "/",
     maxAge: DEMO_SESSION_TTL_SECONDS,
   });
+  if (DEMO_SESSION_COOKIE !== LEGACY_DEMO_SESSION_COOKIE) {
+    response.cookies.set({
+      name: LEGACY_DEMO_SESSION_COOKIE,
+      value: "",
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 0,
+    });
+  }
 
   return response;
 }

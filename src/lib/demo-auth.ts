@@ -6,7 +6,11 @@ import { redirect } from "next/navigation";
 import { db, hasDatabaseUrl } from "@/lib/db";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 
-export const DEMO_SESSION_COOKIE = "uga_demo_session";
+export const LEGACY_DEMO_SESSION_COOKIE = "uga_demo_session";
+export const DEMO_SESSION_COOKIE =
+  getActiveIndexConfig().id === "spike-ua"
+    ? "spike_index_session"
+    : LEGACY_DEMO_SESSION_COOKIE;
 
 export type DemoRole = "admin" | "respondent" | "member";
 
@@ -30,7 +34,11 @@ export const DEMO_SESSION_TTL_SECONDS = 60 * 60 * 8;
 
 export async function getCurrentDemoUser(): Promise<DemoUser | null> {
   const cookieStore = await cookies();
-  const cookie = cookieStore.get(DEMO_SESSION_COOKIE);
+  const cookie =
+    cookieStore.get(DEMO_SESSION_COOKIE) ??
+    (DEMO_SESSION_COOKIE === LEGACY_DEMO_SESSION_COOKIE
+      ? undefined
+      : cookieStore.get(LEGACY_DEMO_SESSION_COOKIE));
 
   return parseDemoSessionCookieValue(cookie?.value);
 }
@@ -186,11 +194,16 @@ export async function setDemoSession(user: SessionSourceUser) {
     path: "/",
     maxAge: DEMO_SESSION_TTL_SECONDS,
   });
+
+  if (DEMO_SESSION_COOKIE !== LEGACY_DEMO_SESSION_COOKIE) {
+    cookieStore.delete(LEGACY_DEMO_SESSION_COOKIE);
+  }
 }
 
 export async function clearDemoSession() {
   const cookieStore = await cookies();
   cookieStore.delete(DEMO_SESSION_COOKIE);
+  cookieStore.delete(LEGACY_DEMO_SESSION_COOKIE);
 }
 
 export function getRoleHome(role: DemoRole) {

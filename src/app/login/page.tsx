@@ -255,10 +255,11 @@ const ugaLoginCopy: Record<
 
 const spikeLoginCopy: Record<Locale, LoginCopy> = {
   en: {
-    adminCredentials: "Admins: use your assigned email and temporary password",
+    adminCredentials:
+      "Admins: use your assigned email and current password. First-time access uses the temporary password from the invite.",
     back: "Back to public site",
     brand: "SPIKE SPOT INDEX",
-    demoTitle: "Spike access preview",
+    demoTitle: "Access",
     email: "Email",
     emailPlaceholder: "admin",
     error: "Invalid Spike credentials.",
@@ -271,10 +272,11 @@ const spikeLoginCopy: Record<Locale, LoginCopy> = {
     title: "Sign in to SPIKE SPOT INDEX",
   },
   uk: {
-    adminCredentials: "Адміністратори: вхід через призначений email і тимчасовий пароль",
+    adminCredentials:
+      "Адміністратори: вхід через призначений email і поточний пароль. Для першого входу використовується тимчасовий пароль із запрошення.",
     back: "Назад до публічного сайту",
     brand: "SPIKE SPOT INDEX",
-    demoTitle: "Попередній доступ Spike",
+    demoTitle: "Доступ",
     email: "Email",
     emailPlaceholder: "admin",
     error: "Невірні дані Spike для входу.",

@@ -6,6 +6,7 @@ import {
   DEMO_SESSION_COOKIE,
   DEMO_SESSION_TTL_SECONDS,
   getSafeRoleRedirect,
+  LEGACY_DEMO_SESSION_COOKIE,
 } from "@/lib/demo-auth";
 import { isLocale } from "@/lib/i18n";
 
@@ -47,8 +48,25 @@ export async function POST(request: NextRequest) {
     path: "/",
     maxAge: DEMO_SESSION_TTL_SECONDS,
   });
+  clearLegacySessionCookie(response);
 
   return response;
+}
+
+function clearLegacySessionCookie(response: NextResponse) {
+  if (DEMO_SESSION_COOKIE === LEGACY_DEMO_SESSION_COOKIE) {
+    return;
+  }
+
+  response.cookies.set({
+    name: LEGACY_DEMO_SESSION_COOKIE,
+    value: "",
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 0,
+  });
 }
 
 function normalizeLocale(value: string) {
