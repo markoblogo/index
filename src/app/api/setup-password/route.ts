@@ -5,14 +5,15 @@ import {
   DEMO_SESSION_TTL_SECONDS,
   getCurrentDemoUser,
   getSafeRoleRedirect,
+  parseDemoSessionCookieValue,
 } from "@/lib/demo-auth";
 import { setPermanentPasswordForUser } from "@/lib/password-setup";
 
 export async function POST(request: NextRequest) {
-  const [formData, user] = await Promise.all([
-    request.formData(),
-    getCurrentDemoUser(),
-  ]);
+  const formData = await request.formData();
+  const user =
+    parseDemoSessionCookieValue(request.cookies.get(DEMO_SESSION_COOKIE)?.value) ??
+    (await getCurrentDemoUser());
 
   if (!user) {
     return NextResponse.redirect(new URL("/login", request.url), 303);

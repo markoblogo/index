@@ -32,11 +32,15 @@ export async function getCurrentDemoUser(): Promise<DemoUser | null> {
   const cookieStore = await cookies();
   const cookie = cookieStore.get(DEMO_SESSION_COOKIE);
 
-  if (!cookie?.value) {
+  return parseDemoSessionCookieValue(cookie?.value);
+}
+
+export function parseDemoSessionCookieValue(value?: string): DemoUser | null {
+  if (!value) {
     return null;
   }
 
-  const payload = verifySessionCookie(cookie.value);
+  const payload = verifySessionCookie(value);
 
   if (!payload || payload.expiresAt <= Math.floor(Date.now() / 1000)) {
     return null;
