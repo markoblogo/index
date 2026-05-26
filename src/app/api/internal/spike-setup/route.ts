@@ -43,6 +43,8 @@ export async function POST(request: Request) {
 
   const url = new URL(request.url);
   const shouldSendOnboarding = url.searchParams.get("sendOnboarding") === "1";
+  const shouldExposeTemporaryPassword =
+    url.searchParams.get("exposeTemporaryPassword") === "1";
 
   await db.$executeRawUnsafe(`
     ALTER TABLE "RespondentContact"
@@ -207,6 +209,9 @@ export async function POST(request: Request) {
     onboardingSent,
     respondentId: fopSolovey.id,
     schemaReady: true,
+    temporaryPassword: shouldExposeTemporaryPassword
+      ? activeTemporaryPassword
+      : undefined,
     temporaryPasswordGenerated: shouldSetTemporary,
   });
 }
