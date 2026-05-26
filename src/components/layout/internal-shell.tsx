@@ -115,12 +115,14 @@ export function InternalShell({ children, user }: InternalShellProps) {
             >
               Public site
             </Link>
-            <Link
-              className="rounded-full bg-uga-dark px-4 py-2 text-sm font-semibold text-white transition hover:bg-uga-green"
-              href="/logout"
-            >
-              Logout
-            </Link>
+            <form action="/logout" method="post">
+              <button
+                className="rounded-full bg-uga-dark px-4 py-2 text-sm font-semibold text-white transition hover:bg-uga-green"
+                type="submit"
+              >
+                Logout
+              </button>
+            </form>
           </div>
         </div>
       </header>

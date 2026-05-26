@@ -5,7 +5,6 @@ import { isLocale, LOCALE_COOKIE } from "@/lib/i18n";
 
 export async function GET() {
   const locale = await getLogoutLocale();
-  await clearDemoSession();
   redirect(`/${locale}`);
 }
 
