@@ -332,8 +332,9 @@ function SpikeCommodityCard({
         </div>
       </div>
 
-      <div className="relative z-10 min-w-0 self-start">
+      <div className="relative z-10 grid min-w-0 content-start gap-5 self-start">
         <CurrencyValue
+          block
           className="w-full max-w-full whitespace-nowrap text-[clamp(3.35rem,5.35vw,5.25rem)] font-black leading-[0.84] tracking-normal text-white data-[currency=EUR]:text-[clamp(3rem,4.35vw,4.75rem)] data-[currency=UAH]:text-[clamp(2.05rem,3.05vw,3.45rem)] [&_.currency-unit]:text-base [&_.currency-unit]:text-white/45"
           fxRates={fxRates}
           locale={locale}
@@ -342,7 +343,7 @@ function SpikeCommodityCard({
           officialUsd={commodity.latest}
         />
         <div
-          className={`mt-5 inline-flex rounded-full px-4 py-2 text-sm font-black ${
+          className={`inline-flex w-fit max-w-full rounded-full px-4 py-2 text-sm font-black ${
             !hasValue || isFlat
               ? "bg-white/12 text-[#f8f8f2]/70"
               : isPositive

@@ -53,6 +53,7 @@ type CurrencyValueProps = {
   officialLabel: string;
   className?: string;
   compact?: boolean;
+  block?: boolean;
   maximumFractionDigits?: Partial<Record<DisplayCurrency, number>>;
 };
 
@@ -63,6 +64,7 @@ export function CurrencyValue({
   locale,
   className = "",
   compact = false,
+  block = false,
   maximumFractionDigits,
 }: CurrencyValueProps) {
   const [currency] = useDisplayCurrency();
@@ -91,7 +93,10 @@ export function CurrencyValue({
 
   if (currency === "USD") {
     return (
-      <span className={className} data-currency={currency}>
+      <span
+        className={`${block ? "block" : ""} ${className}`}
+        data-currency={currency}
+      >
         {formattedValue}{" "}
         <span className="currency-unit text-sm font-black tracking-normal text-black/55">
           USD/t
@@ -101,7 +106,10 @@ export function CurrencyValue({
   }
 
   return (
-    <span className={`inline-flex flex-col ${className}`} data-currency={currency}>
+    <span
+      className={`${block ? "flex" : "inline-flex"} flex-col ${className}`}
+      data-currency={currency}
+    >
       <span>
         ≈ {formattedValue}{" "}
         <span className="currency-unit text-sm font-black tracking-normal text-black/55">
