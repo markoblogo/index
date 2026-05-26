@@ -251,7 +251,13 @@ function SpikeAboutPage({
               {dict.about.respondentsDescription}
             </p>
           </div>
-          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+          <div
+            className={
+              spikeRespondents.length === 1
+                ? "grid max-w-[38rem] gap-2"
+                : "grid gap-2 sm:grid-cols-2 xl:grid-cols-4"
+            }
+          >
             {spikeRespondents.map((respondent, index) => {
               const respondentHref = respondentLinks.get(respondent.id) ?? "#";
               const hasExternalLink = respondentHref !== "#";
@@ -259,10 +265,10 @@ function SpikeAboutPage({
 
               return (
                 <a
-                  className={`group rounded-[1rem] border border-white/10 px-4 py-4 text-sm font-black transition ${
+                  className={`group rounded-[1rem] border border-white/10 text-sm font-black transition ${
                     isMn7rMonitor
-                      ? "bg-[radial-gradient(circle_at_80%_10%,rgba(49,255,30,0.22),transparent_18rem),#080808] text-white"
-                      : "bg-[#f8f8f2] text-[#050505]"
+                      ? "min-h-[17rem] bg-[radial-gradient(circle_at_82%_8%,rgba(49,255,30,0.22),transparent_18rem),linear-gradient(145deg,#07070b,#101417)] px-5 py-5 text-white"
+                      : "bg-[#f8f8f2] px-4 py-4 text-[#050505]"
                   } ${
                     hasExternalLink
                       ? "hover:border-[var(--spike-accent)]"
@@ -274,22 +280,22 @@ function SpikeAboutPage({
                   target="_blank"
                 >
                   <span
-                    className={`mb-5 block text-[0.64rem] uppercase tracking-[0.18em] ${
+                    className={`block text-[0.64rem] uppercase tracking-[0.18em] ${
                       isMn7rMonitor ? "text-white/55" : "text-black/38"
                     }`}
                   >
                     Partner {String(index + 1).padStart(2, "0")}
                   </span>
                   {isMn7rMonitor ? (
-                    <span className="flex min-h-24 items-center justify-center">
-                        <Image
-                          alt="MN7R"
-                          className="h-16 w-auto object-contain transition group-hover:scale-[1.03]"
-                          height={819}
-                          priority={false}
-                          src="/brand/mn7r-logo-white.png"
-                          width={1920}
-                        />
+                    <span className="flex min-h-[13rem] items-center justify-center px-4">
+                      <Image
+                        alt="MN7R"
+                        className="h-auto w-[min(78%,24rem)] object-contain transition group-hover:scale-[1.03]"
+                        height={819}
+                        priority={false}
+                        src="/brand/mn7r-logo-white.png"
+                        width={1920}
+                      />
                     </span>
                   ) : (
                     respondent.legalName
