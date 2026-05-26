@@ -42,6 +42,7 @@ export async function POST(request: Request) {
   }
 
   const url = new URL(request.url);
+  const shouldDebug = url.searchParams.get("debug") === "1";
   const shouldSendOnboarding = url.searchParams.get("sendOnboarding") === "1";
   const shouldExposeTemporaryPassword =
     url.searchParams.get("exposeTemporaryPassword") === "1";
@@ -202,6 +203,7 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json({
+    debug: shouldDebug ? await getDebugSnapshot() : undefined,
     disabledSeedRespondents: true,
     onboardingSent,
     respondentId: fopSolovey.id,
@@ -211,6 +213,61 @@ export async function POST(request: Request) {
       : undefined,
     temporaryPasswordGenerated: shouldSetTemporary,
   });
+}
+
+async function getDebugSnapshot() {
+  const tradeDate = new Date("2026-05-26T00:00:00.000Z");
+  const [respondents, submissions, published] = await Promise.all([
+    db.respondent.findMany({
+      orderBy: { id: "asc" },
+      select: {
+        active: true,
+        id: true,
+        legalName: true,
+        status: true,
+      },
+    }),
+    db.priceSubmission.findMany({
+      include: {
+        commodity: { select: { code: true } },
+        respondent: {
+          select: {
+            active: true,
+            id: true,
+            legalName: true,
+            status: true,
+          },
+        },
+      },
+      orderBy: [{ commodity: { sortOrder: "asc" } }, { respondentId: "asc" }],
+      where: {
+        status: { in: ["submitted", "verified", "published"] },
+        tradeDate,
+      },
+    }),
+    db.publishedIndex.findMany({
+      include: { commodity: { select: { code: true } } },
+      orderBy: { commodity: { sortOrder: "asc" } },
+      where: { tradeDate },
+    }),
+  ]);
+
+  return {
+    published: published.map((row) => ({
+      code: row.commodity.code,
+      locked: row.locked,
+      status: row.status,
+      value: row.valueUsdPerMt.toNumber(),
+    })),
+    respondents,
+    submissions: submissions.map((row) => ({
+      code: row.commodity.code,
+      price: row.priceUsdPerMt.toNumber(),
+      respondent: row.respondent,
+      source: row.source,
+      status: row.status,
+    })),
+  };
 }
 
 async function sendOnboardingEmail(temporaryPassword: string) {
