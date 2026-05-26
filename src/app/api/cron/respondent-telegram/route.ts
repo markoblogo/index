@@ -17,8 +17,25 @@ export async function GET(request: Request) {
   }
 
   const url = new URL(request.url);
-  const trigger = url.searchParams.get("smoke") === "1" ? "smoke" : "scheduled";
-  const result = await sendRespondentTelegramNotifications({ trigger });
+  const requestedLevel = parseReminderLevel(url.searchParams.get("level"));
+  const trigger =
+    url.searchParams.get("smoke") === "1"
+      ? "smoke"
+      : requestedLevel
+        ? "manual"
+        : "scheduled";
+  const result = await sendRespondentTelegramNotifications({
+    reminderLevel: requestedLevel,
+    trigger,
+  });
 
   return NextResponse.json(result);
+}
+
+function parseReminderLevel(value: string | null) {
+  if (value === "initial" || value === "reminder_17" || value === "final_18") {
+    return value;
+  }
+
+  return undefined;
 }
