@@ -50,36 +50,36 @@ export async function GET(
   });
 
   const response = NextResponse.redirect(new URL("/respondent", request.url), 303);
-  response.cookies.set({
-    name: DEMO_SESSION_COOKIE,
-    value: createDemoSessionCookieValue({
-      userId: user?.id ?? `respondent-${surveyToken.respondentId}`,
-      email:
-        surveyToken.respondent.authAccount?.loginEmail ?? surveyToken.email,
-      name: `${surveyToken.respondent.legalName} respondent`,
-      role: "respondent",
-      respondentId: surveyToken.respondentId,
-      companyName: surveyToken.respondent.legalName,
-      passwordSetupStatus:
-        surveyToken.respondent.authAccount?.passwordSetupStatus === "active"
-          ? "active"
-          : "temporary",
-    }),
+  const sessionValue = createDemoSessionCookieValue({
+    userId: user?.id ?? `respondent-${surveyToken.respondentId}`,
+    email: surveyToken.respondent.authAccount?.loginEmail ?? surveyToken.email,
+    name: `${surveyToken.respondent.legalName} respondent`,
+    role: "respondent",
+    respondentId: surveyToken.respondentId,
+    companyName: surveyToken.respondent.legalName,
+    passwordSetupStatus:
+      surveyToken.respondent.authAccount?.passwordSetupStatus === "active"
+        ? "active"
+        : "temporary",
+  });
+  const cookieOptions = {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "lax" as const,
     secure: request.nextUrl.protocol === "https:",
     path: "/",
     maxAge: DEMO_SESSION_TTL_SECONDS,
+  };
+
+  response.cookies.set({
+    name: DEMO_SESSION_COOKIE,
+    value: sessionValue,
+    ...cookieOptions,
   });
   if (DEMO_SESSION_COOKIE !== LEGACY_DEMO_SESSION_COOKIE) {
     response.cookies.set({
       name: LEGACY_DEMO_SESSION_COOKIE,
-      value: "",
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-      maxAge: 0,
+      value: sessionValue,
+      ...cookieOptions,
     });
   }
 

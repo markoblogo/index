@@ -187,16 +187,19 @@ type SessionSourceUser = {
 
 export async function setDemoSession(user: SessionSourceUser) {
   const cookieStore = await cookies();
-  cookieStore.set(DEMO_SESSION_COOKIE, createDemoSessionCookieValue(user), {
+  const sessionValue = createDemoSessionCookieValue(user);
+  const sessionCookie = {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
     maxAge: DEMO_SESSION_TTL_SECONDS,
-  });
+  } as const;
+
+  cookieStore.set(DEMO_SESSION_COOKIE, sessionValue, sessionCookie);
 
   if (DEMO_SESSION_COOKIE !== LEGACY_DEMO_SESSION_COOKIE) {
-    cookieStore.delete(LEGACY_DEMO_SESSION_COOKIE);
+    cookieStore.set(LEGACY_DEMO_SESSION_COOKIE, sessionValue, sessionCookie);
   }
 }
 

@@ -45,33 +45,43 @@ export async function POST(request: NextRequest) {
     new URL(getSafeRoleRedirect(user.role, next), request.url),
     303,
   );
-
-  response.cookies.set({
-    name: DEMO_SESSION_COOKIE,
-    value: createDemoSessionCookieValue(updatedUser),
+  const sessionValue = createDemoSessionCookieValue(updatedUser);
+  const cookieOptions = {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "lax" as const,
     secure: request.nextUrl.protocol === "https:",
     path: "/",
     maxAge: DEMO_SESSION_TTL_SECONDS,
+  };
+
+  response.cookies.set({
+    name: DEMO_SESSION_COOKIE,
+    value: sessionValue,
+    ...cookieOptions,
   });
-  clearLegacySessionCookie(response);
+  mirrorLegacySessionCookie(response, sessionValue, cookieOptions);
 
   return response;
 }
 
-function clearLegacySessionCookie(response: NextResponse) {
+function mirrorLegacySessionCookie(
+  response: NextResponse,
+  value: string,
+  options: {
+    httpOnly: boolean;
+    maxAge: number;
+    path: string;
+    sameSite: "lax";
+    secure: boolean;
+  },
+) {
   if (DEMO_SESSION_COOKIE === LEGACY_DEMO_SESSION_COOKIE) {
     return;
   }
 
   response.cookies.set({
     name: LEGACY_DEMO_SESSION_COOKIE,
-    value: "",
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 0,
+    value,
+    ...options,
   });
 }
