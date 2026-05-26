@@ -3,13 +3,20 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SITE_CONFIG } from "@/lib/constants";
-import { getBlogLabels, getBlogTags, spikeBlogPosts } from "@/lib/blog-posts";
+import {
+  getBlogLabels,
+  getBlogTags,
+  spikeBlogPosts,
+  type BlogPostLanguage,
+} from "@/lib/blog-posts";
 import { isLocale, type Locale } from "@/lib/i18n";
 
 type BlogPageProps = {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ q?: string; tag?: string }>;
+  searchParams: Promise<{ lang?: string; q?: string; tag?: string }>;
 };
+
+type BlogLanguageFilter = "all" | BlogPostLanguage;
 
 export function generateStaticParams() {
   return [{ locale: "uk" }, { locale: "en" }];
@@ -40,8 +47,16 @@ export default async function BlogPage({ params, searchParams }: BlogPageProps) 
   const labels = getBlogLabels(locale);
   const query = (queryParams.q ?? "").trim();
   const selectedTag = (queryParams.tag ?? "").trim();
+  const selectedLanguage = normalizeBlogLanguage(queryParams.lang);
   const normalizedQuery = query.toLowerCase();
+  const languageCounts = {
+    all: spikeBlogPosts.length,
+    en: spikeBlogPosts.filter((post) => post.language === "en").length,
+    uk: spikeBlogPosts.filter((post) => post.language === "uk").length,
+  };
   const posts = spikeBlogPosts.filter((post) => {
+    const matchesLanguage =
+      selectedLanguage === "all" ? true : post.language === selectedLanguage;
     const matchesTag = selectedTag ? post.tags.includes(selectedTag) : true;
     const searchable = [
       post.title,
@@ -55,7 +70,7 @@ export default async function BlogPage({ params, searchParams }: BlogPageProps) 
       ? searchable.includes(normalizedQuery)
       : true;
 
-    return matchesTag && matchesSearch;
+    return matchesLanguage && matchesTag && matchesSearch;
   });
 
   return (
@@ -86,6 +101,9 @@ export default async function BlogPage({ params, searchParams }: BlogPageProps) 
                 placeholder={labels.searchPlaceholder}
               />
               {selectedTag ? <input name="tag" type="hidden" value={selectedTag} /> : null}
+              {selectedLanguage !== "all" ? (
+                <input name="lang" type="hidden" value={selectedLanguage} />
+              ) : null}
               <button className="rounded-full bg-[var(--spike-accent)] px-5 py-3 text-sm font-black uppercase tracking-[0.12em] text-[#050505] transition hover:bg-white">
                 {labels.search}
               </button>
@@ -99,13 +117,23 @@ export default async function BlogPage({ params, searchParams }: BlogPageProps) 
               {labels.tagCloud}
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
-              <TagLink active={!selectedTag} href={`/${locale}/blog`}>
+              <TagLink
+                active={!selectedTag}
+                href={buildBlogHref(locale, {
+                  lang: selectedLanguage,
+                  q: query,
+                })}
+              >
                 {labels.allPosts}
               </TagLink>
               {getBlogTags().map((tag) => (
                 <TagLink
                   active={selectedTag === tag}
-                  href={`/${locale}/blog?tag=${encodeURIComponent(tag)}`}
+                  href={buildBlogHref(locale, {
+                    lang: selectedLanguage,
+                    q: query,
+                    tag,
+                  })}
                   key={tag}
                 >
                   {tag}
@@ -123,6 +151,40 @@ export default async function BlogPage({ params, searchParams }: BlogPageProps) 
                 <p className="mt-1 text-sm font-semibold text-white/52">
                   {posts.length} / {spikeBlogPosts.length}
                 </p>
+              </div>
+              <div className="rounded-full border border-white/16 bg-[#050505]/72 p-1">
+                <p className="sr-only">{labels.languageFilter}</p>
+                <div className="flex flex-wrap gap-1">
+                  <LanguageLink
+                    active={selectedLanguage === "all"}
+                    count={languageCounts.all}
+                    href={buildBlogHref(locale, {
+                      q: query,
+                      tag: selectedTag,
+                    })}
+                    label={labels.languageAll}
+                  />
+                  <LanguageLink
+                    active={selectedLanguage === "en"}
+                    count={languageCounts.en}
+                    href={buildBlogHref(locale, {
+                      lang: "en",
+                      q: query,
+                      tag: selectedTag,
+                    })}
+                    label={labels.languageEn}
+                  />
+                  <LanguageLink
+                    active={selectedLanguage === "uk"}
+                    count={languageCounts.uk}
+                    href={buildBlogHref(locale, {
+                      lang: "uk",
+                      q: query,
+                      tag: selectedTag,
+                    })}
+                    label={labels.languageUk}
+                  />
+                </div>
               </div>
             </div>
 
@@ -156,6 +218,9 @@ export default async function BlogPage({ params, searchParams }: BlogPageProps) 
                       </div>
                       <div className="grid gap-4 p-5">
                         <div className="flex flex-wrap gap-3 text-[0.68rem] font-black uppercase tracking-[0.16em] text-white/45">
+                          <span className="text-[var(--spike-accent)]">
+                            {post.language.toUpperCase()}
+                          </span>
                           <span>{formatDate(post.publishedAt, locale)}</span>
                           <span>{post.readingMinutes} {labels.minutes}</span>
                         </div>
@@ -185,6 +250,45 @@ export default async function BlogPage({ params, searchParams }: BlogPageProps) 
   );
 }
 
+function LanguageLink({
+  active,
+  count,
+  href,
+  label,
+}: {
+  active: boolean;
+  count: number;
+  href: string;
+  label: string;
+}) {
+  const className = `inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-black uppercase tracking-[0.1em] transition ${
+    active
+      ? "bg-[var(--spike-accent)] text-[#050505]"
+      : "bg-white/8 text-white/68 hover:bg-white/14 hover:text-white"
+  }`;
+
+  if (count === 0) {
+    return (
+      <span
+        aria-disabled="true"
+        className="inline-flex cursor-not-allowed items-center gap-2 rounded-full bg-white/5 px-3 py-2 text-xs font-black uppercase tracking-[0.1em] text-white/28"
+      >
+        {label}
+        <span className="text-white/24">{count}</span>
+      </span>
+    );
+  }
+
+  return (
+    <Link className={className} href={href}>
+      {label}
+      <span className={active ? "text-[#050505]/58" : "text-white/38"}>
+        {count}
+      </span>
+    </Link>
+  );
+}
+
 function TagLink({
   active,
   children,
@@ -206,6 +310,37 @@ function TagLink({
       {children}
     </Link>
   );
+}
+
+function normalizeBlogLanguage(value?: string): BlogLanguageFilter {
+  return value === "en" || value === "uk" ? value : "all";
+}
+
+function buildBlogHref(
+  locale: Locale,
+  params: {
+    lang?: BlogLanguageFilter;
+    q?: string;
+    tag?: string;
+  },
+) {
+  const query = new URLSearchParams();
+
+  if (params.q) {
+    query.set("q", params.q);
+  }
+
+  if (params.tag) {
+    query.set("tag", params.tag);
+  }
+
+  if (params.lang && params.lang !== "all") {
+    query.set("lang", params.lang);
+  }
+
+  const serialized = query.toString();
+
+  return serialized ? `/${locale}/blog?${serialized}` : `/${locale}/blog`;
 }
 
 function formatDate(value: string, locale: Locale) {

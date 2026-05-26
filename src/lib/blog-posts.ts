@@ -4,6 +4,7 @@ export type BlogPost = {
   body: string[];
   coverImage: string;
   excerpt: string;
+  language: BlogPostLanguage;
   publishedAt: string;
   readingMinutes: number;
   seoDescription: string;
@@ -12,6 +13,8 @@ export type BlogPost = {
   tags: string[];
   title: string;
 };
+
+export type BlogPostLanguage = "en" | "uk";
 
 export const spikeBlogPosts: BlogPost[] = [
   {
@@ -25,6 +28,7 @@ export const spikeBlogPosts: BlogPost[] = [
     coverImage: "/blog/why-ukraine-needs-daily-spot-commodity-index.png",
     excerpt:
       "A daily spot index helps market participants read Ukrainian grain and oilseed price levels with more structure, transparency and consistency.",
+    language: "en",
     publishedAt: "2026-05-22",
     readingMinutes: 3,
     seoDescription:
@@ -52,6 +56,7 @@ export const spikeBlogPosts: BlogPost[] = [
     coverImage: "/blog/how-spot-indices-help-read-daily-grain-market-movement.png",
     excerpt:
       "Spot indices do not predict the market. They help organize daily price information into a clearer benchmark.",
+    language: "en",
     publishedAt: "2026-05-22",
     readingMinutes: 4,
     seoDescription:
@@ -88,6 +93,10 @@ export function getBlogLabels(locale: Locale) {
       copied: "Скопійовано",
       empty: "Нічого не знайдено. Спробуйте інший запит або тег.",
       latest: "Останні матеріали",
+      languageAll: "Усі мови",
+      languageEn: "EN",
+      languageFilter: "Мова матеріалів",
+      languageUk: "UK",
       minutes: "хв читання",
       published: "Опубліковано",
       read: "Читати",
@@ -108,6 +117,10 @@ export function getBlogLabels(locale: Locale) {
     copied: "Copied",
     empty: "No posts found. Try another query or tag.",
     latest: "Latest articles",
+    languageAll: "All languages",
+    languageEn: "EN",
+    languageFilter: "Article language",
+    languageUk: "UK",
     minutes: "min read",
     published: "Published",
     read: "Read",
