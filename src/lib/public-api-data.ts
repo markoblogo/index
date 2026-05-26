@@ -176,6 +176,15 @@ async function getDatabaseLatestData(): Promise<PublicLatestItem[]> {
     throw new Error("Missing configured basis or basket.");
   }
   const activeRespondentCount = await getActiveRespondentCountData();
+  const latestPublished = await db.publishedIndex.findFirst({
+    orderBy: { tradeDate: "desc" },
+    where: {
+      locked: true,
+      status: "published",
+    },
+  });
+  const fallbackDate =
+    latestPublished?.tradeDate.toISOString().slice(0, 10) ?? todayKyivDate();
 
   const rows = await Promise.all(
     dbCommodities.map(async (commodity) => {
@@ -210,7 +219,7 @@ async function getDatabaseLatestData(): Promise<PublicLatestItem[]> {
         commodityCode: commodity.code,
         commodityNameUk: commodity.nameUk,
         commodityNameEn: commodity.nameEn,
-        date: published?.tradeDate.toISOString().slice(0, 10) ?? todayKyivDate(),
+        date: published?.tradeDate.toISOString().slice(0, 10) ?? fallbackDate,
         basis: basisConfig.name,
         valueUsdPerMt: published?.valueUsdPerMt.toNumber() ?? null,
         changeAbs: published?.changeAbsUsdPerMt?.toNumber() ?? 0,

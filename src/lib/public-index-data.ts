@@ -321,6 +321,12 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
       .filter((index): index is NonNullable<typeof index> => Boolean(index))
       .map((index) => [index.commodityId, index]),
   );
+  const latestPublishedDate =
+    published
+      .filter((index): index is NonNullable<typeof index> => Boolean(index))
+      .map((index) => index.tradeDate.toISOString().slice(0, 10))
+      .sort()
+      .at(-1) ?? today;
   const previousPublishedByCommodityId = new Map(
     previousPublished
       .filter((index): index is NonNullable<typeof index> => Boolean(index))
@@ -408,7 +414,7 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
       return {
         ...quote,
         basis: basisConfig.name,
-        date: today,
+        date: latestPublishedDate,
         price: null,
         absoluteChange: 0,
         percentChange: 0,
