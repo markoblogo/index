@@ -140,7 +140,7 @@ export function PlatformLanding() {
       </header>
 
       <section className="relative overflow-hidden border-b border-white/10 bg-[linear-gradient(180deg,#0a170f_0%,#06100c_100%)]">
-        <div className="relative mx-auto grid max-w-7xl gap-12 px-5 py-16 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:py-24">
+        <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-5 py-16 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:py-24">
           <div className="max-w-3xl">
             <PlatformLogo className="mb-8 h-10 w-auto sm:h-14" />
             <h1 className="max-w-4xl text-5xl font-black leading-[0.94] tracking-normal text-white sm:text-6xl lg:text-7xl">
@@ -167,8 +167,11 @@ export function PlatformLanding() {
             </div>
           </div>
 
-          <div className="grid content-end gap-4 lg:pt-10">
-            <div className="overflow-hidden border border-white/12 bg-[#07100c]">
+          <div className="relative z-10 flex items-center justify-center overflow-visible">
+            <div
+              className="relative w-full max-w-[36rem] border border-white/12 bg-[#07100c] transition duration-500 ease-out lg:hover:z-30 lg:hover:scale-[1.75] lg:focus:z-30 lg:focus:scale-[1.75] lg:focus:outline-none xl:max-w-[40rem]"
+              tabIndex={0}
+            >
               <Image
                 alt="1d3x operational model: local partner, index methodology, data workflow and public benchmark connected to the 1d3x infrastructure platform."
                 className="h-auto w-full"
@@ -233,7 +236,7 @@ export function PlatformLanding() {
         className="border-b border-white/10 bg-[#07100c]"
         id="methodology"
       >
-        <div className="mx-auto grid max-w-7xl gap-12 px-5 py-14 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:py-20">
+        <div className="mx-auto grid max-w-7xl items-center gap-10 px-5 py-10 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:py-10">
           <div>
             <h2 className="text-4xl font-black leading-tight sm:text-5xl">
               A repeatable playbook for local markets.
@@ -244,15 +247,20 @@ export function PlatformLanding() {
               credibility, market access and domain expertise.
             </p>
           </div>
-          <div className="overflow-hidden border border-white/12 bg-[#07100c]">
-            <Image
-              alt="1d3x repeatable playbook for local markets: methodology, engine and workflows, data infrastructure and delivery."
-              className="h-auto w-full"
-              height={1024}
-              sizes="(min-width: 1024px) 52vw, 100vw"
-              src="/brand/repeatable-playbook.png"
-              width={1536}
-            />
+          <div className="relative z-10 flex items-center justify-center overflow-visible">
+            <div
+              className="relative w-full max-w-[21rem] border border-white/12 bg-[#07100c] transition duration-500 ease-out lg:hover:z-30 lg:hover:scale-[2.15] lg:focus:z-30 lg:focus:scale-[2.15] lg:focus:outline-none xl:max-w-[23rem]"
+              tabIndex={0}
+            >
+              <Image
+                alt="1d3x repeatable playbook for local markets: methodology, engine and workflows, data infrastructure and delivery."
+                className="h-auto w-full"
+                height={1024}
+                sizes="(min-width: 1024px) 52vw, 100vw"
+                src="/brand/repeatable-playbook.png"
+                width={1536}
+              />
+            </div>
           </div>
         </div>
       </section>
