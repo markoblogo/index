@@ -31,6 +31,7 @@ export async function POST(request: Request) {
 
   const to = process.env.PLATFORM_CONTACT_TO_EMAIL ?? "a.biletskiy@gmail.com";
   const from = process.env.PLATFORM_CONTACT_FROM_EMAIL ?? "1d3x <partnerships@1d3x.com>";
+  const resourceLabel = cleanField(process.env.PLATFORM_CONTACT_RESOURCE_LABEL ?? "1d3x");
   const replyTo = email;
 
   const response = await fetch("https://api.resend.com/emails", {
@@ -43,8 +44,9 @@ export async function POST(request: Request) {
       from,
       to: [to],
       reply_to: replyTo,
-      subject: `1d3x partnership inquiry from ${name}`,
+      subject: `[${resourceLabel}] partnership inquiry from ${name}`,
       text: [
+        `Resource: ${resourceLabel}`,
         `Name: ${name}`,
         `Email: ${email}`,
         `Company: ${company || "-"}`,
@@ -53,6 +55,7 @@ export async function POST(request: Request) {
         message,
       ].join("\n"),
       html: [
+        `<p><strong>Resource:</strong> ${escapeHtml(resourceLabel)}</p>`,
         `<p><strong>Name:</strong> ${escapeHtml(name)}</p>`,
         `<p><strong>Email:</strong> ${escapeHtml(email)}</p>`,
         `<p><strong>Company:</strong> ${escapeHtml(company || "-")}</p>`,
@@ -92,4 +95,3 @@ function escapeHtml(value: string) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
-
