@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isCronRequestAuthorized } from "@/lib/cron-auth";
 import {
   autoPublishSpikeDailyIndices,
   formatDateKyiv,
@@ -9,16 +10,13 @@ import { importMn7rMonitorRespondentPrices } from "@/lib/mn7r-monitor-import";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
-  const secret =
-    process.env.SPIKE_AUTO_PUBLISH_CRON_SECRET ?? process.env.CRON_SECRET;
-
-  if (secret) {
-    const authHeader = request.headers.get("authorization");
-    const token = authHeader?.replace(/^Bearer\s+/i, "");
-
-    if (token !== secret) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  if (
+    !isCronRequestAuthorized(request, [
+      process.env.SPIKE_AUTO_PUBLISH_CRON_SECRET,
+      process.env.CRON_SECRET,
+    ])
+  ) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const url = new URL(request.url);

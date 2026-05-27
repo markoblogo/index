@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isCronRequestAuthorized } from "@/lib/cron-auth";
 import {
   formatDateKyiv,
   importMn7rMonitorRespondentPrices,
@@ -7,16 +8,13 @@ import {
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
-  const secret =
-    process.env.MN7R_IMPORT_CRON_SECRET ?? process.env.CRON_SECRET;
-
-  if (secret) {
-    const authHeader = request.headers.get("authorization");
-    const token = authHeader?.replace(/^Bearer\s+/i, "");
-
-    if (token !== secret) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  if (
+    !isCronRequestAuthorized(request, [
+      process.env.MN7R_IMPORT_CRON_SECRET,
+      process.env.CRON_SECRET,
+    ])
+  ) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const url = new URL(request.url);
