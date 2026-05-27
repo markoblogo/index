@@ -6,7 +6,11 @@ import "./globals.css";
 
 const platformSite = isPlatformSite();
 const activeIndex = platformSite ? null : getActiveIndexConfig();
-const appIcon = activeIndex?.id === "spike-ua" ? "/spike-icon.svg" : "/icon.png";
+const appIcon = platformSite
+  ? "/brand/1d-icon.png"
+  : activeIndex?.id === "spike-ua"
+    ? "/spike-icon.svg"
+    : "/icon.png";
 
 export const metadata: Metadata = {
   title: platformSite ? "1d3x" : activeIndex?.name,
