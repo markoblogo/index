@@ -265,9 +265,9 @@ function SpikeAboutPage({
 
               return (
                 <a
-                  className={`group rounded-[1rem] border border-white/10 text-sm font-black transition ${
+                  className={`group relative overflow-hidden rounded-[1rem] border border-white/10 text-sm font-black transition ${
                     isMn7rMonitor
-                      ? "min-h-[17rem] bg-[radial-gradient(circle_at_82%_8%,rgba(49,255,30,0.22),transparent_18rem),linear-gradient(145deg,#07070b,#101417)] px-5 py-5 text-white"
+                      ? "grid min-h-[17rem] place-items-center bg-[radial-gradient(circle_at_82%_8%,rgba(49,255,30,0.22),transparent_18rem),linear-gradient(145deg,#07070b,#101417)] px-5 py-5 text-white"
                       : "bg-[#f8f8f2] px-4 py-4 text-[#050505]"
                   } ${
                     hasExternalLink
@@ -280,17 +280,17 @@ function SpikeAboutPage({
                   target="_blank"
                 >
                   <span
-                    className={`block text-[0.64rem] uppercase tracking-[0.18em] ${
+                    className={`text-[0.64rem] uppercase tracking-[0.18em] ${
                       isMn7rMonitor ? "text-white/55" : "text-black/38"
-                    }`}
+                    } ${isMn7rMonitor ? "absolute left-5 top-5" : "block"}`}
                   >
                     Partner {String(index + 1).padStart(2, "0")}
                   </span>
                   {isMn7rMonitor ? (
-                    <span className="flex min-h-[13rem] items-center justify-center px-4">
+                    <span className="flex w-full items-center justify-center">
                       <Image
                         alt="MN7R"
-                        className="h-auto w-[min(78%,24rem)] object-contain transition group-hover:scale-[1.03]"
+                        className="h-auto w-[118%] max-w-none object-contain transition group-hover:scale-[1.03]"
                         height={819}
                         priority={false}
                         src="/brand/mn7r-logo-white.png"
