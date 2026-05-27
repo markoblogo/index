@@ -6,6 +6,7 @@ import {
   todayInputDate,
   type AdminCalculationCommodity,
 } from "@/lib/admin-calculate";
+import { unlockTodayPublishedIndices } from "@/lib/admin-publication-lock";
 import { SITE_CONFIG } from "@/lib/constants";
 import type { IndexCalculationStatus } from "@/lib/index-calculation";
 
@@ -38,6 +39,10 @@ const noticeText: Record<string, string> = {
   published_database:
     "Publish action completed. PublishedIndex rows, changes, locks, and audit logs were created.",
   locked: `Published ${SITE_CONFIG.name} values for this trade date are locked and cannot be recalculated or republished.`,
+  unlocked:
+    "Published values for this trade date were unlocked. You can correct inputs and republish before midnight.",
+  unlocked_empty: "There were no locked published values for this trade date.",
+  unlock_unavailable: "Manual unlock is available only for the current Kyiv trade date.",
 };
 
 export default async function AdminCalculatePage({
@@ -69,6 +74,13 @@ export default async function AdminCalculatePage({
     await publishAdminIndices(formData, currentUser);
   }
 
+  async function unlockPublication(formData: FormData) {
+    "use server";
+
+    const currentUser = await requireDemoRole("admin");
+    await unlockTodayPublishedIndices(formData, currentUser);
+  }
+
   return (
     <section className="grid gap-6">
       <div className="rounded-[1.5rem] border border-black/10 bg-white p-6 shadow-sm">
@@ -98,13 +110,29 @@ export default async function AdminCalculatePage({
                 className={
                   data.publicationStatus === "published_locked"
                     ? "rounded-full bg-uga-lime px-3 py-1 text-black"
+                    : data.publicationStatus === "published_unlocked"
+                      ? "rounded-full border border-uga-lime px-3 py-1 text-uga-lime"
                     : "rounded-full border border-black/15 bg-white px-3 py-1 text-black/65"
                 }
               >
                 {data.publicationStatus === "published_locked"
                   ? "Published indices locked"
+                  : data.publicationStatus === "published_unlocked"
+                    ? "Published indices unlocked"
                   : "Indices not published"}
               </span>
+              {data.canUnlockPublication ? (
+                <form action={unlockPublication}>
+                  <input name="date" type="hidden" value={date} />
+                  <input name="returnTo" type="hidden" value="/admin/calculate" />
+                  <button
+                    className="rounded-full border border-uga-lime bg-transparent px-3 py-1 text-uga-lime transition hover:bg-uga-lime hover:text-black"
+                    type="submit"
+                  >
+                    Unlock today
+                  </button>
+                </form>
+              ) : null}
             </div>
           </div>
 

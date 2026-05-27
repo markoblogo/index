@@ -179,7 +179,6 @@ async function getDatabaseLatestData(): Promise<PublicLatestItem[]> {
   const latestPublished = await db.publishedIndex.findFirst({
     orderBy: { tradeDate: "desc" },
     where: {
-      locked: true,
       status: "published",
     },
   });
@@ -209,7 +208,6 @@ async function getDatabaseLatestData(): Promise<PublicLatestItem[]> {
           commodityId: commodity.id,
           deliveryBasisId: basis.id,
           basketId: basket.id,
-          locked: true,
           status: "published",
           ...(latestPublished ? { tradeDate: latestPublished.tradeDate } : {}),
         },
@@ -265,7 +263,6 @@ async function getDatabaseHistoryData(): Promise<PublicHistoryItem[]> {
     where: {
       deliveryBasisId: { in: basisIds },
       basketId: { in: basketIds },
-      locked: true,
       status: "published",
     },
   });

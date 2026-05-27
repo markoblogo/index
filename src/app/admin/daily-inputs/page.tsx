@@ -5,6 +5,7 @@ import {
   todayInputDate,
   type DailyInputCell,
 } from "@/lib/admin-daily-inputs";
+import { unlockTodayPublishedIndices } from "@/lib/admin-publication-lock";
 import { SITE_CONFIG } from "@/lib/constants";
 
 type DailyInputsPageProps = {
@@ -41,6 +42,13 @@ export default async function DailyInputsPage({
     await saveDailyInputs(formData, currentUser);
   }
 
+  async function unlockPublication(formData: FormData) {
+    "use server";
+
+    const currentUser = await requireDemoRole("admin");
+    await unlockTodayPublishedIndices(formData, currentUser);
+  }
+
   return (
     <section className="grid gap-6">
       <div className="border border-black bg-white p-5">
@@ -68,13 +76,29 @@ export default async function DailyInputsPage({
                 className={
                   data.publicationStatus === "published_locked"
                     ? "rounded-full bg-uga-lime px-3 py-1 text-black"
+                    : data.publicationStatus === "published_unlocked"
+                      ? "rounded-full border border-uga-lime px-3 py-1 text-uga-lime"
                     : "rounded-full border border-black/15 bg-white px-3 py-1 text-black/65"
                 }
               >
                 {data.publicationStatus === "published_locked"
                   ? "Published index locked"
+                  : data.publicationStatus === "published_unlocked"
+                    ? "Published index unlocked"
                   : "Index not published"}
               </span>
+              {data.canUnlockPublication ? (
+                <form action={unlockPublication}>
+                  <input name="date" type="hidden" value={date} />
+                  <input name="returnTo" type="hidden" value="/admin/daily-inputs" />
+                  <button
+                    className="rounded-full border border-uga-lime bg-transparent px-3 py-1 text-uga-lime transition hover:bg-uga-lime hover:text-black"
+                    type="submit"
+                  >
+                    Unlock today
+                  </button>
+                </form>
+              ) : null}
             </div>
           </div>
 
@@ -105,6 +129,12 @@ export default async function DailyInputsPage({
                 ? "Changes saved for the current session. Configure DATABASE_URL to persist changes and audit logs."
                 : params.saved === "locked"
                   ? "This published trade date is locked. Price inputs can only be corrected on the same trade date until midnight."
+                : params.saved === "unlocked"
+                  ? "Published values for this trade date were unlocked. You can edit inputs and republish before midnight."
+                : params.saved === "unlocked_empty"
+                  ? "There were no locked published values for this trade date."
+                : params.saved === "unlock_unavailable"
+                  ? "Manual unlock is available only for the current Kyiv trade date."
                 : "No valid prices were submitted."}
           </div>
         ) : null}

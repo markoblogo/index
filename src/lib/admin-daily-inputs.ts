@@ -7,6 +7,10 @@ import type { DemoUser } from "@/lib/demo-auth";
 import { getDemoSubmission, setDemoSubmission } from "@/lib/demo-submission-store";
 import { commodities, respondents, type CommodityId } from "@/lib/mock-data";
 import {
+  canManuallyUnlockPublicationDate,
+  todayKyivDate,
+} from "@/lib/admin-publication-lock";
+import {
   getActiveIndexTenant,
   getConfiguredDeliveryBasisCodes,
   getDeliveryBasisConfigForCommodityCode,
@@ -50,7 +54,8 @@ export type DailyInputData = {
   basisLabel: string;
   lockReason: string | null;
   lockedForEditing: boolean;
-  publicationStatus: "not_published" | "published_locked";
+  publicationStatus: "not_published" | "published_locked" | "published_unlocked";
+  canUnlockPublication: boolean;
   source: "database" | "mock";
   commodities: DailyInputCommodity[];
   respondents: DailyInputRespondent[];
@@ -67,12 +72,7 @@ const commodityCodeByMockId: Record<CommodityId, string> = {
 };
 
 export function todayInputDate() {
-  return new Intl.DateTimeFormat("en-CA", {
-    day: "2-digit",
-    month: "2-digit",
-    timeZone: "Europe/Kyiv",
-    year: "numeric",
-  }).format(new Date());
+  return todayKyivDate();
 }
 
 export async function getDailyInputData(date: string): Promise<DailyInputData> {
@@ -182,7 +182,7 @@ async function getDatabaseDailyInputData(date: string): Promise<DailyInputData> 
     throw new Error("Missing basis, commodities, or active respondents.");
   }
 
-  const [submissions, indicatives, lockedPublishedCount] = await Promise.all([
+  const [submissions, indicatives, publishedIndices] = await Promise.all([
     db.priceSubmission.findMany({
       where: {
         tradeDate,
@@ -196,15 +196,18 @@ async function getDatabaseDailyInputData(date: string): Promise<DailyInputData> 
         source: "spike",
       },
     }),
-    db.publishedIndex.count({
+    db.publishedIndex.findMany({
       where: {
         tradeDate,
         deliveryBasisId: { in: basisIds },
-        locked: true,
       },
+      select: { locked: true },
     }),
   ]);
-  const lockedForEditing = isPastTradeDate(date) && lockedPublishedCount > 0;
+  const lockedPublishedCount = publishedIndices.filter((index) => index.locked).length;
+  const lockedForEditing = isPastTradeDate(date)
+    ? publishedIndices.length > 0
+    : lockedPublishedCount > 0;
 
   const indicativeByCommodity = new Map(
     indicatives.map((indicative) => [
@@ -269,7 +272,14 @@ async function getDatabaseDailyInputData(date: string): Promise<DailyInputData> 
     basisLabel: activeIndex.defaultDeliveryBasis,
     lockReason: lockedForEditing ? lockedInputReason() : null,
     lockedForEditing,
-    publicationStatus: lockedPublishedCount > 0 ? "published_locked" : "not_published",
+    publicationStatus:
+      lockedPublishedCount > 0
+        ? "published_locked"
+        : publishedIndices.length > 0
+          ? "published_unlocked"
+          : "not_published",
+    canUnlockPublication:
+      lockedPublishedCount > 0 && canManuallyUnlockPublicationDate(date),
     source: "database",
     commodities: dbCommodities.map((commodity) => ({
       id: commodity.id,
@@ -363,6 +373,7 @@ function getMockDailyInputData(date: string): DailyInputData {
     lockReason: isPastTradeDate(date) ? lockedInputReason() : null,
     lockedForEditing: isPastTradeDate(date),
     publicationStatus: isPastTradeDate(date) ? "published_locked" : "not_published",
+    canUnlockPublication: false,
     source: "mock",
     commodities: commodities.map((commodity) => ({
       id: commodity.id,
@@ -378,21 +389,20 @@ function getMockDailyInputData(date: string): DailyInputData {
 }
 
 async function isDatabaseDailyInputLocked(date: string) {
-  if (!isPastTradeDate(date)) {
-    return false;
-  }
-
   const tradeDate = dateToUtcDate(date);
   const basisCodes = getConfiguredDeliveryBasisCodes();
-  const lockedPublishedCount = await db.publishedIndex.count({
+  const publishedIndices = await db.publishedIndex.findMany({
     where: {
       tradeDate,
       deliveryBasis: { code: { in: basisCodes } },
-      locked: true,
     },
+    select: { locked: true },
   });
+  const lockedPublishedCount = publishedIndices.filter((index) => index.locked).length;
 
-  return lockedPublishedCount > 0;
+  return isPastTradeDate(date)
+    ? publishedIndices.length > 0
+    : lockedPublishedCount > 0;
 }
 
 function isPastTradeDate(date: string) {

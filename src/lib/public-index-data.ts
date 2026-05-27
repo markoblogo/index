@@ -260,7 +260,6 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
           deliveryBasisId: basis.id,
           basketId: basket.id,
           status: "published",
-          locked: true,
         },
         orderBy: { tradeDate: "desc" },
       });
@@ -282,7 +281,6 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
           basketId: basket.id,
           commodityId: commodity.id,
           deliveryBasisId: basis.id,
-          locked: true,
           status: "published",
         },
       });
@@ -346,7 +344,6 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
               commodityId: commodity.id,
               deliveryBasisId: basis.id,
               status: "published",
-              locked: true,
               tradeDate: { lt: todayTradeDate },
             },
             orderBy: { tradeDate: "desc" },

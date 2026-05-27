@@ -1,5 +1,4 @@
 import { Prisma } from "@prisma/client";
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { allowMockFallback, db, hasDatabaseUrl } from "@/lib/db";
 import type { DemoUser } from "@/lib/demo-auth";
@@ -24,6 +23,10 @@ import {
   getDailyInputData,
   todayInputDate,
 } from "@/lib/admin-daily-inputs";
+import {
+  canManuallyUnlockPublicationDate,
+  revalidatePublishedIndexViews,
+} from "@/lib/admin-publication-lock";
 import { getActiveRespondentCount } from "@/lib/respondent-directory";
 import {
   getActiveIndexTenant,
@@ -69,7 +72,8 @@ export type AdminCalculationData = {
   basisLabel: string;
   lockReason: string | null;
   lockedForPublication: boolean;
-  publicationStatus: "not_published" | "published_locked";
+  publicationStatus: "not_published" | "published_locked" | "published_unlocked";
+  canUnlockPublication: boolean;
   source: "database" | "mock";
   commodities: AdminCalculationCommodity[];
 };
@@ -153,15 +157,6 @@ export async function publishAdminIndices(formData: FormData, user: DemoUser) {
   redirect(`/admin/calculate?date=${date}&notice=published_database`);
 }
 
-function revalidatePublishedIndexViews() {
-  revalidatePath("/uk");
-  revalidatePath("/en");
-  revalidatePath("/uk/analytics");
-  revalidatePath("/en/analytics");
-  revalidatePath("/api/public/latest");
-  revalidatePath("/api/public/history");
-}
-
 async function getMockCalculationData(date: string): Promise<AdminCalculationData> {
   const inputData = await getDailyInputData(date);
   const basketRespondentCount = getActiveRespondentCount();
@@ -182,6 +177,7 @@ async function getMockCalculationData(date: string): Promise<AdminCalculationDat
     lockReason: isPastTradeDate(date) ? lockedPublicationReason() : null,
     lockedForPublication: isPastTradeDate(date),
     publicationStatus: isPastTradeDate(date) ? "published_locked" : "not_published",
+    canUnlockPublication: false,
     source: "mock",
     commodities: inputData.commodities.map((commodity) => {
       const cells = cellsByCommodity.get(commodity.id) ?? [];
@@ -277,14 +273,26 @@ async function getDatabaseCalculationData(date: string): Promise<AdminCalculatio
   }
 
   const { dbCommodities, existingCalculations, publishedIndices } = context;
-  const lockedForPublication = isPastTradeDate(date) && publishedIndices.size > 0;
+  const lockedPublishedCount = [...publishedIndices.values()].filter(
+    (publishedIndex) => publishedIndex.locked,
+  ).length;
+  const lockedForPublication = isPastTradeDate(date)
+    ? publishedIndices.size > 0
+    : lockedPublishedCount > 0;
 
   return {
     date,
     basisLabel: getActiveIndexTenant().defaultDeliveryBasis,
     lockReason: lockedForPublication ? lockedPublicationReason() : null,
     lockedForPublication,
-    publicationStatus: publishedIndices.size > 0 ? "published_locked" : "not_published",
+    publicationStatus:
+      lockedPublishedCount > 0
+        ? "published_locked"
+        : publishedIndices.size > 0
+          ? "published_unlocked"
+          : "not_published",
+    canUnlockPublication:
+      lockedPublishedCount > 0 && canManuallyUnlockPublicationDate(date),
     source: "database",
     commodities: dbCommodities.map((commodity) => {
       const basis = context.basisByCommodityId.get(commodity.id);
@@ -766,16 +774,17 @@ function isPastTradeDate(date: string) {
 }
 
 async function isPublicationLockedForDate(date: string) {
-  if (!isPastTradeDate(date)) {
-    return false;
-  }
-
   if (!hasDatabaseUrl()) {
-    return true;
+    return isPastTradeDate(date);
   }
 
   const context = await getDatabaseCalculationContext(date);
-  return (context?.publishedIndices.size ?? 0) > 0;
+  const publishedIndices = [...(context?.publishedIndices.values() ?? [])];
+  const lockedPublishedCount = publishedIndices.filter((index) => index.locked).length;
+
+  return isPastTradeDate(date)
+    ? publishedIndices.length > 0
+    : lockedPublishedCount > 0;
 }
 
 function lockedPublicationReason() {
