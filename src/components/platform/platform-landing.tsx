@@ -26,10 +26,29 @@ const capabilities = [
   "Embeddable widgets for partner websites and media",
 ] as const;
 
+const legalNotices = [
+  {
+    title: "Informational use only",
+    text: "Index values and analytics shown through 1d3x projects are published for informational and analytical purposes only. They are not investment advice, trading advice, a public offer or a recommendation to buy or sell any commodity.",
+  },
+  {
+    title: "Independent decisions",
+    text: "Market participants remain responsible for their own commercial, trading, financial and risk-management decisions and should verify information independently before relying on it.",
+  },
+  {
+    title: "Data handling",
+    text: "The 1d3x landing site does not collect or process respondent price submissions. Local index projects operate their own respondent workflows and publish only aggregated outputs according to their methodologies.",
+  },
+  {
+    title: "No liability",
+    text: "1d3x, project partners and technology providers are not liable for decisions, losses or damages arising from use of published index values, embeds, analytics or related materials.",
+  },
+] as const;
+
 export function PlatformLanding() {
   return (
     <main className="min-h-screen bg-[#07100c] text-white">
-      <header className="border-b border-white/10">
+      <header className="border-b border-white/10 bg-[#07100c]/95">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5 sm:px-8">
           <Link className="block" href="/" aria-label="1d3x home">
             <PlatformLogo className="h-5 w-auto sm:h-6" />
@@ -54,18 +73,14 @@ export function PlatformLanding() {
         </div>
       </header>
 
-      <section className="relative overflow-hidden border-b border-white/10">
-        <div className="absolute inset-0 opacity-40">
-          <div className="absolute left-[8%] top-[-18rem] h-[34rem] w-[34rem] rounded-full bg-[#d6ff58]/20 blur-3xl" />
-          <div className="absolute bottom-[-22rem] right-[-6rem] h-[42rem] w-[42rem] rounded-full bg-[#2b7cff]/18 blur-3xl" />
-        </div>
-        <div className="relative mx-auto grid max-w-7xl gap-12 px-5 py-20 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:py-28">
+      <section className="relative overflow-hidden border-b border-white/10 bg-[linear-gradient(180deg,#0a170f_0%,#06100c_100%)]">
+        <div className="relative mx-auto grid max-w-7xl gap-12 px-5 py-16 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:py-24">
           <div className="max-w-3xl">
-            <PlatformLogo className="mb-8 h-12 w-auto sm:h-16" />
-            <h1 className="max-w-4xl text-6xl font-black leading-[0.9] tracking-normal text-white sm:text-7xl lg:text-8xl">
+            <PlatformLogo className="mb-8 h-10 w-auto sm:h-14" />
+            <h1 className="max-w-4xl text-5xl font-black leading-[0.94] tracking-normal text-white sm:text-6xl lg:text-7xl">
               Local commodity indices, built with market leaders.
             </h1>
-            <p className="mt-7 max-w-2xl text-xl leading-8 text-white/72">
+            <p className="mt-7 max-w-2xl text-lg leading-8 text-white/70 sm:text-xl">
               1d3x is an index infrastructure platform for local agricultural
               markets, created by the team behind agri-market infrastructure
               projects including MN7R and Cropto.
@@ -87,7 +102,7 @@ export function PlatformLanding() {
           </div>
 
           <div className="grid content-end gap-4 lg:pt-10">
-            <div className="border border-white/12 bg-white/[0.045] p-5">
+            <div className="border border-white/18 bg-[#0c1711] p-5">
               <p className="text-sm font-black uppercase tracking-[0.16em] text-[#d6ff58]">
                 Operational model
               </p>
@@ -95,7 +110,7 @@ export function PlatformLanding() {
                 {["Local partner", "Index methodology", "Data workflow", "Public benchmark"].map(
                   (item, index) => (
                     <div
-                      className="flex items-center justify-between border border-white/10 bg-black/20 px-4 py-3"
+                      className="flex items-center justify-between border border-white/10 bg-[#142018] px-4 py-3"
                       key={item}
                     >
                       <span className="text-sm font-semibold text-white/72">
@@ -112,7 +127,7 @@ export function PlatformLanding() {
       </section>
 
       <section className="border-b border-white/10 bg-[#0b1711]" id="indices">
-        <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:py-20">
+        <div className="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:py-20">
           <div className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
             <h2 className="text-4xl font-black leading-tight sm:text-5xl">Live index projects</h2>
             <p className="max-w-3xl text-lg leading-7 text-white/68 lg:justify-self-end">
@@ -121,13 +136,13 @@ export function PlatformLanding() {
               its local brand while running on shared 1d3x infrastructure.
             </p>
           </div>
-          <div className="mt-10 grid gap-7 lg:grid-cols-2">
+          <div className="mt-10 grid gap-8">
             {liveIndices.map((index) => (
-              <article className="border border-white/12 bg-[#07100c]" key={index.name}>
-                <div className="flex items-start justify-between gap-4 border-b border-white/10 p-5">
+              <article className="border border-white/14 bg-[#07100c]" key={index.name}>
+                <div className="grid gap-4 border-b border-white/10 p-5 sm:grid-cols-[1fr_auto] sm:items-start">
                   <div>
                     <h3 className="text-2xl font-black">{index.name}</h3>
-                    <p className="mt-2 max-w-xl text-sm leading-6 text-white/62">
+                    <p className="mt-2 max-w-3xl text-sm leading-6 text-white/62">
                       {index.description}
                     </p>
                   </div>
@@ -138,20 +153,22 @@ export function PlatformLanding() {
                     Open
                   </a>
                 </div>
-                <iframe
-                  className="h-[620px] w-full bg-white"
-                  loading="lazy"
-                  src={index.embed}
-                  title={`${index.name} embedded preview`}
-                />
+                <div className="bg-white">
+                  <iframe
+                    className="h-[620px] w-full bg-white md:h-[740px] lg:h-[820px]"
+                    loading="eager"
+                    src={index.embed}
+                    title={`${index.name} embedded preview`}
+                  />
+                </div>
               </article>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="border-b border-white/10" id="methodology">
-        <div className="mx-auto grid max-w-7xl gap-12 px-5 py-16 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:py-20">
+      <section className="border-b border-white/10 bg-[#07100c]" id="methodology">
+        <div className="mx-auto grid max-w-7xl gap-12 px-5 py-14 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:py-20">
           <div>
             <h2 className="text-4xl font-black leading-tight sm:text-5xl">
               A repeatable playbook for local markets.
@@ -173,7 +190,7 @@ export function PlatformLanding() {
       </section>
 
       <section className="border-b border-white/10 bg-[#f4f7ef] text-[#07100c]" id="partners">
-        <div className="mx-auto grid max-w-7xl gap-10 px-5 py-16 sm:px-8 lg:grid-cols-[1fr_1fr] lg:py-20">
+        <div className="mx-auto grid max-w-7xl gap-10 px-5 py-14 sm:px-8 lg:grid-cols-[1fr_1fr] lg:py-20">
           <div>
             <h2 className="text-4xl font-black leading-tight sm:text-5xl">
               Built for associations, brokers and commodity market operators.
@@ -195,7 +212,7 @@ export function PlatformLanding() {
       </section>
 
       <section className="bg-[#07100c]" id="contact">
-        <div className="mx-auto grid max-w-7xl gap-10 px-5 py-16 sm:px-8 lg:grid-cols-[0.85fr_1.15fr] lg:py-20">
+        <div className="mx-auto grid max-w-7xl gap-10 px-5 py-14 sm:px-8 lg:grid-cols-[0.85fr_1.15fr] lg:py-20">
           <div>
             <h2 className="text-4xl font-black leading-tight sm:text-5xl">
               Launch a local commodity index with us.
@@ -219,7 +236,19 @@ export function PlatformLanding() {
       </section>
 
       <footer className="border-t border-white/10 px-5 py-8 text-sm text-white/50 sm:px-8">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mx-auto grid max-w-7xl gap-8">
+          <div className="grid gap-4 border-b border-white/10 pb-7 md:grid-cols-4">
+            {legalNotices.map((notice) => (
+              <section key={notice.title}>
+                <h2 className="text-xs font-black uppercase tracking-[0.14em] text-white/70">
+                  {notice.title}
+                </h2>
+                <p className="mt-2 text-xs leading-5 text-white/45">{notice.text}</p>
+              </section>
+            ))}
+          </div>
+        </div>
+        <div className="mx-auto mt-7 flex max-w-7xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <PlatformLogo className="h-4 w-auto opacity-60" />
             <p>Commodity index infrastructure.</p>
