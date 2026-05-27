@@ -11,6 +11,7 @@ import {
 } from "@/lib/demo-submission-store";
 import { commodities, respondents } from "@/lib/mock-data";
 import { todayInputDate } from "@/lib/admin-daily-inputs";
+import { autoPublishSpikeDailyIndices } from "@/lib/auto-publish";
 import {
   getActiveIndexTenant,
   getConfiguredDeliveryBasisCodes,
@@ -180,6 +181,9 @@ export async function saveRespondentSurvey(formData: FormData, user: DemoUser) {
   }
 
   await saveDatabaseRespondentSurvey({ date, entries, respondentId, status: intent, user });
+  if (isSpike && intent === "submitted" && date === todayInputDate()) {
+    await autoPublishSpikeDailyIndices(date, { replaceExisting: true });
+  }
   revalidatePath("/admin/daily-inputs");
   redirect(`/respondent?locale=${locale}&saved=${intent}`);
 }
