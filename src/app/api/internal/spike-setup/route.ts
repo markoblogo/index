@@ -3,6 +3,10 @@ import { NextResponse } from "next/server";
 
 import { isCronRequestAuthorized } from "@/lib/cron-auth";
 import { db } from "@/lib/db";
+import {
+  MN7R_MONITOR_RESPONDENT_ID,
+  SPIKE_ADMIN_FALLBACK_RESPONDENT_ID,
+} from "@/lib/index-platform";
 import { sendRespondentTelegramNotifications } from "@/lib/respondent-telegram";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +19,11 @@ const fopSolovey = {
   phone: "+380503862991",
   telegramChatId: "447017744",
   telegramUsername: "o_solo",
+};
+
+const adminFallback = {
+  id: SPIKE_ADMIN_FALLBACK_RESPONDENT_ID,
+  legalName: "Admin market fallback",
 };
 
 function requireInternalAccess(request: Request) {
@@ -36,6 +45,9 @@ export async function POST(request: Request) {
   const url = new URL(request.url);
   const shouldDebug = url.searchParams.get("debug") === "1";
   const cleanupDate = url.searchParams.get("cleanupNonMonitorDate");
+  const moveMonitorAdminFallbackDate = url.searchParams.get(
+    "moveMonitorAdminFallbackDate",
+  );
   const forceTemporary = url.searchParams.get("forceTemporary") === "1";
   const shouldSendOnboarding = url.searchParams.get("sendOnboarding") === "1";
   const shouldSendTelegramOnboarding =
@@ -75,9 +87,32 @@ export async function POST(request: Request) {
       },
       where: {
         id: {
-          notIn: ["MN7R_MONITOR", fopSolovey.id],
+          notIn: [
+            MN7R_MONITOR_RESPONDENT_ID,
+            adminFallback.id,
+            fopSolovey.id,
+          ],
         },
       },
+    });
+
+    await tx.respondent.upsert({
+      create: {
+        id: adminFallback.id,
+        active: true,
+        collectionMode: "manual_outreach",
+        displayName: adminFallback.legalName,
+        legalName: adminFallback.legalName,
+        status: "active",
+      },
+      update: {
+        active: true,
+        collectionMode: "manual_outreach",
+        displayName: adminFallback.legalName,
+        legalName: adminFallback.legalName,
+        status: "active",
+      },
+      where: { id: adminFallback.id },
     });
 
     await tx.respondent.upsert({
@@ -182,24 +217,30 @@ export async function POST(request: Request) {
 
     const baskets = await tx.basket.findMany({ where: { active: true } });
     await Promise.all(
-      baskets.map((basket) =>
-        tx.basketRespondent.upsert({
-          create: {
-            active: true,
-            basketId: basket.id,
-            respondentId: fopSolovey.id,
-          },
-          update: { active: true },
-          where: {
-            basketId_respondentId: {
+      baskets.flatMap((basket) =>
+        [adminFallback.id, fopSolovey.id].map((respondentId) =>
+          tx.basketRespondent.upsert({
+            create: {
+              active: true,
               basketId: basket.id,
-              respondentId: fopSolovey.id,
+              respondentId,
             },
-          },
-        }),
+            update: { active: true },
+            where: {
+              basketId_respondentId: {
+                basketId: basket.id,
+                respondentId,
+              },
+            },
+          }),
+        ),
       ),
     );
   });
+
+  const movedMonitorAdminFallback = moveMonitorAdminFallbackDate
+    ? await moveMonitorAdminEntriesToFallback(moveMonitorAdminFallbackDate)
+    : undefined;
 
   let onboardingSent = false;
   if (shouldSendOnboarding && activeTemporaryPassword) {
@@ -222,9 +263,11 @@ export async function POST(request: Request) {
     : undefined;
 
   return NextResponse.json({
+    adminFallbackRespondentId: adminFallback.id,
     cleanup: cleanupDate ? await cleanupNonMonitorSubmissions(cleanupDate) : undefined,
     debug: shouldDebug ? await getDebugSnapshot() : undefined,
     disabledSeedRespondents: true,
+    movedMonitorAdminFallback,
     onboardingSent,
     respondentId: fopSolovey.id,
     schemaReady: true,
@@ -253,13 +296,93 @@ async function cleanupNonMonitorSubmissions(date: string) {
       status: "draft",
     },
     where: {
-      respondentId: { not: "MN7R_MONITOR" },
+      respondentId: { not: MN7R_MONITOR_RESPONDENT_ID },
       status: { in: ["submitted", "verified", "published"] },
       tradeDate: new Date(`${date}T00:00:00.000Z`),
     },
   });
 
   return { skippedReason: null, updated: result.count };
+}
+
+async function moveMonitorAdminEntriesToFallback(date: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return { skippedReason: "invalid_date", moved: 0 };
+  }
+
+  const tradeDate = new Date(`${date}T00:00:00.000Z`);
+  const entries = await db.priceSubmission.findMany({
+    where: {
+      respondentId: MN7R_MONITOR_RESPONDENT_ID,
+      source: "admin",
+      tradeDate,
+    },
+  });
+
+  for (const entry of entries) {
+    await db.priceSubmission.upsert({
+      create: {
+        commodityId: entry.commodityId,
+        deliveryBasisId: entry.deliveryBasisId,
+        metadata: {
+          movedAt: new Date().toISOString(),
+          movedFromRespondentId: MN7R_MONITOR_RESPONDENT_ID,
+          movedReason: "admin_fallback_separation",
+        },
+        priceUsdPerMt: entry.priceUsdPerMt,
+        respondentId: adminFallback.id,
+        source: "admin",
+        status: entry.status,
+        submittedAt: entry.submittedAt ?? new Date(),
+        submittedById: entry.submittedById,
+        tradeDate,
+      },
+      update: {
+        metadata: {
+          movedAt: new Date().toISOString(),
+          movedFromRespondentId: MN7R_MONITOR_RESPONDENT_ID,
+          movedReason: "admin_fallback_separation",
+        },
+        priceUsdPerMt: entry.priceUsdPerMt,
+        status: entry.status,
+        submittedAt: entry.submittedAt ?? new Date(),
+        submittedById: entry.submittedById,
+      },
+      where: {
+        tradeDate_commodityId_deliveryBasisId_respondentId_source: {
+          commodityId: entry.commodityId,
+          deliveryBasisId: entry.deliveryBasisId,
+          respondentId: adminFallback.id,
+          source: "admin",
+          tradeDate,
+        },
+      },
+    });
+
+    await db.priceSubmission.delete({ where: { id: entry.id } });
+  }
+
+  if (entries.length > 0) {
+    await db.auditLog.create({
+      data: {
+        action: "price_submission.admin_fallback_migrated",
+        actorRole: "admin",
+        afterJson: {
+          date,
+          moved: entries.length,
+          targetRespondentId: adminFallback.id,
+        },
+        beforeJson: {
+          source: "admin",
+          sourceRespondentId: MN7R_MONITOR_RESPONDENT_ID,
+        },
+        entityType: "PriceSubmission",
+        summary: `Moved ${entries.length} admin-entered MN7R submissions to Admin market fallback for ${date}.`,
+      },
+    });
+  }
+
+  return { skippedReason: null, moved: entries.length };
 }
 
 async function submitRespondentDrafts({

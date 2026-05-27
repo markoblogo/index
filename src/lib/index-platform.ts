@@ -2,6 +2,9 @@ import type { Locale } from "@/lib/i18n";
 
 export type IndexTenantId = "uga-ua" | "spike-ua";
 
+export const MN7R_MONITOR_RESPONDENT_ID = "MN7R_MONITOR";
+export const SPIKE_ADMIN_FALLBACK_RESPONDENT_ID = "SPIKE_ADMIN_FALLBACK";
+
 export type IndexCommodityGroup = "export" | "processing";
 
 export type IndexCommodityConfig = {
@@ -405,7 +408,11 @@ export const INDEX_CONFIGS: Record<IndexTenantId, IndexConfig> = {
       },
     ],
     respondents: [
-      { id: "MN7R_MONITOR", legalName: "MN7R Monitor" },
+      { id: MN7R_MONITOR_RESPONDENT_ID, legalName: "MN7R Monitor" },
+      {
+        id: SPIKE_ADMIN_FALLBACK_RESPONDENT_ID,
+        legalName: "Admin market fallback",
+      },
       { id: "fop-solovey", legalName: "ФОП Соловей" },
     ],
     commodities: spikeCommodities,

@@ -1,7 +1,11 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Prisma, PrismaClient } from "@prisma/client";
 import { calculateIndexValue } from "../src/lib/index-calculation";
-import { getActiveIndexConfig } from "../src/lib/index-platform";
+import {
+  getActiveIndexConfig,
+  MN7R_MONITOR_RESPONDENT_ID,
+  SPIKE_ADMIN_FALLBACK_RESPONDENT_ID,
+} from "../src/lib/index-platform";
 import { hashPassword } from "../src/lib/password-hash";
 
 const connectionString =
@@ -140,14 +144,28 @@ const directoryRespondents =
           status: "pending",
         },
       ]
-    : respondents.map((respondent, index) => ({
-        ...respondent,
-        contactName: `Partner contact ${index + 1}`,
-        contactPhone: "",
-        loginEmail: `respondent-${index + 1}@${activeIndex.id}.demo`,
-        collectionMode: "self_service",
-        status: "active",
-      }));
+    : respondents.map((respondent, index) => {
+        const isSystemRespondent =
+          respondent.id === MN7R_MONITOR_RESPONDENT_ID ||
+          respondent.id === SPIKE_ADMIN_FALLBACK_RESPONDENT_ID;
+
+        return {
+          ...respondent,
+          contactName:
+            respondent.id === SPIKE_ADMIN_FALLBACK_RESPONDENT_ID
+              ? "Admin fallback"
+              : `Partner contact ${index + 1}`,
+          contactPhone: "",
+          loginEmail:
+            respondent.id === SPIKE_ADMIN_FALLBACK_RESPONDENT_ID
+              ? "admin-fallback@spike-ua.system"
+              : respondent.id === MN7R_MONITOR_RESPONDENT_ID
+                ? "mn7r-monitor@spike-ua.system"
+                : `respondent-${index + 1}@${activeIndex.id}.demo`,
+          collectionMode: isSystemRespondent ? "manual_outreach" : "self_service",
+          status: "active",
+        };
+      });
 
 async function main() {
   const deliveryBasisRecords = await Promise.all(

@@ -2,10 +2,17 @@ import Image from "next/image";
 
 import { SITE_CONFIG } from "@/lib/constants";
 import { getDictionary, type Locale } from "@/lib/i18n";
+import {
+  MN7R_MONITOR_RESPONDENT_ID,
+  SPIKE_ADMIN_FALLBACK_RESPONDENT_ID,
+} from "@/lib/index-platform";
 import { respondents } from "@/lib/mock-data";
 
-const MN7R_RESPONDENT_ID = "MN7R_MONITOR";
-const HIDDEN_PUBLIC_RESPONDENT_IDS = new Set(["fop-solovey"]);
+const MN7R_RESPONDENT_ID = MN7R_MONITOR_RESPONDENT_ID;
+const HIDDEN_PUBLIC_RESPONDENT_IDS = new Set([
+  "fop-solovey",
+  SPIKE_ADMIN_FALLBACK_RESPONDENT_ID,
+]);
 
 const respondentLinks = new Map([
   [MN7R_RESPONDENT_ID, "https://mn7r.com/"],
