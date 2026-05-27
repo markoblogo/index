@@ -124,9 +124,18 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
         <div className="mx-auto grid max-w-6xl gap-8 py-10 lg:grid-cols-[minmax(0,1fr)_16rem]">
           <div className="grid gap-6 text-lg font-medium leading-8 text-white/76">
-            {post.body.map((paragraph) => (
-              <p key={paragraph}>{paragraph}</p>
-            ))}
+            {post.body.map((paragraph) =>
+              isBodyHeading(paragraph) ? (
+                <h2
+                  className="pt-5 text-2xl font-black uppercase leading-tight text-white"
+                  key={paragraph}
+                >
+                  {paragraph}
+                </h2>
+              ) : (
+                <p key={paragraph}>{paragraph}</p>
+              ),
+            )}
           </div>
           <aside className="h-fit rounded-[1.15rem] border border-white/18 bg-[#050505]/76 p-4">
             <p className="text-[0.68rem] font-black uppercase tracking-[0.18em] text-[var(--spike-pink)]">
@@ -156,4 +165,8 @@ function formatDate(value: string, locale: Locale) {
     month: "long",
     year: "numeric",
   }).format(new Date(`${value}T00:00:00.000Z`));
+}
+
+function isBodyHeading(value: string) {
+  return value.length <= 80 && !/[.!?…]$/.test(value);
 }
