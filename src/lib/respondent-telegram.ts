@@ -69,8 +69,6 @@ function getKyivReminderLevel(now = new Date()): TelegramReminderLevel | null {
   }
 
   if (hour === "16") return "initial";
-  if (hour === "17") return "reminder_17";
-  if (hour === "18") return "final_18";
   return null;
 }
 
