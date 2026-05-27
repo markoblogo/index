@@ -1,162 +1,208 @@
 # Index Platform
 
-Index Platform is a Next.js/TypeScript platform for bilingual Ukrainian commodity market indices. The current primary tenant is **UGA Index** for the Ukrainian Grain Association. The codebase also contains a Spike tenant configuration that reuses the same calculation engine, internal workflows, public APIs and embed infrastructure.
+Index Platform is a shared Next.js/TypeScript platform for Ukrainian commodity
+market indices. The codebase is intentionally organized as one index engine with
+tenant-specific brands, content, styling, commodities, respondents, integrations
+and deployment settings.
 
-## Live Deployments
+The current live tenants are:
 
-- UGA Index: [https://index-uga.cr0pto.com](https://index-uga.cr0pto.com)
-- Spike tenant preview: [https://spike-ua.cr0pto.com](https://spike-ua.cr0pto.com)
+| Tenant | Public Product | Domain | Runtime Status |
+| --- | --- | --- | --- |
+| `uga-ua` | UGA Index | [index-uga.cr0pto.com](https://index-uga.cr0pto.com) | Working demo / production-style deployment |
+| `spike-ua` | SPIKE SPOT INDEX | [spike-ua.cr0pto.com](https://spike-ua.cr0pto.com) | Working demo / production-style deployment, active development |
 
-Both deployments are Vercel projects built from the same repository with tenant-specific environment variables.
+This is not a mixed "UGA plus Spike" app. It is a multi-brand index platform
+where UGA and Spike are two clients running on the same calculation,
+publication, respondent and analytics foundation.
 
-## Production Status
+## What The Platform Does
 
-The UGA Index production deployment is currently connected to a Neon PostgreSQL database.
+Shared capabilities:
 
-Current production state:
+- bilingual public sites with `/uk` and `/en` routes;
+- tenant-specific logo, favicon, colors, copy, methodology documents and legal
+  pages;
+- public index cards with currency switching;
+- NBU FX-based conversion for USD, UAH and EUR display;
+- DB-backed respondent directory, submissions, calculations and published
+  values;
+- admin daily input matrix, respondent management and publication workflow;
+- respondent cabinet and secure survey links;
+- embed routes for partner websites;
+- public JSON APIs for latest values, history and FX rates;
+- analytics pages with historical values, spreads, movers, volatility and
+  scenario views;
+- Vercel cron endpoints for scheduled imports, notifications and publication.
 
-- Hosting: Vercel
-- Domain: `https://index-uga.cr0pto.com`
-- Runtime mode: `UGA_INDEX_RUNTIME_MODE=production`
-- Database provider: Neon Postgres
-- Database region: `aws-eu-central-1`
-- Prisma migration status: baseline migration applied
-- Seed status: UGA seed applied
-- Health check: `GET /api/health` returns `database: "ok"`
-- Public latest API: `GET /api/public/latest` returns DB-backed published index values
+UGA-specific features:
 
-Seeded production data currently includes:
+- UGA Index brand and content;
+- 4 public commodities: corn, wheat 11.5% protein, feed wheat, GMO soybean;
+- UGA Black Sea export basis language;
+- UGA embed package for the association website;
+- email-oriented respondent workflow and UGA member-area/product positioning;
+- Neon PostgreSQL production database.
 
-- 4 commodities
-- 12 respondent directory companies
-- 12 respondent contacts
-- 28 published index rows
+Spike-specific features:
 
-Respondent email delivery is configured through Resend, but real sending should only be triggered after replacing seeded demo respondent emails with real recipient addresses and setting the administrator reply-to email in `/admin/respondents`.
+- SPIKE SPOT INDEX brand and visual system;
+- 5 public positions: corn, wheat 11.5% protein, feed wheat, GMO soybean,
+  sunflower seed;
+- CPT Odesa / CPT parity Odesa export and processing basis language;
+- MN7R Monitor import as an automatic respondent;
+- Telegram-first respondent workflow through `@spike_spot_bot`;
+- admin and respondent password onboarding with temporary credentials;
+- auto-publication if no manual publish happens before the evening cut-off;
+- public blog with mixed-language posts and language filtering;
+- Supabase PostgreSQL production database.
 
-## Current UGA Product
+## Product Status
 
-UGA Index publishes a daily Ukrainian spot export price benchmark for key grain and oilseed commodities.
+Both products are live as demo/production-style versions. They are suitable for
+reviewing real workflows, validating integrations and iterating with users.
+They are still under active development and should not be treated as final
+regulated market-data products until legal, security, backup and operational
+reviews are completed.
 
-Current public commodities:
+Current production-oriented state:
 
-- Corn / Кукурудза
-- Wheat 11.5% protein / Пшениця 11.5pro
-- Feed wheat / Пшениця фураж
-- GMO soybean / Соя ГМО
+- hosting: Vercel;
+- UGA domain: `https://index-uga.cr0pto.com`;
+- Spike domain: `https://spike-ua.cr0pto.com`;
+- UGA database: Neon Postgres;
+- Spike database: Supabase Postgres;
+- runtime mode: `UGA_INDEX_RUNTIME_MODE=production` for production-style
+  deployments;
+- demo seed history can be disabled with `SEED_DEMO_HISTORY=0`;
+- demo admin password seeding can be disabled with
+  `SEED_DEMO_ADMIN_PASSWORD=0`;
+- health check: `GET /api/health`;
+- latest public values: `GET /api/public/latest`.
 
-Current UGA basis language:
+Production deployments must have `DATABASE_URL` configured. Without a database,
+local development can fall back to seeded/static demo data, but production
+runtime should be DB-backed.
 
-- Hero and methodology reference: `CPT Black Sea Panamax Ports (POC)`
-- Index cards, respondent forms and tables: `CPT UA Black Sea`
-- Delivery period: `T+30`
-- Official currency: `USD/t`
-- Optional display conversions: `UAH/t` and `EUR/t` using NBU FX rates with fallback demo rates
+## Methodology
 
-The public site includes:
-
-- Ukrainian and English localization with `/uk` and `/en` routes
-- automatic root locale redirect using locale cookie and country header
-- public homepage with current index cards and currency switching
-- About, Methodology, Analytics, Cooperation/Subscription and legal pages
-- compact footer with UGA contacts, disclaimer and legal links
-- embeddable cards, chart and full-site views for the UGA website
-- public JSON API routes for latest values, history and FX rates
-
-## Internal Workflows
-
-The internal area is a working preview of the intended operational flow.
-
-Admin routes:
-
-- `/admin` - internal landing page
-- `/admin/daily-inputs` - daily respondent price input matrix
-- `/admin/respondents` - respondent directory, contacts, login email, temporary passwords and collection mode
-- `/admin/calculate` - calculation preview and publication workflow
-- `/admin/embed` - embed preview and copyable embed code for the UGA website
-
-Respondent route:
-
-- `/respondent` - focused daily survey for the logged-in respondent company
-
-Current admin behavior:
-
-- respondent companies are maintained in the respondent directory;
-- active respondent count is used in public index cards and analytics displays;
-- respondent contacts can include multiple people per company;
-- each respondent has a login email and temporary password status;
-- collection mode indicates whether the company fills the site form or requires manual outreach;
-- daily input compares respondent prices against an external benchmark reference;
-- calculation uses respondent prices only and does not silently publish benchmark fallback values;
-- published values are treated as locked and audit-visible.
-
-## Calculation Methodology
-
-Shared calculation engine:
+The shared calculation engine lives in:
 
 ```txt
 src/lib/index-calculation.ts
 ```
 
-Rules:
+Core rules:
 
-- collect respondent prices by date, commodity and delivery basis;
+- collect respondent prices by tenant, date, commodity and basis;
 - ignore invalid, missing, zero and negative prices;
 - calculate the median of valid submitted prices;
-- exclude prices where `abs(price - median) / median > 0.02`;
+- exclude outliers where `abs(price - median) / median > 0.02`;
 - calculate the arithmetic average of the cleaned sample;
-- require at least 5 included respondent prices for `publishable`;
-- round public values to one decimal place while preserving raw precision internally;
-- keep official published values in `USD/t`;
-- support future weighted baskets while current preview baskets use weight `1`.
+- require the configured minimum number of included respondents before a value
+  is fully publishable;
+- store official values in `USD/t`;
+- preserve raw precision internally and round public display values;
+- keep publication locks/audit context after publishing.
 
-Unit tests:
+Spike MN7R import normalizes monitor values into the same respondent-price
+pipeline. If MN7R returns UAH or EUR, the value is converted to USD using the
+NBU FX rate for the trade date and the original currency/value is saved in
+metadata. Positions with `monitorPrice == null` or `quality == "no_data"` are
+cleared/skipped rather than published as fake values.
+
+Relevant tests:
 
 ```txt
 src/lib/index-calculation.test.ts
 src/lib/admin-calculate.test.ts
+src/lib/mn7r-monitor-import.test.ts
 ```
+
+## Spike Operating Model
+
+Spike currently uses a hybrid real/demo model:
+
+- MN7R Monitor is the first automatic respondent.
+- Manual/admin-entered respondent prices can be added in the admin matrix.
+- Real respondent submissions can be collected through the respondent cabinet or
+  Telegram WebApp links.
+- Public values are calculated from whatever valid real submissions exist for
+  the day.
+- Demo data remains available only for demo/fallback modes and must stay
+  separated from production calculations.
+
+Scheduled Spike processes:
+
+- MN7R import: `/api/cron/mn7r-monitor-prices`;
+- respondent Telegram notifications: `/api/cron/respondent-telegram`;
+- auto-publish: `/api/cron/spike-auto-publish`;
+- admin invite/onboarding helper: `/api/cron/spike-admin-invites`.
+
+Current `vercel.json` cron schedule:
+
+```json
+[
+  { "path": "/api/cron/respondent-emails", "schedule": "30 14 * * 1-5" },
+  { "path": "/api/cron/respondent-telegram", "schedule": "0 13 * * 1-5" },
+  { "path": "/api/cron/mn7r-monitor-prices", "schedule": "0 14 * * *" },
+  { "path": "/api/cron/spike-auto-publish", "schedule": "0 16 * * *" }
+]
+```
+
+Times are UTC in Vercel. The application code applies Kyiv-time business rules
+where needed.
+
+Telegram respondent UX:
+
+- weekday request around 16:00 Kyiv;
+- reminders around 17:00 and 18:00 Kyiv when no submission exists;
+- secure WebApp/survey token opens the daily form;
+- respondent sees a success summary and can return to edit the submission;
+- admin/super-admin can inspect submissions in the admin matrix.
 
 ## Architecture
 
 Core stack:
 
-- Next.js App Router
-- React
-- TypeScript
-- Tailwind CSS
-- Prisma
-- PostgreSQL-ready schema
-- Vitest
-- ESLint
-- Vercel
+- Next.js App Router;
+- React;
+- TypeScript;
+- Tailwind CSS;
+- Prisma;
+- PostgreSQL;
+- Vitest;
+- ESLint;
+- Vercel.
 
 Important modules:
 
 ```txt
-src/lib/index-platform.ts       tenant configuration
-src/lib/constants.ts            runtime site config
-src/lib/mock-data.ts            commodity and public fallback data
-src/lib/respondent-directory.ts DB-backed respondent directory with local fallback
-src/lib/admin-daily-inputs.ts   admin matrix data/actions
-src/lib/admin-calculate.ts      admin calculation/publication workflow
-src/lib/public-index-data.ts    homepage/analytics public data
-src/lib/fx-rates.ts             NBU FX server-side data layer
-src/lib/demo-auth.ts            allowlist/session helper
-src/lib/demo-allowlist.ts       tenant-aware allowlist users
+src/lib/index-platform.ts          tenant configuration
+src/lib/constants.ts               active site config
+src/lib/public-index-data.ts       public homepage and analytics data
+src/lib/admin-daily-inputs.ts      admin daily matrix data/actions
+src/lib/admin-calculate.ts         calculation and publication workflow
+src/lib/respondent-directory.ts    respondent directory and auth metadata
+src/lib/respondent-prices.ts       respondent price upsert/clear helpers
+src/lib/mn7r-monitor-import.ts     MN7R Monitor import
+src/lib/respondent-telegram.ts     Telegram respondent notifications
+src/lib/fx-rates.ts                NBU FX data layer
+src/lib/demo-auth.ts               session/auth helpers
+src/lib/demo-allowlist.ts          tenant-aware fallback users
 ```
 
-Tenant-specific configuration controls:
+Tenant configuration controls:
 
-- brand name, logo and favicon;
+- brand name, public title, logo and favicon;
 - public domain;
-- commodity list;
-- delivery basis labels and baskets;
-- respondent pool;
-- methodology PDF;
+- commodity list and basis labels;
+- respondent pool and baskets;
 - contact details;
-- public copy and localization;
-- whether external benchmark comparison is shown in admin workflows.
+- methodology PDF path;
+- localization/copy;
+- whether external indicative comparison is shown;
+- public pages, embeds and product positioning.
 
 ## Local Setup
 
@@ -166,13 +212,13 @@ Install dependencies:
 npm install
 ```
 
-Start the default UGA tenant:
+Run UGA locally:
 
 ```bash
-npm run dev
+INDEX_TENANT=uga-ua NEXT_PUBLIC_INDEX_TENANT=uga-ua npm run dev
 ```
 
-Start the Spike tenant:
+Run Spike locally:
 
 ```bash
 INDEX_TENANT=spike-ua NEXT_PUBLIC_INDEX_TENANT=spike-ua npm run dev
@@ -186,47 +232,98 @@ npm run dev -- --port 3100
 
 ## Environment
 
-UGA example:
+Common required variables:
 
 ```bash
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/index_platform?schema=public"
+NEXT_PUBLIC_SITE_URL="https://TENANT_DOMAIN"
+INDEX_TENANT="uga-ua-or-spike-ua"
+NEXT_PUBLIC_INDEX_TENANT="uga-ua-or-spike-ua"
+ALLOWED_EMBED_ORIGINS="https://TENANT_DOMAIN http://localhost:* http://127.0.0.1:*"
+DEMO_AUTH_SECRET="replace-with-a-long-random-secret"
+UGA_INDEX_RUNTIME_MODE="production"
+CRON_SECRET="replace-with-a-long-random-cron-secret"
+```
+
+UGA production example:
+
+```bash
 NEXT_PUBLIC_SITE_URL="https://index-uga.cr0pto.com"
 INDEX_TENANT="uga-ua"
 NEXT_PUBLIC_INDEX_TENANT="uga-ua"
-ALLOWED_EMBED_ORIGINS="https://uga.ua https://www.uga.ua https://index-uga.cr0pto.com http://localhost:* http://127.0.0.1:*"
-DEMO_AUTH_SECRET="replace-with-a-long-random-secret"
-UGA_INDEX_RUNTIME_MODE="production"
-RESEND_API_KEY="set-in-vercel-or-local-env"
-RESPONDENT_EMAIL_CRON_SECRET="replace-with-a-long-random-cron-secret"
-CRON_SECRET="same-value-for-vercel-cron"
+ALLOWED_EMBED_ORIGINS="https://uga.ua https://www.uga.ua https://index-uga.cr0pto.com"
+RESEND_API_KEY="set-in-vercel"
+RESPONDENT_EMAIL_CRON_SECRET="set-in-vercel"
 ```
 
-Spike example:
+Spike production example:
 
 ```bash
-DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/index_platform?schema=public"
 NEXT_PUBLIC_SITE_URL="https://spike-ua.cr0pto.com"
 INDEX_TENANT="spike-ua"
 NEXT_PUBLIC_INDEX_TENANT="spike-ua"
-ALLOWED_EMBED_ORIGINS="https://spike-ua.cr0pto.com http://localhost:* http://127.0.0.1:*"
-DEMO_AUTH_SECRET="replace-with-a-long-random-secret"
+ALLOWED_EMBED_ORIGINS="https://spike-ua.cr0pto.com"
+MN7R_API_URL="https://mn7r.com"
+MN7R_INDEX_EXPORT_TOKEN="set-in-vercel"
+MN7R_INDEX_RESPONDENT_CODE="MN7R_MONITOR"
+MN7R_IMPORT_CRON_SECRET="set-in-vercel"
+SPIKE_AUTO_PUBLISH_CRON_SECRET="set-in-vercel"
+SPIKE_ADMIN_INVITE_SECRET="set-in-vercel"
+SPIKE_ADMIN_INVITE_SENDER="set-in-vercel"
+SPIKE_ADMIN_INVITE_REPLY_TO="set-in-vercel"
+SPIKE_TELEGRAM_BOT_TOKEN="set-in-vercel"
+SPIKE_TELEGRAM_SMOKE_CHAT_ID="optional-smoke-chat-id"
+RESPONDENT_TELEGRAM_CRON_SECRET="set-in-vercel"
 ```
 
-Environment notes:
+Do not commit production secrets, connection strings or bot tokens. Use Vercel
+Environment Variables or an untracked local `.env` file for operational
+commands.
 
-- `NEXT_PUBLIC_SITE_URL` is used for absolute public URLs and embed code generation.
-- `INDEX_TENANT` is used by server-side code, seed scripts and build-time logic.
-- `NEXT_PUBLIC_INDEX_TENANT` is available to client/build-time code.
-- `DATABASE_URL` enables Prisma-backed persistence and is required in production runtime.
-- `ALLOWED_EMBED_ORIGINS` controls frame policy for `/embed/*`.
-- `UGA_INDEX_RUNTIME_MODE=production` disables silent mock fallback when database reads fail.
-- `DEMO_AUTH_SECRET` signs the preview session cookie.
-- `RESEND_API_KEY` enables respondent survey email delivery through Resend. Do not commit the real key.
-- `RESPONDENT_EMAIL_CRON_SECRET` / `CRON_SECRET` protect the scheduled email endpoint.
-- `MN7R_API_URL` points to MN7R Monitor for protected daily BID/OFFER exports.
-- `MN7R_INDEX_EXPORT_TOKEN` is sent as the Bearer token for MN7R Monitor export requests.
-- `MN7R_INDEX_RESPONDENT_CODE` identifies the monitor import respondent, currently `MN7R_MONITOR`.
-- `MN7R_IMPORT_CRON_SECRET` / `CRON_SECRET` protect the scheduled MN7R import endpoint.
+## Database
+
+Generate Prisma client:
+
+```bash
+npm run db:generate
+```
+
+Apply migrations:
+
+```bash
+npx prisma migrate deploy
+```
+
+Seed UGA:
+
+```bash
+INDEX_TENANT=uga-ua NEXT_PUBLIC_INDEX_TENANT=uga-ua npm run db:seed
+```
+
+Seed Spike in production-style mode:
+
+```bash
+UGA_INDEX_RUNTIME_MODE=production \
+SEED_DEMO_HISTORY=0 \
+SEED_DEMO_ADMIN_PASSWORD=0 \
+INDEX_TENANT=spike-ua \
+NEXT_PUBLIC_INDEX_TENANT=spike-ua \
+npm run db:seed
+```
+
+The seed is tenant-aware:
+
+- UGA seed creates UGA commodities, respondents, contacts, baskets, fallback
+  submissions, external indicatives and published values for demo/review.
+- Spike seed creates Spike commodities, CPT Odesa/CPT parity Odesa bases, MN7R
+  Monitor, Spike respondent directory entries and auth accounts. Demo history is
+  controlled by `SEED_DEMO_HISTORY`.
+
+More detail:
+
+```txt
+docs/database.md
+```
 
 ## Routes
 
@@ -238,6 +335,7 @@ Public:
 - `/uk/methodology`, `/en/methodology`
 - `/uk/analytics`, `/en/analytics`
 - `/uk/subscription`, `/en/subscription`
+- `/uk/blog`, `/en/blog`
 - `/uk/privacy`, `/en/privacy`
 - `/uk/terms`, `/en/terms`
 - `/uk/risk-disclosure`, `/en/risk-disclosure`
@@ -246,12 +344,14 @@ Internal:
 
 - `/login`
 - `/logout`
+- `/setup-password`
 - `/admin`
 - `/admin/daily-inputs`
 - `/admin/respondents`
 - `/admin/calculate`
 - `/admin/embed`
 - `/respondent`
+- `/respondent/access/[token]`
 - `/member`
 
 Embeds:
@@ -264,17 +364,23 @@ Embeds:
 Public API:
 
 - `GET /api/health`
-- `GET /api/cron/mn7r-monitor-prices`
-- `GET /api/cron/respondent-emails`
 - `GET /api/public/latest`
 - `GET /api/public/history`
 - `GET /api/public/fx-rates`
 
-## Embedding on UGA Website
+Cron/internal API:
 
-The project supports both compact widgets and a full-site iframe experience.
+- `GET /api/cron/respondent-emails`
+- `GET /api/cron/respondent-telegram`
+- `GET /api/cron/mn7r-monitor-prices`
+- `GET /api/cron/spike-auto-publish`
+- `GET /api/cron/spike-admin-invites`
 
-Full-site iframe example:
+## Embedding
+
+The platform supports compact widgets and full-site iframe embeds.
+
+UGA full-site iframe example:
 
 ```html
 <iframe
@@ -286,7 +392,7 @@ Full-site iframe example:
 ></iframe>
 ```
 
-JS loader example:
+UGA JS loader example:
 
 ```html
 <div
@@ -304,120 +410,34 @@ Full details:
 docs/embed.md
 ```
 
-## Login Preview
+## Auth
 
-Preview users are tenant-aware. With `DATABASE_URL`, respondent users are read from the respondent directory/auth tables; without a database, local fallback users are used for development.
+Current auth model:
 
-```txt
-src/lib/demo-allowlist.ts
-```
+- Spike admins use email/password accounts with temporary password onboarding.
+- Spike respondents use email/password accounts with temporary password setup.
+- Spike super-admin can access both admin and respondent areas for control.
+- Respondent Telegram links use short-lived survey tokens.
+- UGA still supports preview/demo users for development and demonstrations.
 
-UGA credentials:
+Production deployments should avoid generic `admin/admin` or
+`respondent/respondent` access. Temporary passwords should be rotated through
+the onboarding flow and never committed to source control.
 
-- Admin: `admin@uga.ua` / `admin`
-- Respondent: `bunge@uga-index.demo` / `respondent`
-
-Spike credentials:
-
-- Admin: `admin@spike-ua.demo` / `admin`
-- Respondent: `respondent-1@spike-ua.demo` / `respondent`
-
-Short aliases work for the active tenant:
-
-- `admin` / `admin`
-- `respondent` / `respondent`
-
-Production auth plan:
+More detail:
 
 ```txt
 docs/auth.md
 ```
 
-## Database Setup
-
-Generate Prisma client:
-
-```bash
-npm run db:generate
-```
-
-For a local PostgreSQL database:
-
-```bash
-npx prisma db push
-npm run db:seed
-```
-
-Seed the Spike tenant:
-
-```bash
-INDEX_TENANT=spike-ua NEXT_PUBLIC_INDEX_TENANT=spike-ua npm run db:seed
-```
-
-Seed the Spike tenant for production without demo price history or the `admin`
-temporary password:
-
-```bash
-UGA_INDEX_RUNTIME_MODE=production \
-SEED_DEMO_HISTORY=0 \
-SEED_DEMO_ADMIN_PASSWORD=0 \
-INDEX_TENANT=spike-ua \
-NEXT_PUBLIC_INDEX_TENANT=spike-ua \
-npm run db:seed
-```
-
-Production-style migration flow after migrations are committed:
-
-```bash
-npx prisma migrate deploy
-npm run db:seed
-```
-
-Current UGA production database:
-
-- A Neon Postgres database has been provisioned for `index-uga.cr0pto.com`.
-- `DATABASE_URL` is set in Vercel Production.
-- `npx prisma migrate deploy` has been run successfully against the Neon database.
-- `npm run db:seed` has been run successfully against the Neon database.
-- Vercel has been redeployed with `UGA_INDEX_RUNTIME_MODE=production`.
-
-Current Spike production database:
-
-- Supabase project `spike-ua-index` has been provisioned in `ABV_Creative`.
-- Project ref: `meupvomzqqxwpuworyhc`.
-- Region: `eu-central-1`.
-- Production still requires `DATABASE_URL` to be set in the Vercel
-  `spike-ua-index` project before real MN7R imports, publication, admin invites
-  and analytics persistence can work.
-
-Do not commit the production connection string. Use Vercel Environment Variables or a local untracked `.env` file for operational commands.
-
-The seed is tenant-aware:
-
-- UGA seed creates CPT UA Black Sea basis, commodities, respondent directory contacts, login accounts, notification settings, respondent submissions, external benchmark indicatives and published index values.
-- Spike seed creates CPT Odesa export and CPT parity Odesa processing positions, partner respondents and preview users. Demo submissions and published values are seeded only when `SEED_DEMO_HISTORY` is enabled. The demo `admin` temporary password is seeded only when `SEED_DEMO_ADMIN_PASSWORD` is enabled.
-
-More detail:
-
-```txt
-docs/database.md
-```
-
 ## Validation
 
-Run before committing:
+Run before committing code changes:
 
 ```bash
 npm run lint
 npm run test
 npm run build
-```
-
-Optional browser smoke tests:
-
-```bash
-npx playwright install chromium
-npm run test:e2e
 ```
 
 Validate tenant builds explicitly:
@@ -427,31 +447,33 @@ INDEX_TENANT=uga-ua NEXT_PUBLIC_INDEX_TENANT=uga-ua npm run build
 INDEX_TENANT=spike-ua NEXT_PUBLIC_INDEX_TENANT=spike-ua npm run build
 ```
 
+Optional browser smoke tests:
+
+```bash
+npx playwright install chromium
+npm run test:e2e
+```
+
+For README-only changes, at minimum run:
+
+```bash
+git diff --check
+```
+
 ## Deployment
 
 Recommended setup per tenant:
 
 1. Create a separate Vercel project per tenant.
-2. Set `INDEX_TENANT` and `NEXT_PUBLIC_INDEX_TENANT` per project.
+2. Set `INDEX_TENANT` and `NEXT_PUBLIC_INDEX_TENANT`.
 3. Set `NEXT_PUBLIC_SITE_URL` to the tenant domain.
-4. Use tenant-specific database/environment settings where data must be isolated.
-5. Configure `ALLOWED_EMBED_ORIGINS` for tenant domains and trusted host sites.
-6. Run Prisma setup against the target PostgreSQL database.
-7. Run validation before deployment.
-8. Configure the Vercel cron secret and Resend API key for respondent emails.
-
-Respondent survey email delivery:
-
-- Admins configure status, workdays, Kyiv send time, sender, reply-to admin email, subject, survey URL and template in `/admin/respondents`.
-- Manual sending is available from the same page and ignores the schedule toggle.
-- Scheduled sending is exposed at `/api/cron/respondent-emails`; `vercel.json` runs it once per weekday at 14:30 UTC. The server still checks the configured Kyiv send time and sends at most once per day.
-- Replies go to the configured reply-to admin email.
-
-Health check:
-
-```bash
-curl https://YOUR_DOMAIN/api/health
-```
+4. Use tenant-specific database/environment settings.
+5. Configure `ALLOWED_EMBED_ORIGINS`.
+6. Run `npx prisma migrate deploy` against the target database.
+7. Run the tenant seed with production-safe flags.
+8. Configure cron secrets and integration secrets.
+9. Redeploy Vercel.
+10. Confirm `GET /api/health` and public pages.
 
 Deployment docs:
 
@@ -481,13 +503,19 @@ Source reference materials:
 docs/source/
 ```
 
-## Current TODO
+## Current Next Work
 
-- Replace preview auth with production auth, password setup emails and hashed credentials.
-- Decide whether each tenant uses a separate database or a shared database with strict tenant scoping.
-- Remove remaining development-only fallback stores from production deployments.
-- Replace temporary password display in admin with one-time setup links before production launch.
-- Replace seeded demo respondent email addresses with real recipients before triggering Resend delivery.
-- Finalize production legal text with legal counsel.
-- Finalize paid analytics/API subscription terms.
-- Add production observability, backups and operational runbooks.
+- Finish production security hardening for auth, sessions, role checks and
+  secret rotation.
+- Keep real and demo data strictly separated in analytics, publication and
+  admin views.
+- Add backup/restore runbooks for Neon and Supabase databases.
+- Add observability for cron runs, MN7R imports, auto-publication and Telegram
+  delivery failures.
+- Finalize legal text, risk disclosure and methodology PDFs with the project
+  owners.
+- Add subscription/access-control rules for paid analytics, history exports and
+  API access.
+- Expand respondent onboarding beyond the first Spike real respondent.
+- Finalize production domains once the long-term index domain structure is
+  chosen.
