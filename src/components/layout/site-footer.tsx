@@ -128,6 +128,8 @@ export function SiteFooter({ locale }: { locale: Locale }) {
           </div>
           <p className="mt-3 border-t border-white/10 pt-3 text-xs leading-5 text-white/45">
             {dict.footer.disclaimer}
+            <br />
+            <FooterExternalLink href="https://1d3x.com">Index infrastructure by 1d3x</FooterExternalLink>
           </p>
         </div>
       </footer>
@@ -150,6 +152,8 @@ export function SiteFooter({ locale }: { locale: Locale }) {
           </p>
           <p className="mt-2.5 max-w-md text-xs leading-5 text-white/55">
             {dict.footer.disclaimer}
+            <br />
+            <FooterExternalLink href="https://1d3x.com">Index infrastructure by 1d3x</FooterExternalLink>
           </p>
         </section>
 

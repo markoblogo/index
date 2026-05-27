@@ -1,25 +1,41 @@
 # Index Platform
 
+![1d3x logo](public/brand/1d3x-logo.png)
+
 Index Platform is a shared Next.js/TypeScript platform for Ukrainian commodity
 market indices. The codebase is intentionally organized as one index engine with
 tenant-specific brands, content, styling, commodities, respondents, integrations
 and deployment settings.
 
-The current live tenants are:
+The platform now also includes the 1d3x corporate landing site. 1d3x is the
+umbrella brand for local commodity index launches built with institutional
+partners and market leaders.
+
+The current live products are:
 
 | Tenant | Public Product | Domain | Runtime Status |
 | --- | --- | --- | --- |
-| `uga-ua` | UGA Index | [index-uga.cr0pto.com](https://index-uga.cr0pto.com) | Working demo / production-style deployment |
-| `spike-ua` | SPIKE SPOT INDEX | [spike-ua.cr0pto.com](https://spike-ua.cr0pto.com) | Working demo / production-style deployment, active development |
+| `1d3x` | 1d3x | [1d3x.com](https://1d3x.com) | Corporate landing site and partnership entry point |
+| `uga-ua` | UGA Index | [uga.1d3x.com](https://uga.1d3x.com) | Production-style deployment |
+| `spike-ua` | SPIKE SPOT INDEX | [spike.1d3x.com](https://spike.1d3x.com) | Production-style deployment, active development |
 
 This is not a mixed "UGA plus Spike" app. It is a multi-brand index platform
 where UGA and Spike are two clients running on the same calculation,
 publication, respondent and analytics foundation.
 
+Legacy `cr0pto.com` domains are configured as permanent redirects:
+
+- [index-uga.cr0pto.com](https://index-uga.cr0pto.com) redirects to
+  [uga.1d3x.com](https://uga.1d3x.com);
+- [spike-ua.cr0pto.com](https://spike-ua.cr0pto.com) redirects to
+  [spike.1d3x.com](https://spike.1d3x.com).
+
 ## What The Platform Does
 
 Shared capabilities:
 
+- English 1d3x landing page with live UGA and Spike embeds;
+- Resend-backed 1d3x partnership contact form;
 - bilingual public sites with `/uk` and `/en` routes;
 - tenant-specific logo, favicon, colors, copy, methodology documents and legal
   pages;
@@ -68,8 +84,11 @@ reviews are completed.
 Current production-oriented state:
 
 - hosting: Vercel;
-- UGA domain: `https://index-uga.cr0pto.com`;
-- Spike domain: `https://spike-ua.cr0pto.com`;
+- platform domain: `https://1d3x.com`;
+- UGA domain: `https://uga.1d3x.com`;
+- Spike domain: `https://spike.1d3x.com`;
+- legacy redirects: `https://index-uga.cr0pto.com` and
+  `https://spike-ua.cr0pto.com`;
 - UGA database: Neon Postgres;
 - Spike database: Supabase Postgres;
 - runtime mode: `UGA_INDEX_RUNTIME_MODE=production` for production-style
@@ -224,6 +243,12 @@ Run Spike locally:
 INDEX_TENANT=spike-ua NEXT_PUBLIC_INDEX_TENANT=spike-ua npm run dev
 ```
 
+Run the 1d3x landing site locally:
+
+```bash
+INDEX_TENANT=1d3x NEXT_PUBLIC_INDEX_TENANT=1d3x npm run dev
+```
+
 Use another port if needed:
 
 ```bash
@@ -237,21 +262,32 @@ Common required variables:
 ```bash
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/index_platform?schema=public"
 NEXT_PUBLIC_SITE_URL="https://TENANT_DOMAIN"
-INDEX_TENANT="uga-ua-or-spike-ua"
-NEXT_PUBLIC_INDEX_TENANT="uga-ua-or-spike-ua"
+INDEX_TENANT="1d3x-or-uga-ua-or-spike-ua"
+NEXT_PUBLIC_INDEX_TENANT="1d3x-or-uga-ua-or-spike-ua"
 ALLOWED_EMBED_ORIGINS="https://TENANT_DOMAIN http://localhost:* http://127.0.0.1:*"
 DEMO_AUTH_SECRET="replace-with-a-long-random-secret"
 UGA_INDEX_RUNTIME_MODE="production"
 CRON_SECRET="replace-with-a-long-random-cron-secret"
 ```
 
+1d3x production example:
+
+```bash
+NEXT_PUBLIC_SITE_URL="https://1d3x.com"
+INDEX_TENANT="1d3x"
+NEXT_PUBLIC_INDEX_TENANT="1d3x"
+RESEND_API_KEY="set-in-vercel"
+PLATFORM_CONTACT_FROM_EMAIL="1d3x <partnerships@1d3x.com>"
+PLATFORM_CONTACT_TO_EMAIL="a.biletskiy@gmail.com"
+```
+
 UGA production example:
 
 ```bash
-NEXT_PUBLIC_SITE_URL="https://index-uga.cr0pto.com"
+NEXT_PUBLIC_SITE_URL="https://uga.1d3x.com"
 INDEX_TENANT="uga-ua"
 NEXT_PUBLIC_INDEX_TENANT="uga-ua"
-ALLOWED_EMBED_ORIGINS="https://uga.ua https://www.uga.ua https://index-uga.cr0pto.com"
+ALLOWED_EMBED_ORIGINS="https://uga.ua https://www.uga.ua https://1d3x.com https://www.1d3x.com https://uga.1d3x.com https://index-uga.cr0pto.com"
 RESEND_API_KEY="set-in-vercel"
 RESPONDENT_EMAIL_CRON_SECRET="set-in-vercel"
 ```
@@ -259,10 +295,10 @@ RESPONDENT_EMAIL_CRON_SECRET="set-in-vercel"
 Spike production example:
 
 ```bash
-NEXT_PUBLIC_SITE_URL="https://spike-ua.cr0pto.com"
+NEXT_PUBLIC_SITE_URL="https://spike.1d3x.com"
 INDEX_TENANT="spike-ua"
 NEXT_PUBLIC_INDEX_TENANT="spike-ua"
-ALLOWED_EMBED_ORIGINS="https://spike-ua.cr0pto.com"
+ALLOWED_EMBED_ORIGINS="https://spike.broker https://www.spike.broker https://1d3x.com https://www.1d3x.com https://spike.1d3x.com https://spike-ua.cr0pto.com"
 MN7R_API_URL="https://mn7r.com"
 MN7R_INDEX_EXPORT_TOKEN="set-in-vercel"
 MN7R_INDEX_RESPONDENT_CODE="MN7R_MONITOR"
@@ -329,7 +365,7 @@ docs/database.md
 
 Public:
 
-- `/`
+- `/` for the 1d3x landing site, or locale redirect for index tenants
 - `/uk`, `/en`
 - `/uk/about`, `/en/about`
 - `/uk/methodology`, `/en/methodology`
@@ -384,7 +420,7 @@ UGA full-site iframe example:
 
 ```html
 <iframe
-  src="https://index-uga.cr0pto.com/embed/site?locale=uk&theme=light&view=index"
+  src="https://uga.1d3x.com/embed/site?locale=uk&theme=light&view=index"
   title="UGA Index"
   loading="lazy"
   style="width:100%;height:860px;border:0;"
@@ -401,8 +437,11 @@ UGA JS loader example:
   data-theme="light"
   data-layout="site"
 ></div>
-<script src="https://index-uga.cr0pto.com/embed/uga-index.js" async></script>
+<script src="https://uga.1d3x.com/embed/uga-index.js" async></script>
 ```
+
+For new integrations, prefer the `1d3x.com` subdomains. Legacy `cr0pto.com`
+embed URLs remain available through redirects for compatibility.
 
 Full details:
 
@@ -443,6 +482,7 @@ npm run build
 Validate tenant builds explicitly:
 
 ```bash
+INDEX_TENANT=1d3x NEXT_PUBLIC_INDEX_TENANT=1d3x npm run build
 INDEX_TENANT=uga-ua NEXT_PUBLIC_INDEX_TENANT=uga-ua npm run build
 INDEX_TENANT=spike-ua NEXT_PUBLIC_INDEX_TENANT=spike-ua npm run build
 ```
@@ -517,5 +557,5 @@ docs/source/
 - Add subscription/access-control rules for paid analytics, history exports and
   API access.
 - Expand respondent onboarding beyond the first Spike real respondent.
-- Finalize production domains once the long-term index domain structure is
-  chosen.
+- Continue polishing the 1d3x landing page, partnership copy and live project
+  presentation.
