@@ -15,9 +15,11 @@ type TelegramRecipient = {
 
 export async function sendRespondentTelegramNotifications({
   reminderLevel,
+  respondentId,
   trigger,
 }: {
   reminderLevel?: TelegramReminderLevel;
+  respondentId?: string;
   trigger: TelegramTrigger;
 }) {
   if (!hasDatabaseUrl()) {
@@ -39,7 +41,7 @@ export async function sendRespondentTelegramNotifications({
   const recipients =
     trigger === "smoke"
       ? await getSmokeRecipients()
-      : await getTelegramRecipients();
+      : await getTelegramRecipients(respondentId);
   const delivered = await Promise.all(
     recipients.map((recipient) =>
       sendTelegramSurveyMessage({
@@ -72,7 +74,9 @@ function getKyivReminderLevel(now = new Date()): TelegramReminderLevel | null {
   return null;
 }
 
-async function getTelegramRecipients(): Promise<TelegramRecipient[]> {
+async function getTelegramRecipients(
+  respondentId?: string,
+): Promise<TelegramRecipient[]> {
   const respondents = await db.respondent.findMany({
     include: {
       contacts: {
@@ -85,7 +89,9 @@ async function getTelegramRecipients(): Promise<TelegramRecipient[]> {
     where: {
       active: true,
       collectionMode: "self_service",
-      id: { not: process.env.MN7R_INDEX_RESPONDENT_CODE ?? "MN7R_MONITOR" },
+      id: respondentId
+        ? respondentId
+        : { not: process.env.MN7R_INDEX_RESPONDENT_CODE ?? "MN7R_MONITOR" },
       status: "active",
     },
   });

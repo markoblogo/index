@@ -24,6 +24,7 @@ export async function GET(request: Request) {
         : "scheduled";
   const result = await sendRespondentTelegramNotifications({
     reminderLevel: requestedLevel,
+    respondentId: url.searchParams.get("respondentId") ?? undefined,
     trigger,
   });
 

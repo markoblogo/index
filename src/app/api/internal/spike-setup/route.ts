@@ -1,7 +1,9 @@
 import { randomBytes } from "node:crypto";
 import { NextResponse } from "next/server";
 
+import { isCronRequestAuthorized } from "@/lib/cron-auth";
 import { db } from "@/lib/db";
+import { sendRespondentTelegramNotifications } from "@/lib/respondent-telegram";
 
 export const dynamic = "force-dynamic";
 
@@ -15,21 +17,11 @@ const fopSolovey = {
   telegramUsername: "o_solo",
 };
 
-function getBearerToken(request: Request) {
-  const header = request.headers.get("authorization") ?? "";
-  const [scheme, token] = header.split(" ");
-  return scheme?.toLowerCase() === "bearer" ? token : null;
-}
-
 function requireInternalAccess(request: Request) {
-  const expected =
-    process.env.RESPONDENT_TELEGRAM_CRON_SECRET ?? process.env.CRON_SECRET;
-
-  if (!expected) {
-    return false;
-  }
-
-  return getBearerToken(request) === expected;
+  return isCronRequestAuthorized(request, [
+    process.env.RESPONDENT_TELEGRAM_CRON_SECRET,
+    process.env.CRON_SECRET,
+  ]);
 }
 
 function generateTemporaryPassword() {
@@ -48,6 +40,8 @@ export async function POST(request: Request) {
   const shouldSendOnboarding = url.searchParams.get("sendOnboarding") === "1";
   const shouldSendTelegramOnboarding =
     url.searchParams.get("sendTelegramOnboarding") === "1";
+  const shouldSendTelegramSurvey =
+    url.searchParams.get("sendTelegramSurvey") === "1";
   const shouldExposeTemporaryPassword =
     url.searchParams.get("exposeTemporaryPassword") === "1";
   const submitDraftsDate = url.searchParams.get("submitDraftsDate");
@@ -219,6 +213,14 @@ export async function POST(request: Request) {
     telegramOnboardingSent = true;
   }
 
+  const telegramSurvey = shouldSendTelegramSurvey
+    ? await sendRespondentTelegramNotifications({
+        reminderLevel: "initial",
+        respondentId: fopSolovey.id,
+        trigger: "manual",
+      })
+    : undefined;
+
   return NextResponse.json({
     cleanup: cleanupDate ? await cleanupNonMonitorSubmissions(cleanupDate) : undefined,
     debug: shouldDebug ? await getDebugSnapshot() : undefined,
@@ -237,6 +239,7 @@ export async function POST(request: Request) {
       : undefined,
     temporaryPasswordGenerated: shouldSetTemporary,
     telegramOnboardingSent,
+    telegramSurvey,
   });
 }
 
