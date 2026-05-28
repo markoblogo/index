@@ -425,6 +425,7 @@ function RespondentPanel({ respondent }: { respondent: RespondentDirectoryEntry 
             <span className="close-label hidden">Close</span>
           </label>
           <div className="grid justify-items-end gap-1">
+            <TelegramDeliveryPill respondent={respondent} />
             <StatusPill tone={respondent.status === "active" ? "active" : "muted"}>
               {respondent.status}
             </StatusPill>
@@ -510,6 +511,45 @@ function RespondentPanel({ respondent }: { respondent: RespondentDirectoryEntry 
         </div>
       </div>
     </div>
+  );
+}
+
+function TelegramDeliveryPill({
+  respondent,
+}: {
+  respondent: RespondentDirectoryEntry;
+}) {
+  const delivery = respondent.telegramDelivery;
+  const title = getTelegramDeliveryTitle(delivery);
+
+  if (delivery.status === "not_linked") {
+    return (
+      <StatusPill tone="muted" title={title}>
+        TG not linked
+      </StatusPill>
+    );
+  }
+
+  if (delivery.status === "sent") {
+    return (
+      <StatusPill tone="active" title={title}>
+        TG sent
+      </StatusPill>
+    );
+  }
+
+  if (delivery.status === "failed") {
+    return (
+      <StatusPill tone="danger" title={title}>
+        TG failed
+      </StatusPill>
+    );
+  }
+
+  return (
+    <StatusPill tone="warning" title={title}>
+      TG not sent
+    </StatusPill>
   );
 }
 
@@ -733,13 +773,17 @@ function Field({
 function StatusPill({
   children,
   tone,
+  title,
 }: {
   children: ReactNode;
-  tone: "active" | "muted" | "warning";
+  title?: string;
+  tone: "active" | "danger" | "muted" | "warning";
 }) {
   const className =
     tone === "active"
       ? "admin-contrast-pill bg-uga-lime text-black"
+      : tone === "danger"
+        ? "admin-contrast-pill bg-red-500 text-black"
       : tone === "warning"
         ? "admin-contrast-pill bg-white text-black"
         : "border border-white/35 text-white/70";
@@ -747,10 +791,36 @@ function StatusPill({
   return (
     <span
       className={`inline-flex rounded-full px-3 py-1 text-[0.66rem] font-black uppercase tracking-[0.12em] ${className}`}
+      title={title}
     >
       {children}
     </span>
   );
+}
+
+function getTelegramDeliveryTitle(
+  delivery: RespondentDirectoryEntry["telegramDelivery"],
+) {
+  if (delivery.status === "not_linked") {
+    return "No active contact has a Telegram chat / peer id.";
+  }
+
+  if (delivery.status === "not_sent") {
+    return "No Telegram delivery log for the current Kyiv trade date.";
+  }
+
+  const sentAt = delivery.sentAt
+    ? new Intl.DateTimeFormat("en-GB", {
+        dateStyle: "medium",
+        timeStyle: "short",
+        timeZone: "Europe/Kyiv",
+      }).format(new Date(delivery.sentAt))
+    : "unknown time";
+  const base = `${delivery.status === "sent" ? "Sent" : "Failed"} at ${sentAt}. Trigger: ${
+    delivery.trigger || "unknown"
+  }.`;
+
+  return delivery.error ? `${base} Error: ${delivery.error}` : base;
 }
 
 async function addRespondentAction(formData: FormData) {

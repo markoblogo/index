@@ -24,6 +24,15 @@ export type RespondentContactPerson = {
   telegramUsername: string;
 };
 
+export type RespondentTelegramDeliveryStatus = {
+  contactCount: number;
+  error: string;
+  providerId: string;
+  sentAt: string;
+  status: "sent" | "failed" | "not_sent" | "not_linked";
+  trigger: string;
+};
+
 export type RespondentDirectoryEntry = {
   auth: RespondentAuthAccount;
   collectionMode: RespondentCollectionMode;
@@ -31,6 +40,7 @@ export type RespondentDirectoryEntry = {
   contacts: RespondentContactPerson[];
   id: string;
   status: RespondentStatus;
+  telegramDelivery: RespondentTelegramDeliveryStatus;
 };
 
 export type RespondentContact = {
@@ -307,12 +317,24 @@ export async function getRespondentDirectoryData() {
   }
 
   try {
+    const kyivDateBounds = getKyivDateBounds();
     const respondents = await db.respondent.findMany({
       include: {
         authAccount: true,
         contacts: {
           orderBy: [{ primary: "desc" }, { createdAt: "asc" }],
           where: { active: true },
+        },
+        emailDeliveries: {
+          orderBy: { sentAt: "desc" },
+          take: 1,
+          where: {
+            sentAt: {
+              gte: kyivDateBounds.start,
+              lt: kyivDateBounds.end,
+            },
+            trigger: { startsWith: "telegram_" },
+          },
         },
       },
       orderBy: [{ status: "asc" }, { legalName: "asc" }],
@@ -365,6 +387,12 @@ export async function getRespondentDirectoryData() {
             ],
       id: respondent.id,
       status: respondent.status === "pending" ? "pending" : "active",
+      telegramDelivery: mapTelegramDeliveryStatus({
+        delivery: respondent.emailDeliveries[0],
+        telegramContactCount: respondent.contacts.filter(
+          (contact) => contact.telegramChatId,
+        ).length,
+      }),
     })) satisfies RespondentDirectoryEntry[];
   } catch (error) {
     if (allowMockFallback()) {
@@ -375,6 +403,109 @@ export async function getRespondentDirectoryData() {
     console.error("Failed to load respondent directory.", error);
     throw error;
   }
+}
+
+function mapTelegramDeliveryStatus({
+  delivery,
+  telegramContactCount,
+}: {
+  delivery?: {
+    error: string | null;
+    providerId: string | null;
+    sentAt: Date;
+    status: string;
+    trigger: string;
+  };
+  telegramContactCount: number;
+}): RespondentTelegramDeliveryStatus {
+  if (telegramContactCount === 0) {
+    return {
+      contactCount: 0,
+      error: "",
+      providerId: "",
+      sentAt: "",
+      status: "not_linked",
+      trigger: "",
+    };
+  }
+
+  if (!delivery) {
+    return {
+      contactCount: telegramContactCount,
+      error: "",
+      providerId: "",
+      sentAt: "",
+      status: "not_sent",
+      trigger: "",
+    };
+  }
+
+  return {
+    contactCount: telegramContactCount,
+    error: delivery.error ?? "",
+    providerId: delivery.providerId ?? "",
+    sentAt: delivery.sentAt.toISOString(),
+    status: delivery.status === "sent" ? "sent" : "failed",
+    trigger: delivery.trigger,
+  };
+}
+
+function getKyivDateBounds(date = new Date()) {
+  const dateKey = new Intl.DateTimeFormat("en-CA", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "Europe/Kyiv",
+    year: "numeric",
+  }).format(date);
+  const [year, month, day] = dateKey.split("-").map(Number);
+  const nextDay = new Date(Date.UTC(year, month - 1, day + 1));
+
+  return {
+    end: zonedDateTimeToUtc(
+      `${nextDay.getUTCFullYear()}-${String(nextDay.getUTCMonth() + 1).padStart(2, "0")}-${String(nextDay.getUTCDate()).padStart(2, "0")}`,
+      "Europe/Kyiv",
+    ),
+    start: zonedDateTimeToUtc(dateKey, "Europe/Kyiv"),
+  };
+}
+
+function zonedDateTimeToUtc(dateKey: string, timeZone: string) {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  const utcGuess = new Date(Date.UTC(year, month - 1, day));
+  const offset = getTimeZoneOffsetMs(utcGuess, timeZone);
+  const candidate = new Date(utcGuess.getTime() - offset);
+  const correctedOffset = getTimeZoneOffsetMs(candidate, timeZone);
+
+  return new Date(utcGuess.getTime() - correctedOffset);
+}
+
+function getTimeZoneOffsetMs(date: Date, timeZone: string) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    day: "2-digit",
+    hour: "2-digit",
+    hour12: false,
+    minute: "2-digit",
+    month: "2-digit",
+    second: "2-digit",
+    timeZone,
+    year: "numeric",
+  }).formatToParts(date);
+  const values = Object.fromEntries(
+    parts
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, Number(part.value)]),
+  );
+
+  return (
+    Date.UTC(
+      values.year,
+      values.month - 1,
+      values.day,
+      values.hour === 24 ? 0 : values.hour,
+      values.minute,
+      values.second,
+    ) - date.getTime()
+  );
 }
 
 export async function getActiveRespondentCountData() {
@@ -775,6 +906,14 @@ export function addRespondentDirectoryEntry(input: {
     ],
     id,
     status: input.status,
+    telegramDelivery: {
+      contactCount: input.telegramChatId ? 1 : 0,
+      error: "",
+      providerId: "",
+      sentAt: "",
+      status: input.telegramChatId ? "not_sent" : "not_linked",
+      trigger: "",
+    },
   });
 }
 
@@ -995,6 +1134,14 @@ function createRespondentSeed(
     ],
     id,
     status,
+    telegramDelivery: {
+      contactCount: 0,
+      error: "",
+      providerId: "",
+      sentAt: "",
+      status: "not_linked",
+      trigger: "",
+    },
   };
 }
 
@@ -1005,6 +1152,7 @@ function cloneRespondent(
     ...respondent,
     auth: { ...respondent.auth },
     contacts: respondent.contacts.map((contact) => ({ ...contact })),
+    telegramDelivery: { ...respondent.telegramDelivery },
   };
 }
 
