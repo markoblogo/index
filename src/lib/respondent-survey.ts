@@ -56,8 +56,8 @@ const labels = {
     notPublished: "Not published",
     price: "Price",
     priceHintLines: [
-      "corn, wheat, soybean $/t, excl. VAT (export)",
-      "sunflower $/t, incl. VAT (processing)",
+      "corn, wheat $/t, excl. VAT (export)",
+      "soybean, sunflower $/t, incl. VAT (processing)",
     ],
     publication: "Publication",
     saveDraft: "Save as draft",
@@ -89,8 +89,8 @@ const labels = {
     notPublished: "Не опубліковано",
     price: "Ціна",
     priceHintLines: [
-      "corn, wheat, soybean $/t, excl. VAT (export)",
-      "sunflower $/t, incl. VAT (processing)",
+      "кукурудза, пшениця $/т, без ПДВ (експорт)",
+      "соя, соняшник $/т, з ПДВ (переробка)",
     ],
     publication: "Публікація",
     saveDraft: "Зберегти чернетку",
