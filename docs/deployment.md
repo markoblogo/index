@@ -4,6 +4,54 @@
 
 The app is ready to deploy on Vercel as a Next.js App Router project.
 
+### Project → domain mapping (current live setup)
+
+| Vercel Project | Primary Domain | Alias / Redirect Domain | Tenant runtime |
+| --- | --- | --- | --- |
+| `1d3x` | `https://1d3x.com` | `www.1d3x.com` | `1d3x` |
+| `uga-index` | `https://uga.1d3x.com` | `https://index-uga.cr0pto.com` | `uga-ua` |
+| `spike-ua-index` | `https://spike.1d3x.com` | `https://spike-ua.cr0pto.com` | `spike-ua` |
+
+### How to deploy safely (important)
+
+1. Confirm the active Vercel project before deploy:
+
+```bash
+cat .vercel/project.json
+```
+
+2. Link explicitly to the target project (only when needed):
+
+```bash
+vercel link --yes --project <project-name> --scope abvcreative
+```
+
+3. Deploy to production of the linked project:
+
+```bash
+vercel --prod
+```
+
+4. Verify the production URL points to the expected deployment:
+
+```bash
+vercel inspect https://<current-deployment-url>
+```
+
+5. Validate by cURL against the tenant route:
+
+```bash
+curl -L https://spike-ua.cr0pto.com/en/about | rg -o "Spot-Market Handbook|Download PDF"
+```
+
+6. In browser, always hard-reload with cache bypass (`Ctrl/Cmd+Shift+R`) after release.
+
+### Common failure mode to avoid
+
+- If `cat .vercel/project.json` points to `1d3x`, a deploy will go to the wrong
+  production tenant.
+- `spike-ua` work should never be deployed from the `1d3x` project mapping.
+
 1. Connect the GitHub repository to a Vercel project.
 2. Set the development domain in Vercel project domains.
 3. Configure environment variables from `.env.example`.
