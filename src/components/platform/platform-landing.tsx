@@ -129,6 +129,9 @@ export function PlatformLanding() {
             <a className="transition hover:text-white" href="#partners">
               Partners
             </a>
+            <a className="transition hover:text-white" href="/blog">
+              Blog
+            </a>
           </nav>
           <a
             className="border border-white/25 px-4 py-2 text-xs font-black uppercase tracking-[0.14em] transition hover:border-[#d6ff58] hover:text-[#d6ff58]"
@@ -371,6 +374,12 @@ export function PlatformLanding() {
             <p>Commodity index infrastructure.</p>
           </div>
           <div className="flex gap-5">
+            <a
+              className="transition hover:text-white"
+              href="/blog"
+            >
+              Blog
+            </a>
             <a
               className="transition hover:text-white"
               href="https://uga.1d3x.com"
