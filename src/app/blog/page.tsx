@@ -65,6 +65,8 @@ function buildPlatformSearchText(post: PlatformBlogPost) {
               return `${block.before} ${block.label} ${block.after}`;
             case "image":
               return block.imageAlt;
+            case "imageTextPanel":
+              return block.text;
             case "bookPanel":
               return `${block.description} ${block.imageAlt}`;
             default:

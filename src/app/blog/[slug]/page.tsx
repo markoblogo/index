@@ -212,6 +212,29 @@ function PlatformPostBlock({ block }: { block: PlatformBlogContentBlock }) {
     );
   }
 
+  if (block.kind === "imageTextPanel") {
+    return (
+      <div className="rounded-[1.25rem] border border-white/18 bg-[#050505]/84 p-4 md:grid md:grid-cols-[140px_minmax(0,1fr)] md:gap-4">
+        <div className="rounded-[1rem] border border-white/12 p-1">
+          <Image
+            alt={block.imageAlt}
+            className="h-auto w-full rounded-[0.75rem]"
+            height={680}
+            src={block.image}
+            width={450}
+          />
+        </div>
+        <p className="mt-4 text-base leading-8 text-white/76 md:mt-0">
+          {block.text.split("\n\n").map((line, index) => (
+            <span className="block" key={`${line}-${index}`}>
+              {line}
+            </span>
+          ))}
+        </p>
+      </div>
+    );
+  }
+
   if (block.kind === "bookPanel") {
     return (
       <div className="grid gap-6 rounded-[1.25rem] border border-white/18 bg-[#050505]/84 p-5 md:grid-cols-[220px_1fr] md:gap-8 md:p-6 lg:grid-cols-[260px_1fr]">

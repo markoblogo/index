@@ -33,6 +33,12 @@ export type PlatformBlogContentBlock =
       imageAlt: string;
     }
   | {
+      kind: "imageTextPanel";
+      image: string;
+      imageAlt: string;
+      text: string;
+    }
+  | {
       kind: "bookPanel";
       description: string;
       image: string;
@@ -217,12 +223,9 @@ export const platformBlogPosts: PlatformBlogPost[] = [
         text: "Ukrainian note",
       },
       {
-        kind: "image",
+        kind: "imageTextPanel",
         image: "/blog/spot-market-handbook-book-cover.png",
         imageAlt: "Spot Market Handbook cover",
-      },
-      {
-        kind: "highlight",
         text: "Книга Spot Market Handbook: How Ukrainian Agricultural Prices Actually Work вже доступна українською мовою на сайті Spike Spot Index.\n\nМи рекомендуємо її трейдерам, брокерам, експортерам, переробникам, агровиробникам, аналітикам та всім україномовним учасникам ринку, які хочуть краще зрозуміти, як насправді формуються ціни на фізичному аграрному ринку України.\n\nЦе не академічний підручник.\n\nЦе практичний гід про локальні базиси, FOB/CPT, ліквідність, респондентські моделі, спотові індекси, basis risk та майбутню роль індексної інфраструктури в аграрній торгівлі.",
       },
       {
