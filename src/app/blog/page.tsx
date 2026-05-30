@@ -43,16 +43,34 @@ function matchesQuery(post: PlatformBlogPost, query: string) {
     return true;
   }
 
-  const haystack = [
-    post.title,
-    post.excerpt,
-    post.body.join(" "),
-    post.tags.join(" "),
-  ]
-    .join(" ")
-    .toLowerCase();
+  const haystack = buildPlatformSearchText(post).toLowerCase();
 
   return haystack.includes(query);
+}
+
+function buildPlatformSearchText(post: PlatformBlogPost) {
+  const richText = post.content
+    ? post.content
+        .map((block) => {
+          switch (block.kind) {
+            case "heading":
+            case "paragraph":
+            case "highlight":
+              return block.text;
+            case "list":
+              return block.items.join(" ");
+            case "downloadButtons":
+              return block.links.map((link) => link.label).join(" ");
+            case "bookPanel":
+              return `${block.description} ${block.imageAlt}`;
+            default:
+              return "";
+          }
+        })
+        .join(" ")
+    : post.body.join(" ");
+
+  return [post.title, post.excerpt, post.tags.join(" "), richText].join(" ");
 }
 
 export const metadata: Metadata = {
