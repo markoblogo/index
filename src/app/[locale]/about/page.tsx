@@ -249,6 +249,82 @@ function SpikeAboutPage({
         <div className="mx-auto grid max-w-[1900px] gap-6 px-6 py-10 lg:grid-cols-[24rem_1fr] lg:px-8 lg:py-14">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.24em] text-[var(--spike-pink)]">
+              {dict.about.resources.title}
+            </p>
+            <h2 className="mt-4 text-3xl font-black uppercase leading-tight tracking-normal text-white">
+              {dict.about.resources.cardTitle}
+            </h2>
+            <p className="mt-4 max-w-xl text-sm leading-6 text-white/58">
+              {dict.about.resources.description}
+            </p>
+          </div>
+          <article className="grid gap-4 rounded-[1.5rem] border border-white/12 bg-[#f8f8f2] p-4 text-[#050505] sm:p-5">
+            <div className="grid gap-4 sm:grid-cols-[12rem_1fr]">
+              <div className="rounded-[1rem] border border-black/12 bg-black/5 p-3">
+                <Image
+                  alt={dict.about.resources.coverAlt}
+                  className="h-full w-full rounded-[0.7rem] object-contain"
+                  height={960}
+                  src={dict.about.resources.cover}
+                  width={640}
+                />
+              </div>
+              <div>
+                <p className="text-sm font-black text-[var(--spike-accent)]">
+                  {dict.about.resources.title}
+                </p>
+                <p className="mt-3 text-xs font-black uppercase tracking-[0.1em] text-black/45">
+                  {dict.about.resources.pdfLabel} ·{" "}
+                  {dict.about.resources.epubLabel}
+                </p>
+                <h3 className="mt-2 text-lg font-black uppercase leading-6 text-black">
+                  {dict.about.resources.cardTitle}
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-black/70">
+                  {dict.about.resources.cardDescription}
+                </p>
+              </div>
+            </div>
+            <div className="mt-1 flex flex-wrap gap-3 pt-2">
+              <a
+                className="inline-flex rounded-full bg-[var(--spike-accent)] px-5 py-2.5 text-sm font-black !text-[#050505] transition hover:bg-black hover:!text-[#f8f8f2]"
+                download
+                href="/files/spot-market-handbook-ua.pdf"
+              >
+                {dict.about.resources.pdfDownload}
+              </a>
+              <a
+                className="inline-flex rounded-full border border-black/20 bg-[#050505]/8 px-5 py-2.5 text-sm font-black text-black transition hover:border-[var(--spike-accent)] hover:bg-white hover:text-[#050505]"
+                href="/files/spot-market-handbook-ua.pdf"
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                {dict.about.resources.pdfOpen}
+              </a>
+              <a
+                className="inline-flex rounded-full border border-black/20 bg-[#050505]/8 px-5 py-2.5 text-sm font-black text-black transition hover:border-[var(--spike-accent)] hover:bg-white hover:text-[#050505]"
+                download
+                href="/files/spot-market-handbook-ua.epub"
+              >
+                {dict.about.resources.epubDownload}
+              </a>
+              <a
+                className="inline-flex rounded-full border border-black/20 bg-[#050505]/8 px-5 py-2.5 text-sm font-black text-black transition hover:border-[var(--spike-accent)] hover:bg-white hover:text-[#050505]"
+                href="/files/spot-market-handbook-ua.epub"
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                {dict.about.resources.epubOpen}
+              </a>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section className="border-y border-white/10 bg-[#090909]">
+        <div className="mx-auto grid max-w-[1900px] gap-6 px-6 py-10 lg:grid-cols-[24rem_1fr] lg:px-8 lg:py-14">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-[var(--spike-pink)]">
               {dict.about.respondentsLabel}
             </p>
             <h2 className="mt-4 text-3xl font-black uppercase leading-tight tracking-normal text-white">

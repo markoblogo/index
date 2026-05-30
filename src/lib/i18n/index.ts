@@ -79,6 +79,20 @@ type Dictionary = {
     respondentsDescription: string;
     disclaimerTitle: string;
     disclaimer: string;
+    resources: {
+      title: string;
+      description: string;
+      cover: string;
+      coverAlt: string;
+      cardTitle: string;
+      cardDescription: string;
+      pdfLabel: string;
+      epubLabel: string;
+      pdfDownload: string;
+      pdfOpen: string;
+      epubDownload: string;
+      epubOpen: string;
+    };
   };
   methodology: {
     label: string;
@@ -251,6 +265,22 @@ const dictionaries: Record<Locale, Dictionary> = {
       disclaimerTitle: "Важливе інформаційне повідомлення",
       disclaimer:
         "Значення UGA Index публікуються виключно з інформаційною та аналітичною метою. Вони не є інвестиційною порадою, публічною офертою або рекомендацією купувати чи продавати будь-який товар. Значення агрегуються з даних респондентів і публікуються відповідно до методології індексу; індивідуальні дані компаній не розкриваються. УЗА, партнери проєкту та технологічні провайдери не несуть відповідальності за рішення, прийняті на основі цих даних.",
+      resources: {
+        title: "Посібник із спотовим ринком України",
+        description:
+          "Узагальнений гід для практичної роботи з інструментами спотової ціноутворення: як формуються сигнали ринку, які дані важливі для торгівлі та як правильно їх інтерпретувати.",
+        cover: "/files/spot-market-handbook-cover-ua.png",
+        coverAlt: "Обкладинка книги Spot-Market Handbook UA",
+        cardTitle: "Spot-Market Handbook",
+        cardDescription:
+          "Розширене пояснення методики оцінки спотових цін та практичні матеріали для щоденної аналітики.",
+        pdfLabel: "PDF",
+        epubLabel: "EPUB",
+        pdfDownload: "Завантажити PDF",
+        pdfOpen: "Відкрити PDF",
+        epubDownload: "Завантажити EPUB",
+        epubOpen: "Відкрити EPUB",
+      },
     },
     methodology: {
       label: "Методологія",
@@ -522,6 +552,22 @@ const dictionaries: Record<Locale, Dictionary> = {
       disclaimerTitle: "Important information notice",
       disclaimer:
         "UGA Index values are published for informational and analytical purposes only. They are not investment advice, a public offer, or a recommendation to buy or sell any commodity. Values are aggregated from respondent data and published according to the index methodology; individual company submissions are not disclosed. UGA, project partners and technology providers are not liable for decisions made on the basis of these data.",
+      resources: {
+        title: "Guide to the Spot Market in Ukraine",
+        description:
+          "A practical handbook covering the key mechanics of spot market pricing: how daily levels are formed, what can invalidate a signal and how to use index output in trading workflows.",
+        cover: "/files/spot-market-handbook-cover-ua.png",
+        coverAlt: "Spot-Market Handbook cover",
+        cardTitle: "Spot-Market Handbook",
+        cardDescription:
+          "Condensed practical guide to commodity spot market data and index-driven pricing.",
+        pdfLabel: "PDF",
+        epubLabel: "EPUB",
+        pdfDownload: "Download PDF",
+        pdfOpen: "Open PDF",
+        epubDownload: "Download EPUB",
+        epubOpen: "Open EPUB",
+      },
     },
     methodology: {
       label: "Methodology",
@@ -764,12 +810,13 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
               "Значення проходять медіанну перевірку, фільтрацію викидів і публікуються тільки за достатнього покриття респондентів.",
           },
         ],
-        respondentsTitle: "Партнери-респонденти у поточній корзині",
-        respondentsDescription:
-          "Корзина респондентів відображає партнерів SPIKE SPOT INDEX, представлених у щоденному зборі цінових даних. Респонденти-партнери індексу є лідерами в напрямку торгівлі відповідної культури протягом щонайменше останніх 6 місяців. Індивідуальні значення не публікуються з міркувань конфіденційності; а у відкритому доступі відображаються лише агреговані значення індексу.",
-        disclaimer:
-          "Значення SPIKE SPOT INDEX публікуються виключно з інформаційною та аналітичною метою. Вони не є інвестиційною порадою, публічною офертою або рекомендацією купувати чи продавати будь-який товар. Значення агрегуються з даних партнерів-респондентів і публікуються відповідно до методології; індивідуальні дані компаній не розкриваються. Spike Brokers, партнери проєкту та технологічні провайдери не несуть відповідальності за рішення, прийняті на основі цих даних.",
-      },
+      respondentsTitle: "Партнери-респонденти у поточній корзині",
+      respondentsDescription:
+        "Корзина респондентів відображає партнерів SPIKE SPOT INDEX, представлених у щоденному зборі цінових даних. Респонденти-партнери індексу є лідерами в напрямку торгівлі відповідної культури протягом щонайменше останніх 6 місяців. Індивідуальні значення не публікуються з міркувань конфіденційності; а у відкритому доступі відображаються лише агреговані значення індексу.",
+      disclaimer:
+        "Значення SPIKE SPOT INDEX публікуються виключно з інформаційною та аналітичною метою. Вони не є інвестиційною порадою, публічною офертою або рекомендацією купувати чи продавати будь-який товар. Значення агрегуються з даних партнерів-респондентів і публікуються відповідно до методології; індивідуальні дані компаній не розкриваються. Spike Brokers, партнери проєкту та технологічні провайдери не несуть відповідальності за рішення, прийняті на основі цих даних.",
+      resources: base.about.resources,
+    },
       methodology: {
         ...base.methodology,
         title: "Як розраховується SPIKE SPOT INDEX",
@@ -897,6 +944,7 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
         "The respondent basket reflects Spike Brokers partners represented in the daily price collection workflow. Individual submissions are not published; the public index displays aggregated values only.",
       disclaimer:
         "SPIKE SPOT INDEX values are published for informational and analytical purposes only. They are not investment advice, a public offer, or a recommendation to buy or sell any commodity. Values are aggregated from respondent-partner data and published according to the index methodology; individual company submissions are not disclosed. Spike Brokers, project partners and technology providers are not liable for decisions made on the basis of these data.",
+      resources: base.about.resources,
     },
     methodology: {
       ...base.methodology,
