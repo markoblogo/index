@@ -86,6 +86,16 @@ type Dictionary = {
       coverAlt: string;
       cardTitle: string;
       cardDescription: string;
+      releaseLabel?: string;
+      releaseDate?: string;
+      releaseLanguage?: string;
+      releaseVersion?: string;
+      audience?: string;
+      highlights?: string[];
+      releaseDateLabel?: string;
+      releaseLanguageLabel?: string;
+      audienceLabel?: string;
+      highlightsLabel?: string;
       pdfLabel: string;
       epubLabel: string;
       pdfDownload: string;
@@ -555,12 +565,27 @@ const dictionaries: Record<Locale, Dictionary> = {
       resources: {
         title: "Guide to the Spot Market in Ukraine",
         description:
-          "A practical handbook covering the key mechanics of spot market pricing: how daily levels are formed, what can invalidate a signal and how to use index output in trading workflows.",
+          "A practical handbook covering the key mechanics of commodity spot-market pricing in Ukraine: daily level formation, quality filtering, and how benchmark data is used in trading workflows.",
         cover: "/files/spot-market-handbook-cover-ua.png",
         coverAlt: "Spot-Market Handbook cover",
         cardTitle: "Spot-Market Handbook",
         cardDescription:
-          "Condensed practical guide to commodity spot market data and index-driven pricing.",
+          "This is a field-oriented guide for market teams that regularly work with spot prices: export valuation logic, quality checks, typical operational pitfalls, and practical uses of a daily benchmark in commercial conversations.",
+        releaseLabel: "Version",
+        releaseDate: "2026-05-27",
+        releaseLanguage: "English (EN)",
+        releaseVersion: "v1.0",
+        releaseDateLabel: "Date",
+        releaseLanguageLabel: "Language",
+        audienceLabel: "Audience",
+        highlightsLabel: "What this guide covers",
+        audience: "For traders, procurement, logistics, and analytics teams in grain and oilseed markets.",
+        highlights: [
+          "how spot levels are built and validated",
+          "what can distort single quotations",
+          "how to read index output across commodities and flow",
+          "where benchmark values fit into pricing and negotiation",
+        ],
         pdfLabel: "PDF",
         epubLabel: "EPUB",
         pdfDownload: "Download PDF",
@@ -815,7 +840,29 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
         "Корзина респондентів відображає партнерів SPIKE SPOT INDEX, представлених у щоденному зборі цінових даних. Респонденти-партнери індексу є лідерами в напрямку торгівлі відповідної культури протягом щонайменше останніх 6 місяців. Індивідуальні значення не публікуються з міркувань конфіденційності; а у відкритому доступі відображаються лише агреговані значення індексу.",
       disclaimer:
         "Значення SPIKE SPOT INDEX публікуються виключно з інформаційною та аналітичною метою. Вони не є інвестиційною порадою, публічною офертою або рекомендацією купувати чи продавати будь-який товар. Значення агрегуються з даних партнерів-респондентів і публікуються відповідно до методології; індивідуальні дані компаній не розкриваються. Spike Brokers, партнери проєкту та технологічні провайдери не несуть відповідальності за рішення, прийняті на основі цих даних.",
-      resources: base.about.resources,
+      resources: {
+        ...base.about.resources,
+        description:
+          "Практична методологічна пам'ятка про те, як працює щоденна спотова ціна в українському аграрному просторі: як формується орієнтир дня, як відкидаються некоректні сигнали і коли ринок дає слабку інформацію.",
+        cardDescription:
+          "Книга підійде аналітикам, трейдерам, закупівельникам і керівникам ризик-менеджменту: вона пояснює, які ціни вважаються опорними, як трактувати індикативи та як працювати з денними бенчмарками в операційному ритмі.",
+        releaseLabel: "Версія",
+        releaseDate: "27.05.2026",
+        releaseLanguage: "Українська (UA)",
+        releaseVersion: "v1.0",
+        releaseDateLabel: "Дата",
+        releaseLanguageLabel: "Мова",
+        audienceLabel: "Аудиторія",
+        highlightsLabel: "Що дає книга",
+        audience:
+          "Для учасників агропродаж, трейдерів, переробників і команд, що приймають цінові рішення щодня.",
+        highlights: [
+          "логіка розрахунку спотових індикативів",
+          "поширені типові помилки в збиранні ринкових цін",
+          "як інтерпретувати бенчмарк у переговорах",
+          "чому репрезентативність даних важливіша за одну «велику» ціну",
+        ],
+      },
     },
       methodology: {
         ...base.methodology,
@@ -944,7 +991,29 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
         "The respondent basket reflects Spike Brokers partners represented in the daily price collection workflow. Individual submissions are not published; the public index displays aggregated values only.",
       disclaimer:
         "SPIKE SPOT INDEX values are published for informational and analytical purposes only. They are not investment advice, a public offer, or a recommendation to buy or sell any commodity. Values are aggregated from respondent-partner data and published according to the index methodology; individual company submissions are not disclosed. Spike Brokers, project partners and technology providers are not liable for decisions made on the basis of these data.",
-      resources: base.about.resources,
+      resources: {
+        ...base.about.resources,
+        description:
+          "A practical handbook for market teams working with Ukrainian spot commodities. It explains how daily prices are built, what distorts one-off quotes, and how to apply benchmark outputs in trading workflows.",
+        cardDescription:
+          "Useful for traders, procurement, and analytics teams that make price decisions under uncertain conditions: what makes a reliable spot indicator, how to validate incoming quotes, and how index values should be used in negotiations and pricing models.",
+        releaseLabel: "Version",
+        releaseDate: "May 27, 2026",
+        releaseLanguage: "English (EN)",
+        releaseVersion: "v1.0",
+        releaseDateLabel: "Date",
+        releaseLanguageLabel: "Language",
+        audienceLabel: "Audience",
+        highlightsLabel: "What this guide covers",
+        audience:
+          "For grain and oilseed market participants handling daily pricing, logistics, procurement, and hedging operations.",
+        highlights: [
+          "how spot indicators are structured",
+          "how to assess quote quality before use",
+          "how index output supports commodity comparisons",
+          "where benchmark use adds clarity in fast-moving markets",
+        ],
+      },
     },
     methodology: {
       ...base.methodology,

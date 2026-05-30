@@ -179,6 +179,8 @@ function SpikeAboutPage({
       (respondent) => respondent.id !== MN7R_RESPONDENT_ID,
     ),
   ];
+  const resourceButtonClass =
+    "inline-flex rounded-full border border-black/30 bg-black px-5 py-2.5 text-sm font-black text-[#f8f8f2] transition hover:border-[var(--spike-accent)] hover:bg-[var(--spike-accent)] hover:text-[#050505] hover:shadow-[0_0_0_1px_var(--spike-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--spike-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#f8f8f2]";
 
   return (
     <main className="spike-static-page overflow-hidden bg-[#050505] text-[#f8f8f2]">
@@ -283,18 +285,63 @@ function SpikeAboutPage({
                 <p className="mt-2 text-sm leading-6 text-black/70">
                   {dict.about.resources.cardDescription}
                 </p>
+                {dict.about.resources.releaseDate ||
+                dict.about.resources.releaseVersion ||
+                dict.about.resources.releaseLanguage ||
+                dict.about.resources.audience ? (
+                  <div className="mt-3 grid gap-1 text-xs font-black uppercase tracking-[0.08em] text-black/55">
+                    {dict.about.resources.releaseLabel &&
+                    dict.about.resources.releaseVersion ? (
+                      <p>
+                        {dict.about.resources.releaseLabel}:{" "}
+                        {dict.about.resources.releaseVersion}
+                      </p>
+                    ) : null}
+                    {dict.about.resources.releaseDate ? (
+                      <p>
+                        {dict.about.resources.releaseDateLabel ?? "Date"}:{" "}
+                        {dict.about.resources.releaseDate}
+                      </p>
+                    ) : null}
+                    {dict.about.resources.releaseLanguage ? (
+                      <p>
+                        {dict.about.resources.releaseLanguageLabel ?? "Language"}:{" "}
+                        {dict.about.resources.releaseLanguage}
+                      </p>
+                    ) : null}
+                    {dict.about.resources.audience ? (
+                      <p>
+                        {dict.about.resources.audienceLabel ?? "Audience"}:{" "}
+                        {dict.about.resources.audience}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
+                {dict.about.resources.highlights?.length ? (
+                  <div className="mt-4">
+                    <p className="text-[0.68rem] font-black uppercase tracking-[0.1em] text-black/45">
+                      {dict.about.resources.highlightsLabel ??
+                        "What this guide covers"}
+                    </p>
+                    <ul className="mt-2 list-disc pl-5 text-xs leading-5 text-black/70">
+                      {dict.about.resources.highlights.map((highlight) => (
+                        <li key={highlight}>{highlight}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
               </div>
             </div>
             <div className="mt-1 flex flex-wrap gap-3 pt-2">
               <a
-                className="inline-flex rounded-full bg-[var(--spike-accent)] px-5 py-2.5 text-sm font-black !text-[#050505] transition hover:bg-black hover:!text-[#f8f8f2]"
+                className={resourceButtonClass}
                 download
                 href="/files/spot-market-handbook-ua.pdf"
               >
                 {dict.about.resources.pdfDownload}
               </a>
               <a
-                className="inline-flex rounded-full border border-black/20 bg-[#050505]/8 px-5 py-2.5 text-sm font-black text-black transition hover:border-[var(--spike-accent)] hover:bg-white hover:text-[#050505]"
+                className={resourceButtonClass}
                 href="/files/spot-market-handbook-ua.pdf"
                 rel="noopener noreferrer"
                 target="_blank"
@@ -302,19 +349,11 @@ function SpikeAboutPage({
                 {dict.about.resources.pdfOpen}
               </a>
               <a
-                className="inline-flex rounded-full border border-black/20 bg-[#050505]/8 px-5 py-2.5 text-sm font-black text-black transition hover:border-[var(--spike-accent)] hover:bg-white hover:text-[#050505]"
+                className={resourceButtonClass}
                 download
                 href="/files/spot-market-handbook-ua.epub"
               >
                 {dict.about.resources.epubDownload}
-              </a>
-              <a
-                className="inline-flex rounded-full border border-black/20 bg-[#050505]/8 px-5 py-2.5 text-sm font-black text-black transition hover:border-[var(--spike-accent)] hover:bg-white hover:text-[#050505]"
-                href="/files/spot-market-handbook-ua.epub"
-                rel="noopener noreferrer"
-                target="_blank"
-              >
-                {dict.about.resources.epubOpen}
               </a>
             </div>
           </article>
