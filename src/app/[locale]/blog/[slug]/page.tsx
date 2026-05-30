@@ -124,16 +124,11 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
         <div className="mx-auto grid max-w-6xl gap-8 py-10 lg:grid-cols-[minmax(0,1fr)_16rem]">
           <div className="grid gap-6 text-lg font-medium leading-8 text-white/76">
-            {post.body.map((paragraph) =>
-              isBodyHeading(paragraph) ? (
-                <h2
-                  className="pt-5 text-2xl font-black uppercase leading-tight text-white"
-                  key={paragraph}
-                >
-                  {paragraph}
-                </h2>
-              ) : (
-                <p key={paragraph}>{paragraph}</p>
+            {post.body.map((paragraph, index) =>
+              renderBlogParagraph(
+                paragraph,
+                locale,
+                `paragraph-${locale}-${post.slug}-${index}`,
               ),
             )}
           </div>
@@ -169,4 +164,58 @@ function formatDate(value: string, locale: Locale) {
 
 function isBodyHeading(value: string) {
   return value.length <= 80 && !/[.!?…]$/.test(value);
+}
+
+function getResourceLinkMeta(line: string, locale: Locale) {
+  const match = line.match(/^(PDF|EPUB):\s*(https?:\/\/\S+)$/i);
+
+  if (!match) {
+    return null;
+  }
+
+  const type = match[1].toUpperCase() as "PDF" | "EPUB";
+  const href = match[2];
+
+  return {
+    href,
+    label:
+      locale === "uk"
+        ? `Завантажити ${type}`
+        : `Download ${type}`,
+  };
+}
+
+function renderBlogParagraph(
+  value: string,
+  locale: Locale,
+  keyPrefix: string,
+) {
+  const resource = getResourceLinkMeta(value, locale);
+  if (resource) {
+    return (
+      <a
+        className="inline-flex w-fit rounded-full border border-[#f8f8f2]/45 bg-[#050505] px-4 py-2 text-sm font-black uppercase tracking-[0.12em] text-[#f8f8f2] transition hover:bg-[var(--spike-accent)] hover:text-[#050505]"
+        download
+        href={resource.href}
+        key={keyPrefix}
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        {resource.label}
+      </a>
+    );
+  }
+
+  if (isBodyHeading(value)) {
+    return (
+      <h2
+        className="pt-5 text-2xl font-black uppercase leading-tight text-white"
+        key={keyPrefix}
+      >
+        {value}
+      </h2>
+    );
+  }
+
+  return <p key={keyPrefix}>{value}</p>;
 }

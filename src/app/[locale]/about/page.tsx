@@ -182,7 +182,7 @@ function SpikeAboutPage({
     ),
   ];
   const resourceButtonClass =
-    "inline-flex rounded-full border border-[#f8f8f2]/35 bg-black px-5 py-2.5 text-sm font-black text-[#f8f8f2] no-underline transition hover:border-[#050505] hover:bg-[var(--spike-accent)] hover:text-[#050505] hover:shadow-[0_0_0_1px_var(--spike-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--spike-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#f8f8f2]";
+    "inline-flex rounded-full border border-[#f8f8f2]/45 bg-[#050505] px-5 py-2.5 text-sm font-black text-[#f8f8f2] no-underline transition hover:border-[var(--spike-accent)] hover:bg-[var(--spike-accent)] hover:text-[#050505] hover:shadow-[0_0_0_1px_var(--spike-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--spike-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#050505]";
   const showResourcesSection = locale === "uk";
 
   return (
