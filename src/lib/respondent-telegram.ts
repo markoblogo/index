@@ -219,7 +219,9 @@ async function createSurveyUrl(recipient: TelegramRecipient) {
     },
   });
 
-  return absoluteUrl(`/respondent/access/${token}?locale=${recipient.locale}`);
+  return absoluteUrl(
+    `/respondent/access/${token}?locale=${recipient.locale}&channel=telegram&inTelegram=1`,
+  );
 }
 
 function getTelegramText(

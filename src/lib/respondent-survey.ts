@@ -69,6 +69,8 @@ const labels = {
     submit: "Submit",
     submittedSuccess:
       "Your data has been accepted and has been forwarded to the index calculation.",
+    telegramSubmittedNotice:
+      "Data accepted — it has been submitted successfully and participates in the daily index calculation.",
     submitted: "Submitted",
     submittedLocked:
       `Your data has been submitted successfully. Below is the summary that was transferred to ${isSpike ? "Spike Brokers" : "UGA"}.`,
@@ -105,6 +107,8 @@ const labels = {
     submitted: "Подано",
     submittedSuccess:
       "Ваші дані успішно прийнято. Вони будуть використані в розрахунку індексу.",
+    telegramSubmittedNotice:
+      "Дані успішно прийняті. Зараз вони враховуються в сьогоднішньому розрахунку індексу.",
     submittedLocked:
       `Ви успішно заповнили дані. Нижче показано значення, які передані ${isSpike ? "Spike Brokers" : "в УЗА"} для обробки.`,
     submittedMessage: "Дані успішно подано",
@@ -163,6 +167,7 @@ export async function saveRespondentSurvey(formData: FormData, user: DemoUser) {
   }
 
   const entries = parsePrices(formData);
+  const respondentChannel = String(formData.get("respondentChannel") ?? "web");
 
   if (!hasDatabaseUrl()) {
     if (!allowMockFallback()) {
@@ -181,7 +186,7 @@ export async function saveRespondentSurvey(formData: FormData, user: DemoUser) {
       });
     }
 
-    redirect(`/respondent?locale=${locale}&saved=${intent}`);
+    redirect(`/respondent?locale=${locale}&saved=${intent}${respondentChannel === "telegram" ? "&channel=telegram&inTelegram=1" : ""}`);
   }
 
   await saveDatabaseRespondentSurvey({ date, entries, respondentId, status: intent, user });
@@ -189,7 +194,9 @@ export async function saveRespondentSurvey(formData: FormData, user: DemoUser) {
     await autoPublishSpikeDailyIndices(date, { replaceExisting: true });
   }
   revalidatePath("/admin/daily-inputs");
-  redirect(`/respondent?locale=${locale}&saved=${intent}`);
+  redirect(
+    `/respondent?locale=${locale}&saved=${intent}${respondentChannel === "telegram" ? "&channel=telegram&inTelegram=1" : ""}`,
+  );
 }
 
 function getMockRespondentSurveyData({

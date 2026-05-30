@@ -11,6 +11,8 @@ import {
 
 type RespondentPageProps = {
   searchParams: Promise<{
+    channel?: string;
+    inTelegram?: string;
     edit?: string;
     locale?: string;
     saved?: string;
@@ -33,11 +35,13 @@ export default async function RespondentPage({
     locale,
     respondentId: user.respondentId ?? "",
   });
+  const isTelegramFlow =
+    params.channel === "telegram" || params.inTelegram === "1" || params.inTelegram === "true";
   const isSubmitted = data.status === "submitted";
   const isEditingSubmitted = isSubmitted && params.edit === "1";
   const hasSubmitQuery = params.saved === "submitted";
   const showSubmittedConfirmation = (isSubmitted && !isEditingSubmitted) || hasSubmitQuery;
-  const editHref = `/respondent?locale=${locale}&edit=1`;
+  const editHref = `/respondent?locale=${locale}&edit=1${isTelegramFlow ? "&channel=telegram&inTelegram=1" : ""}`;
   const statusLabel =
     data.status === "submitted"
       ? labels.statusSubmitted
@@ -115,6 +119,10 @@ export default async function RespondentPage({
               ? "Ви редагуєте вже подані значення. Після повторного подання система оновить ваші дані."
               : "You are editing already submitted values. Submitting again will update your data."}
           </div>
+        ) : hasSubmitQuery ? (
+          <div className="mt-5 border border-uga-green bg-uga-mist px-4 py-3 text-sm font-semibold text-uga-dark">
+            {labels.submittedSuccess}
+          </div>
         ) : showSubmittedConfirmation ? (
           <div className="mt-5 border border-black bg-white px-4 py-3 text-sm font-semibold text-uga-dark">
             {labels.submittedLocked}
@@ -126,6 +134,9 @@ export default async function RespondentPage({
         <form action={save} className="border border-black bg-white p-5">
           <input name="date" type="hidden" value={data.date} />
           <input name="locale" type="hidden" value={locale} />
+          {isTelegramFlow ? (
+            <input name="respondentChannel" type="hidden" value="telegram" />
+          ) : null}
           <div className="grid gap-4">
             {data.commodities.map((commodity) => (
               <label
@@ -190,6 +201,13 @@ export default async function RespondentPage({
           editLabel={labels.editSubmitted}
           title={labels.submittedMessage}
         />
+      ) : null}
+      {showSubmittedConfirmation && hasSubmitQuery && isTelegramFlow ? (
+        <section className="border border-uga-green bg-uga-mist p-5">
+          <p className="text-sm font-semibold text-uga-dark">
+            {labels.telegramSubmittedNotice}
+          </p>
+        </section>
       ) : null}
     </section>
   );
