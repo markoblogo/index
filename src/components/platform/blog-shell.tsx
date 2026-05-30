@@ -24,12 +24,12 @@ export function BlogHeader() {
           />
         </Link>
         <div className="flex items-center gap-3 text-sm font-semibold text-white/68 md:gap-5">
-          <a className="hidden transition hover:text-white md:inline-flex" href="/#indices">
+          <Link className="hidden transition hover:text-white md:inline-flex" href="/#indices">
             Live indices
-          </a>
-          <a className="hidden transition hover:text-white md:inline-flex" href="/#methodology">
+          </Link>
+          <Link className="hidden transition hover:text-white md:inline-flex" href="/#methodology">
             Methodology
-          </a>
+          </Link>
           <Link className="transition hover:text-white" href="/">
             Home
           </Link>
