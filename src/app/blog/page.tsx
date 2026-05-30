@@ -61,6 +61,10 @@ function buildPlatformSearchText(post: PlatformBlogPost) {
               return block.items.join(" ");
             case "downloadButtons":
               return block.links.map((link) => link.label).join(" ");
+            case "inlineLink":
+              return `${block.before} ${block.label} ${block.after}`;
+            case "image":
+              return block.imageAlt;
             case "bookPanel":
               return `${block.description} ${block.imageAlt}`;
             default:

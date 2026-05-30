@@ -18,6 +18,7 @@ export type PlatformBlogContentBlock =
       text: string;
       level?: 2;
     }
+  | { kind: "inlineLink"; before: string; label: string; href: string; after: string }
   | { kind: "list"; items: string[] }
   | {
       kind: "downloadButtons";
@@ -25,6 +26,11 @@ export type PlatformBlogContentBlock =
         href: string;
         label: string;
       }[];
+    }
+  | {
+      kind: "image";
+      image: string;
+      imageAlt: string;
     }
   | {
       kind: "bookPanel";
@@ -125,23 +131,22 @@ export const platformBlogPosts: PlatformBlogPost[] = [
         text: "Spot Market Handbook: How Ukrainian Agricultural Prices Actually Work",
       },
       {
-        kind: "paragraph",
-        text: "The book is currently available in Ukrainian on the Spike Spot Index website:",
-      },
-      {
-        kind: "paragraph",
-        text: "https://spike.1d3x.com/",
+        kind: "inlineLink",
+        before: "The book is currently available in Ukrainian on the ",
+        label: "Spike Spot Index website",
+        href: "https://spike.1d3x.com/",
+        after: ".",
       },
       {
         kind: "downloadButtons",
         links: [
           {
             href: "https://spike.1d3x.com/files/spot-market-handbook-ua.pdf",
-            label: "Даунлоад PDF",
+            label: "Download PDF",
           },
           {
             href: "https://spike.1d3x.com/files/spot-market-handbook-ua.epub",
-            label: "Даунлоад EPUB",
+            label: "Download EPUB",
           },
         ],
       },
@@ -189,15 +194,6 @@ export const platformBlogPosts: PlatformBlogPost[] = [
         kind: "paragraph",
         text: "The book also includes practical case studies, including situations where Chicago rises while FOB Black Sea weakens, port restrictions widen basis, Danube and Greater Odesa routes create different economics, and a benchmark chooses not to publish when the market is too thin.",
       },
-      {
-        kind: "bookPanel",
-        description:
-          "Download the handbook and review practical case examples, terminology and methodology notes used in Ukrainian spot index work.",
-        image: "/blog/spot-market-handbook-book-cover.png",
-        imageAlt: "Spot Market Handbook cover",
-        pdf: "https://spike.1d3x.com/files/spot-market-handbook-ua.pdf",
-        epub: "https://spike.1d3x.com/files/spot-market-handbook-ua.epub",
-      },
       { kind: "heading", level: 2, text: "Why 1D3X recommends it" },
       {
         kind: "paragraph",
@@ -221,6 +217,11 @@ export const platformBlogPosts: PlatformBlogPost[] = [
         text: "Ukrainian note",
       },
       {
+        kind: "image",
+        image: "/blog/spot-market-handbook-book-cover.png",
+        imageAlt: "Spot Market Handbook cover",
+      },
+      {
         kind: "highlight",
         text: "Книга Spot Market Handbook: How Ukrainian Agricultural Prices Actually Work вже доступна українською мовою на сайті Spike Spot Index.\n\nМи рекомендуємо її трейдерам, брокерам, експортерам, переробникам, агровиробникам, аналітикам та всім україномовним учасникам ринку, які хочуть краще зрозуміти, як насправді формуються ціни на фізичному аграрному ринку України.\n\nЦе не академічний підручник.\n\nЦе практичний гід про локальні базиси, FOB/CPT, ліквідність, респондентські моделі, спотові індекси, basis risk та майбутню роль індексної інфраструктури в аграрній торгівлі.",
       },
@@ -229,11 +230,11 @@ export const platformBlogPosts: PlatformBlogPost[] = [
         links: [
           {
             href: "https://spike.1d3x.com/files/spot-market-handbook-ua.pdf",
-            label: "Даунлоад PDF",
+            label: "Download PDF",
           },
           {
             href: "https://spike.1d3x.com/files/spot-market-handbook-ua.epub",
-            label: "Даунлоад EPUB",
+            label: "Download EPUB",
           },
         ],
       },

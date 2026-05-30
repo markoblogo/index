@@ -125,6 +125,22 @@ export default async function PlatformBlogPostPage({
 }
 
 function PlatformPostBlock({ block }: { block: PlatformBlogContentBlock }) {
+  if (block.kind === "inlineLink") {
+    return (
+      <p>
+        <span>{block.before}</span>
+        <Link
+          className="font-black text-[#d6ff58] underline underline-offset-4 transition hover:text-white"
+          href={block.href}
+          target="_blank"
+        >
+          {block.label}
+        </Link>
+        <span>{block.after}</span>
+      </p>
+    );
+  }
+
   if (block.kind === "paragraph") {
     return (
       <p>
@@ -174,11 +190,25 @@ function PlatformPostBlock({ block }: { block: PlatformBlogContentBlock }) {
             href={link.href}
             key={link.href}
             target="_blank"
-          >
+      >
             {link.label}
           </Link>
         ))}
       </div>
+    );
+  }
+
+  if (block.kind === "image") {
+    return (
+      <figure className="my-4 overflow-hidden rounded-[1.25rem] border border-white/18 bg-[#050505]/84 p-2">
+        <Image
+          alt={block.imageAlt}
+          className="h-auto w-full rounded-xl"
+          height={1200}
+          src={block.image}
+          width={980}
+        />
+      </figure>
     );
   }
 
@@ -200,14 +230,14 @@ function PlatformPostBlock({ block }: { block: PlatformBlogContentBlock }) {
               href={block.pdf}
               target="_blank"
             >
-              Даунлоад PDF
+              Download PDF
             </Link>
             <Link
               className="inline-flex justify-center rounded-full border border-white/18 px-5 py-3 text-xs font-black uppercase tracking-[0.12em] text-white/88 transition hover:border-[#d6ff58] hover:text-[#d6ff58]"
               href={block.epub}
               target="_blank"
             >
-              Даунлоад EPUB
+              Download EPUB
             </Link>
           </div>
         </div>
