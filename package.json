@@ -12,7 +12,11 @@
     "test:e2e": "playwright test",
     "check:production-env": "node scripts/check-production-env.mjs",
     "db:generate": "prisma generate",
-    "db:seed": "prisma db seed"
+    "db:seed": "prisma db seed",
+    "deploy:1d3x": "node scripts/verify-vercel-project.mjs --project 1d3x && vercel --prod --yes --scope abvcreative --project 1d3x",
+    "deploy:uga": "node scripts/verify-vercel-project.mjs --project uga-index && vercel --prod --yes --scope abvcreative --project uga-index",
+    "deploy:spike": "node scripts/verify-vercel-project.mjs --project spike-ua-index && vercel --prod --yes --scope abvcreative --project spike-ua-index",
+    "deploy:guard": "node scripts/verify-vercel-project.mjs"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
