@@ -67,6 +67,8 @@ const labels = {
     statusEmpty: "Not started",
     statusSubmitted: `Submitted to ${isSpike ? "Spike Brokers" : "UGA"}`,
     submit: "Submit",
+    submittedSuccess:
+      "Your data has been accepted and has been forwarded to the index calculation.",
     submitted: "Submitted",
     submittedLocked:
       `Your data has been submitted successfully. Below is the summary that was transferred to ${isSpike ? "Spike Brokers" : "UGA"}.`,
@@ -101,6 +103,8 @@ const labels = {
     statusSubmitted: `Передано ${isSpike ? "Spike Brokers" : "в УЗА"}`,
     submit: "Подати",
     submitted: "Подано",
+    submittedSuccess:
+      "Ваші дані успішно прийнято. Вони будуть використані в розрахунку індексу.",
     submittedLocked:
       `Ви успішно заповнили дані. Нижче показано значення, які передані ${isSpike ? "Spike Brokers" : "в УЗА"} для обробки.`,
     submittedMessage: "Дані успішно подано",

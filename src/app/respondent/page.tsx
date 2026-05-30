@@ -35,7 +35,8 @@ export default async function RespondentPage({
   });
   const isSubmitted = data.status === "submitted";
   const isEditingSubmitted = isSubmitted && params.edit === "1";
-  const showSubmittedConfirmation = isSubmitted && !isEditingSubmitted;
+  const hasSubmitQuery = params.saved === "submitted";
+  const showSubmittedConfirmation = (isSubmitted && !isEditingSubmitted) || hasSubmitQuery;
   const editHref = `/respondent?locale=${locale}&edit=1`;
   const statusLabel =
     data.status === "submitted"
@@ -104,7 +105,7 @@ export default async function RespondentPage({
             {params.saved === "locked"
               ? labels.lockedSubmitted
               : params.saved === "submitted"
-              ? labels.submitted
+              ? labels.submittedSuccess
               : labels.draftSaved}
           </div>
         ) : null}
