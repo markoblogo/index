@@ -28,6 +28,8 @@ export default async function SubscriptionPage({
         </div>
       </section>
 
+      {isSpike && locale === "uk" ? <RespondentBlock /> : null}
+
       <section className="mx-auto max-w-7xl px-6 py-10 lg:px-8">
         <AccessNotice copy={copy} />
       </section>
@@ -43,6 +45,57 @@ export default async function SubscriptionPage({
         </div>
       </section>
     </main>
+  );
+}
+
+function RespondentBlock() {
+  const pdfHref = "/files/spike-spot-index-respondents-presentation.pdf";
+  const youtubeSrc =
+    "https://www.youtube.com/embed/LhJyA-cyqyE?autoplay=1&mute=1&loop=1&playlist=LhJyA-cyqyE&controls=0&playsinline=1&rel=0&modestbranding=1";
+
+  return (
+    <section className="border-y border-white/10 bg-[#090909]">
+      <div className="mx-auto max-w-[1900px] grid gap-6 px-6 py-10 lg:grid-cols-[1fr_1.2fr] lg:px-8 lg:py-14">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.24em] text-[var(--spike-accent)]">
+            Співпраця
+          </p>
+          <h2 className="mt-4 text-3xl font-black uppercase leading-tight tracking-normal text-white">
+            Стати респондентом Spike Spot Index
+          </h2>
+          <p className="mt-4 max-w-2xl text-sm leading-6 text-white/68">
+            Допоможіть формувати benchmark українського аграрного ринку на основі реальних щоденних цін.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <a
+              className="inline-flex rounded-full border border-[#f8f8f2]/45 bg-[#050505] px-5 py-2.5 text-sm font-black uppercase tracking-[0.12em] text-[#f8f8f2] transition hover:border-[var(--spike-accent)] hover:bg-[var(--spike-accent)] hover:text-[#050505]"
+              download
+              href={pdfHref}
+            >
+              Завантажити презентацію pdf
+            </a>
+            <a
+              className="inline-flex rounded-full border border-[#f8f8f2]/45 bg-[#050505] px-5 py-2.5 text-sm font-black uppercase tracking-[0.12em] text-[#f8f8f2] transition hover:border-[var(--spike-accent)] hover:bg-[var(--spike-accent)] hover:text-[#050505]"
+              href={pdfHref}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              Передивитись презентацію
+            </a>
+          </div>
+        </div>
+        <div className="overflow-hidden rounded-[1rem] border border-white/16 bg-black/55">
+          <iframe
+            className="aspect-video w-full"
+            src={youtubeSrc}
+            title="Spike Spot Index Respondents Presentation"
+            allowFullScreen
+            loading="lazy"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          />
+        </div>
+      </div>
+    </section>
   );
 }
 
