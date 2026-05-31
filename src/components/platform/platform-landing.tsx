@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ContactForm } from "@/components/platform/contact-form";
+import { AutoplayYoutubeEmbed } from "@/components/platform/autoplay-youtube-embed";
 
 const liveIndices = [
   {
@@ -108,6 +109,8 @@ const jsonLd = {
 };
 
 export function PlatformLanding() {
+  const partnerDeck = "/files/1D3X_Local_Commodity_Index_Partner_Program.pdf";
+
   return (
     <main className="min-h-screen bg-[#07100c] text-white">
       <script
@@ -231,6 +234,69 @@ export function PlatformLanding() {
                 </div>
               </article>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="border-b border-white/10 bg-[#07100c]" id="partner-program">
+        <div className="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:py-20">
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-[#9fffa8]">
+            NOW EXPANDING ACROSS EUROPE
+          </p>
+          <h2 className="mt-4 text-4xl font-black leading-tight sm:text-5xl">
+            Become a 1D3X Partner
+          </h2>
+          <p className="mt-4 max-w-3xl text-lg leading-7 text-white/68">
+            Launch a local commodity index in your market using the 1D3X
+            infrastructure.
+          </p>
+
+          <div className="mt-10 grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
+            <div className="overflow-hidden rounded-[1rem] border border-white/16">
+              <AutoplayYoutubeEmbed
+                title="1D3X Partner Program"
+                videoId="nDtDWvTzELc"
+              />
+            </div>
+            <div className="border border-white/12 bg-[#07100c] p-6">
+              <h3 className="text-2xl font-black uppercase tracking-[0.06em] text-[#d6ff58]">
+                Partner Program Overview
+              </h3>
+              <p className="mt-4 text-base leading-8 text-white/75">
+                1D3X is building a global network of local commodity indices.
+                <br />
+                We provide the technology, infrastructure, methodology and
+                analytics framework.
+                <br />
+                You provide local expertise, industry relationships and market
+                leadership.
+                <br />
+                Together we build trusted benchmarks for commodity markets.
+              </p>
+              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                <a
+                  className="inline-flex items-center justify-center rounded-full border border-[#d6ff58] bg-[#d6ff58] px-5 py-3 text-xs font-black uppercase tracking-[0.12em] text-[#07100c] transition hover:bg-white"
+                  href={partnerDeck}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  ▶ Watch Presentation
+                </a>
+                <a
+                  className="inline-flex items-center justify-center rounded-full border border-white/20 px-5 py-3 text-xs font-black uppercase tracking-[0.12em] text-white transition hover:border-[#d6ff58] hover:text-[#d6ff58]"
+                  download
+                  href={partnerDeck}
+                >
+                  📄 Download Partner Deck
+                </a>
+              </div>
+              <a
+                className="mt-3 inline-flex items-center justify-center rounded-full border border-white/20 px-5 py-3 text-xs font-black uppercase tracking-[0.12em] text-white transition hover:border-[#d6ff58] hover:text-[#d6ff58] sm:w-fit"
+                href="#contact"
+              >
+                📧 Become a Partner
+              </a>
+            </div>
           </div>
         </div>
       </section>
