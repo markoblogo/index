@@ -56,10 +56,10 @@ export function AutoplayYoutubeEmbed({
           />
         ) : (
           <>
-            <img
-              alt={`${title} video poster`}
-              className="h-full w-full object-cover"
-              src={poster}
+            <div
+              aria-hidden="true"
+              className="h-full w-full bg-cover bg-center bg-no-repeat"
+              style={{ backgroundImage: `url(${poster})` }}
             />
             <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/20">
               <span className="rounded-full bg-white px-4 py-3 text-xs font-black uppercase tracking-[0.12em] text-[#07100c]">
