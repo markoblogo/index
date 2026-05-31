@@ -156,6 +156,7 @@ Scheduled Spike processes:
 - MN7R import: `/api/cron/mn7r-monitor-prices`;
 - respondent Telegram notifications: `/api/cron/respondent-telegram`;
 - auto-publish: `/api/cron/spike-auto-publish`;
+- temporary UGA demo sync from Spike public indices: `/api/cron/uga-spike-demo-sync`;
 - admin invite/onboarding helper: `/api/cron/spike-admin-invites`.
 
 Current `vercel.json` cron schedule:
@@ -165,12 +166,24 @@ Current `vercel.json` cron schedule:
   { "path": "/api/cron/respondent-emails", "schedule": "30 14 * * 1-5" },
   { "path": "/api/cron/respondent-telegram", "schedule": "0 13 * * 1-5" },
   { "path": "/api/cron/mn7r-monitor-prices", "schedule": "0 14 * * *" },
-  { "path": "/api/cron/spike-auto-publish", "schedule": "0 16 * * *" }
+  { "path": "/api/cron/spike-auto-publish", "schedule": "0 16 * * *" },
+  { "path": "/api/cron/uga-spike-demo-sync", "schedule": "30 16 * * 1-5" }
 ]
 ```
 
 Times are UTC in Vercel. The application code applies Kyiv-time business rules
 where needed.
+
+UGA demo liveliness sync:
+
+- `/api/cron/uga-spike-demo-sync` copies published Spike Spot Index public values
+  into UGA `PublishedIndex` rows for Corn, Wheat 11.5% protein, Feed wheat and
+  GMO soybean;
+- Sunflower is intentionally excluded because it is not part of the UGA basket;
+- this is a temporary demo-mode bridge until UGA switches fully to its own
+  respondent publication workflow;
+- run manually with `npm run sync:uga-from-spike` when `DATABASE_URL` points to
+  the target UGA database.
 
 Telegram respondent UX:
 
@@ -290,6 +303,9 @@ NEXT_PUBLIC_INDEX_TENANT="uga-ua"
 ALLOWED_EMBED_ORIGINS="https://uga.ua https://www.uga.ua https://1d3x.com https://www.1d3x.com https://uga.1d3x.com https://index-uga.cr0pto.com"
 RESEND_API_KEY="set-in-vercel"
 RESPONDENT_EMAIL_CRON_SECRET="set-in-vercel"
+UGA_SPIKE_PUBLIC_API_BASE="https://spike.1d3x.com"
+UGA_SPIKE_DEMO_SYNC_ENABLED="enabled"
+UGA_SPIKE_DEMO_SYNC_CRON_SECRET="set-in-vercel"
 ```
 
 Spike production example:
@@ -410,6 +426,7 @@ Cron/internal API:
 - `GET /api/cron/respondent-telegram`
 - `GET /api/cron/mn7r-monitor-prices`
 - `GET /api/cron/spike-auto-publish`
+- `GET /api/cron/uga-spike-demo-sync`
 - `GET /api/cron/spike-admin-invites`
 
 ## Embedding
