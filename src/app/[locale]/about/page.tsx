@@ -61,6 +61,7 @@ export default async function AboutPage({
               </a>
               {dict.about.descriptionAfterLink}
             </p>
+            {locale === "en" ? <UgaEnglishPresentation /> : null}
           </div>
         </div>
       </section>
@@ -160,6 +161,57 @@ export default async function AboutPage({
         </div>
       </section>
     </>
+  );
+}
+
+function UgaEnglishPresentation() {
+  const youtubeUrl =
+    "https://www.youtube.com/embed/AZRDLGihzZ0?autoplay=1&mute=1&loop=1&playlist=AZRDLGihzZ0&controls=0&modestbranding=1&rel=0&playsinline=1";
+
+  return (
+    <div className="mt-7 grid gap-4 border border-black bg-uga-mist p-3 sm:p-4 lg:grid-cols-[minmax(0,1fr)_16rem] lg:items-stretch">
+      <div className="overflow-hidden border border-black bg-black">
+        <iframe
+          allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+          allowFullScreen
+          className="aspect-video h-full w-full"
+          loading="lazy"
+          referrerPolicy="strict-origin-when-cross-origin"
+          src={youtubeUrl}
+          title="UGA Index market intelligence presentation"
+        />
+      </div>
+      <div className="flex flex-col justify-between gap-4 border border-black bg-white p-4">
+        <div>
+          <p className="text-[0.68rem] font-black uppercase tracking-[0.18em] text-uga-green">
+            Presentation
+          </p>
+          <h2 className="mt-3 text-xl font-black uppercase leading-tight text-black">
+            Ukrainian Agricultural Market Intelligence
+          </h2>
+          <p className="mt-3 text-sm font-semibold leading-6 text-black/65">
+            Video presentation and PDF deck for the UGA Index market benchmark.
+          </p>
+        </div>
+        <div className="grid gap-2">
+          <a
+            className="inline-flex items-center justify-center border border-black bg-uga-dark px-4 py-3 text-xs font-black uppercase tracking-[0.12em] text-white transition hover:bg-uga-green"
+            download
+            href="/files/uga-index-market-intelligence.pdf"
+          >
+            Download PDF presentation
+          </a>
+          <a
+            className="inline-flex items-center justify-center border border-black bg-white px-4 py-3 text-xs font-black uppercase tracking-[0.12em] text-black transition hover:bg-uga-lime"
+            href="https://youtu.be/AZRDLGihzZ0"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            Watch Presentation
+          </a>
+        </div>
+      </div>
+    </div>
   );
 }
 
