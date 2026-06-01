@@ -1,3 +1,5 @@
+import { spikeBlogPosts } from "@/lib/blog-posts";
+
 export type PlatformBlogPost = {
   body: string[];
   coverImage: string;
@@ -47,7 +49,47 @@ export type PlatformBlogContentBlock =
       epub: string;
     };
 
+const spikeAiPost = spikeBlogPosts.find(
+  (post) =>
+    post.slug ===
+    "teaching-grain-markets-to-think-ai-supercharges-spike-spot-index",
+)!;
+
+const spikeAiRepostContent: PlatformBlogContentBlock[] = [
+  {
+    kind: "paragraph",
+    text: "This post is republished from the SPIKE Spot Index website.",
+  },
+  {
+    kind: "inlineLink",
+    before: "Read the original article: ",
+    label: "https://spike.1d3x.com/en/blog/teaching-grain-markets-to-think-ai-supercharges-spike-spot-index",
+    href: "https://spike.1d3x.com/en/blog/teaching-grain-markets-to-think-ai-supercharges-spike-spot-index",
+    after: "",
+  },
+  ...spikeAiPost.body.map((text) => ({
+    kind: "paragraph" as const,
+    text,
+  })),
+];
+
 export const platformBlogPosts: PlatformBlogPost[] = [
+  {
+    body: [
+      "This post is republished from: https://spike.1d3x.com/en/blog/teaching-grain-markets-to-think-ai-supercharges-spike-spot-index",
+      ...spikeAiPost.body,
+    ],
+    coverImage: spikeAiPost.coverImage,
+    excerpt: spikeAiPost.excerpt,
+    publishedAt: spikeAiPost.publishedAt,
+    readingMinutes: spikeAiPost.readingMinutes,
+    seoDescription: spikeAiPost.seoDescription,
+    seoTitle: spikeAiPost.seoTitle,
+    slug: spikeAiPost.slug,
+    tags: ["spike", ...spikeAiPost.tags.map((tag) => tag.toLowerCase())],
+    title: spikeAiPost.title,
+    content: spikeAiRepostContent,
+  },
   {
     body: [
       "Today we officially launched the 1d3x blog.",
