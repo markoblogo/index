@@ -11,4 +11,4 @@ export {
   type RuntimeMode,
   type TenantContext,
   type TenantId,
-} from "@/lib/tenant-context";
+} from "./tenant-context";

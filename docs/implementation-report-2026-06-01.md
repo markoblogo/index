@@ -61,14 +61,19 @@ package:
 
 ### Data Package Tenant Scope Extraction
 
-The tenant/index data-scope primitive now lives in the workspace data package:
+The tenant context and tenant/index data-scope primitives now live in the
+workspace data package:
 
+- `packages/data/src/tenant-context.ts` owns `TenantContext`, runtime mode
+  resolution and production-runtime detection;
 - `packages/data/src/tenant-data-scope.ts` owns `getIndexTenantDataScope` and
   `tenantScopedWhere`;
-- runtime modules import tenant scope helpers from `@1d3x/data`;
-- `src/lib/tenant-data-scope.ts` remains as a compatibility re-export for any
-  older local import paths;
-- the tenant scope unit test now verifies the package API directly.
+- runtime modules import tenant context and tenant scope helpers from
+  `@1d3x/data`;
+- `src/lib/tenant-context.ts` and `src/lib/tenant-data-scope.ts` remain as
+  compatibility re-exports for older local import paths;
+- the tenant context and tenant scope unit tests now verify the package API
+  directly.
 
 ### Setup-Link Onboarding Replaces Visible Temporary Password Delivery
 

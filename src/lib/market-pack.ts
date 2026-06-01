@@ -1,7 +1,7 @@
 import type { IndexConfig } from "@/lib/index-platform";
 import { INDEX_CONFIGS } from "@/lib/index-platform";
 import { getPlatformSiteUrl, PLATFORM_TENANT_ID } from "@/lib/platform-site";
-import type { TenantContext } from "@/lib/tenant-context";
+import type { TenantContext } from "@1d3x/data";
 
 export type MarketPack = {
   tenantId: TenantContext["tenantId"];

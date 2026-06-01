@@ -1,7 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { isCronRequestAuthorized } from "@/lib/cron-auth";
-import { isProductionRuntime } from "@/lib/tenant-context";
+import { isProductionRuntime } from "@1d3x/data";
 import { syncUgaDemoIndicesFromSpike } from "@/lib/uga-spike-demo-sync";
 
 export const dynamic = "force-dynamic";

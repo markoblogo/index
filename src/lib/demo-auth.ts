@@ -7,7 +7,7 @@ import { db, hasDatabaseUrl } from "@/lib/db";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import { isSpikeAdminEmail } from "@/lib/spike-admin-access";
 import { tenantScopedWhere } from "@1d3x/data";
-import { getTenantContext } from "@/lib/tenant-context";
+import { getTenantContext } from "@1d3x/data";
 
 export const LEGACY_DEMO_SESSION_COOKIE = "uga_demo_session";
 export const DEMO_SESSION_COOKIE =

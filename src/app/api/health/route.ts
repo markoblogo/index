@@ -3,7 +3,7 @@ import { hasConfiguredCronSecret } from "@/lib/cron-auth";
 import { allowMockFallback, db, hasDatabaseUrl } from "@/lib/db";
 import { getMarketPack, getMissingRequiredEnv } from "@/lib/market-pack";
 import { evaluateOperationalAlerts } from "@/lib/operational-alerts";
-import { getTenantContext, isProductionRuntime } from "@/lib/tenant-context";
+import { getTenantContext, isProductionRuntime } from "@1d3x/data";
 
 export const dynamic = "force-dynamic";
 

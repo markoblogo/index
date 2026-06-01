@@ -1,6 +1,6 @@
 import { allowMockFallback, db, hasDatabaseUrl } from "@/lib/db";
 import { getMarketPack, getMissingRequiredEnv } from "@/lib/market-pack";
-import { getTenantContext, isProductionRuntime } from "@/lib/tenant-context";
+import { getTenantContext, isProductionRuntime } from "@1d3x/data";
 import { tenantScopedWhere } from "@1d3x/data";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 

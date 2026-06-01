@@ -5,7 +5,7 @@ describe("tenant context", () => {
     vi.stubEnv("INDEX_TENANT", "1d3x");
     vi.stubEnv("NEXT_PUBLIC_INDEX_TENANT", "1d3x");
 
-    const { getTenantContext } = await import("@/lib/tenant-context");
+    const { getTenantContext } = await import("@1d3x/data");
 
     expect(getTenantContext()).toEqual({
       tenantId: "1d3x",
@@ -15,4 +15,3 @@ describe("tenant context", () => {
     vi.unstubAllEnvs();
   });
 });
-

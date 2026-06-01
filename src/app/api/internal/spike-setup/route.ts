@@ -8,7 +8,7 @@ import {
 } from "@/lib/index-platform";
 import { createPasswordSetupLinkForRespondent } from "@/lib/password-setup-token";
 import { sendRespondentTelegramNotifications } from "@/lib/respondent-telegram";
-import { isProductionRuntime } from "@/lib/tenant-context";
+import { isProductionRuntime } from "@1d3x/data";
 import { tenantScopedWhere } from "@1d3x/data";
 
 export const dynamic = "force-dynamic";

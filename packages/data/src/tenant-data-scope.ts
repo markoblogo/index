@@ -1,4 +1,4 @@
-import { getTenantContext, type TenantContext } from "@/lib/tenant-context";
+import { getTenantContext, type TenantContext } from "./tenant-context";
 
 export type IndexTenantDataScope = {
   tenantId: Exclude<TenantContext["tenantId"], "1d3x">;
