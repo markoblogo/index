@@ -386,9 +386,10 @@ export const INDEX_CONFIGS: Record<IndexTenantId, IndexConfig> = {
       phones: ["+380 63 412 86 33"],
       email: "info@spike.broker",
       social: [
-        { label: "Facebook", href: "https://www.facebook.com/spikebrokers", mark: "fb" },
-        { label: "LinkedIn", href: "https://www.linkedin.com/company/spike-brokers/", mark: "in" },
-        { label: "Telegram", href: "https://t.me/spike_brokers", mark: "tg" },
+        { label: "Substack", href: "https://mn7r.substack.com/", mark: "Substack" },
+        { label: "Bluesky", href: "https://bsky.app/profile/mn7r.bsky.social", mark: "Bluesky" },
+        { label: "Telegram", href: "https://t.me/spike_brokers", mark: "Telegram" },
+        { label: "LinkedIn", href: "#", mark: "LinkedIn" },
       ],
     },
     deliveryBases: [

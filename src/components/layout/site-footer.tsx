@@ -96,11 +96,9 @@ export function SiteFooter({ locale }: { locale: Locale }) {
                     {activeIndex.contacts.email}
                   </a>
                 </p>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {activeIndex.contacts.social.map((social) => (
-                    <FooterExternalLink href={social.href} key={social.label}>
-                      <SocialPlaceholder label={social.label} mark={social.mark} />
-                    </FooterExternalLink>
+                    <FooterSocialLink social={social} key={social.label} />
                   ))}
                 </div>
               </div>
@@ -209,11 +207,9 @@ export function SiteFooter({ locale }: { locale: Locale }) {
                 {activeIndex.contacts.email}
               </a>
             </p>
-            <div className="flex gap-2 pt-1">
+            <div className="flex flex-wrap gap-2 pt-1">
               {activeIndex.contacts.social.map((social) => (
-                <FooterExternalLink href={social.href} key={social.label}>
-                  <SocialPlaceholder label={social.label} mark={social.mark} />
-                </FooterExternalLink>
+                <FooterSocialLink social={social} key={social.label} />
               ))}
             </div>
           </div>
@@ -243,11 +239,46 @@ export function SiteFooter({ locale }: { locale: Locale }) {
   );
 }
 
-function SocialPlaceholder({ label, mark }: { label: string; mark: string }) {
+function FooterSocialLink({
+  social,
+}: {
+  social: { label: string; href: string; mark: string };
+}) {
+  const isLinked = social.href !== "#";
+
+  if (!isLinked) {
+    return <SocialPlaceholder disabled label={social.label} mark={social.mark} />;
+  }
+
+  return (
+    <a
+      aria-label={social.label}
+      href={social.href}
+      rel="noopener noreferrer"
+      target="_blank"
+    >
+      <SocialPlaceholder label={social.label} mark={social.mark} />
+    </a>
+  );
+}
+
+function SocialPlaceholder({
+  disabled = false,
+  label,
+  mark,
+}: {
+  disabled?: boolean;
+  label: string;
+  mark: string;
+}) {
   return (
     <span
       aria-label={label}
-      className="inline-flex h-7 w-7 items-center justify-center border border-white/35 text-[0.68rem] font-black text-white/70"
+      className={`inline-flex h-8 items-center justify-center rounded-full border px-3 text-[0.64rem] font-black uppercase tracking-[0.08em] transition ${
+        disabled
+          ? "cursor-default border-white/15 text-white/35"
+          : "border-white/35 text-white/74 hover:border-uga-lime hover:text-uga-lime"
+      }`}
       role="img"
       title={label}
     >
