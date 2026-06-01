@@ -39,9 +39,12 @@ export async function upsertRespondentPrice(input: RespondentPriceInput) {
   }
 
   const [commodity, basis, respondent] = await Promise.all([
-    db.commodity.findUnique({ where: { code: commodityConfig.dbCode } }),
-    db.deliveryBasis.findUnique({
+    db.commodity.findFirst({
+      where: { ...tenantScope, code: commodityConfig.dbCode },
+    }),
+    db.deliveryBasis.findFirst({
       where: {
+        ...tenantScope,
         code: getDeliveryBasisConfigForCommodityCode(commodityConfig.dbCode, activeIndex).code,
       },
     }),
@@ -77,9 +80,10 @@ export async function upsertRespondentPrice(input: RespondentPriceInput) {
   const tradeDate = dateToUtcDate(input.date);
   const existing = await db.priceSubmission.findUnique({
     where: {
-      tradeDate_commodityId_deliveryBasisId_respondentId_source: {
-        tradeDate,
-        commodityId: commodity.id,
+        tenantId_tradeDate_commodityId_deliveryBasisId_respondentId_source: {
+          tenantId: tenantScope.tenantId,
+          tradeDate,
+          commodityId: commodity.id,
         deliveryBasisId: basis.id,
         respondentId: respondent.id,
         source: "respondent",
@@ -94,9 +98,10 @@ export async function upsertRespondentPrice(input: RespondentPriceInput) {
   } satisfies Prisma.InputJsonObject;
   const saved = await db.priceSubmission.upsert({
     where: {
-      tradeDate_commodityId_deliveryBasisId_respondentId_source: {
-        tradeDate,
-        commodityId: commodity.id,
+        tenantId_tradeDate_commodityId_deliveryBasisId_respondentId_source: {
+          tenantId: tenantScope.tenantId,
+          tradeDate,
+          commodityId: commodity.id,
         deliveryBasisId: basis.id,
         respondentId: respondent.id,
         source: "respondent",
@@ -159,9 +164,12 @@ export async function clearRespondentPrice(input: ClearRespondentPriceInput) {
   }
 
   const [commodity, basis] = await Promise.all([
-    db.commodity.findUnique({ where: { code: commodityConfig.dbCode } }),
-    db.deliveryBasis.findUnique({
+    db.commodity.findFirst({
+      where: { ...tenantScope, code: commodityConfig.dbCode },
+    }),
+    db.deliveryBasis.findFirst({
       where: {
+        ...tenantScope,
         code: getDeliveryBasisConfigForCommodityCode(commodityConfig.dbCode, activeIndex).code,
       },
     }),
@@ -174,9 +182,10 @@ export async function clearRespondentPrice(input: ClearRespondentPriceInput) {
   const tradeDate = dateToUtcDate(input.date);
   const existing = await db.priceSubmission.findUnique({
     where: {
-      tradeDate_commodityId_deliveryBasisId_respondentId_source: {
-        tradeDate,
-        commodityId: commodity.id,
+        tenantId_tradeDate_commodityId_deliveryBasisId_respondentId_source: {
+          tenantId: tenantScope.tenantId,
+          tradeDate,
+          commodityId: commodity.id,
         deliveryBasisId: basis.id,
         respondentId: input.respondentCode,
         source: "respondent",

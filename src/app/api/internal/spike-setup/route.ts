@@ -368,7 +368,8 @@ async function moveMonitorAdminEntriesToFallback(date: string) {
         submittedById: entry.submittedById,
       },
       where: {
-        tradeDate_commodityId_deliveryBasisId_respondentId_source: {
+        tenantId_tradeDate_commodityId_deliveryBasisId_respondentId_source: {
+          tenantId: tenantScope.tenantId,
           commodityId: entry.commodityId,
           deliveryBasisId: entry.deliveryBasisId,
           respondentId: adminFallback.id,

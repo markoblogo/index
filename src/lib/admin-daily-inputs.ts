@@ -460,7 +460,8 @@ async function saveDatabaseDailyInputs(
 
     const existing = await db.priceSubmission.findUnique({
       where: {
-        tradeDate_commodityId_deliveryBasisId_respondentId_source: {
+        tenantId_tradeDate_commodityId_deliveryBasisId_respondentId_source: {
+          tenantId: tenantScope.tenantId,
           tradeDate,
           commodityId: entry.commodityId,
           deliveryBasisId: basis.id,
@@ -472,7 +473,8 @@ async function saveDatabaseDailyInputs(
 
     const saved = await db.priceSubmission.upsert({
       where: {
-        tradeDate_commodityId_deliveryBasisId_respondentId_source: {
+        tenantId_tradeDate_commodityId_deliveryBasisId_respondentId_source: {
+          tenantId: tenantScope.tenantId,
           tradeDate,
           commodityId: entry.commodityId,
           deliveryBasisId: basis.id,

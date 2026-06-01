@@ -128,7 +128,7 @@ model Commodity {
   id                  String                 @id @default(cuid())
   tenantId            String
   indexProductId      String
-  code                String                 @unique
+  code                String
   nameUk              String
   nameEn              String
   unit                String                 @default("metric_ton")
@@ -145,6 +145,7 @@ model Commodity {
 
   @@index([tenantId, status, sortOrder])
   @@index([indexProductId, status, sortOrder])
+  @@unique([tenantId, code])
   @@index([status, sortOrder])
 }
 
@@ -152,7 +153,7 @@ model DeliveryBasis {
   id                  String                 @id @default(cuid())
   tenantId            String
   indexProductId      String
-  code                String                 @unique
+  code                String
   name                String
   region              String
   status              CommodityStatus        @default(published)
@@ -168,6 +169,7 @@ model DeliveryBasis {
 
   @@index([tenantId, status])
   @@index([indexProductId, status])
+  @@unique([tenantId, code])
 }
 
 model Respondent {
@@ -305,7 +307,7 @@ model Basket {
   id                String             @id @default(cuid())
   tenantId          String
   indexProductId    String
-  code              String             @unique
+  code              String
   name              String
   deliveryBasisId   String
   weight            Decimal            @default(1) @db.Decimal(10, 4)
@@ -321,6 +323,7 @@ model Basket {
 
   @@index([tenantId, active])
   @@index([indexProductId, active])
+  @@unique([tenantId, code])
   @@index([deliveryBasisId, active])
 }
 
@@ -394,7 +397,7 @@ model PriceSubmission {
 
   @@index([tenantId, tradeDate, status])
   @@index([indexProductId, tradeDate, status])
-  @@unique([tradeDate, commodityId, deliveryBasisId, respondentId, source])
+  @@unique([tenantId, tradeDate, commodityId, deliveryBasisId, respondentId, source])
   @@index([tradeDate, commodityId, deliveryBasisId, status])
 }
 
@@ -417,7 +420,7 @@ model ExternalIndicative {
 
   @@index([tenantId, tradeDate, source, status])
   @@index([indexProductId, tradeDate, source, status])
-  @@unique([tradeDate, commodityId, deliveryBasisId, source])
+  @@unique([tenantId, tradeDate, commodityId, deliveryBasisId, source])
   @@index([tradeDate, source, status])
 }
 
@@ -450,7 +453,7 @@ model IndexCalculation {
 
   @@index([tenantId, tradeDate, status])
   @@index([indexProductId, tradeDate, status])
-  @@unique([tradeDate, commodityId, deliveryBasisId, basketId])
+  @@unique([tenantId, tradeDate, commodityId, deliveryBasisId, basketId])
   @@index([tradeDate, status])
 }
 
@@ -502,7 +505,7 @@ model PublishedIndex {
 
   @@index([tenantId, tradeDate, locked])
   @@index([indexProductId, tradeDate, locked])
-  @@unique([tradeDate, commodityId, deliveryBasisId, basketId])
+  @@unique([tenantId, tradeDate, commodityId, deliveryBasisId, basketId])
   @@index([tradeDate, locked])
 }
 

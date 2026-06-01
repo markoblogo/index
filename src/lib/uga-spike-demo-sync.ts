@@ -191,7 +191,8 @@ async function copySpikeItemToUga(item: SpikePublicIndexItem) {
   const value = roundOne(item.valueUsdPerMt ?? 0);
   const calculation = await db.indexCalculation.upsert({
     where: {
-      tradeDate_commodityId_deliveryBasisId_basketId: {
+      tenantId_tradeDate_commodityId_deliveryBasisId_basketId: {
+        tenantId: tenantScope.tenantId,
         tradeDate,
         commodityId: commodity.id,
         deliveryBasisId: deliveryBasis.id,
@@ -226,7 +227,8 @@ async function copySpikeItemToUga(item: SpikePublicIndexItem) {
 
   await db.publishedIndex.upsert({
     where: {
-      tradeDate_commodityId_deliveryBasisId_basketId: {
+      tenantId_tradeDate_commodityId_deliveryBasisId_basketId: {
+        tenantId: tenantScope.tenantId,
         tradeDate,
         commodityId: commodity.id,
         deliveryBasisId: deliveryBasis.id,

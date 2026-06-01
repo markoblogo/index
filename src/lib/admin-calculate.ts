@@ -376,7 +376,8 @@ async function persistDatabaseCalculations(
 
     const calculation = await db.indexCalculation.upsert({
       where: {
-        tradeDate_commodityId_deliveryBasisId_basketId: {
+        tenantId_tradeDate_commodityId_deliveryBasisId_basketId: {
+          tenantId: tenantScope.tenantId,
           tradeDate,
           commodityId: commodity.id,
           deliveryBasisId: basis.id,
@@ -492,7 +493,8 @@ async function publishDatabaseCalculations(
 
     const existing = await db.publishedIndex.findUnique({
       where: {
-        tradeDate_commodityId_deliveryBasisId_basketId: {
+        tenantId_tradeDate_commodityId_deliveryBasisId_basketId: {
+          tenantId: tenantScope.tenantId,
           tradeDate: calculation.tradeDate,
           commodityId: calculation.commodityId,
           deliveryBasisId: calculation.deliveryBasisId,
@@ -563,7 +565,8 @@ async function publishDatabaseCalculations(
     };
     const publishedIndex = await db.publishedIndex.upsert({
       where: {
-        tradeDate_commodityId_deliveryBasisId_basketId: {
+        tenantId_tradeDate_commodityId_deliveryBasisId_basketId: {
+          tenantId: tenantScope.tenantId,
           tradeDate: calculation.tradeDate,
           commodityId: calculation.commodityId,
           deliveryBasisId: calculation.deliveryBasisId,

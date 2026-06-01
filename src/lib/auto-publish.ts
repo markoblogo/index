@@ -198,7 +198,8 @@ export async function autoPublishSpikeDailyIndices(
     });
     const previousCalculation = await db.indexCalculation.findUnique({
       where: {
-        tradeDate_commodityId_deliveryBasisId_basketId: {
+        tenantId_tradeDate_commodityId_deliveryBasisId_basketId: {
+          tenantId: tenantScope.tenantId,
           basketId: basket.id,
           commodityId: commodity.id,
           deliveryBasisId: basis.id,
@@ -209,7 +210,8 @@ export async function autoPublishSpikeDailyIndices(
     const nextVersion = (previousCalculation?.version ?? 0) + 1;
     const calculation = await db.indexCalculation.upsert({
       where: {
-        tradeDate_commodityId_deliveryBasisId_basketId: {
+        tenantId_tradeDate_commodityId_deliveryBasisId_basketId: {
+          tenantId: tenantScope.tenantId,
           basketId: basket.id,
           commodityId: commodity.id,
           deliveryBasisId: basis.id,
@@ -276,7 +278,8 @@ export async function autoPublishSpikeDailyIndices(
     };
     const publishedIndex = await db.publishedIndex.upsert({
       where: {
-        tradeDate_commodityId_deliveryBasisId_basketId: {
+        tenantId_tradeDate_commodityId_deliveryBasisId_basketId: {
+          tenantId: tenantScope.tenantId,
           basketId: basket.id,
           commodityId: commodity.id,
           deliveryBasisId: basis.id,

@@ -256,7 +256,7 @@ async function getDatabaseRespondentSurveyData({
   const tradeDate = dateToUtcDate(date);
   const [bases, respondent, dbCommodities] = await Promise.all([
     db.deliveryBasis.findMany({
-      where: { code: { in: getConfiguredDeliveryBasisCodes() } },
+      where: { ...tenantScopedWhere(), code: { in: getConfiguredDeliveryBasisCodes() } },
     }),
     db.respondent.findUnique({ where: { id: respondentId } }),
     db.commodity.findMany({
@@ -328,7 +328,7 @@ async function saveDatabaseRespondentSurvey({
   const tradeDate = dateToUtcDate(date);
   const [bases, dbCommodities] = await Promise.all([
     db.deliveryBasis.findMany({
-      where: { code: { in: getConfiguredDeliveryBasisCodes() } },
+      where: { ...tenantScopedWhere(), code: { in: getConfiguredDeliveryBasisCodes() } },
     }),
     db.commodity.findMany({
       where: { id: { in: [...new Set(entries.map((entry) => entry.commodityId))] } },
@@ -356,7 +356,8 @@ async function saveDatabaseRespondentSurvey({
 
     const saved = await db.priceSubmission.upsert({
       where: {
-        tradeDate_commodityId_deliveryBasisId_respondentId_source: {
+        tenantId_tradeDate_commodityId_deliveryBasisId_respondentId_source: {
+          tenantId: tenantScopedWhere().tenantId,
           tradeDate,
           commodityId: entry.commodityId,
           deliveryBasisId: basis.id,

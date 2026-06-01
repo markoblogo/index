@@ -247,7 +247,12 @@ async function main() {
   const deliveryBasisRecords = await Promise.all(
     activeIndex.deliveryBases.map((basis) =>
       prisma.deliveryBasis.upsert({
-        where: { code: basis.code },
+        where: {
+          tenantId_code: {
+            tenantId: tenantScope.tenantId,
+            code: basis.code,
+          },
+        },
         update: {
           ...tenantScope,
           name: basis.name,
@@ -271,7 +276,12 @@ async function main() {
   const commodityRecords = await Promise.all(
     commodities.map((commodity) =>
       prisma.commodity.upsert({
-        where: { code: commodity.code },
+        where: {
+          tenantId_code: {
+            tenantId: tenantScope.tenantId,
+            code: commodity.code,
+          },
+        },
         update: {
           ...tenantScope,
           nameUk: commodity.nameUk,
@@ -384,7 +394,12 @@ async function main() {
       }
 
       return prisma.basket.upsert({
-        where: { code: basis.basketCode },
+        where: {
+          tenantId_code: {
+            tenantId: tenantScope.tenantId,
+            code: basis.basketCode,
+          },
+        },
         update: {
           ...tenantScope,
           name: basis.basketName,
@@ -568,7 +583,8 @@ async function main() {
 
             return prisma.priceSubmission.upsert({
               where: {
-                tradeDate_commodityId_deliveryBasisId_respondentId_source: {
+                tenantId_tradeDate_commodityId_deliveryBasisId_respondentId_source: {
+                  tenantId: tenantScope.tenantId,
                   tradeDate,
                   commodityId: commodity.id,
                   deliveryBasisId: deliveryBasis.id,
@@ -601,7 +617,8 @@ async function main() {
         if (activeIndex.features.externalIndicative) {
           await prisma.externalIndicative.upsert({
             where: {
-              tradeDate_commodityId_deliveryBasisId_source: {
+              tenantId_tradeDate_commodityId_deliveryBasisId_source: {
+                tenantId: tenantScope.tenantId,
                 tradeDate,
                 commodityId: commodity.id,
                 deliveryBasisId: deliveryBasis.id,
@@ -730,7 +747,8 @@ async function seedPublishedIndex({
 
   const calculation = await prisma.indexCalculation.upsert({
     where: {
-      tradeDate_commodityId_deliveryBasisId_basketId: {
+      tenantId_tradeDate_commodityId_deliveryBasisId_basketId: {
+        tenantId: tenantScope.tenantId,
         tradeDate,
         commodityId,
         deliveryBasisId,
@@ -835,7 +853,8 @@ async function seedPublishedIndex({
 
     await prisma.publishedIndex.upsert({
       where: {
-        tradeDate_commodityId_deliveryBasisId_basketId: {
+        tenantId_tradeDate_commodityId_deliveryBasisId_basketId: {
+          tenantId: tenantScope.tenantId,
           tradeDate,
           commodityId,
           deliveryBasisId,
