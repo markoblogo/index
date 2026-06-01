@@ -736,18 +736,16 @@ function RespondentAuthPanel({
 
       <div className="mt-3 border border-black/15 bg-uga-mist p-3">
         <p className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-black/45">
-          Temporary password
+          Setup credential
         </p>
-        <p className="mt-1 break-all text-sm font-black">
-          {respondent.auth.temporaryPassword}
-        </p>
+        <p className="mt-1 text-sm font-black">Hidden after generation</p>
         <p className="mt-1 text-xs font-semibold text-black/55">
           Generated: {formatAuthDate(respondent.auth.lastGeneratedAt)}
         </p>
         <form action={regeneratePasswordAction} className="mt-3">
           <input name="respondentId" type="hidden" value={respondent.id} />
           <button className="border border-black bg-uga-dark px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-white">
-            Regenerate temporary password
+            Regenerate setup credential
           </button>
         </form>
       </div>

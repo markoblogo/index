@@ -9,8 +9,22 @@ import {
   LEGACY_DEMO_SESSION_COOKIE,
 } from "@/lib/demo-auth";
 import { isLocale } from "@/lib/i18n";
+import { checkRateLimit, getRequestRateLimitKey } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
+  const rateLimit = checkRateLimit({
+    key: getRequestRateLimitKey(request, "login"),
+    limit: 10,
+    windowMs: 60_000,
+  });
+
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "Too many login attempts. Try again shortly." },
+      { status: 429 },
+    );
+  }
+
   const formData = await request.formData();
   const login = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");

@@ -9,8 +9,22 @@ import {
   parseDemoSessionCookieValue,
 } from "@/lib/demo-auth";
 import { setPermanentPasswordForUser } from "@/lib/password-setup";
+import { checkRateLimit, getRequestRateLimitKey } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
+  const rateLimit = checkRateLimit({
+    key: getRequestRateLimitKey(request, "setup-password"),
+    limit: 8,
+    windowMs: 60_000,
+  });
+
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "Too many password setup attempts. Try again shortly." },
+      { status: 429 },
+    );
+  }
+
   const formData = await request.formData();
   const setupSession = String(formData.get("setupSession") ?? "");
   const user =

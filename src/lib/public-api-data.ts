@@ -16,6 +16,7 @@ import {
   getDeliveryBasketCodeForCommodityCode,
   getDeliveryBasisConfigForCommodityCode,
 } from "@/lib/tenant-basis";
+import { tenantScopedWhere } from "@/lib/tenant-data-scope";
 
 export type PublicLatestItem = {
   commodityId: CommodityId;
@@ -151,18 +152,23 @@ function getMockHistoryData(): PublicHistoryItem[] {
 }
 
 async function getDatabaseLatestData(): Promise<PublicLatestItem[]> {
+  const tenantScope = tenantScopedWhere();
   const [bases, baskets, dbCommodities] = await Promise.all([
     db.deliveryBasis.findMany({
-      where: { code: { in: getConfiguredDeliveryBasisCodes(activeIndex) } },
+      where: {
+        ...tenantScope,
+        code: { in: getConfiguredDeliveryBasisCodes(activeIndex) },
+      },
     }),
     db.basket.findMany({
       where: {
+        ...tenantScope,
         code: { in: activeIndex.deliveryBases.map((basis) => basis.basketCode) },
       },
     }),
     db.commodity.findMany({
       orderBy: { sortOrder: "asc" },
-      where: { status: "published" },
+      where: { ...tenantScope, status: "published" },
     }),
   ]);
   const basisByCode = new Map(bases.map((basis) => [basis.code, basis]));
@@ -179,6 +185,7 @@ async function getDatabaseLatestData(): Promise<PublicLatestItem[]> {
   const latestPublished = await db.publishedIndex.findFirst({
     orderBy: { tradeDate: "desc" },
     where: {
+      ...tenantScope,
       status: "published",
     },
   });
@@ -205,6 +212,7 @@ async function getDatabaseLatestData(): Promise<PublicLatestItem[]> {
       const published = await db.publishedIndex.findFirst({
         orderBy: { tradeDate: "desc" },
         where: {
+          ...tenantScope,
           commodityId: commodity.id,
           deliveryBasisId: basis.id,
           basketId: basket.id,
@@ -232,12 +240,17 @@ async function getDatabaseLatestData(): Promise<PublicLatestItem[]> {
 }
 
 async function getDatabaseHistoryData(): Promise<PublicHistoryItem[]> {
+  const tenantScope = tenantScopedWhere();
   const [bases, baskets] = await Promise.all([
     db.deliveryBasis.findMany({
-      where: { code: { in: getConfiguredDeliveryBasisCodes(activeIndex) } },
+      where: {
+        ...tenantScope,
+        code: { in: getConfiguredDeliveryBasisCodes(activeIndex) },
+      },
     }),
     db.basket.findMany({
       where: {
+        ...tenantScope,
         code: { in: activeIndex.deliveryBases.map((basis) => basis.basketCode) },
       },
     }),
@@ -261,6 +274,7 @@ async function getDatabaseHistoryData(): Promise<PublicHistoryItem[]> {
     orderBy: [{ tradeDate: "desc" }, { commodity: { sortOrder: "asc" } }],
     take: 365,
     where: {
+      ...tenantScope,
       deliveryBasisId: { in: basisIds },
       basketId: { in: basketIds },
       status: "published",

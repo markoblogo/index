@@ -14,6 +14,10 @@ const connectionString =
 const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 const activeIndex = getActiveIndexConfig();
+const tenantScope = {
+  tenantId: activeIndex.id,
+  indexProductId: activeIndex.id,
+};
 const seedDemoHistory = shouldSeedDemoFeature("SEED_DEMO_HISTORY");
 const seedDemoAdminPassword = shouldSeedDemoFeature("SEED_DEMO_ADMIN_PASSWORD");
 
@@ -167,17 +171,91 @@ const directoryRespondents =
         };
       });
 
+async function seedTenantFoundation() {
+  await prisma.tenant.upsert({
+    where: { id: "1d3x" },
+    update: {
+      active: true,
+      name: "1D3X",
+      publicSiteUrl: "https://1d3x.com",
+    },
+    create: {
+      id: "1d3x",
+      active: true,
+      name: "1D3X",
+      publicSiteUrl: "https://1d3x.com",
+    },
+  });
+
+  await prisma.tenant.upsert({
+    where: { id: activeIndex.id },
+    update: {
+      active: true,
+      name: activeIndex.name,
+      publicSiteUrl: activeIndex.publicSiteUrl,
+    },
+    create: {
+      id: activeIndex.id,
+      active: true,
+      name: activeIndex.name,
+      publicSiteUrl: activeIndex.publicSiteUrl,
+    },
+  });
+
+  await prisma.market.upsert({
+    where: { id: activeIndex.id },
+    update: {
+      active: true,
+      code: "ua",
+      countryCode: "UA",
+      name: "Ukraine",
+      tenantId: activeIndex.id,
+    },
+    create: {
+      id: activeIndex.id,
+      active: true,
+      code: "ua",
+      countryCode: "UA",
+      name: "Ukraine",
+      tenantId: activeIndex.id,
+    },
+  });
+
+  await prisma.indexProduct.upsert({
+    where: { id: activeIndex.id },
+    update: {
+      active: true,
+      code: activeIndex.id === "spike-ua" ? "spike-spot-index" : "uga-index",
+      marketId: activeIndex.id,
+      name: activeIndex.name,
+      tenantId: activeIndex.id,
+    },
+    create: {
+      id: activeIndex.id,
+      active: true,
+      code: activeIndex.id === "spike-ua" ? "spike-spot-index" : "uga-index",
+      marketId: activeIndex.id,
+      name: activeIndex.name,
+      tenantId: activeIndex.id,
+    },
+  });
+}
+
 async function main() {
+  await seedTenantFoundation();
+
   const deliveryBasisRecords = await Promise.all(
     activeIndex.deliveryBases.map((basis) =>
       prisma.deliveryBasis.upsert({
         where: { code: basis.code },
         update: {
+          ...tenantScope,
           name: basis.name,
           region: basis.region,
           status: "published",
         },
         create: {
+          ...tenantScope,
           code: basis.code,
           name: basis.name,
           region: basis.region,
@@ -195,12 +273,14 @@ async function main() {
       prisma.commodity.upsert({
         where: { code: commodity.code },
         update: {
+          ...tenantScope,
           nameUk: commodity.nameUk,
           nameEn: commodity.nameEn,
           status: "published",
           sortOrder: commodity.sortOrder,
         },
         create: {
+          ...tenantScope,
           code: commodity.code,
           nameUk: commodity.nameUk,
           nameEn: commodity.nameEn,
@@ -216,12 +296,14 @@ async function main() {
       prisma.respondent.upsert({
         where: { id: respondent.id },
         update: {
+          ...tenantScope,
           legalName: respondent.legalName,
           displayName: respondent.legalName,
           active: true,
           status: "active",
         },
         create: {
+          ...tenantScope,
           id: respondent.id,
           legalName: respondent.legalName,
           displayName: respondent.legalName,
@@ -243,6 +325,7 @@ async function main() {
       await prisma.respondent.upsert({
         where: { id: respondent.id },
         update: {
+          ...tenantScope,
           active: status === "active",
           collectionMode,
           displayName: respondent.legalName,
@@ -250,6 +333,7 @@ async function main() {
           status,
         },
         create: {
+          ...tenantScope,
           id: respondent.id,
           active: status === "active",
           collectionMode,
@@ -302,12 +386,14 @@ async function main() {
       return prisma.basket.upsert({
         where: { code: basis.basketCode },
         update: {
+          ...tenantScope,
           name: basis.basketName,
           deliveryBasisId: deliveryBasis.id,
           weight: new Prisma.Decimal(1),
           active: true,
         },
         create: {
+          ...tenantScope,
           code: basis.basketCode,
           name: basis.basketName,
           deliveryBasisId: deliveryBasis.id,
@@ -373,6 +459,7 @@ async function main() {
       prisma.user.upsert({
         where: { email: admin.email },
         update: {
+          ...tenantScope,
           active: true,
           name: admin.name,
           role: "admin",
@@ -381,6 +468,7 @@ async function main() {
           lastGeneratedAt: new Date(),
         },
         create: {
+          ...tenantScope,
           active: true,
           email: admin.email,
           name: admin.name,
@@ -400,6 +488,7 @@ async function main() {
   await prisma.user.upsert({
     where: { email: `member@${activeIndex.id}.demo` },
     update: {
+      ...tenantScope,
       name: "Demo Member",
       role: "member",
       active: true,
@@ -408,6 +497,7 @@ async function main() {
       passwordSetAt: new Date(),
     },
     create: {
+      ...tenantScope,
       email: `member@${activeIndex.id}.demo`,
       name: "Demo Member",
       role: "member",
@@ -423,6 +513,7 @@ async function main() {
       prisma.user.upsert({
         where: { email: respondent.loginEmail },
         update: {
+          ...tenantScope,
           name: `${respondent.legalName} respondent`,
           role: "respondent",
           respondentId: respondent.id,
@@ -432,6 +523,7 @@ async function main() {
           lastGeneratedAt: new Date(),
         },
         create: {
+          ...tenantScope,
           email: respondent.loginEmail,
           name: `${respondent.legalName} respondent`,
           role: "respondent",
@@ -483,11 +575,13 @@ async function main() {
                 },
               },
               update: {
+                ...tenantScope,
                 priceUsdPerMt: new Prisma.Decimal(price),
                 status: "verified",
                 submittedAt: noonUtc(tradeDate),
               },
               create: {
+                ...tenantScope,
                 tradeDate,
                 commodityId: commodity.id,
                 deliveryBasisId: deliveryBasis.id,
@@ -513,12 +607,14 @@ async function main() {
               },
             },
             update: {
+              ...tenantScope,
               priceUsdPerMt: new Prisma.Decimal(roundMoney(basePrice + 0.4)),
               status: "submitted",
               receivedAt: noonUtc(tradeDate),
               metadata: { provider: "Spike Brokers", basis: deliveryBasis.name },
             },
             create: {
+              ...tenantScope,
               tradeDate,
               commodityId: commodity.id,
               deliveryBasisId: deliveryBasis.id,
@@ -578,6 +674,7 @@ async function main() {
   await prisma.auditLog.create({
     data: {
       actorUserId: adminUser.id,
+      ...tenantScope,
       actorRole: "admin",
       action: "seed.completed",
       entityType: "database",
@@ -639,6 +736,7 @@ async function seedPublishedIndex({
       },
     },
     update: {
+      ...tenantScope,
       status: "published",
       medianUsdPerMt:
         calculationResult.median === null
@@ -660,6 +758,7 @@ async function seedPublishedIndex({
       calculatedAt: noonUtc(tradeDate),
     },
     create: {
+      ...tenantScope,
       tradeDate,
       commodityId,
       deliveryBasisId,
@@ -742,6 +841,7 @@ async function seedPublishedIndex({
         },
       },
       update: {
+        ...tenantScope,
         calculationId: calculation.id,
         status: "published",
         valueUsdPerMt: new Prisma.Decimal(calculationResult.value),
@@ -754,6 +854,7 @@ async function seedPublishedIndex({
         publishedAt: noonUtc(tradeDate),
       },
       create: {
+        ...tenantScope,
         tradeDate,
         commodityId,
         deliveryBasisId,
@@ -773,6 +874,7 @@ async function seedPublishedIndex({
 
     await prisma.auditLog.create({
       data: {
+        ...tenantScope,
         actorUserId: adminUserId,
         actorRole: "admin",
         action: "index.published",

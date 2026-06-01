@@ -375,6 +375,7 @@ More detail:
 
 ```txt
 docs/database.md
+docs/tenant-architecture.md
 ```
 
 ## Routes
@@ -494,6 +495,12 @@ Run before committing code changes:
 npm run lint
 npm run test
 npm run build
+```
+
+Operational rollout notes live in:
+
+```txt
+docs/operations-runbook.md
 ```
 
 Validate tenant builds explicitly:

@@ -56,8 +56,76 @@ enum PasswordSetupStatus {
   reset_required
 }
 
+model Tenant {
+  id            String         @id
+  name          String
+  publicSiteUrl String?
+  active        Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  markets       Market[]
+  indexProducts IndexProduct[]
+  commodities   Commodity[]
+  deliveryBases DeliveryBasis[]
+  respondents   Respondent[]
+  baskets       Basket[]
+  users         User[]
+  priceSubmissions PriceSubmission[]
+  externalIndicatives ExternalIndicative[]
+  indexCalculations IndexCalculation[]
+  publishedIndices PublishedIndex[]
+  auditLogs     AuditLog[]
+
+  @@index([active])
+}
+
+model Market {
+  id            String         @id
+  tenantId      String
+  code          String
+  name          String
+  countryCode   String?
+  active        Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  indexProducts IndexProduct[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, active])
+}
+
+model IndexProduct {
+  id          String    @id
+  tenantId    String
+  marketId    String?
+  code        String
+  name        String
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  market      Market?   @relation(fields: [marketId], references: [id], onDelete: SetNull)
+  commodities   Commodity[]
+  deliveryBases DeliveryBasis[]
+  respondents   Respondent[]
+  baskets       Basket[]
+  users         User[]
+  priceSubmissions PriceSubmission[]
+  externalIndicatives ExternalIndicative[]
+  indexCalculations IndexCalculation[]
+  publishedIndices PublishedIndex[]
+  auditLogs     AuditLog[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, active])
+  @@index([marketId, active])
+}
+
 model Commodity {
   id                  String                 @id @default(cuid())
+  tenantId            String?
+  indexProductId      String?
   code                String                 @unique
   nameUk              String
   nameEn              String
@@ -66,31 +134,44 @@ model Commodity {
   sortOrder           Int                    @default(0)
   createdAt           DateTime               @default(now())
   updatedAt           DateTime               @updatedAt
+  tenant              Tenant?                @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  indexProduct        IndexProduct?          @relation(fields: [indexProductId], references: [id], onDelete: Restrict)
   priceSubmissions    PriceSubmission[]
   externalIndicatives ExternalIndicative[]
   indexCalculations   IndexCalculation[]
   publishedIndices    PublishedIndex[]
 
+  @@index([tenantId, status, sortOrder])
+  @@index([indexProductId, status, sortOrder])
   @@index([status, sortOrder])
 }
 
 model DeliveryBasis {
   id                  String                 @id @default(cuid())
+  tenantId            String?
+  indexProductId      String?
   code                String                 @unique
   name                String
   region              String
   status              CommodityStatus        @default(published)
   createdAt           DateTime               @default(now())
   updatedAt           DateTime               @updatedAt
+  tenant              Tenant?                @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  indexProduct        IndexProduct?          @relation(fields: [indexProductId], references: [id], onDelete: Restrict)
   baskets             Basket[]
   priceSubmissions    PriceSubmission[]
   externalIndicatives ExternalIndicative[]
   indexCalculations   IndexCalculation[]
   publishedIndices    PublishedIndex[]
+
+  @@index([tenantId, status])
+  @@index([indexProductId, status])
 }
 
 model Respondent {
   id                String                    @id @default(cuid())
+  tenantId          String?
+  indexProductId    String?
   legalName         String
   displayName       String
   active            Boolean                   @default(true)
@@ -98,6 +179,8 @@ model Respondent {
   collectionMode    RespondentCollectionMode  @default(self_service)
   createdAt         DateTime                  @default(now())
   updatedAt         DateTime                  @updatedAt
+  tenant            Tenant?                   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  indexProduct      IndexProduct?             @relation(fields: [indexProductId], references: [id], onDelete: Restrict)
   basketLinks       BasketRespondent[]
   users             User[]
   contacts          RespondentContact[]
@@ -107,6 +190,8 @@ model Respondent {
   priceSubmissions  PriceSubmission[]
   calculationItems  IndexCalculationItem[]
 
+  @@index([tenantId, status, collectionMode])
+  @@index([indexProductId, status, collectionMode])
   @@index([status, collectionMode])
 }
 
@@ -193,6 +278,8 @@ model RespondentSurveyToken {
 
 model Basket {
   id                String             @id @default(cuid())
+  tenantId          String?
+  indexProductId    String?
   code              String             @unique
   name              String
   deliveryBasisId   String
@@ -200,11 +287,15 @@ model Basket {
   active            Boolean            @default(true)
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
+  tenant            Tenant?            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  indexProduct      IndexProduct?      @relation(fields: [indexProductId], references: [id], onDelete: Restrict)
   deliveryBasis     DeliveryBasis      @relation(fields: [deliveryBasisId], references: [id])
   respondents       BasketRespondent[]
   calculations      IndexCalculation[]
   publishedIndices  PublishedIndex[]
 
+  @@index([tenantId, active])
+  @@index([indexProductId, active])
   @@index([deliveryBasisId, active])
 }
 
@@ -224,6 +315,8 @@ model BasketRespondent {
 
 model User {
   id                String             @id @default(cuid())
+  tenantId          String?
+  indexProductId    String?
   email             String             @unique
   name              String
   role              UserRole
@@ -236,17 +329,23 @@ model User {
   passwordSetAt     DateTime?
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
+  tenant            Tenant?            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  indexProduct      IndexProduct?      @relation(fields: [indexProductId], references: [id], onDelete: Restrict)
   respondent        Respondent?        @relation(fields: [respondentId], references: [id])
   priceSubmissions  PriceSubmission[]
   calculations      IndexCalculation[]
   publishedIndices  PublishedIndex[]
   auditLogs         AuditLog[]
 
+  @@index([tenantId, role, active])
+  @@index([indexProductId, role, active])
   @@index([role, active])
 }
 
 model PriceSubmission {
   id                String             @id @default(cuid())
+  tenantId          String?
+  indexProductId    String?
   tradeDate         DateTime           @db.Date
   commodityId       String
   deliveryBasisId   String
@@ -259,18 +358,24 @@ model PriceSubmission {
   submittedAt       DateTime?
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
+  tenant            Tenant?            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  indexProduct      IndexProduct?      @relation(fields: [indexProductId], references: [id], onDelete: Restrict)
   commodity         Commodity          @relation(fields: [commodityId], references: [id])
   deliveryBasis     DeliveryBasis      @relation(fields: [deliveryBasisId], references: [id])
   respondent        Respondent         @relation(fields: [respondentId], references: [id])
   submittedBy       User?              @relation(fields: [submittedById], references: [id])
   calculationItems  IndexCalculationItem[]
 
+  @@index([tenantId, tradeDate, status])
+  @@index([indexProductId, tradeDate, status])
   @@unique([tradeDate, commodityId, deliveryBasisId, respondentId, source])
   @@index([tradeDate, commodityId, deliveryBasisId, status])
 }
 
 model ExternalIndicative {
   id                String             @id @default(cuid())
+  tenantId          String?
+  indexProductId    String?
   tradeDate         DateTime           @db.Date
   commodityId       String
   deliveryBasisId   String
@@ -279,15 +384,21 @@ model ExternalIndicative {
   priceUsdPerMt     Decimal            @db.Decimal(12, 2)
   receivedAt        DateTime           @default(now())
   metadata          Json?
+  tenant            Tenant?            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  indexProduct      IndexProduct?      @relation(fields: [indexProductId], references: [id], onDelete: Restrict)
   commodity         Commodity          @relation(fields: [commodityId], references: [id])
   deliveryBasis     DeliveryBasis      @relation(fields: [deliveryBasisId], references: [id])
 
+  @@index([tenantId, tradeDate, source, status])
+  @@index([indexProductId, tradeDate, source, status])
   @@unique([tradeDate, commodityId, deliveryBasisId, source])
   @@index([tradeDate, source, status])
 }
 
 model IndexCalculation {
   id                String                 @id @default(cuid())
+  tenantId          String?
+  indexProductId    String?
   tradeDate         DateTime               @db.Date
   commodityId       String
   deliveryBasisId   String
@@ -302,6 +413,8 @@ model IndexCalculation {
   version           Int                    @default(1)
   calculatedById    String?
   calculatedAt      DateTime               @default(now())
+  tenant            Tenant?                @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  indexProduct      IndexProduct?          @relation(fields: [indexProductId], references: [id], onDelete: Restrict)
   commodity         Commodity              @relation(fields: [commodityId], references: [id])
   deliveryBasis     DeliveryBasis          @relation(fields: [deliveryBasisId], references: [id])
   basket            Basket                 @relation(fields: [basketId], references: [id])
@@ -309,6 +422,8 @@ model IndexCalculation {
   items             IndexCalculationItem[]
   publishedIndex    PublishedIndex?
 
+  @@index([tenantId, tradeDate, status])
+  @@index([indexProductId, tradeDate, status])
   @@unique([tradeDate, commodityId, deliveryBasisId, basketId])
   @@index([tradeDate, status])
 }
@@ -332,6 +447,8 @@ model IndexCalculationItem {
 
 model PublishedIndex {
   id                    String             @id @default(cuid())
+  tenantId              String?
+  indexProductId        String?
   tradeDate             DateTime           @db.Date
   commodityId           String
   deliveryBasisId       String
@@ -349,18 +466,24 @@ model PublishedIndex {
   locked                Boolean            @default(true)
   publishedById         String?
   publishedAt           DateTime           @default(now())
+  tenant                Tenant?            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  indexProduct          IndexProduct?      @relation(fields: [indexProductId], references: [id], onDelete: Restrict)
   commodity             Commodity          @relation(fields: [commodityId], references: [id])
   deliveryBasis         DeliveryBasis      @relation(fields: [deliveryBasisId], references: [id])
   basket                Basket             @relation(fields: [basketId], references: [id])
   calculation           IndexCalculation   @relation(fields: [calculationId], references: [id])
   publishedBy           User?              @relation(fields: [publishedById], references: [id])
 
+  @@index([tenantId, tradeDate, locked])
+  @@index([indexProductId, tradeDate, locked])
   @@unique([tradeDate, commodityId, deliveryBasisId, basketId])
   @@index([tradeDate, locked])
 }
 
 model AuditLog {
   id            String    @id @default(cuid())
+  tenantId      String?
+  indexProductId String?
   actorUserId   String?
   actorRole     UserRole?
   action        String
@@ -370,8 +493,12 @@ model AuditLog {
   beforeJson    Json?
   afterJson     Json?
   createdAt     DateTime  @default(now())
+  tenant        Tenant?    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  indexProduct  IndexProduct? @relation(fields: [indexProductId], references: [id], onDelete: Restrict)
   actorUser      User?     @relation(fields: [actorUserId], references: [id])
 
+  @@index([tenantId, createdAt])
+  @@index([indexProductId, createdAt])
   @@index([createdAt])
   @@index([entityType, entityId])
 }

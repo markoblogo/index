@@ -1,5 +1,6 @@
 import { allowMockFallback, db, hasDatabaseUrl } from "@/lib/db";
 import { getActiveIndexConfig, type IndexTenantId } from "@/lib/index-platform";
+import { tenantScopedWhere } from "@/lib/tenant-data-scope";
 
 export type RespondentStatus = "active" | "pending";
 export type RespondentCollectionMode = "self_service" | "manual_outreach";
@@ -318,6 +319,7 @@ export async function getRespondentDirectoryData() {
 
   try {
     const kyivDateBounds = getKyivDateBounds();
+    const tenantScope = tenantScopedWhere();
     const respondents = await db.respondent.findMany({
       include: {
         authAccount: true,
@@ -338,7 +340,7 @@ export async function getRespondentDirectoryData() {
         },
       },
       orderBy: [{ status: "asc" }, { legalName: "asc" }],
-      where: { NOT: { status: "disabled" } },
+      where: { ...tenantScope, NOT: { status: "disabled" } },
     });
 
     return respondents.map((respondent) => ({
@@ -514,8 +516,10 @@ export async function getActiveRespondentCountData() {
   }
 
   try {
+    const tenantScope = tenantScopedWhere();
     return await db.respondent.count({
       where: {
+        ...tenantScope,
         active: true,
         status: "active",
       },
@@ -548,11 +552,13 @@ export async function addRespondentDirectoryEntryData(
   const loginEmail =
     input.contactEmail.trim().toLowerCase() || createDemoRespondentEmail(id);
   const temporaryPassword = generateTemporaryPassword(id);
+  const tenantScope = tenantScopedWhere();
 
   await db.$transaction(async (tx) => {
     await tx.respondent.upsert({
       where: { id },
       update: {
+        ...tenantScope,
         active: input.status === "active",
         collectionMode: input.collectionMode,
         displayName: input.companyName.trim(),
@@ -560,6 +566,7 @@ export async function addRespondentDirectoryEntryData(
         status: input.status,
       },
       create: {
+        ...tenantScope,
         id,
         active: input.status === "active",
         collectionMode: input.collectionMode,
@@ -603,12 +610,14 @@ export async function addRespondentDirectoryEntryData(
     await tx.user.upsert({
       where: { email: loginEmail },
       update: {
+        ...tenantScope,
         active: input.status === "active",
         name: `${input.companyName.trim()} respondent`,
         respondentId: id,
         role: "respondent",
       },
       create: {
+        ...tenantScope,
         active: input.status === "active",
         email: loginEmail,
         name: `${input.companyName.trim()} respondent`,
@@ -627,8 +636,8 @@ export async function updateRespondentDirectoryEntryData(
     return;
   }
 
-  await db.respondent.update({
-    where: { id: input.id },
+  await db.respondent.updateMany({
+    where: { id: input.id, ...tenantScopedWhere() },
     data: {
       active: input.status === "active",
       collectionMode: input.collectionMode,
@@ -646,7 +655,9 @@ export async function deleteRespondentDirectoryEntryData(id: string) {
   }
 
   await db.$transaction(async (tx) => {
-    await tx.user.deleteMany({ where: { respondentId: id } });
+    const tenantScope = tenantScopedWhere();
+
+    await tx.user.deleteMany({ where: { respondentId: id, ...tenantScope } });
     await tx.respondentAuthAccount.deleteMany({ where: { respondentId: id } });
     await tx.respondentContact.updateMany({
       where: { respondentId: id },
@@ -656,8 +667,8 @@ export async function deleteRespondentDirectoryEntryData(id: string) {
       where: { respondentId: id },
       data: { active: false },
     });
-    await tx.respondent.update({
-      where: { id },
+    await tx.respondent.updateMany({
+      where: { id, ...tenantScope },
       data: {
         active: false,
         status: "disabled",
@@ -784,6 +795,7 @@ export async function updateRespondentAuthAccountData(
   }
 
   const loginEmail = input.loginEmail.trim().toLowerCase();
+  const tenantScope = tenantScopedWhere();
 
   await db.$transaction(async (tx) => {
     const auth = await tx.respondentAuthAccount.upsert({
@@ -804,16 +816,18 @@ export async function updateRespondentAuthAccountData(
       where: { id: input.respondentId },
     });
 
-    if (respondent) {
+    if (respondent && respondent.tenantId === tenantScope.tenantId) {
       await tx.user.upsert({
         where: { email: auth.loginEmail },
         update: {
+          ...tenantScope,
           active: respondent.active,
           name: `${respondent.legalName} respondent`,
           respondentId: respondent.id,
           role: "respondent",
         },
         create: {
+          ...tenantScope,
           active: respondent.active,
           email: auth.loginEmail,
           name: `${respondent.legalName} respondent`,

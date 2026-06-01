@@ -1,8 +1,22 @@
 import { NextResponse } from "next/server";
+import { checkRateLimit, getRequestRateLimitKey } from "@/lib/rate-limit";
 
 const MAX_FIELD_LENGTH = 4000;
 
 export async function POST(request: Request) {
+  const rateLimit = checkRateLimit({
+    key: getRequestRateLimitKey(request, "platform-contact"),
+    limit: 5,
+    windowMs: 60_000,
+  });
+
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { message: "Too many messages. Please try again shortly." },
+      { status: 429 },
+    );
+  }
+
   const formData = await request.formData();
   const name = cleanField(formData.get("name"));
   const email = cleanField(formData.get("email"));

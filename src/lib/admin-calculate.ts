@@ -34,6 +34,7 @@ import {
   getDeliveryBasketCodeForCommodityCode,
   getDeliveryBasisConfigForCommodityCode,
 } from "@/lib/tenant-basis";
+import { tenantScopedWhere } from "@/lib/tenant-data-scope";
 
 export { todayInputDate };
 
@@ -346,6 +347,7 @@ async function persistDatabaseCalculations(
   }
 
   const tradeDate = dateToUtcDate(date);
+  const tenantScope = tenantScopedWhere();
   const savedCalculations = [];
 
   for (const commodity of context.dbCommodities) {
@@ -382,6 +384,7 @@ async function persistDatabaseCalculations(
         },
       },
       update: {
+        ...tenantScope,
         status: dbStatus,
         medianUsdPerMt: toDecimalOrNull(result.median),
         valueUsdPerMt: toDecimalOrNull(result.rawValue),
@@ -394,6 +397,7 @@ async function persistDatabaseCalculations(
         calculatedAt: new Date(),
       },
       create: {
+        ...tenantScope,
         tradeDate,
         commodityId: commodity.id,
         deliveryBasisId: basis.id,
@@ -438,6 +442,7 @@ async function persistDatabaseCalculations(
 
     await db.auditLog.create({
       data: {
+        ...tenantScope,
         actorUserId: await getDatabaseUserId(user),
         actorRole: "admin",
         action: "index_calculation.recalculated",
@@ -475,6 +480,7 @@ async function publishDatabaseCalculations(
   benchmarkBlendCommodityIds: Set<string>,
 ) {
   const publisherUserId = await getDatabaseUserId(user);
+  const tenantScope = tenantScopedWhere();
 
   for (const calculation of calculations) {
     if (
@@ -501,6 +507,7 @@ async function publishDatabaseCalculations(
 
     const previous = await db.publishedIndex.findFirst({
       where: {
+        ...tenantScope,
         commodityId: calculation.commodityId,
         deliveryBasisId: calculation.deliveryBasisId,
         basketId: calculation.basketId,
@@ -514,6 +521,7 @@ async function publishDatabaseCalculations(
     const benchmarkIndicative = benchmarkBlendCommodityIds.has(calculation.commodityId)
       ? await db.externalIndicative.findFirst({
           where: {
+            ...tenantScope,
             tradeDate: calculation.tradeDate,
             commodityId: calculation.commodityId,
             deliveryBasisId: calculation.deliveryBasisId,
@@ -533,6 +541,7 @@ async function publishDatabaseCalculations(
     );
 
     const publishedData = {
+      ...tenantScope,
       calculationId: calculation.id,
       status: "published" as const,
       calculatedValueUsdPerMt: new Prisma.Decimal(calculatedValue),
@@ -578,6 +587,7 @@ async function publishDatabaseCalculations(
 
     await db.auditLog.create({
       data: {
+        ...tenantScope,
         actorUserId: publisherUserId,
         actorRole: "admin",
         action: "index.published",
@@ -612,18 +622,19 @@ function isPublishableDatabaseCalculation(status: string) {
 async function getDatabaseCalculationContext(date: string) {
   const tradeDate = dateToUtcDate(date);
   const activeIndex = getActiveIndexTenant();
+  const tenantScope = tenantScopedWhere();
   const basisCodes = getConfiguredDeliveryBasisCodes(activeIndex);
   const basketCodes = activeIndex.deliveryBases.map((basis) => basis.basketCode);
   const [bases, baskets, dbCommodities, dbRespondents] = await Promise.all([
-    db.deliveryBasis.findMany({ where: { code: { in: basisCodes } } }),
-    db.basket.findMany({ where: { code: { in: basketCodes } } }),
+    db.deliveryBasis.findMany({ where: { ...tenantScope, code: { in: basisCodes } } }),
+    db.basket.findMany({ where: { ...tenantScope, code: { in: basketCodes } } }),
     db.commodity.findMany({
       orderBy: { sortOrder: "asc" },
-      where: { status: "published" },
+      where: { ...tenantScope, status: "published" },
     }),
     db.respondent.findMany({
       orderBy: { legalName: "asc" },
-      where: { active: true, status: "active" },
+      where: { ...tenantScope, active: true, status: "active" },
     }),
   ]);
   const basisByCode = new Map(bases.map((basis) => [basis.code, basis]));
@@ -674,6 +685,7 @@ async function getDatabaseCalculationContext(date: string) {
   const [submissions, indicatives, calculations, published] = await Promise.all([
     db.priceSubmission.findMany({
       where: {
+        ...tenantScope,
         tradeDate,
         deliveryBasisId: { in: basisIds },
       },
@@ -681,6 +693,7 @@ async function getDatabaseCalculationContext(date: string) {
     }),
     db.externalIndicative.findMany({
       where: {
+        ...tenantScope,
         tradeDate,
         deliveryBasisId: { in: basisIds },
         source: "spike",
@@ -688,6 +701,7 @@ async function getDatabaseCalculationContext(date: string) {
     }),
     db.indexCalculation.findMany({
       where: {
+        ...tenantScope,
         tradeDate,
         deliveryBasisId: { in: basisIds },
         basketId: { in: basketIds },
@@ -695,6 +709,7 @@ async function getDatabaseCalculationContext(date: string) {
     }),
     db.publishedIndex.findMany({
       where: {
+        ...tenantScope,
         tradeDate,
         deliveryBasisId: { in: basisIds },
         basketId: { in: basketIds },

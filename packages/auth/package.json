@@ -1,0 +1,6 @@
+{
+  "name": "@1d3x/auth",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Shared authentication, session and token package boundary."
+}

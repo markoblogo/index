@@ -22,6 +22,7 @@ import {
   getDeliveryBasketCodeForCommodityCode,
   getDeliveryBasisConfigForCommodityCode,
 } from "@/lib/tenant-basis";
+import { tenantScopedWhere } from "@/lib/tenant-data-scope";
 
 export type PublicIndexSnapshot = {
   commodities: Commodity[];
@@ -182,15 +183,20 @@ function getMockLiveSubmissionValues(date: string) {
 }
 
 async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
+  const tenantScope = tenantScopedWhere();
   const activeRespondentCount = await getActiveRespondentCountData();
   const today = todayKyivDate();
   const todayTradeDate = dateToUtcDate(today);
   const [bases, baskets] = await Promise.all([
     db.deliveryBasis.findMany({
-      where: { code: { in: getConfiguredDeliveryBasisCodes(activeIndex) } },
+      where: {
+        ...tenantScope,
+        code: { in: getConfiguredDeliveryBasisCodes(activeIndex) },
+      },
     }),
     db.basket.findMany({
       where: {
+        ...tenantScope,
         code: { in: activeIndex.deliveryBases.map((basis) => basis.basketCode) },
       },
     }),
@@ -208,7 +214,7 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
 
   const dbCommodities = await db.commodity.findMany({
     orderBy: { sortOrder: "asc" },
-    where: { status: "published" },
+    where: { ...tenantScope, status: "published" },
   });
   const basisByCommodityId = new Map(
     dbCommodities
@@ -256,6 +262,7 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
 
       return db.publishedIndex.findFirst({
         where: {
+          ...tenantScope,
           commodityId: commodity.id,
           deliveryBasisId: basis.id,
           basketId: basket.id,
@@ -278,6 +285,7 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
         orderBy: { tradeDate: "desc" },
         take: 14,
         where: {
+          ...tenantScope,
           basketId: basket.id,
           commodityId: commodity.id,
           deliveryBasisId: basis.id,
@@ -301,6 +309,7 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
     activeIndex.id === "spike-ua" && basisIds.length > 0
       ? await db.priceSubmission.findMany({
           where: {
+            ...tenantScope,
             deliveryBasisId: { in: basisIds },
             respondent: {
               active: true,
@@ -340,6 +349,7 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
 
           return db.publishedIndex.findFirst({
             where: {
+              ...tenantScope,
               basketId: basket.id,
               commodityId: commodity.id,
               deliveryBasisId: basis.id,

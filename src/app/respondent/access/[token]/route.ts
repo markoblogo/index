@@ -6,6 +6,7 @@ import {
   LEGACY_DEMO_SESSION_COOKIE,
 } from "@/lib/demo-auth";
 import { db, hasDatabaseUrl } from "@/lib/db";
+import { checkRateLimit, getRequestRateLimitKey } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,16 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ token: string }> },
 ) {
+  const rateLimit = checkRateLimit({
+    key: getRequestRateLimitKey(request, "survey-token"),
+    limit: 20,
+    windowMs: 60_000,
+  });
+
+  if (!rateLimit.allowed) {
+    return NextResponse.json({ error: "Too many attempts." }, { status: 429 });
+  }
+
   if (!hasDatabaseUrl()) {
     return NextResponse.redirect(new URL("/login", request.url), 303);
   }

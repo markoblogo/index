@@ -15,6 +15,7 @@ import {
   getConfiguredDeliveryBasisCodes,
   getDeliveryBasisConfigForCommodityCode,
 } from "@/lib/tenant-basis";
+import { tenantScopedWhere } from "@/lib/tenant-data-scope";
 import { orderDailyInputRespondents } from "@/lib/respondent-ordering";
 
 export type DailyInputStatus =
@@ -143,16 +144,17 @@ export async function saveDailyInputs(formData: FormData, user: DemoUser) {
 async function getDatabaseDailyInputData(date: string): Promise<DailyInputData> {
   const tradeDate = dateToUtcDate(date);
   const activeIndex = getActiveIndexTenant();
+  const tenantScope = tenantScopedWhere();
   const basisCodes = getConfiguredDeliveryBasisCodes(activeIndex);
   const [bases, dbCommodities, dbRespondents] = await Promise.all([
-    db.deliveryBasis.findMany({ where: { code: { in: basisCodes } } }),
+    db.deliveryBasis.findMany({ where: { ...tenantScope, code: { in: basisCodes } } }),
     db.commodity.findMany({
       orderBy: { sortOrder: "asc" },
-      where: { status: "published" },
+      where: { ...tenantScope, status: "published" },
     }),
     db.respondent.findMany({
       orderBy: { legalName: "asc" },
-      where: { active: true, status: "active" },
+      where: { ...tenantScope, active: true, status: "active" },
     }),
   ]);
 
@@ -185,12 +187,14 @@ async function getDatabaseDailyInputData(date: string): Promise<DailyInputData> 
   const [submissions, indicatives, publishedIndices] = await Promise.all([
     db.priceSubmission.findMany({
       where: {
+        ...tenantScope,
         tradeDate,
         deliveryBasisId: { in: basisIds },
       },
     }),
     db.externalIndicative.findMany({
       where: {
+        ...tenantScope,
         tradeDate,
         deliveryBasisId: { in: basisIds },
         source: "spike",
@@ -198,6 +202,7 @@ async function getDatabaseDailyInputData(date: string): Promise<DailyInputData> 
     }),
     db.publishedIndex.findMany({
       where: {
+        ...tenantScope,
         tradeDate,
         deliveryBasisId: { in: basisIds },
       },
@@ -391,10 +396,12 @@ function getMockDailyInputData(date: string): DailyInputData {
 async function isDatabaseDailyInputLocked(date: string) {
   const tradeDate = dateToUtcDate(date);
   const basisCodes = getConfiguredDeliveryBasisCodes();
+  const tenantScope = tenantScopedWhere();
   const publishedIndices = await db.publishedIndex.findMany({
     where: {
+      ...tenantScope,
       tradeDate,
-      deliveryBasis: { code: { in: basisCodes } },
+      deliveryBasis: { ...tenantScope, code: { in: basisCodes } },
     },
     select: { locked: true },
   });
@@ -419,12 +426,16 @@ async function saveDatabaseDailyInputs(
   user: DemoUser,
 ) {
   const tradeDate = dateToUtcDate(date);
+  const tenantScope = tenantScopedWhere();
   const [bases, dbCommodities] = await Promise.all([
     db.deliveryBasis.findMany({
-      where: { code: { in: getConfiguredDeliveryBasisCodes() } },
+      where: { ...tenantScope, code: { in: getConfiguredDeliveryBasisCodes() } },
     }),
     db.commodity.findMany({
-      where: { id: { in: [...new Set(entries.map((entry) => entry.commodityId))] } },
+      where: {
+        ...tenantScope,
+        id: { in: [...new Set(entries.map((entry) => entry.commodityId))] },
+      },
     }),
   ]);
   const basisByCode = new Map(bases.map((basis) => [basis.code, basis]));
@@ -470,11 +481,13 @@ async function saveDatabaseDailyInputs(
         },
       },
       update: {
+        ...tenantScope,
         priceUsdPerMt: new Prisma.Decimal(entry.price),
         status: entry.inputSource === "admin" ? "verified" : entry.submissionStatus,
         submittedAt: new Date(),
       },
       create: {
+        ...tenantScope,
         tradeDate,
         commodityId: entry.commodityId,
         deliveryBasisId: basis.id,
@@ -489,6 +502,7 @@ async function saveDatabaseDailyInputs(
     if (!existing || !existing.priceUsdPerMt.equals(saved.priceUsdPerMt)) {
       await db.auditLog.create({
         data: {
+          ...tenantScope,
           actorRole: "admin",
           action: existing ? "price_submission.updated" : "price_submission.created",
           entityType: "PriceSubmission",

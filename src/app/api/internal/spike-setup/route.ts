@@ -8,6 +8,7 @@ import {
   SPIKE_ADMIN_FALLBACK_RESPONDENT_ID,
 } from "@/lib/index-platform";
 import { sendRespondentTelegramNotifications } from "@/lib/respondent-telegram";
+import { isProductionRuntime } from "@/lib/tenant-context";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +39,13 @@ function generateTemporaryPassword() {
 }
 
 export async function POST(request: Request) {
+  if (isProductionRuntime()) {
+    return NextResponse.json(
+      { error: "Spike setup helper is disabled in production." },
+      { status: 404 },
+    );
+  }
+
   if (!requireInternalAccess(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

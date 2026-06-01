@@ -7,11 +7,15 @@ export function isCronRequestAuthorized(
   );
 
   if (expectedSecrets.length === 0) {
-    return true;
+    return process.env.UGA_INDEX_RUNTIME_MODE !== "production";
   }
 
   const authHeader = request.headers.get("authorization");
   const token = authHeader?.replace(/^Bearer\s+/i, "");
 
   return Boolean(token && expectedSecrets.includes(token));
+}
+
+export function hasConfiguredCronSecret(secrets: Array<string | null | undefined>) {
+  return secrets.some((secret) => typeof secret === "string" && secret.length > 0);
 }
