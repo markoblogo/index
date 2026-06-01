@@ -3,6 +3,7 @@ import "server-only";
 import { db, hasDatabaseUrl } from "@/lib/db";
 import type { DemoUser } from "@/lib/demo-auth";
 import { hashPassword } from "@/lib/password-hash";
+import { tenantScopedWhere } from "@/lib/tenant-data-scope";
 
 export async function setPermanentPasswordForUser(
   user: DemoUser,
@@ -15,6 +16,7 @@ export async function setPermanentPasswordForUser(
   const normalizedPassword = password.trim();
   const passwordHash = hashPassword(normalizedPassword);
   const now = new Date();
+  const tenantScope = tenantScopedWhere();
 
   if (user.role === "respondent" && user.respondentId) {
     await db.$transaction(async (tx) => {
@@ -38,6 +40,7 @@ export async function setPermanentPasswordForUser(
       });
       await tx.auditLog.create({
         data: {
+          ...tenantScope,
           actorUserId: user.userId,
           actorRole: user.role,
           action: "auth.password_setup_completed",
@@ -75,6 +78,7 @@ export async function setPermanentPasswordForUser(
     });
     await tx.auditLog.create({
       data: {
+        ...tenantScope,
         actorUserId: dbUser.id,
         actorRole: user.role,
         action: "auth.password_setup_completed",

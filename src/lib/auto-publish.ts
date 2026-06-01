@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { db, hasDatabaseUrl } from "@/lib/db";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import { computePublishedChange } from "@/lib/index-publish";
+import { tenantScopedWhere } from "@/lib/tenant-data-scope";
 import {
   getConfiguredDeliveryBasisCodes,
   getDeliveryBasketCodeForCommodityCode,
@@ -50,17 +51,21 @@ export async function autoPublishSpikeDailyIndices(
 
   const tradeDate = dateToUtcDate(date);
   const basisCodes = getConfiguredDeliveryBasisCodes(activeIndex);
+  const tenantScope = tenantScopedWhere();
   const [bases, baskets, dbCommodities] =
     await Promise.all([
-      db.deliveryBasis.findMany({ where: { code: { in: basisCodes } } }),
+      db.deliveryBasis.findMany({
+        where: { ...tenantScope, code: { in: basisCodes } },
+      }),
       db.basket.findMany({
         where: {
+          ...tenantScope,
           code: { in: activeIndex.deliveryBases.map((basis) => basis.basketCode) },
         },
       }),
       db.commodity.findMany({
         orderBy: { sortOrder: "asc" },
-        where: { status: "published" },
+        where: { ...tenantScope, status: "published" },
       }),
     ]);
 
@@ -103,6 +108,7 @@ export async function autoPublishSpikeDailyIndices(
 
   const existingPublishedCount = await db.publishedIndex.count({
     where: {
+      ...tenantScope,
       basketId: { in: basketIds },
       deliveryBasisId: { in: basisIds },
       locked: true,
@@ -117,6 +123,7 @@ export async function autoPublishSpikeDailyIndices(
 
   const submissions = await db.priceSubmission.findMany({
     where: {
+      ...tenantScope,
       deliveryBasisId: { in: basisIds },
       respondent: {
         active: true,
@@ -158,6 +165,7 @@ export async function autoPublishSpikeDailyIndices(
         status: "draft",
       },
       where: {
+        ...tenantScope,
         basketId: { in: basketIds },
         deliveryBasisId: { in: basisIds },
         locked: true,
@@ -178,6 +186,7 @@ export async function autoPublishSpikeDailyIndices(
 
     const previous = await db.publishedIndex.findFirst({
       where: {
+        ...tenantScope,
         basketId: basket.id,
         commodityId: commodity.id,
         deliveryBasisId: basis.id,
@@ -218,6 +227,7 @@ export async function autoPublishSpikeDailyIndices(
         version: nextVersion,
       },
       create: {
+        ...tenantScope,
         basketId: basket.id,
         basketWeight: basket.weight,
         commodityId: commodity.id,
@@ -252,6 +262,7 @@ export async function autoPublishSpikeDailyIndices(
       previous?.valueUsdPerMt.toNumber() ?? null,
     );
     const publishedData = {
+      ...tenantScope,
       benchmarkBlendEnabled: false,
       calculatedValueUsdPerMt: new Prisma.Decimal(planItem.value),
       calculationId: calculation.id,
@@ -288,6 +299,7 @@ export async function autoPublishSpikeDailyIndices(
     });
     await db.auditLog.create({
       data: {
+        ...tenantScope,
         action: "index.auto_published",
         afterJson: {
           calculationVersion: nextVersion,

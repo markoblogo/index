@@ -126,8 +126,8 @@ model IndexProduct {
 
 model Commodity {
   id                  String                 @id @default(cuid())
-  tenantId            String?
-  indexProductId      String?
+  tenantId            String
+  indexProductId      String
   code                String                 @unique
   nameUk              String
   nameEn              String
@@ -136,8 +136,8 @@ model Commodity {
   sortOrder           Int                    @default(0)
   createdAt           DateTime               @default(now())
   updatedAt           DateTime               @updatedAt
-  tenant              Tenant?                @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  indexProduct        IndexProduct?          @relation(fields: [indexProductId], references: [id], onDelete: Restrict)
+  tenant              Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  indexProduct        IndexProduct           @relation(fields: [indexProductId], references: [id], onDelete: Restrict)
   priceSubmissions    PriceSubmission[]
   externalIndicatives ExternalIndicative[]
   indexCalculations   IndexCalculation[]
@@ -150,16 +150,16 @@ model Commodity {
 
 model DeliveryBasis {
   id                  String                 @id @default(cuid())
-  tenantId            String?
-  indexProductId      String?
+  tenantId            String
+  indexProductId      String
   code                String                 @unique
   name                String
   region              String
   status              CommodityStatus        @default(published)
   createdAt           DateTime               @default(now())
   updatedAt           DateTime               @updatedAt
-  tenant              Tenant?                @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  indexProduct        IndexProduct?          @relation(fields: [indexProductId], references: [id], onDelete: Restrict)
+  tenant              Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  indexProduct        IndexProduct           @relation(fields: [indexProductId], references: [id], onDelete: Restrict)
   baskets             Basket[]
   priceSubmissions    PriceSubmission[]
   externalIndicatives ExternalIndicative[]
@@ -172,8 +172,8 @@ model DeliveryBasis {
 
 model Respondent {
   id                String                    @id @default(cuid())
-  tenantId          String?
-  indexProductId    String?
+  tenantId          String
+  indexProductId    String
   legalName         String
   displayName       String
   active            Boolean                   @default(true)
@@ -181,8 +181,8 @@ model Respondent {
   collectionMode    RespondentCollectionMode  @default(self_service)
   createdAt         DateTime                  @default(now())
   updatedAt         DateTime                  @updatedAt
-  tenant            Tenant?                   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  indexProduct      IndexProduct?             @relation(fields: [indexProductId], references: [id], onDelete: Restrict)
+  tenant            Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  indexProduct      IndexProduct              @relation(fields: [indexProductId], references: [id], onDelete: Restrict)
   basketLinks       BasketRespondent[]
   users             User[]
   contacts          RespondentContact[]
@@ -235,8 +235,8 @@ model RespondentAuthAccount {
 
 model PasswordSetupToken {
   id                      String                 @id @default(cuid())
-  tenantId                String?
-  indexProductId          String?
+  tenantId                String
+  indexProductId          String
   tokenDigest             String                 @unique
   email                   String
   userId                  String?
@@ -244,8 +244,8 @@ model PasswordSetupToken {
   expiresAt               DateTime
   usedAt                  DateTime?
   createdAt               DateTime               @default(now())
-  tenant                  Tenant?                @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  indexProduct            IndexProduct?          @relation(fields: [indexProductId], references: [id], onDelete: Restrict)
+  tenant                  Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  indexProduct            IndexProduct           @relation(fields: [indexProductId], references: [id], onDelete: Restrict)
   user                    User?                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   respondentAuthAccount   RespondentAuthAccount? @relation(fields: [respondentAuthAccountId], references: [id], onDelete: Cascade)
 
@@ -303,8 +303,8 @@ model RespondentSurveyToken {
 
 model Basket {
   id                String             @id @default(cuid())
-  tenantId          String?
-  indexProductId    String?
+  tenantId          String
+  indexProductId    String
   code              String             @unique
   name              String
   deliveryBasisId   String
@@ -312,8 +312,8 @@ model Basket {
   active            Boolean            @default(true)
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
-  tenant            Tenant?            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  indexProduct      IndexProduct?      @relation(fields: [indexProductId], references: [id], onDelete: Restrict)
+  tenant            Tenant             @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  indexProduct      IndexProduct       @relation(fields: [indexProductId], references: [id], onDelete: Restrict)
   deliveryBasis     DeliveryBasis      @relation(fields: [deliveryBasisId], references: [id])
   respondents       BasketRespondent[]
   calculations      IndexCalculation[]
@@ -340,8 +340,8 @@ model BasketRespondent {
 
 model User {
   id                String             @id @default(cuid())
-  tenantId          String?
-  indexProductId    String?
+  tenantId          String
+  indexProductId    String
   email             String             @unique
   name              String
   role              UserRole
@@ -354,8 +354,8 @@ model User {
   passwordSetAt     DateTime?
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
-  tenant            Tenant?            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  indexProduct      IndexProduct?      @relation(fields: [indexProductId], references: [id], onDelete: Restrict)
+  tenant            Tenant             @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  indexProduct      IndexProduct       @relation(fields: [indexProductId], references: [id], onDelete: Restrict)
   respondent        Respondent?        @relation(fields: [respondentId], references: [id])
   priceSubmissions  PriceSubmission[]
   calculations      IndexCalculation[]
@@ -370,8 +370,8 @@ model User {
 
 model PriceSubmission {
   id                String             @id @default(cuid())
-  tenantId          String?
-  indexProductId    String?
+  tenantId          String
+  indexProductId    String
   tradeDate         DateTime           @db.Date
   commodityId       String
   deliveryBasisId   String
@@ -384,8 +384,8 @@ model PriceSubmission {
   submittedAt       DateTime?
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
-  tenant            Tenant?            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  indexProduct      IndexProduct?      @relation(fields: [indexProductId], references: [id], onDelete: Restrict)
+  tenant            Tenant             @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  indexProduct      IndexProduct       @relation(fields: [indexProductId], references: [id], onDelete: Restrict)
   commodity         Commodity          @relation(fields: [commodityId], references: [id])
   deliveryBasis     DeliveryBasis      @relation(fields: [deliveryBasisId], references: [id])
   respondent        Respondent         @relation(fields: [respondentId], references: [id])
@@ -400,8 +400,8 @@ model PriceSubmission {
 
 model ExternalIndicative {
   id                String             @id @default(cuid())
-  tenantId          String?
-  indexProductId    String?
+  tenantId          String
+  indexProductId    String
   tradeDate         DateTime           @db.Date
   commodityId       String
   deliveryBasisId   String
@@ -410,8 +410,8 @@ model ExternalIndicative {
   priceUsdPerMt     Decimal            @db.Decimal(12, 2)
   receivedAt        DateTime           @default(now())
   metadata          Json?
-  tenant            Tenant?            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  indexProduct      IndexProduct?      @relation(fields: [indexProductId], references: [id], onDelete: Restrict)
+  tenant            Tenant             @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  indexProduct      IndexProduct       @relation(fields: [indexProductId], references: [id], onDelete: Restrict)
   commodity         Commodity          @relation(fields: [commodityId], references: [id])
   deliveryBasis     DeliveryBasis      @relation(fields: [deliveryBasisId], references: [id])
 
@@ -423,8 +423,8 @@ model ExternalIndicative {
 
 model IndexCalculation {
   id                String                 @id @default(cuid())
-  tenantId          String?
-  indexProductId    String?
+  tenantId          String
+  indexProductId    String
   tradeDate         DateTime               @db.Date
   commodityId       String
   deliveryBasisId   String
@@ -439,8 +439,8 @@ model IndexCalculation {
   version           Int                    @default(1)
   calculatedById    String?
   calculatedAt      DateTime               @default(now())
-  tenant            Tenant?                @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  indexProduct      IndexProduct?          @relation(fields: [indexProductId], references: [id], onDelete: Restrict)
+  tenant            Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  indexProduct      IndexProduct           @relation(fields: [indexProductId], references: [id], onDelete: Restrict)
   commodity         Commodity              @relation(fields: [commodityId], references: [id])
   deliveryBasis     DeliveryBasis          @relation(fields: [deliveryBasisId], references: [id])
   basket            Basket                 @relation(fields: [basketId], references: [id])
@@ -473,8 +473,8 @@ model IndexCalculationItem {
 
 model PublishedIndex {
   id                    String             @id @default(cuid())
-  tenantId              String?
-  indexProductId        String?
+  tenantId              String
+  indexProductId        String
   tradeDate             DateTime           @db.Date
   commodityId           String
   deliveryBasisId       String
@@ -492,8 +492,8 @@ model PublishedIndex {
   locked                Boolean            @default(true)
   publishedById         String?
   publishedAt           DateTime           @default(now())
-  tenant                Tenant?            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  indexProduct          IndexProduct?      @relation(fields: [indexProductId], references: [id], onDelete: Restrict)
+  tenant                Tenant             @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  indexProduct          IndexProduct       @relation(fields: [indexProductId], references: [id], onDelete: Restrict)
   commodity             Commodity          @relation(fields: [commodityId], references: [id])
   deliveryBasis         DeliveryBasis      @relation(fields: [deliveryBasisId], references: [id])
   basket                Basket             @relation(fields: [basketId], references: [id])
@@ -508,8 +508,8 @@ model PublishedIndex {
 
 model AuditLog {
   id            String    @id @default(cuid())
-  tenantId      String?
-  indexProductId String?
+  tenantId      String
+  indexProductId String
   actorUserId   String?
   actorRole     UserRole?
   action        String
@@ -519,8 +519,8 @@ model AuditLog {
   beforeJson    Json?
   afterJson     Json?
   createdAt     DateTime  @default(now())
-  tenant        Tenant?    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  indexProduct  IndexProduct? @relation(fields: [indexProductId], references: [id], onDelete: Restrict)
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  indexProduct  IndexProduct @relation(fields: [indexProductId], references: [id], onDelete: Restrict)
   actorUser      User?     @relation(fields: [actorUserId], references: [id])
 
   @@index([tenantId, createdAt])

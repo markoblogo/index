@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { db, hasDatabaseUrl } from "@/lib/db";
 import type { DemoUser } from "@/lib/demo-auth";
 import { getConfiguredDeliveryBasisCodes } from "@/lib/tenant-basis";
+import { tenantScopedWhere } from "@/lib/tenant-data-scope";
 
 export function todayKyivDate() {
   return new Intl.DateTimeFormat("en-CA", {
@@ -32,8 +33,10 @@ export async function unlockTodayPublishedIndices(formData: FormData, user: Demo
 
   const tradeDate = new Date(`${date}T00:00:00.000Z`);
   const basisCodes = getConfiguredDeliveryBasisCodes();
+  const tenantScope = tenantScopedWhere();
   const lockedRows = await db.publishedIndex.findMany({
     where: {
+      ...tenantScope,
       tradeDate,
       deliveryBasis: { code: { in: basisCodes } },
       locked: true,
@@ -51,12 +54,13 @@ export async function unlockTodayPublishedIndices(formData: FormData, user: Demo
   }
 
   await db.publishedIndex.updateMany({
-    where: { id: { in: lockedRows.map((row) => row.id) } },
+    where: { ...tenantScope, id: { in: lockedRows.map((row) => row.id) } },
     data: { locked: false },
   });
 
   await db.auditLog.create({
     data: {
+      ...tenantScope,
       actorRole: "admin",
       action: "index.manual_unlock",
       entityType: "PublishedIndex",

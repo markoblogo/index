@@ -9,6 +9,7 @@ import {
 } from "@/lib/index-platform";
 import { sendRespondentTelegramNotifications } from "@/lib/respondent-telegram";
 import { isProductionRuntime } from "@/lib/tenant-context";
+import { tenantScopedWhere } from "@/lib/tenant-data-scope";
 
 export const dynamic = "force-dynamic";
 
@@ -67,6 +68,7 @@ export async function POST(request: Request) {
   const submitDraftsDate = url.searchParams.get("submitDraftsDate");
   const submitDraftsRespondentId =
     url.searchParams.get("submitDraftsRespondentId") ?? fopSolovey.id;
+  const tenantScope = tenantScopedWhere();
 
   await db.$executeRawUnsafe(`
     ALTER TABLE "RespondentContact"
@@ -106,6 +108,7 @@ export async function POST(request: Request) {
 
     await tx.respondent.upsert({
       create: {
+        ...tenantScope,
         id: adminFallback.id,
         active: true,
         collectionMode: "manual_outreach",
@@ -125,6 +128,7 @@ export async function POST(request: Request) {
 
     await tx.respondent.upsert({
       create: {
+        ...tenantScope,
         id: fopSolovey.id,
         active: true,
         collectionMode: "self_service",
@@ -196,6 +200,7 @@ export async function POST(request: Request) {
 
     await tx.user.upsert({
       create: {
+        ...tenantScope,
         active: true,
         email: fopSolovey.email,
         name: `${fopSolovey.legalName} respondent`,
@@ -223,7 +228,9 @@ export async function POST(request: Request) {
       where: { email: fopSolovey.email },
     });
 
-    const baskets = await tx.basket.findMany({ where: { active: true } });
+    const baskets = await tx.basket.findMany({
+      where: { ...tenantScope, active: true },
+    });
     await Promise.all(
       baskets.flatMap((basket) =>
         [adminFallback.id, fopSolovey.id].map((respondentId) =>
@@ -304,6 +311,7 @@ async function cleanupNonMonitorSubmissions(date: string) {
       status: "draft",
     },
     where: {
+      ...tenantScopedWhere(),
       respondentId: { not: MN7R_MONITOR_RESPONDENT_ID },
       status: { in: ["submitted", "verified", "published"] },
       tradeDate: new Date(`${date}T00:00:00.000Z`),
@@ -319,8 +327,10 @@ async function moveMonitorAdminEntriesToFallback(date: string) {
   }
 
   const tradeDate = new Date(`${date}T00:00:00.000Z`);
+  const tenantScope = tenantScopedWhere();
   const entries = await db.priceSubmission.findMany({
     where: {
+      ...tenantScope,
       respondentId: MN7R_MONITOR_RESPONDENT_ID,
       source: "admin",
       tradeDate,
@@ -330,6 +340,7 @@ async function moveMonitorAdminEntriesToFallback(date: string) {
   for (const entry of entries) {
     await db.priceSubmission.upsert({
       create: {
+        ...tenantScope,
         commodityId: entry.commodityId,
         deliveryBasisId: entry.deliveryBasisId,
         metadata: {
@@ -373,6 +384,7 @@ async function moveMonitorAdminEntriesToFallback(date: string) {
   if (entries.length > 0) {
     await db.auditLog.create({
       data: {
+        ...tenantScope,
         action: "price_submission.admin_fallback_migrated",
         actorRole: "admin",
         afterJson: {
@@ -410,6 +422,7 @@ async function submitRespondentDrafts({
       submittedAt: new Date(),
     },
     where: {
+      ...tenantScopedWhere(),
       respondentId,
       source: "respondent",
       status: "draft",

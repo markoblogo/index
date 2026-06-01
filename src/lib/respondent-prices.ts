@@ -7,6 +7,7 @@ import {
 import {
   getDeliveryBasisConfigForCommodityCode,
 } from "@/lib/tenant-basis";
+import { tenantScopedWhere } from "@/lib/tenant-data-scope";
 
 export type RespondentPriceInput = {
   date: string;
@@ -30,6 +31,7 @@ export async function upsertRespondentPrice(input: RespondentPriceInput) {
   }
 
   const activeIndex = getActiveIndexConfig();
+  const tenantScope = tenantScopedWhere();
   const commodityConfig = resolveCommodityConfig(input.indexCode, activeIndex.commodities);
 
   if (!commodityConfig) {
@@ -53,6 +55,7 @@ export async function upsertRespondentPrice(input: RespondentPriceInput) {
         status: "active",
       },
       create: {
+        ...tenantScope,
         id: input.respondentCode,
         active: true,
         collectionMode: "manual_outreach",
@@ -106,6 +109,7 @@ export async function upsertRespondentPrice(input: RespondentPriceInput) {
       submittedAt: new Date(),
     },
     create: {
+      ...tenantScope,
       tradeDate,
       commodityId: commodity.id,
       deliveryBasisId: basis.id,
@@ -120,6 +124,7 @@ export async function upsertRespondentPrice(input: RespondentPriceInput) {
 
   await db.auditLog.create({
     data: {
+      ...tenantScope,
       actorRole: "respondent",
       action: existing
         ? "mn7r_monitor.price_submission.updated"
@@ -146,6 +151,7 @@ export async function upsertRespondentPrice(input: RespondentPriceInput) {
 
 export async function clearRespondentPrice(input: ClearRespondentPriceInput) {
   const activeIndex = getActiveIndexConfig();
+  const tenantScope = tenantScopedWhere();
   const commodityConfig = resolveCommodityConfig(input.indexCode, activeIndex.commodities);
 
   if (!commodityConfig) {
@@ -198,6 +204,7 @@ export async function clearRespondentPrice(input: ClearRespondentPriceInput) {
 
   await db.auditLog.create({
     data: {
+      ...tenantScope,
       actorRole: "respondent",
       action: "mn7r_monitor.price_submission.cleared",
       afterJson: {

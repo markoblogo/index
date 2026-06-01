@@ -246,6 +246,7 @@ async function logAdminInvite(email: string, status: string, details?: string) {
 
   await db.auditLog.create({
     data: {
+      ...tenantScopedWhere(),
       action: "auth.admin_invite_email",
       afterJson: details ? { details, status } : { status },
       beforeJson: Prisma.JsonNull,

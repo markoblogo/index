@@ -17,6 +17,7 @@ import {
   getConfiguredDeliveryBasisCodes,
   getDeliveryBasisConfigForCommodityCode,
 } from "@/lib/tenant-basis";
+import { tenantScopedWhere } from "@/lib/tenant-data-scope";
 
 export type SurveyLocale = "uk" | "en";
 
@@ -369,6 +370,7 @@ async function saveDatabaseRespondentSurvey({
         submittedAt: status === "submitted" ? new Date() : null,
       },
       create: {
+        ...tenantScopedWhere(),
         tradeDate,
         commodityId: entry.commodityId,
         deliveryBasisId: basis.id,
@@ -382,6 +384,7 @@ async function saveDatabaseRespondentSurvey({
 
     await db.auditLog.create({
       data: {
+        ...tenantScopedWhere(),
         actorRole: "respondent",
         action:
           status === "submitted"
