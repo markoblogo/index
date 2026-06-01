@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Local Security Scan - 2026-06-01</title>
+    <style>
+      body {
+        color: #172033;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        line-height: 1.55;
+        margin: 0;
+        padding: 40px;
+      }
+      main {
+        max-width: 920px;
+        margin: 0 auto;
+      }
+      h1,
+      h2,
+      h3 {
+        line-height: 1.2;
+      }
+      code,
+      pre {
+        background: #f4f6f8;
+        border-radius: 6px;
+        font-family: "SFMono-Regular", Consolas, monospace;
+      }
+      code {
+        padding: 2px 4px;
+      }
+      pre {
+        overflow-x: auto;
+        padding: 16px;
+      }
+      .finding {
+        border-left: 4px solid #64748b;
+        margin: 18px 0;
+        padding-left: 16px;
+      }
+      .severity-medium {
+        border-color: #b7791f;
+      }
+      .severity-low {
+        border-color: #2f855a;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Local Security Scan - 2026-06-01</h1>
+      <p>
+        This report covers a local repository-wide security review for the 1D3X
+        Index Ecosystem hardening branch. It is not the full Codex Security Deep
+        Scan because that workflow requires explicit authorization to run
+        subagents/parallel agents.
+      </p>
+
+      <h2>Evidence</h2>
+      <pre><code>npm audit --omit=dev</code></pre>
+      <p>Result: <code>found 0 vulnerabilities</code>.</p>
+      <p>
+        A committed secret-pattern scan found no private keys or live provider
+        token patterns. Matches were documentation placeholders in README,
+        docs and <code>.env.example</code>.
+      </p>
+      <p>
+        Previously verified on this branch: lint passed, 19 test files / 54
+        tests passed, build passed, and the Playwright tenant matrix passed for
+        platform, UGA and Spike.
+      </p>
+
+      <h2>Implemented Controls Reviewed</h2>
+      <ul>
+        <li>Production cron auth fails closed without configured secrets.</li>
+        <li>Login, setup-password, contact and survey-token routes are rate limited.</li>
+        <li>Global security headers and embed-specific CSP are configured.</li>
+        <li>Password setup tokens are random and stored as digests.</li>
+        <li>Tenant, market and index product scope is modeled in Prisma.</li>
+        <li>Core market-data tables require tenant and index product scope.</li>
+        <li>Public, respondent, calculation, publication and audit data paths use tenant scope.</li>
+        <li>Spike setup and UGA-Spike demo sync are blocked from production runtime paths.</li>
+        <li>Health and ops-alert endpoints expose readiness signals.</li>
+      </ul>
+
+      <h2>Findings</h2>
+      <section class="finding">
+        <h3>No High/Critical Findings In Local Scan</h3>
+        <p>
+          The local scan did not identify committed live secrets, dependency
+          advisories, or a new high/critical issue in the reviewed hardening
+          surfaces.
+        </p>
+      </section>
+      <section class="finding severity-medium">
+        <h3>Medium: Deep Security Scan Still Gated</h3>
+        <p>
+          The full Codex Security Deep Scan with subagents has not been run.
+          Run it with explicit subagent authorization before regulated
+          production rollout.
+        </p>
+      </section>
+      <section class="finding severity-medium">
+        <h3>Medium: Local Production Env Requires Out-of-Repo Review</h3>
+        <p>
+          Only <code>.env.example</code> is tracked. Real production env values
+          in Vercel or local operator machines must be inventoried, reviewed and
+          rotated outside the repository.
+        </p>
+      </section>
+      <section class="finding severity-low">
+        <h3>Low: Demo Auth Compatibility Remains Isolated But Present</h3>
+        <p>
+          Demo temporary-password compatibility remains in explicit demo/local
+          helpers and in the production-disabled Spike setup route. Remove it
+          after all onboarding uses setup links.
+        </p>
+      </section>
+
+      <h2>Release Gate</h2>
+      <ol>
+        <li>Run the full Codex Security Deep Scan with explicit subagent authorization.</li>
+        <li>Re-run audit, lint, tests, build and tenant Playwright smoke checks.</li>
+        <li>Review production env in Vercel and rotate stale or shared secrets.</li>
+        <li>Confirm backup/restore execution for each production database.</li>
+      </ol>
+    </main>
+  </body>
+</html>

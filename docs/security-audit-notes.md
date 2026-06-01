@@ -3,18 +3,14 @@
 Last local dependency audit:
 
 ```bash
-npm audit --omit=dev --json
+npm audit --omit=dev
 ```
 
-Current result: 5 moderate advisories remain.
+Current result: `found 0 vulnerabilities`.
 
-- `next` is flagged through its nested `postcss <8.5.10`.
-- `prisma` is flagged through `@prisma/dev` -> `@hono/node-server <1.19.13`.
-
-The npm suggested fixes at the time of audit point to disruptive downgrade/major
-paths (`next@9.3.3`, `prisma@6.19.3`) rather than safe patch upgrades for the
-current stack. Do not run `npm audit fix --force` blindly. Re-check after the
-upstream packages publish a compatible patched release, then upgrade and rerun:
+The previous moderate advisories through nested `postcss` and
+`@hono/node-server` were resolved with pinned compatible overrides. Do not run
+`npm audit fix --force` blindly. For future dependency upgrades, rerun:
 
 ```bash
 npm install next@latest prisma@latest @prisma/client@latest @prisma/adapter-pg@latest postcss@latest
@@ -32,3 +28,10 @@ Additional hardening implemented:
 - `/api/internal/spike-setup` is disabled in production runtime;
 - `/api/health` reports tenant context, required env gaps and provider readiness.
 
+Local security scan artifact:
+
+- `docs/security-scan-2026-06-01.md`
+- `docs/security-scan-2026-06-01.html`
+
+The full Codex Security Deep Scan with subagents remains a release gate and
+requires explicit authorization before it can be run in this thread.
