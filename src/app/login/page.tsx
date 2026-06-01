@@ -256,7 +256,7 @@ const ugaLoginCopy: Record<
 const spikeLoginCopy: Record<Locale, LoginCopy> = {
   en: {
     adminCredentials:
-      "Admins: use your assigned email and current password. First-time access uses the temporary password from the invite.",
+      "Admins: use your assigned email and current password. First-time access uses the one-time setup link from the invite.",
     back: "Back to public site",
     brand: "SPIKE SPOT INDEX",
     demoTitle: "Access",
@@ -267,14 +267,14 @@ const spikeLoginCopy: Record<Locale, LoginCopy> = {
       "Administrators sign in with their email and password. Respondent survey access remains in demo mode for now.",
     password: "Password",
     respondentCredentials:
-      "Respondents: use your assigned email and current password. First-time access uses the temporary password from onboarding.",
+      "Respondents: use your assigned email and current password. First-time access uses the one-time setup link from onboarding.",
     shortCredentials: "Respondent demo aliases are disabled for Spike.",
     submit: "Sign in",
     title: "Sign in to SPIKE SPOT INDEX",
   },
   uk: {
     adminCredentials:
-      "Адміністратори: вхід через призначений email і поточний пароль. Для першого входу використовується тимчасовий пароль із запрошення.",
+      "Адміністратори: вхід через призначений email і поточний пароль. Для першого входу використовується одноразове посилання з запрошення.",
     back: "Назад до публічного сайту",
     brand: "SPIKE SPOT INDEX",
     demoTitle: "Доступ",
@@ -285,7 +285,7 @@ const spikeLoginCopy: Record<Locale, LoginCopy> = {
       "Адміністратори входять через email і пароль. Вхід до анкети респондента поки залишається в демо-режимі.",
     password: "Пароль",
     respondentCredentials:
-      "Респонденти: вхід через призначений email і поточний пароль. Для першого входу використовується тимчасовий пароль з онбордингу.",
+      "Респонденти: вхід через призначений email і поточний пароль. Для першого входу використовується одноразове посилання з онбордингу.",
     shortCredentials: "Демо-вхід респондента для Spike вимкнено.",
     submit: "Увійти",
     title: "Вхід до SPIKE SPOT INDEX",

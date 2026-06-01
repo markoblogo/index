@@ -1,4 +1,3 @@
-import { randomBytes } from "node:crypto";
 import { NextResponse } from "next/server";
 
 import { isCronRequestAuthorized } from "@/lib/cron-auth";
@@ -7,6 +6,7 @@ import {
   MN7R_MONITOR_RESPONDENT_ID,
   SPIKE_ADMIN_FALLBACK_RESPONDENT_ID,
 } from "@/lib/index-platform";
+import { createPasswordSetupLinkForRespondent } from "@/lib/password-setup-token";
 import { sendRespondentTelegramNotifications } from "@/lib/respondent-telegram";
 import { isProductionRuntime } from "@/lib/tenant-context";
 import { tenantScopedWhere } from "@/lib/tenant-data-scope";
@@ -35,10 +35,6 @@ function requireInternalAccess(request: Request) {
   ]);
 }
 
-function generateTemporaryPassword() {
-  return `SPIKE-SOLO-${randomBytes(4).toString("hex").toUpperCase()}`;
-}
-
 export async function POST(request: Request) {
   if (isProductionRuntime()) {
     return NextResponse.json(
@@ -57,14 +53,12 @@ export async function POST(request: Request) {
   const moveMonitorAdminFallbackDate = url.searchParams.get(
     "moveMonitorAdminFallbackDate",
   );
-  const forceTemporary = url.searchParams.get("forceTemporary") === "1";
+  const forceSetupLink = url.searchParams.get("forceSetupLink") === "1";
   const shouldSendOnboarding = url.searchParams.get("sendOnboarding") === "1";
   const shouldSendTelegramOnboarding =
     url.searchParams.get("sendTelegramOnboarding") === "1";
   const shouldSendTelegramSurvey =
     url.searchParams.get("sendTelegramSurvey") === "1";
-  const shouldExposeTemporaryPassword =
-    url.searchParams.get("exposeTemporaryPassword") === "1";
   const submitDraftsDate = url.searchParams.get("submitDraftsDate");
   const submitDraftsRespondentId =
     url.searchParams.get("submitDraftsRespondentId") ?? fopSolovey.id;
@@ -80,16 +74,13 @@ export async function POST(request: Request) {
   const existingAuth = await db.respondentAuthAccount.findUnique({
     where: { respondentId: fopSolovey.id },
   });
-  const shouldSetTemporary =
-    forceTemporary ||
+  const shouldGenerateSetupLink =
+    forceSetupLink ||
     !existingAuth ||
     existingAuth.passwordSetupStatus !== "active" ||
     !existingAuth.passwordHash;
-  const activeTemporaryPassword = shouldSetTemporary
-    ? generateTemporaryPassword()
-    : existingAuth.temporaryPassword;
 
-  await db.$transaction(async (tx) => {
+  const setupLinkTarget = await db.$transaction(async (tx) => {
     await tx.respondent.updateMany({
       data: {
         active: false,
@@ -175,30 +166,30 @@ export async function POST(request: Request) {
       });
     }
 
-    await tx.respondentAuthAccount.upsert({
+    const auth = await tx.respondentAuthAccount.upsert({
       create: {
         lastGeneratedAt: new Date(),
         loginEmail: fopSolovey.email,
         passwordSetupStatus: "temporary",
         respondentId: fopSolovey.id,
-        temporaryPassword: activeTemporaryPassword,
+        temporaryPassword: null,
       },
       update: {
         loginEmail: fopSolovey.email,
-        ...(shouldSetTemporary
+        ...(shouldGenerateSetupLink
           ? {
               lastGeneratedAt: new Date(),
               passwordHash: null,
               passwordSetAt: null,
               passwordSetupStatus: "temporary" as const,
-              temporaryPassword: activeTemporaryPassword,
+              temporaryPassword: null,
             }
           : {}),
       },
       where: { respondentId: fopSolovey.id },
     });
 
-    await tx.user.upsert({
+    const user = await tx.user.upsert({
       create: {
         ...tenantScope,
         active: true,
@@ -207,7 +198,7 @@ export async function POST(request: Request) {
         passwordSetupStatus: "temporary",
         respondentId: fopSolovey.id,
         role: "respondent",
-        temporaryPassword: activeTemporaryPassword,
+        temporaryPassword: null,
       },
       update: {
         active: true,
@@ -215,13 +206,13 @@ export async function POST(request: Request) {
         name: `${fopSolovey.legalName} respondent`,
         respondentId: fopSolovey.id,
         role: "respondent",
-        ...(shouldSetTemporary
+        ...(shouldGenerateSetupLink
           ? {
               lastGeneratedAt: new Date(),
               passwordHash: null,
               passwordSetAt: null,
               passwordSetupStatus: "temporary" as const,
-              temporaryPassword: activeTemporaryPassword,
+              temporaryPassword: null,
             }
           : {}),
       },
@@ -251,21 +242,38 @@ export async function POST(request: Request) {
         ),
       ),
     );
+
+    return {
+      authId: auth.id,
+      email: auth.loginEmail,
+      userId: user.id,
+    };
   });
 
   const movedMonitorAdminFallback = moveMonitorAdminFallbackDate
     ? await moveMonitorAdminEntriesToFallback(moveMonitorAdminFallbackDate)
     : undefined;
 
+  const setupLink =
+    shouldGenerateSetupLink || shouldSendOnboarding || shouldSendTelegramOnboarding
+      ? await createPasswordSetupLinkForRespondent({
+          baseUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "https://spike.1d3x.com",
+          email: setupLinkTarget.email,
+          next: "/respondent",
+          respondentAuthAccountId: setupLinkTarget.authId,
+          userId: setupLinkTarget.userId,
+        })
+      : null;
+
   let onboardingSent = false;
-  if (shouldSendOnboarding && activeTemporaryPassword) {
-    await sendOnboardingEmail(activeTemporaryPassword);
+  if (shouldSendOnboarding && setupLink) {
+    await sendOnboardingEmail(setupLink);
     onboardingSent = true;
   }
 
   let telegramOnboardingSent = false;
-  if (shouldSendTelegramOnboarding && activeTemporaryPassword) {
-    await sendOnboardingTelegram(activeTemporaryPassword);
+  if (shouldSendTelegramOnboarding && setupLink) {
+    await sendOnboardingTelegram(setupLink);
     telegramOnboardingSent = true;
   }
 
@@ -292,10 +300,7 @@ export async function POST(request: Request) {
           respondentId: submitDraftsRespondentId,
         })
       : undefined,
-    temporaryPassword: shouldExposeTemporaryPassword
-      ? activeTemporaryPassword
-      : undefined,
-    temporaryPasswordGenerated: shouldSetTemporary,
+    setupLinkGenerated: Boolean(setupLink),
     telegramOnboardingSent,
     telegramSurvey,
   });
@@ -489,7 +494,7 @@ async function getDebugSnapshot() {
   };
 }
 
-async function sendOnboardingEmail(temporaryPassword: string) {
+async function sendOnboardingEmail(setupLink: string) {
   const apiKey = process.env.RESEND_API_KEY;
 
   if (!apiKey) {
@@ -498,7 +503,7 @@ async function sendOnboardingEmail(temporaryPassword: string) {
 
   const siteUrl =
     process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
-    "https://spike-ua.cr0pto.com";
+    "https://spike.1d3x.com";
   const response = await fetch("https://api.resend.com/emails", {
     body: JSON.stringify({
       from: "SPIKE SPOT INDEX <onboarding@resend.dev>",
@@ -506,17 +511,17 @@ async function sendOnboardingEmail(temporaryPassword: string) {
         <div style="font-family:Arial,sans-serif;line-height:1.55;color:#111">
           <h1>Доступ до SPIKE SPOT INDEX</h1>
           <p>Ви додані як респондент SPIKE SPOT INDEX.</p>
-          <p><strong>Логін:</strong> ${fopSolovey.email}<br/>
-          <strong>Тимчасовий пароль:</strong> ${temporaryPassword}</p>
-          <p>Увійдіть на сайт і встановіть власний постійний пароль.</p>
-          <p><a href="${siteUrl}/login" style="font-weight:700;color:#111">Відкрити сторінку входу</a></p>
+          <p><strong>Логін:</strong> ${fopSolovey.email}</p>
+          <p>Встановіть власний пароль за одноразовим посиланням.</p>
+          <p><a href="${setupLink}" style="font-weight:700;color:#111">Встановити пароль</a></p>
+          <p>Після встановлення пароля входьте через <a href="${siteUrl}/login">${siteUrl}/login</a>.</p>
         </div>
       `,
       subject: "Доступ респондента до SPIKE SPOT INDEX",
       text: [
         "Ви додані як респондент SPIKE SPOT INDEX.",
         `Логін: ${fopSolovey.email}`,
-        `Тимчасовий пароль: ${temporaryPassword}`,
+        `Встановити пароль: ${setupLink}`,
         `Вхід: ${siteUrl}/login`,
       ].join("\n"),
       to: [fopSolovey.email],
@@ -535,7 +540,7 @@ async function sendOnboardingEmail(temporaryPassword: string) {
   }
 }
 
-async function sendOnboardingTelegram(temporaryPassword: string) {
+async function sendOnboardingTelegram(setupLink: string) {
   const token = process.env.SPIKE_TELEGRAM_BOT_TOKEN;
 
   if (!token) {
@@ -544,14 +549,14 @@ async function sendOnboardingTelegram(temporaryPassword: string) {
 
   const siteUrl =
     process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
-    "https://spike-ua.cr0pto.com";
+    "https://spike.1d3x.com";
   const text = [
     "Доступ до SPIKE SPOT INDEX оновлено.",
     "",
-    "Ваш попередній пароль скинуто. Для входу використайте новий тимчасовий пароль, після входу система попросить встановити власний постійний пароль двічі.",
+    "Ваш попередній пароль скинуто. Встановіть власний пароль за одноразовим посиланням.",
     "",
     `Логін: ${fopSolovey.email}`,
-    `Тимчасовий пароль: ${temporaryPassword}`,
+    `Встановити пароль: ${setupLink}`,
     "",
     `Сторінка входу: ${siteUrl}/login`,
     "",
@@ -566,7 +571,7 @@ async function sendOnboardingTelegram(temporaryPassword: string) {
           [
             {
               text: "Відкрити вхід",
-              url: `${siteUrl}/login`,
+              url: setupLink,
             },
           ],
         ],

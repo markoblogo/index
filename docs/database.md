@@ -33,7 +33,7 @@ Set `UGA_INDEX_RUNTIME_MODE=production` in production. In that mode, database-ba
 - `DeliveryBasis`: delivery basis records. UGA currently seeds `CPT UA Black Sea`; public methodology references `CPT Black Sea Panamax Ports (POC)`.
 - `Respondent`: respondent companies with status and collection mode.
 - `RespondentContact`: multiple contact people per respondent, including phone, email and primary contact flag.
-- `RespondentAuthAccount`: login email, temporary password state, password setup status and password generation timestamps.
+- `RespondentAuthAccount`: login email, password setup status and password generation timestamps.
 - `RespondentEmailSchedule`: daily workday survey email settings, reply-to admin email, subject and editable template.
 - `RespondentEmailDelivery`: delivery log for scheduled and manual respondent survey emails.
 - `RespondentSurveyToken`: short-lived personal survey access links generated for email delivery.
@@ -64,7 +64,7 @@ The UGA seed creates:
 - 4 commodities;
 - `CPT UA Black Sea` delivery basis and basket;
 - 8 active respondent companies plus additional directory respondents;
-- respondent contacts, login emails, temporary password state and notification schedule;
+- respondent contacts, login emails, setup-link state and notification schedule;
 - admin/member/respondent users;
 - 14 days of respondent price submissions;
 - 14 days of external benchmark indicatives;

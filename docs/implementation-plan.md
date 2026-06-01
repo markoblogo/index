@@ -28,7 +28,7 @@ Production runtime requires `DATABASE_URL`. Local development may use mock fallb
 
 ## Operational Flow
 
-1. Admin manages respondent directory, contacts, login emails, temporary password state and collection mode.
+1. Admin manages respondent directory, contacts, login emails, setup-link state and collection mode.
 2. Respondent signs in and saves draft or submits daily CPT UA Black Sea prices.
 3. Admin reviews same-day inputs and benchmark references in the daily matrix.
 4. Historical published dates are read-only. Same-day values can be corrected until the end of the Kyiv trade date.

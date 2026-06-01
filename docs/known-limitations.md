@@ -2,9 +2,12 @@
 
 ## Current Limitations
 
-- Auth is still a preview allowlist/session implementation. Production needs hashed passwords, password setup emails and hardened sessions.
+- Auth still uses the platform credential/session implementation. Production
+  requires the hardened session, setup-link and tenant-scope gates to stay
+  enabled.
 - Local development can still use mock fallback without `DATABASE_URL`. Production should set `UGA_INDEX_RUNTIME_MODE=production`.
-- Respondent notification settings, Resend delivery and tokenized survey links are implemented. The remaining production gap is replacing visible temporary passwords with one-time setup links.
+- Respondent notification settings, Resend delivery, setup links and tokenized
+  survey links are implemented.
 - Benchmark indicatives are seeded/reference values. Live ingestion, reconciliation, retries and provider monitoring are still required.
 - Paid analytics/API entitlements are represented in UI copy but not enforced by a billing/access system.
 - Correction governance after publication still needs a formal approval/versioning workflow.
@@ -12,9 +15,10 @@
 
 ## Production Next Steps
 
-1. Implement production auth with hashed credentials, temporary password setup links and audited account changes.
+1. Keep production auth on hashed credentials, one-time setup links and audited
+   account changes.
 2. Replace `db push` operations with committed Prisma migrations.
-3. Replace visible temporary passwords with one-time password setup links.
+3. Run staging migration validation on a copy of historical data before rollout.
 4. Add live benchmark indicative ingestion and monitoring.
 5. Add admin audit views and export.
 6. Add paid analytics/API entitlement checks.

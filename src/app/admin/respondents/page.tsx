@@ -412,7 +412,7 @@ function RespondentPanel({ respondent }: { respondent: RespondentDirectoryEntry 
             {respondent.contacts.length} contact
             {respondent.contacts.length === 1 ? "" : "s"} ·{" "}
             {respondent.auth.passwordSetupStatus === "temporary"
-              ? "temporary password"
+              ? "setup link pending"
               : "password set"}
           </p>
         </div>
@@ -725,7 +725,7 @@ function RespondentAuthPanel({
             defaultValue={respondent.auth.passwordSetupStatus}
             name="passwordSetupStatus"
           >
-            <option value="temporary">temporary password</option>
+            <option value="temporary">setup link pending</option>
             <option value="active">permanent password set</option>
           </select>
         </Field>
@@ -738,14 +738,14 @@ function RespondentAuthPanel({
         <p className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-black/45">
           Setup credential
         </p>
-        <p className="mt-1 text-sm font-black">Hidden after generation</p>
+        <p className="mt-1 text-sm font-black">One-time setup link</p>
         <p className="mt-1 text-xs font-semibold text-black/55">
           Generated: {formatAuthDate(respondent.auth.lastGeneratedAt)}
         </p>
         <form action={regeneratePasswordAction} className="mt-3">
           <input name="respondentId" type="hidden" value={respondent.id} />
           <button className="border border-black bg-uga-dark px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-white">
-            Regenerate setup credential
+            Issue setup link
           </button>
         </form>
       </div>

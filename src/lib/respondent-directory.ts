@@ -1023,7 +1023,7 @@ export function addRespondentDirectoryEntry(input: {
       loginEmail:
         input.contactEmail.trim().toLowerCase() || createDemoRespondentEmail(id),
       passwordSetupStatus: "temporary",
-      temporaryPassword: generateTemporaryPassword(id),
+      temporaryPassword: "",
     },
     collectionMode: input.collectionMode,
     companyName: input.companyName.trim(),
@@ -1097,7 +1097,7 @@ export function regenerateRespondentTemporaryPassword(respondentId: string) {
     return;
   }
 
-  respondent.auth.temporaryPassword = generateTemporaryPassword(respondentId);
+  respondent.auth.temporaryPassword = "";
   respondent.auth.passwordSetupStatus = "temporary";
   respondent.auth.lastGeneratedAt = new Date().toISOString();
 }
@@ -1251,7 +1251,7 @@ function createRespondentSeed(
       lastGeneratedAt: "2026-05-20T10:00:00.000Z",
       loginEmail: email,
       passwordSetupStatus: "temporary",
-      temporaryPassword: "respondent",
+      temporaryPassword: "",
     },
     collectionMode,
     companyName,
@@ -1303,12 +1303,6 @@ function normalizeId(value: string) {
     .replace(/['"«»]/g, "")
     .replace(/[^a-z0-9а-яіїєґ]+/giu, "-")
     .replace(/^-+|-+$/g, "");
-}
-
-function generateTemporaryPassword(seed: string) {
-  const fragment = Math.random().toString(36).slice(2, 8).toUpperCase();
-  const prefix = getActiveIndexConfig().id === "spike-ua" ? "SPIKE" : "UGA";
-  return `${prefix}-${normalizeId(seed).slice(0, 4).toUpperCase()}-${fragment}`;
 }
 
 function createDemoRespondentEmail(id: string) {

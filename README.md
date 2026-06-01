@@ -220,6 +220,7 @@ Security reports are tracked in `docs/`:
 - `docs/security-deep-scan-2026-06-01.md`
 - `docs/security-follow-up-scan-2026-06-01.md`
 - `docs/security-audit-notes.md`
+- `docs/implementation-report-2026-06-01.md`
 
 The full Codex Security Deep Scan found eight reportable findings. The follow-up
 scan validates that those findings are fixed in the current codebase.

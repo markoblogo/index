@@ -19,7 +19,7 @@ UGA Index is a standalone bilingual platform for the Ukrainian Grain Association
 
 - Allowlist-style login preview: users sign in with email/password, and role is inferred from the account.
 - Admin daily input matrix for respondent prices and benchmark comparison.
-- Respondent directory with contacts, login email, temporary password status, collection mode and notification schedule.
+- Respondent directory with contacts, login email, setup-link status, collection mode and notification schedule.
 - Respondent daily survey form scoped to one company.
 - Publish UGA Index workflow that calculates all commodities and publishes eligible indices in one locked batch.
 - Audit log entries for calculation, publication and submission events.
