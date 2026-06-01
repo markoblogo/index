@@ -16,7 +16,7 @@ import {
   getDeliveryBasketCodeForCommodityCode,
   getDeliveryBasisConfigForCommodityCode,
 } from "@/lib/tenant-basis";
-import { tenantScopedWhere } from "@/lib/tenant-data-scope";
+import { tenantScopedWhere } from "@1d3x/data";
 
 export type PublicLatestItem = {
   commodityId: CommodityId;

@@ -2,7 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { db } from "@/lib/db";
 import type { DemoRole, DemoUser } from "@/lib/demo-auth";
 import { hashPassword } from "@/lib/password-hash";
-import { tenantScopedWhere } from "@/lib/tenant-data-scope";
+import { tenantScopedWhere } from "@1d3x/data";
 
 const PASSWORD_SETUP_TOKEN_BYTES = 32;
 const PASSWORD_SETUP_TOKEN_TTL_HOURS = 48;

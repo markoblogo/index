@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getIndexTenantDataScope } from "@/lib/tenant-data-scope";
+import { getIndexTenantDataScope } from "@1d3x/data";
 
 describe("tenant data scope", () => {
   it("returns explicit tenant and product scope for index tenants", () => {
@@ -19,4 +19,3 @@ describe("tenant data scope", () => {
     ).toThrow("does not own index market data");
   });
 });
-

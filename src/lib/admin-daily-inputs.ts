@@ -15,7 +15,7 @@ import {
   getConfiguredDeliveryBasisCodes,
   getDeliveryBasisConfigForCommodityCode,
 } from "@/lib/tenant-basis";
-import { tenantScopedWhere } from "@/lib/tenant-data-scope";
+import { tenantScopedWhere } from "@1d3x/data";
 import { orderDailyInputRespondents } from "@/lib/respondent-ordering";
 
 export type DailyInputStatus =

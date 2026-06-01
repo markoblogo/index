@@ -1,7 +1,7 @@
 import { allowMockFallback, db, hasDatabaseUrl } from "@/lib/db";
 import { getActiveIndexConfig, type IndexTenantId } from "@/lib/index-platform";
 import { createPasswordSetupLinkForRespondent } from "@/lib/password-setup-token";
-import { tenantScopedWhere } from "@/lib/tenant-data-scope";
+import { tenantScopedWhere } from "@1d3x/data";
 
 export type RespondentStatus = "active" | "pending";
 export type RespondentCollectionMode = "self_service" | "manual_outreach";

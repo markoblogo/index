@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { db, hasDatabaseUrl } from "@/lib/db";
 import { createPasswordSetupLinkForUser } from "@/lib/password-setup-token";
-import { tenantScopedWhere } from "@/lib/tenant-data-scope";
+import { tenantScopedWhere } from "@1d3x/data";
 
 export type SpikeAdminUser = {
   email: string;

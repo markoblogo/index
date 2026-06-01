@@ -9,7 +9,7 @@ import {
 import { createPasswordSetupLinkForRespondent } from "@/lib/password-setup-token";
 import { sendRespondentTelegramNotifications } from "@/lib/respondent-telegram";
 import { isProductionRuntime } from "@/lib/tenant-context";
-import { tenantScopedWhere } from "@/lib/tenant-data-scope";
+import { tenantScopedWhere } from "@1d3x/data";
 
 export const dynamic = "force-dynamic";
 

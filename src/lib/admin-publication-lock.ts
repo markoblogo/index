@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { db, hasDatabaseUrl } from "@/lib/db";
 import type { DemoUser } from "@/lib/demo-auth";
 import { getConfiguredDeliveryBasisCodes } from "@/lib/tenant-basis";
-import { tenantScopedWhere } from "@/lib/tenant-data-scope";
+import { tenantScopedWhere } from "@1d3x/data";
 
 export function todayKyivDate() {
   return new Intl.DateTimeFormat("en-CA", {

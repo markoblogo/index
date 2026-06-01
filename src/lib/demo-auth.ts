@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { db, hasDatabaseUrl } from "@/lib/db";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import { isSpikeAdminEmail } from "@/lib/spike-admin-access";
-import { tenantScopedWhere } from "@/lib/tenant-data-scope";
+import { tenantScopedWhere } from "@1d3x/data";
 import { getTenantContext } from "@/lib/tenant-context";
 
 export const LEGACY_DEMO_SESSION_COOKIE = "uga_demo_session";

@@ -3,7 +3,7 @@ export {
   getIndexTenantDataScope,
   tenantScopedWhere,
   type IndexTenantDataScope,
-} from "@/lib/tenant-data-scope";
+} from "./tenant-data-scope";
 export {
   getRuntimeMode,
   getTenantContext,

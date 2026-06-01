@@ -10,7 +10,7 @@ import {
   isSpikeAdminEmail,
 } from "@/lib/spike-admin-access";
 import { getRuntimeMode } from "@/lib/tenant-context";
-import { tenantScopedWhere } from "@/lib/tenant-data-scope";
+import { tenantScopedWhere } from "@1d3x/data";
 
 export type DemoAllowlistRole = "admin" | "respondent";
 

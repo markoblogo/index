@@ -9,7 +9,7 @@ import {
   createRespondentSurveyToken,
   digestRespondentSurveyToken,
 } from "@1d3x/auth";
-import { tenantScopedWhere } from "@/lib/tenant-data-scope";
+import { tenantScopedWhere } from "@1d3x/data";
 
 type SendTrigger = "manual" | "scheduled";
 

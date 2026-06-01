@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { db, hasDatabaseUrl } from "@/lib/db";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import { computePublishedChange } from "@/lib/index-publish";
-import { tenantScopedWhere } from "@/lib/tenant-data-scope";
+import { tenantScopedWhere } from "@1d3x/data";
 import {
   getConfiguredDeliveryBasisCodes,
   getDeliveryBasketCodeForCommodityCode,

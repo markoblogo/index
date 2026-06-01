@@ -8,7 +8,7 @@ import {
 import { db, hasDatabaseUrl } from "@/lib/db";
 import { checkRateLimit, getRequestRateLimitKey } from "@/lib/rate-limit";
 import { digestRespondentSurveyToken } from "@1d3x/auth";
-import { tenantScopedWhere } from "@/lib/tenant-data-scope";
+import { tenantScopedWhere } from "@1d3x/data";
 
 export const dynamic = "force-dynamic";
 

@@ -59,6 +59,17 @@ package:
 - `npm run typecheck:packages` was added for repeatable package-boundary
   verification.
 
+### Data Package Tenant Scope Extraction
+
+The tenant/index data-scope primitive now lives in the workspace data package:
+
+- `packages/data/src/tenant-data-scope.ts` owns `getIndexTenantDataScope` and
+  `tenantScopedWhere`;
+- runtime modules import tenant scope helpers from `@1d3x/data`;
+- `src/lib/tenant-data-scope.ts` remains as a compatibility re-export for any
+  older local import paths;
+- the tenant scope unit test now verifies the package API directly.
+
 ### Setup-Link Onboarding Replaces Visible Temporary Password Delivery
 
 The remaining visible temporary-password onboarding paths were converted to
