@@ -2,5 +2,13 @@
   "name": "@1d3x/ui",
   "private": true,
   "version": "0.1.0",
-  "description": "Shared tenant-neutral UI package boundary."
+  "description": "Shared tenant-neutral UI package boundary.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
 }

@@ -19,7 +19,13 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@1d3x/auth": ["./packages/auth/src/index.ts"],
+      "@1d3x/data": ["./packages/data/src/index.ts"],
+      "@1d3x/index-engine": ["./packages/index-engine/src/index.ts"],
+      "@1d3x/integrations": ["./packages/integrations/src/index.ts"],
+      "@1d3x/market-packs": ["./packages/market-packs/src/index.ts"],
+      "@1d3x/ui": ["./packages/ui/src/index.ts"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
