@@ -33,6 +33,25 @@ Use `GET /api/health` after deploy. It reports:
 
 Production health is unhealthy when a required database/env check fails.
 
+## Production Migration Gate
+
+Before any production migration, run the staging migration gate from the canonical
+checklist and keep the JSON output in release artifacts.
+
+Checklist:
+
+- `docs/release-gate-checklist-2026-06-01.md`
+
+Typical command:
+
+```bash
+SOURCE_DATABASE_URL="postgresql://production-read-url" \
+STAGING_DATABASE_URL="postgresql://staging-copy-url" \
+RESET_STAGING_DATABASE=1 \
+MIGRATION_VALIDATION_REPORT=./docs/reports/staging-migration-gate.json \
+npm run db:validate-staging-migrations
+```
+
 Use `GET /api/ops/alerts` with `Authorization: Bearer <OPS_ALERTS_SECRET or CRON_SECRET>`
 from external monitoring. It reports missing production env, missing cron
 secret, insufficient respondents and stale/no published values.
