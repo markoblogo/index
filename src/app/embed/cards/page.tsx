@@ -35,7 +35,7 @@ export default async function EmbedCardsPage({
               {SITE_CONFIG.defaultDeliveryBasis}
             </p>
             <h1 className="mt-1 text-2xl font-semibold tracking-tight text-uga-dark">
-              UGA Index
+              {SITE_CONFIG.name}
             </h1>
           </div>
           <p className="text-xs font-semibold text-black/50">
