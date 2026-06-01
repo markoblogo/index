@@ -16,6 +16,13 @@ type NbuRateResponse = Array<{
   rate: number;
 }>;
 
+type NextFetchInit = RequestInit & {
+  next?: {
+    revalidate?: number;
+    tags?: string[];
+  };
+};
+
 const FALLBACK_FX_RATES = {
   eurUah: 45.2,
   rateDate: "2026-05-08",
@@ -63,7 +70,7 @@ async function fetchNbuRate(currencyCode: "USD" | "EUR", date: string) {
   url.searchParams.set("json", "");
   url.searchParams.set("date", date.replaceAll("-", ""));
 
-  const response = await fetch(url, {
+  const requestInit: NextFetchInit = {
     headers: {
       accept: "application/json",
     },
@@ -71,7 +78,9 @@ async function fetchNbuRate(currencyCode: "USD" | "EUR", date: string) {
       revalidate: 60 * 60 * 6,
     },
     signal: AbortSignal.timeout(3500),
-  });
+  };
+
+  const response = await fetch(url, requestInit);
 
   if (!response.ok) {
     throw new Error(`NBU FX request failed: ${response.status}`);

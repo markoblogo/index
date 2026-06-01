@@ -20,6 +20,7 @@
     "postinstall": "prisma generate",
     "lint": "eslint .",
     "test": "vitest run",
+    "typecheck:packages": "npm --workspaces --if-present run typecheck",
     "test:e2e": "playwright test",
     "test:e2e:platform": "PLAYWRIGHT_TENANT=1d3x PLAYWRIGHT_PORT=3101 playwright test",
     "test:e2e:uga": "PLAYWRIGHT_TENANT=uga-ua PLAYWRIGHT_PORT=3102 playwright test",

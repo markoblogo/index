@@ -199,6 +199,7 @@ Run before merging code changes:
 
 ```bash
 npx prisma generate
+npm run typecheck:packages
 npm run test
 npm run lint
 npm run build

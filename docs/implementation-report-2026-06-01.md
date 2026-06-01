@@ -45,6 +45,20 @@ rather than only re-exporting root runtime modules:
 - `src/lib/respondent-survey-token.ts` remains as a compatibility re-export
   while callers migrate to workspace package imports.
 
+### Index Engine Package Extraction
+
+The core spot-index calculation algorithm now lives in the workspace engine
+package:
+
+- `packages/index-engine/src/index-calculation.ts` owns median calculation,
+  outlier exclusion, minimum publishable respondent count and basket weighting;
+- `packages/index-engine/src/index.ts` exports the calculation API from package
+  code instead of re-exporting `src/lib`;
+- `src/lib/index-calculation.ts` remains as a compatibility re-export so
+  existing Next.js runtime modules can migrate incrementally;
+- `npm run typecheck:packages` was added for repeatable package-boundary
+  verification.
+
 ### Setup-Link Onboarding Replaces Visible Temporary Password Delivery
 
 The remaining visible temporary-password onboarding paths were converted to
@@ -85,6 +99,8 @@ Commands run successfully after the latest changes:
 node --check scripts/provision-spike-respondents.mjs
 node --check scripts/validate-staging-migrations.mjs
 npm --workspace @1d3x/auth run typecheck
+npm --workspace @1d3x/index-engine run typecheck
+npm run typecheck:packages
 npm run lint
 npm run test
 npm run build

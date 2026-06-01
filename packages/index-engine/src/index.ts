@@ -5,7 +5,7 @@ export {
   type IndexCalculationResult,
   type IndexCalculationStatus,
   type PriceSubmission,
-} from "@/lib/index-calculation";
+} from "./index-calculation";
 export {
   computeBenchmarkBlend,
   computePublishedChange,
