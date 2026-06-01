@@ -50,6 +50,9 @@ The next migration phase should:
 1. Add nullable tenant/product columns to market-data tables.
 2. Backfill rows from the deployment tenant and configured market pack.
 3. Add tenant-scoped unique indexes.
-4. Update repositories to require `TenantContext`.
+4. Update the remaining repositories to require `TenantContext`.
 5. Make tenant/product columns required after validation.
 
+Current runtime reads for public index data, public APIs, admin daily inputs,
+calculation/publication, respondent directory, audit export and operational
+alerts already apply tenant scope.

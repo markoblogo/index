@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { hasConfiguredCronSecret } from "@/lib/cron-auth";
 import { allowMockFallback, db, hasDatabaseUrl } from "@/lib/db";
 import { getMarketPack, getMissingRequiredEnv } from "@/lib/market-pack";
+import { evaluateOperationalAlerts } from "@/lib/operational-alerts";
 import { getTenantContext, isProductionRuntime } from "@/lib/tenant-context";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +16,10 @@ export async function GET() {
     ? getMissingRequiredEnv(marketPack)
     : [];
   const cronSecretConfigured = hasConfiguredCronSecret([process.env.CRON_SECRET]);
+  const operationalAlerts = await evaluateOperationalAlerts();
+  const hasCriticalAlert = operationalAlerts.some(
+    (alert) => alert.severity === "critical",
+  );
   let database: "configured" | "ok" | "unavailable" | "not_configured" =
     databaseConfigured ? "configured" : "not_configured";
 
@@ -32,7 +37,8 @@ export async function GET() {
       ok:
         database !== "unavailable" &&
         (databaseConfigured || !databaseRequired) &&
-        missingRequiredEnv.length === 0,
+        missingRequiredEnv.length === 0 &&
+        !hasCriticalAlert,
       service: "index-platform",
       timestamp: new Date().toISOString(),
       tenant: tenantContext,
@@ -46,6 +52,7 @@ export async function GET() {
       cronSecretConfigured,
       missingRequiredEnv,
       providers: getProviderReadiness(marketPack.integrations),
+      operationalAlerts,
       siteUrlConfigured: Boolean(process.env.NEXT_PUBLIC_SITE_URL),
     },
     {
@@ -55,7 +62,8 @@ export async function GET() {
       status:
         database === "unavailable" ||
         (databaseRequired && !databaseConfigured) ||
-        missingRequiredEnv.length > 0
+        missingRequiredEnv.length > 0 ||
+        hasCriticalAlert
           ? 503
           : 200,
     },

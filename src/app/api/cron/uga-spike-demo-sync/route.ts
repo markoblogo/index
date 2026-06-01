@@ -1,11 +1,22 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { isCronRequestAuthorized } from "@/lib/cron-auth";
+import { isProductionRuntime } from "@/lib/tenant-context";
 import { syncUgaDemoIndicesFromSpike } from "@/lib/uga-spike-demo-sync";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
+  if (isProductionRuntime()) {
+    return NextResponse.json(
+      {
+        copied: 0,
+        skippedReason: "uga_spike_demo_sync_removed_from_production_path",
+      },
+      { status: 410 },
+    );
+  }
+
   if (
     !isCronRequestAuthorized(request, [
       process.env.UGA_SPIKE_DEMO_SYNC_CRON_SECRET,

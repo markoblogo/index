@@ -29,8 +29,13 @@ Use `GET /api/health` after deploy. It reports:
 - required production env gaps;
 - cron secret presence;
 - provider readiness.
+- operational alerts.
 
 Production health is unhealthy when a required database/env check fails.
+
+Use `GET /api/ops/alerts` with `Authorization: Bearer <OPS_ALERTS_SECRET or CRON_SECRET>`
+from external monitoring. It reports missing production env, missing cron
+secret, insufficient respondents and stale/no published values.
 
 ## Backup And Restore
 
@@ -56,6 +61,22 @@ Create alerts for:
 - stale public values after expected publication time;
 - database health check failures;
 - missing required production env in `/api/health`.
+
+The first implementation surface is `/api/ops/alerts`; provider-specific alert
+delivery can subscribe to that endpoint.
+
+## Audit Export
+
+Admins can review recent audit events at `/admin/audit` and export tenant-scoped
+CSV or JSON from `/api/admin/audit-export`.
+
+Supported query parameters:
+
+- `format=csv|json`
+- `dateFrom=YYYY-MM-DD`
+- `dateTo=YYYY-MM-DD`
+- `action=<audit action>`
+- `limit=<max rows up to 1000>`
 
 ## Security Scan
 

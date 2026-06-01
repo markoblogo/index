@@ -1,5 +1,6 @@
 import { db, hasDatabaseUrl } from "@/lib/db";
 import { getActiveIndexConfig } from "@/lib/index-platform";
+import { tenantScopedWhere } from "@/lib/tenant-data-scope";
 import {
   getDeliveryBasketCodeForCommodityCode,
   getDeliveryBasisConfigForCommodityCode,
@@ -86,8 +87,10 @@ export async function syncUgaDemoIndicesFromSpike({
   const skipped = sourceItems.length - copied;
 
   if (copied > 0) {
+    const tenantScope = tenantScopedWhere();
     await db.auditLog.create({
       data: {
+        ...tenantScope,
         actorRole: "admin",
         action: "uga.demo_spike_sync",
         entityType: "PublishedIndex",
@@ -158,8 +161,9 @@ function isUgaSupportedSpikeItem(item: SpikePublicIndexItem) {
 
 async function copySpikeItemToUga(item: SpikePublicIndexItem) {
   const activeIndex = getActiveIndexConfig();
-  const commodity = await db.commodity.findUnique({
-    where: { code: item.commodityCode },
+  const tenantScope = tenantScopedWhere();
+  const commodity = await db.commodity.findFirst({
+    where: { ...tenantScope, code: item.commodityCode },
   });
 
   if (!commodity) {
@@ -175,8 +179,8 @@ async function copySpikeItemToUga(item: SpikePublicIndexItem) {
     activeIndex,
   );
   const [deliveryBasis, basket] = await Promise.all([
-    db.deliveryBasis.findUnique({ where: { code: basisConfig.code } }),
-    db.basket.findUnique({ where: { code: basketCode } }),
+    db.deliveryBasis.findFirst({ where: { ...tenantScope, code: basisConfig.code } }),
+    db.basket.findFirst({ where: { ...tenantScope, code: basketCode } }),
   ]);
 
   if (!deliveryBasis || !basket) {
@@ -195,6 +199,7 @@ async function copySpikeItemToUga(item: SpikePublicIndexItem) {
       },
     },
     create: {
+      ...tenantScope,
       tradeDate,
       commodityId: commodity.id,
       deliveryBasisId: deliveryBasis.id,
@@ -208,6 +213,7 @@ async function copySpikeItemToUga(item: SpikePublicIndexItem) {
       version: 1,
     },
     update: {
+      ...tenantScope,
       status: "published",
       medianUsdPerMt: value,
       valueUsdPerMt: value,
@@ -228,6 +234,7 @@ async function copySpikeItemToUga(item: SpikePublicIndexItem) {
       },
     },
     create: {
+      ...tenantScope,
       tradeDate,
       commodityId: commodity.id,
       deliveryBasisId: deliveryBasis.id,
@@ -247,6 +254,7 @@ async function copySpikeItemToUga(item: SpikePublicIndexItem) {
       publishedAt: new Date(),
     },
     update: {
+      ...tenantScope,
       calculationId: calculation.id,
       status: "published",
       calculatedValueUsdPerMt: value,
