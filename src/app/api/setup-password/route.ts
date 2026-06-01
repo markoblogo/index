@@ -9,6 +9,7 @@ import {
   parseDemoSessionCookieValue,
 } from "@/lib/demo-auth";
 import { setPermanentPasswordForUser } from "@/lib/password-setup";
+import { setPermanentPasswordWithSetupToken } from "@/lib/password-setup-token";
 import { checkRateLimit, getRequestRateLimitKey } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
@@ -26,13 +27,14 @@ export async function POST(request: NextRequest) {
   }
 
   const formData = await request.formData();
+  const setupToken = String(formData.get("setupToken") ?? "");
   const setupSession = String(formData.get("setupSession") ?? "");
   const user =
     parseDemoSessionCookieValue(request.cookies.get(DEMO_SESSION_COOKIE)?.value) ??
     parseDemoSessionCookieValue(setupSession) ??
     (await getCurrentDemoUser());
 
-  if (!user) {
+  if (!user && !setupToken) {
     return NextResponse.redirect(new URL("/login", request.url), 303);
   }
 
@@ -43,10 +45,38 @@ export async function POST(request: NextRequest) {
   if (password.length < 8 || password !== confirmPassword) {
     const setupUrl = new URL("/setup-password", request.url);
     setupUrl.searchParams.set("error", "invalid");
+    if (setupToken) {
+      setupUrl.searchParams.set("token", setupToken);
+    }
     if (next) {
       setupUrl.searchParams.set("next", next);
     }
     return NextResponse.redirect(setupUrl, 303);
+  }
+
+  if (setupToken) {
+    const tokenUser = await setPermanentPasswordWithSetupToken({
+      password,
+      token: setupToken,
+    });
+
+    if (!tokenUser) {
+      return NextResponse.redirect(
+        new URL("/login?error=invalid_setup_token", request.url),
+        303,
+      );
+    }
+
+    return createSetupResponse({
+      next,
+      request,
+      target: getSafeRoleRedirect(tokenUser.role, next),
+      user: tokenUser,
+    });
+  }
+
+  if (!user) {
+    return NextResponse.redirect(new URL("/login", request.url), 303);
   }
 
   await setPermanentPasswordForUser(user, password);
@@ -55,11 +85,26 @@ export async function POST(request: NextRequest) {
     ...user,
     passwordSetupStatus: "active" as const,
   };
-  const response = NextResponse.redirect(
-    new URL(getSafeRoleRedirect(user.role, next), request.url),
-    303,
-  );
-  const sessionValue = createDemoSessionCookieValue(updatedUser);
+  return createSetupResponse({
+    next,
+    request,
+    target: getSafeRoleRedirect(user.role, next),
+    user: updatedUser,
+  });
+}
+
+function createSetupResponse({
+  request,
+  target,
+  user,
+}: {
+  next: string;
+  request: NextRequest;
+  target: string;
+  user: Parameters<typeof createDemoSessionCookieValue>[0];
+}) {
+  const response = NextResponse.redirect(new URL(target, request.url), 303);
+  const sessionValue = createDemoSessionCookieValue(user);
   const cookieOptions = {
     httpOnly: true,
     sameSite: "lax" as const,

@@ -75,6 +75,7 @@ model Tenant {
   indexCalculations IndexCalculation[]
   publishedIndices PublishedIndex[]
   auditLogs     AuditLog[]
+  passwordSetupTokens PasswordSetupToken[]
 
   @@index([active])
 }
@@ -116,6 +117,7 @@ model IndexProduct {
   indexCalculations IndexCalculation[]
   publishedIndices PublishedIndex[]
   auditLogs     AuditLog[]
+  passwordSetupTokens PasswordSetupToken[]
 
   @@unique([tenantId, code])
   @@index([tenantId, active])
@@ -226,8 +228,31 @@ model RespondentAuthAccount {
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
   respondent          Respondent           @relation(fields: [respondentId], references: [id], onDelete: Cascade)
+  passwordSetupTokens PasswordSetupToken[]
 
   @@index([passwordSetupStatus])
+}
+
+model PasswordSetupToken {
+  id                      String                 @id @default(cuid())
+  tenantId                String?
+  indexProductId          String?
+  tokenDigest             String                 @unique
+  email                   String
+  userId                  String?
+  respondentAuthAccountId String?
+  expiresAt               DateTime
+  usedAt                  DateTime?
+  createdAt               DateTime               @default(now())
+  tenant                  Tenant?                @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  indexProduct            IndexProduct?          @relation(fields: [indexProductId], references: [id], onDelete: Restrict)
+  user                    User?                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  respondentAuthAccount   RespondentAuthAccount? @relation(fields: [respondentAuthAccountId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, expiresAt])
+  @@index([indexProductId, expiresAt])
+  @@index([userId, expiresAt])
+  @@index([respondentAuthAccountId, expiresAt])
 }
 
 model RespondentEmailSchedule {
@@ -336,6 +361,7 @@ model User {
   calculations      IndexCalculation[]
   publishedIndices  PublishedIndex[]
   auditLogs         AuditLog[]
+  passwordSetupTokens PasswordSetupToken[]
 
   @@index([tenantId, role, active])
   @@index([indexProductId, role, active])

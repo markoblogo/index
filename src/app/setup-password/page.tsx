@@ -6,27 +6,32 @@ import {
   getSafeRoleRedirect,
 } from "@/lib/demo-auth";
 import { SITE_CONFIG } from "@/lib/constants";
+import { getPasswordSetupTokenPreview } from "@/lib/password-setup-token";
 
 export const dynamic = "force-dynamic";
 
 export default async function SetupPasswordPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string; error?: string }>;
+  searchParams: Promise<{ next?: string; error?: string; token?: string }>;
 }) {
-  const [{ next, error }, user] = await Promise.all([
+  const [{ next, error, token }, user] = await Promise.all([
     searchParams,
     getCurrentDemoUser(),
   ]);
+  const tokenPreview = token
+    ? await getPasswordSetupTokenPreview(token)
+    : null;
 
-  if (!user) {
+  if (!user && !tokenPreview) {
     redirect("/login");
   }
 
-  if (user.passwordSetupStatus === "active") {
+  if (user?.passwordSetupStatus === "active" && !tokenPreview) {
     redirect(getSafeRoleRedirect(user.role, next));
   }
   const isSpike = SITE_CONFIG.tenantId === "spike-ua";
+  const setupEmail = tokenPreview?.email ?? user?.email ?? "";
 
   return (
     <main
@@ -56,8 +61,8 @@ export default async function SetupPasswordPage({
               : "mt-3 text-sm leading-6 text-black/65"
           }
         >
-          You signed in with a temporary password. Set a permanent password to
-          continue to your {SITE_CONFIG.name} workspace.
+          Set a permanent password for {setupEmail} to continue to your{" "}
+          {SITE_CONFIG.name} workspace. Setup links can be used only once.
         </p>
         {error ? (
           <p className="mt-4 border border-red-700 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
@@ -66,11 +71,14 @@ export default async function SetupPasswordPage({
         ) : null}
         <form action="/api/setup-password" className="mt-5 grid gap-4" method="post">
           <input name="next" type="hidden" value={next ?? ""} />
-          <input
-            name="setupSession"
-            type="hidden"
-            value={createDemoSessionCookieValue(user)}
-          />
+          {token ? <input name="setupToken" type="hidden" value={token} /> : null}
+          {user ? (
+            <input
+              name="setupSession"
+              type="hidden"
+              value={createDemoSessionCookieValue(user)}
+            />
+          ) : null}
           <label
             className={
               isSpike

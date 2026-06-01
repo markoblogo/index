@@ -11,16 +11,16 @@ describe("spike admin access", () => {
     expect(isSpikeAdminEmail("admin@spike-ua.demo")).toBe(false);
   });
 
-  it("renders temporary password invite text", () => {
+  it("renders one-time setup link invite text", () => {
     const message = buildSpikeAdminInviteMessage({
       email: "a.biletskiy@gmail.com",
-      loginUrl: "https://spike-ua.cr0pto.com/login",
       name: "Anton Biletskiy",
-      temporaryPassword: "tmp-password",
+      setupLink: "https://spike.1d3x.com/setup-password?token=one-time",
     });
 
     expect(message.text).toContain("Login: a.biletskiy@gmail.com");
-    expect(message.text).toContain("Temporary password: tmp-password");
-    expect(message.html).toContain("https://spike-ua.cr0pto.com/login");
+    expect(message.text).toContain("Set your password: https://spike.1d3x.com/setup-password?token=one-time");
+    expect(message.text).toContain("used only once");
+    expect(message.html).toContain("https://spike.1d3x.com/setup-password?token=one-time");
   });
 });

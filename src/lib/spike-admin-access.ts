@@ -1,6 +1,7 @@
-import { randomBytes } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { db, hasDatabaseUrl } from "@/lib/db";
+import { createPasswordSetupLinkForUser } from "@/lib/password-setup-token";
+import { tenantScopedWhere } from "@/lib/tenant-data-scope";
 
 export type SpikeAdminUser = {
   email: string;
@@ -67,47 +68,54 @@ export async function ensureSpikeAdminUsers({
     const existing = await db.user.findUnique({
       where: { email: admin.email },
     });
-    const shouldGenerateTemporaryPassword =
+    const tenantScope = tenantScopedWhere();
+    const shouldGenerateSetupLink =
       regenerateTemporaryPasswords ||
       !existing ||
-      (existing.passwordSetupStatus !== "active" && !existing.temporaryPassword) ||
+      existing.passwordSetupStatus !== "active" ||
       (existing.passwordSetupStatus === "active" && !existing.passwordHash);
-    const temporaryPassword = shouldGenerateTemporaryPassword
-      ? generateTemporaryPassword()
-      : null;
     const user = await db.user.upsert({
       where: { email: admin.email },
       update: {
+        ...tenantScope,
         active: true,
         name: `${admin.initials} - ${admin.name}`,
         role: "admin",
-        ...(temporaryPassword
+        ...(shouldGenerateSetupLink
           ? {
               lastGeneratedAt: new Date(),
               passwordHash: null,
               passwordSetAt: null,
               passwordSetupStatus: "temporary" as const,
-              temporaryPassword,
+              temporaryPassword: null,
             }
           : {}),
       },
       create: {
+        ...tenantScope,
         active: true,
         email: admin.email,
         lastGeneratedAt: new Date(),
         name: `${admin.initials} - ${admin.name}`,
         passwordSetupStatus: "temporary",
         role: "admin",
-        temporaryPassword: temporaryPassword ?? generateTemporaryPassword(),
+        temporaryPassword: null,
       },
     });
-    const invitePassword = temporaryPassword ?? user.temporaryPassword;
+    const setupLink = shouldGenerateSetupLink || sendInvites
+      ? await createPasswordSetupLinkForUser({
+          baseUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "https://spike.1d3x.com",
+          email: user.email,
+          next: "/admin/daily-inputs",
+          userId: user.id,
+        })
+      : null;
 
-    if (sendInvites && invitePassword) {
+    if (sendInvites && setupLink) {
       delivered.push(
         await sendSpikeAdminInvite({
           admin,
-          temporaryPassword: invitePassword,
+          setupLink,
         }),
       );
       continue;
@@ -115,7 +123,7 @@ export async function ensureSpikeAdminUsers({
 
     delivered.push({
       email: admin.email,
-      status: temporaryPassword ? (existing ? "updated" : "created") : "active_not_sent",
+      status: shouldGenerateSetupLink ? (existing ? "updated" : "created") : "active_not_sent",
     });
   }
 
@@ -125,20 +133,14 @@ export async function ensureSpikeAdminUsers({
   };
 }
 
-export function generateTemporaryPassword() {
-  return `spike-${randomBytes(9).toString("base64url")}`;
-}
-
 export function buildSpikeAdminInviteMessage({
   email,
-  loginUrl,
   name,
-  temporaryPassword,
+  setupLink,
 }: {
   email: string;
-  loginUrl: string;
   name: string;
-  temporaryPassword: string;
+  setupLink: string;
 }) {
   const text = [
     `Hello ${name},`,
@@ -146,11 +148,10 @@ export function buildSpikeAdminInviteMessage({
     "Your SPIKE SPOT INDEX administrator account is ready.",
     "",
     `Login: ${email}`,
-    `Temporary password: ${temporaryPassword}`,
     "",
-    `Open: ${loginUrl}`,
+    `Set your password: ${setupLink}`,
     "",
-    "After signing in, set your permanent password. The temporary password will stop working after setup.",
+    "This setup link can be used only once. It expires automatically.",
   ].join("\n");
   const html = text
     .split("\n")
@@ -166,10 +167,10 @@ export function buildSpikeAdminInviteMessage({
 
 async function sendSpikeAdminInvite({
   admin,
-  temporaryPassword,
+  setupLink,
 }: {
   admin: SpikeAdminUser;
-  temporaryPassword: string;
+  setupLink: string;
 }): Promise<SpikeAdminInviteResult> {
   const apiKey = process.env.RESEND_API_KEY;
 
@@ -181,15 +182,10 @@ async function sendSpikeAdminInvite({
     };
   }
 
-  const loginUrl = new URL(
-    "/login",
-    process.env.NEXT_PUBLIC_SITE_URL ?? "https://spike-ua.cr0pto.com",
-  ).toString();
   const message = buildSpikeAdminInviteMessage({
     email: admin.email,
-    loginUrl,
     name: admin.name,
-    temporaryPassword,
+    setupLink,
   });
   const sender =
     process.env.SPIKE_ADMIN_INVITE_SENDER ??

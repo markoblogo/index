@@ -361,14 +361,14 @@ async function main() {
         update: {
           loginEmail: respondent.loginEmail,
           passwordSetupStatus: "temporary",
-          temporaryPassword: "respondent",
+          temporaryPassword: null,
           lastGeneratedAt: new Date(Date.UTC(2026, 4, 20, 10)),
         },
         create: {
           respondentId: respondent.id,
           loginEmail: respondent.loginEmail,
           passwordSetupStatus: "temporary",
-          temporaryPassword: "respondent",
+          temporaryPassword: null,
           lastGeneratedAt: new Date(Date.UTC(2026, 4, 20, 10)),
         },
       });
@@ -463,8 +463,9 @@ async function main() {
           active: true,
           name: admin.name,
           role: "admin",
-          temporaryPassword: getAdminTemporaryPassword(),
-          passwordSetupStatus: "temporary",
+          passwordHash: getAdminSeedPasswordHash(),
+          temporaryPassword: null,
+          passwordSetupStatus: seedDemoAdminPassword ? "active" : "temporary",
           lastGeneratedAt: new Date(),
         },
         create: {
@@ -472,9 +473,10 @@ async function main() {
           active: true,
           email: admin.email,
           name: admin.name,
-          passwordSetupStatus: "temporary",
+          passwordHash: getAdminSeedPasswordHash(),
+          passwordSetupStatus: seedDemoAdminPassword ? "active" : "temporary",
           role: "admin",
-          temporaryPassword: getAdminTemporaryPassword(),
+          temporaryPassword: null,
           lastGeneratedAt: new Date(),
         },
       }),
@@ -518,7 +520,7 @@ async function main() {
           role: "respondent",
           respondentId: respondent.id,
           active: respondent.status === "active",
-          temporaryPassword: "respondent",
+          temporaryPassword: null,
           passwordSetupStatus: "temporary",
           lastGeneratedAt: new Date(),
         },
@@ -529,7 +531,7 @@ async function main() {
           role: "respondent",
           respondentId: respondent.id,
           active: respondent.status === "active",
-          temporaryPassword: "respondent",
+          temporaryPassword: null,
           passwordSetupStatus: "temporary",
           lastGeneratedAt: new Date(),
         },
@@ -941,8 +943,8 @@ function shouldSeedDemoFeature(name: string) {
   return process.env.UGA_INDEX_RUNTIME_MODE !== "production";
 }
 
-function getAdminTemporaryPassword() {
-  return seedDemoAdminPassword ? "admin" : null;
+function getAdminSeedPasswordHash() {
+  return seedDemoAdminPassword ? hashPassword("admin") : null;
 }
 
 main()

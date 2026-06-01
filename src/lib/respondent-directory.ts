@@ -1,5 +1,6 @@
 import { allowMockFallback, db, hasDatabaseUrl } from "@/lib/db";
 import { getActiveIndexConfig, type IndexTenantId } from "@/lib/index-platform";
+import { createPasswordSetupLinkForRespondent } from "@/lib/password-setup-token";
 import { tenantScopedWhere } from "@/lib/tenant-data-scope";
 
 export type RespondentStatus = "active" | "pending";
@@ -355,8 +356,7 @@ export async function getRespondentDirectoryData() {
           respondent.authAccount?.passwordSetupStatus === "active"
             ? "active"
             : "temporary",
-        temporaryPassword:
-          respondent.authAccount?.temporaryPassword ?? "respondent",
+        temporaryPassword: "",
       },
       collectionMode: respondent.collectionMode,
       companyName: respondent.legalName,
@@ -551,7 +551,6 @@ export async function addRespondentDirectoryEntryData(
 
   const loginEmail =
     input.contactEmail.trim().toLowerCase() || createDemoRespondentEmail(id);
-  const temporaryPassword = generateTemporaryPassword(id);
   const tenantScope = tenantScopedWhere();
 
   await db.$transaction(async (tx) => {
@@ -595,14 +594,14 @@ export async function addRespondentDirectoryEntryData(
       update: {
         loginEmail,
         passwordSetupStatus: "temporary",
-        temporaryPassword,
+        temporaryPassword: null,
         lastGeneratedAt: new Date(),
       },
       create: {
         respondentId: id,
         loginEmail,
         passwordSetupStatus: "temporary",
-        temporaryPassword,
+        temporaryPassword: null,
         lastGeneratedAt: new Date(),
       },
     });
@@ -808,7 +807,7 @@ export async function updateRespondentAuthAccountData(
         respondentId: input.respondentId,
         loginEmail,
         passwordSetupStatus: input.passwordSetupStatus,
-        temporaryPassword: generateTemporaryPassword(input.respondentId),
+        temporaryPassword: null,
         lastGeneratedAt: new Date(),
       },
     });
@@ -847,10 +846,9 @@ export async function regenerateRespondentTemporaryPasswordData(
     return;
   }
 
-  const temporaryPassword = generateTemporaryPassword(respondentId);
   const generatedAt = new Date();
 
-  await db.$transaction(async (tx) => {
+  const setupLinkTarget = await db.$transaction(async (tx) => {
     const auth = await tx.respondentAuthAccount.update({
       where: { respondentId },
       data: {
@@ -858,7 +856,7 @@ export async function regenerateRespondentTemporaryPasswordData(
         passwordHash: null,
         passwordSetAt: null,
         passwordSetupStatus: "temporary",
-        temporaryPassword,
+        temporaryPassword: null,
       },
     });
 
@@ -869,10 +867,33 @@ export async function regenerateRespondentTemporaryPasswordData(
         passwordHash: null,
         passwordSetAt: null,
         passwordSetupStatus: "temporary",
-        temporaryPassword,
+        temporaryPassword: null,
       },
     });
+
+    const user = await tx.user.findFirst({
+      where: { OR: [{ respondentId }, { email: auth.loginEmail }] },
+    });
+
+    if (user) {
+      return {
+        authId: auth.id,
+        email: auth.loginEmail,
+        userId: user.id,
+      };
+    }
+
+    return null;
   });
+
+  if (setupLinkTarget) {
+    await createPasswordSetupLinkForRespondent({
+      baseUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
+      email: setupLinkTarget.email,
+      respondentAuthAccountId: setupLinkTarget.authId,
+      userId: setupLinkTarget.userId,
+    });
+  }
 }
 
 export function addRespondentDirectoryEntry(input: {

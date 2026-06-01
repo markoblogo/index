@@ -9,6 +9,7 @@ import {
   ensureSpikeAdminUsers,
   isSpikeAdminEmail,
 } from "@/lib/spike-admin-access";
+import { getRuntimeMode } from "@/lib/tenant-context";
 
 export type DemoAllowlistRole = "admin" | "respondent";
 
@@ -307,10 +308,13 @@ async function authenticateDatabaseUser(login: string, password: string) {
   const passwordHash = respondentAuth?.passwordHash ?? user.passwordHash;
   const temporaryPassword =
     respondentAuth?.temporaryPassword ?? user.temporaryPassword;
+  const allowTemporaryPasswordLogin = getRuntimeMode() !== "production";
 
   const passwordMatches =
     verifyPassword(password, passwordHash) ||
-    (temporaryPassword !== null && temporaryPassword === password);
+    (allowTemporaryPasswordLogin &&
+      temporaryPassword !== null &&
+      temporaryPassword === password);
 
   if (!passwordMatches) {
     return null;
