@@ -274,17 +274,67 @@ function SocialPlaceholder({
   return (
     <span
       aria-label={label}
-      className={`inline-flex h-8 items-center justify-center rounded-full border px-3 text-[0.64rem] font-black uppercase tracking-[0.08em] transition ${
+      className={`inline-flex h-7 w-7 items-center justify-center border transition ${
         disabled
-          ? "cursor-default border-white/15 text-white/35"
-          : "border-white/35 text-white/74 hover:border-uga-lime hover:text-uga-lime"
+          ? "cursor-default border-white/12 text-white/28"
+          : "border-white/28 text-white/68 hover:border-uga-lime hover:text-uga-lime"
       }`}
       role="img"
       title={label}
     >
-      {mark}
+      <SocialIcon label={label} mark={mark} />
     </span>
   );
+}
+
+function SocialIcon({ label, mark }: { label: string; mark: string }) {
+  const normalized = label.toLowerCase();
+
+  if (normalized === "substack") {
+    return (
+      <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24">
+        <path
+          d="M4 3h16v2.8H4V3Zm0 4.7h16v2.8H4V7.7Zm0 4.7h16V21l-8-4.45L4 21v-8.6Z"
+          fill="currentColor"
+        />
+      </svg>
+    );
+  }
+
+  if (normalized === "bluesky") {
+    return (
+      <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24">
+        <path
+          d="M7.2 4.1c1.95 1.48 4.05 4.48 4.8 6.1.75-1.62 2.85-4.62 4.8-6.1 1.4-1.06 3.68-1.88 3.68.73 0 .52-.3 4.39-.48 5.02-.62 2.22-2.87 2.79-4.87 2.45 3.5.6 4.4 2.58 2.47 4.56-3.66 3.77-5.26-.95-5.67-2.16-.08-.22-.11-.32-.13-.23-.02-.09-.05.01-.13.23-.41 1.21-2.01 5.93-5.67 2.16-1.93-1.98-1.03-3.96 2.47-4.56-2 .34-4.25-.23-4.87-2.45-.18-.63-.48-4.5-.48-5.02 0-2.61 2.28-1.79 3.68-.73Z"
+          fill="currentColor"
+        />
+      </svg>
+    );
+  }
+
+  if (normalized === "telegram") {
+    return (
+      <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24">
+        <path
+          d="M21.55 4.15 18.3 19.48c-.25 1.08-.89 1.35-1.8.84l-4.98-3.67-2.4 2.31c-.27.27-.49.49-1 .49l.35-5.05 9.2-8.31c.4-.35-.09-.55-.62-.2L5.68 13.05.78 11.52c-1.06-.33-1.08-1.06.22-1.57L20.15 2.57c.89-.33 1.66.2 1.4 1.58Z"
+          fill="currentColor"
+        />
+      </svg>
+    );
+  }
+
+  if (normalized === "linkedin") {
+    return (
+      <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24">
+        <path
+          d="M5.35 8.9h3.32V19H5.35V8.9Zm1.66-4.85a1.93 1.93 0 1 1 0 3.86 1.93 1.93 0 0 1 0-3.86ZM10.62 8.9h3.18v1.38h.05c.44-.84 1.52-1.72 3.13-1.72 3.35 0 3.97 2.2 3.97 5.07V19h-3.32v-4.76c0-1.14-.02-2.6-1.58-2.6-1.59 0-1.83 1.24-1.83 2.52V19h-3.32V8.9Z"
+          fill="currentColor"
+        />
+      </svg>
+    );
+  }
+
+  return <span className="text-[0.62rem] font-black">{mark.slice(0, 2)}</span>;
 }
 
 function FooterExternalLink({
