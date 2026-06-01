@@ -38,6 +38,13 @@ Codex Security Deep Scan artifact:
 - `docs/security-deep-scan-2026-06-01.md`
 - `docs/security-deep-scan-2026-06-01.html`
 
-The full Deep Scan ran with explicit subagent authorization. It found reportable
-security findings, so the production release gate is not closed until those
-findings are fixed and a follow-up scan validates the fixes.
+Codex Security Follow-up Scan artifact:
+
+- `docs/security-follow-up-scan-2026-06-01.md`
+- `docs/security-follow-up-scan-2026-06-01.html`
+
+The full Deep Scan ran with explicit subagent authorization. The reportable
+findings from that scan have been remediated and validated by the follow-up scan.
+Before production rollout, run the new migrations against a staging copy because
+the composite tenant/index ownership foreign keys intentionally fail on
+historical rows with inconsistent ownership.

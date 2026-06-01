@@ -368,8 +368,9 @@ async function moveMonitorAdminEntriesToFallback(date: string) {
         submittedById: entry.submittedById,
       },
       where: {
-        tenantId_tradeDate_commodityId_deliveryBasisId_respondentId_source: {
+        tenantId_indexProductId_tradeDate_commodityId_deliveryBasisId_respondentId_source: {
           tenantId: tenantScope.tenantId,
+          indexProductId: tenantScope.indexProductId,
           commodityId: entry.commodityId,
           deliveryBasisId: entry.deliveryBasisId,
           respondentId: adminFallback.id,
@@ -584,6 +585,7 @@ async function sendOnboardingTelegram(temporaryPassword: string) {
 
   await db.respondentEmailDelivery.create({
     data: {
+      ...tenantScopedWhere(),
       email: `telegram:${fopSolovey.telegramChatId}`,
       error: status === "failed" ? payload.description ?? response.statusText : null,
       providerId: payload.result?.message_id

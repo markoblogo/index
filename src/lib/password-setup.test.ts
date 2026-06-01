@@ -8,6 +8,7 @@ const userFindFirst = vi.fn();
 const userUpdate = vi.fn();
 const auditLogCreate = vi.fn();
 const respondentAuthUpdate = vi.fn();
+const respondentFindFirst = vi.fn();
 const userUpdateMany = vi.fn();
 
 vi.mock("@/lib/db", () => ({
@@ -16,6 +17,7 @@ vi.mock("@/lib/db", () => ({
     $transaction: async (
       callback: (tx: {
         auditLog: { create: typeof auditLogCreate };
+        respondent: { findFirst: typeof respondentFindFirst };
         respondentAuthAccount: { update: typeof respondentAuthUpdate };
         user: {
           findFirst: typeof userFindFirst;
@@ -26,6 +28,7 @@ vi.mock("@/lib/db", () => ({
     ) =>
       callback({
         auditLog: { create: auditLogCreate },
+        respondent: { findFirst: respondentFindFirst },
         respondentAuthAccount: { update: respondentAuthUpdate },
         user: {
           findFirst: userFindFirst,
@@ -45,6 +48,9 @@ describe("setPermanentPasswordForUser", () => {
     });
     userUpdate.mockResolvedValue({});
     auditLogCreate.mockResolvedValue({});
+    respondentFindFirst.mockResolvedValue({ id: "bunge-ukraine" });
+    respondentAuthUpdate.mockResolvedValue({});
+    userUpdateMany.mockResolvedValue({ count: 1 });
   });
 
   it("sets an admin password by database user found from email when session id is stale", async () => {
@@ -67,7 +73,9 @@ describe("setPermanentPasswordForUser", () => {
       where: {
         OR: [{ id: "stale-cookie-admin-id" }, { email: "a.biletskiy@gmail.com" }],
         active: true,
+        indexProductId: "uga-ua",
         role: "admin",
+        tenantId: "uga-ua",
       },
     });
     expect(userUpdate).toHaveBeenCalledWith({
@@ -91,5 +99,37 @@ describe("setPermanentPasswordForUser", () => {
         entityId: "real-admin-id",
       }),
     });
+  });
+
+  it("requires respondent password setup to match the active tenant", async () => {
+    respondentFindFirst.mockResolvedValue(null);
+
+    await expect(
+      setPermanentPasswordForUser(
+        {
+          email: "respondent@example.com",
+          expiresAt: 1,
+          issuedAt: 1,
+          name: "Respondent",
+          passwordSetupStatus: "temporary",
+          respondentId: "foreign-respondent",
+          role: "respondent",
+          userId: "respondent-user-id",
+          username: "respondent@example.com",
+        },
+        "permanent-password",
+      ),
+    ).rejects.toThrow("Password setup respondent was not found");
+
+    expect(respondentFindFirst).toHaveBeenCalledWith({
+      select: { id: true },
+      where: {
+        id: "foreign-respondent",
+        indexProductId: "uga-ua",
+        tenantId: "uga-ua",
+      },
+    });
+    expect(respondentAuthUpdate).not.toHaveBeenCalled();
+    expect(userUpdateMany).not.toHaveBeenCalled();
   });
 });

@@ -7,6 +7,8 @@ import {
 } from "@/lib/demo-auth";
 import { db, hasDatabaseUrl } from "@/lib/db";
 import { checkRateLimit, getRequestRateLimitKey } from "@/lib/rate-limit";
+import { digestRespondentSurveyToken } from "@/lib/respondent-survey-token";
+import { tenantScopedWhere } from "@/lib/tenant-data-scope";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +31,9 @@ export async function GET(
   }
 
   const { token } = await params;
-  const surveyToken = await db.respondentSurveyToken.findUnique({
+  const tenantScope = tenantScopedWhere();
+  const now = new Date();
+  const surveyToken = await db.respondentSurveyToken.findFirst({
     include: {
       respondent: {
         include: {
@@ -37,24 +41,41 @@ export async function GET(
         },
       },
     },
-    where: { token },
+    where: {
+      ...tenantScope,
+      tokenDigest: digestRespondentSurveyToken(token),
+      usedAt: null,
+      expiresAt: { gt: now },
+    },
   });
 
   if (
     !surveyToken ||
-    surveyToken.expiresAt <= new Date() ||
+    surveyToken.respondent.tenantId !== tenantScope.tenantId ||
+    surveyToken.respondent.indexProductId !== tenantScope.indexProductId ||
     surveyToken.respondent.status !== "active"
   ) {
     return NextResponse.redirect(new URL("/login?error=invalid", request.url), 303);
   }
 
-  await db.respondentSurveyToken.update({
-    where: { id: surveyToken.id },
-    data: { usedAt: new Date() },
+  const consumed = await db.respondentSurveyToken.updateMany({
+    where: {
+      ...tenantScope,
+      id: surveyToken.id,
+      usedAt: null,
+      expiresAt: { gt: now },
+    },
+    data: { usedAt: now },
   });
+
+  if (consumed.count !== 1) {
+    return NextResponse.redirect(new URL("/login?error=invalid", request.url), 303);
+  }
+
   const user = await db.user.findFirst({
     where: {
       active: true,
+      ...tenantScope,
       respondentId: surveyToken.respondentId,
       role: "respondent",
     },

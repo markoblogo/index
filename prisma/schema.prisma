@@ -76,6 +76,9 @@ model Tenant {
   publishedIndices PublishedIndex[]
   auditLogs     AuditLog[]
   passwordSetupTokens PasswordSetupToken[]
+  respondentEmailSchedules RespondentEmailSchedule[]
+  respondentEmailDeliveries RespondentEmailDelivery[]
+  respondentSurveyTokens RespondentSurveyToken[]
 
   @@index([active])
 }
@@ -118,6 +121,9 @@ model IndexProduct {
   publishedIndices PublishedIndex[]
   auditLogs     AuditLog[]
   passwordSetupTokens PasswordSetupToken[]
+  respondentEmailSchedules RespondentEmailSchedule[]
+  respondentEmailDeliveries RespondentEmailDelivery[]
+  respondentSurveyTokens RespondentSurveyToken[]
 
   @@unique([tenantId, code])
   @@index([tenantId, active])
@@ -197,6 +203,7 @@ model Respondent {
   @@index([tenantId, status, collectionMode])
   @@index([indexProductId, status, collectionMode])
   @@index([status, collectionMode])
+  @@unique([id, tenantId, indexProductId])
 }
 
 model RespondentContact {
@@ -258,48 +265,65 @@ model PasswordSetupToken {
 }
 
 model RespondentEmailSchedule {
-  id        String   @id @default("default")
-  enabled   Boolean  @default(true)
-  workdays  String   @default("Monday-Friday")
-  sendTime  String   @default("16:30")
-  timezone  String   @default("Europe/Kyiv")
-  sender    String   @default("UGA Index <onboarding@resend.dev>")
-  replyTo   String?
-  subject   String   @default("UGA Index daily price survey")
-  surveyUrl String   @default("/respondent")
-  template  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String       @id
+  tenantId       String
+  indexProductId String
+  enabled        Boolean      @default(true)
+  workdays       String       @default("Monday-Friday")
+  sendTime       String       @default("16:30")
+  timezone       String       @default("Europe/Kyiv")
+  sender         String       @default("UGA Index <onboarding@resend.dev>")
+  replyTo        String?
+  subject        String       @default("UGA Index daily price survey")
+  surveyUrl      String       @default("/respondent")
+  template       String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  indexProduct   IndexProduct @relation(fields: [indexProductId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, indexProductId])
+  @@index([tenantId])
 }
 
 model RespondentEmailDelivery {
-  id           String      @id @default(cuid())
-  respondentId String
-  contactId    String?
-  email        String
-  subject      String
-  status       String
-  trigger      String
-  providerId   String?
-  error        String?
-  sentAt       DateTime    @default(now())
-  respondent   Respondent  @relation(fields: [respondentId], references: [id], onDelete: Cascade)
+  id             String       @id @default(cuid())
+  tenantId       String
+  indexProductId String
+  respondentId   String
+  contactId      String?
+  email          String
+  subject        String
+  status         String
+  trigger        String
+  providerId     String?
+  error          String?
+  sentAt         DateTime     @default(now())
+  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  indexProduct   IndexProduct @relation(fields: [indexProductId], references: [id], onDelete: Restrict)
+  respondent     Respondent   @relation(fields: [respondentId, tenantId, indexProductId], references: [id, tenantId, indexProductId], onDelete: Cascade)
 
+  @@index([tenantId, status, trigger, sentAt])
   @@index([respondentId, sentAt])
   @@index([status, trigger, sentAt])
 }
 
 model RespondentSurveyToken {
-  id           String      @id @default(cuid())
-  token        String      @unique
-  respondentId String
-  contactId    String?
-  email        String
-  expiresAt    DateTime
-  usedAt       DateTime?
-  createdAt    DateTime    @default(now())
-  respondent   Respondent  @relation(fields: [respondentId], references: [id], onDelete: Cascade)
+  id             String       @id @default(cuid())
+  tenantId       String
+  indexProductId String
+  tokenDigest    String       @unique
+  respondentId   String
+  contactId      String?
+  email          String
+  expiresAt      DateTime
+  usedAt         DateTime?
+  createdAt      DateTime     @default(now())
+  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  indexProduct   IndexProduct @relation(fields: [indexProductId], references: [id], onDelete: Restrict)
+  respondent     Respondent   @relation(fields: [respondentId, tenantId, indexProductId], references: [id, tenantId, indexProductId], onDelete: Cascade)
 
+  @@index([tenantId, expiresAt])
   @@index([respondentId, expiresAt])
 }
 
@@ -391,13 +415,13 @@ model PriceSubmission {
   indexProduct      IndexProduct       @relation(fields: [indexProductId], references: [id], onDelete: Restrict)
   commodity         Commodity          @relation(fields: [commodityId], references: [id])
   deliveryBasis     DeliveryBasis      @relation(fields: [deliveryBasisId], references: [id])
-  respondent        Respondent         @relation(fields: [respondentId], references: [id])
+  respondent        Respondent         @relation(fields: [respondentId, tenantId, indexProductId], references: [id, tenantId, indexProductId])
   submittedBy       User?              @relation(fields: [submittedById], references: [id])
   calculationItems  IndexCalculationItem[]
 
   @@index([tenantId, tradeDate, status])
   @@index([indexProductId, tradeDate, status])
-  @@unique([tenantId, tradeDate, commodityId, deliveryBasisId, respondentId, source])
+  @@unique([tenantId, indexProductId, tradeDate, commodityId, deliveryBasisId, respondentId, source])
   @@index([tradeDate, commodityId, deliveryBasisId, status])
 }
 

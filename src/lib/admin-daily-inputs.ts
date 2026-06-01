@@ -442,13 +442,37 @@ async function saveDatabaseDailyInputs(
   const commodityById = new Map(
     dbCommodities.map((commodity) => [commodity.id, commodity]),
   );
+  const activeRespondentIds = new Set(
+    (
+      await db.respondent.findMany({
+        where: {
+          ...tenantScope,
+          active: true,
+          id: { in: [...new Set(entries.map((entry) => entry.respondentId))] },
+          status: "active",
+        },
+        select: { id: true },
+      })
+    ).map((respondent) => respondent.id),
+  );
 
   if (bases.length === 0) {
     throw new Error("Delivery bases are not seeded.");
   }
 
   for (const entry of entries) {
+    if (!activeRespondentIds.has(entry.respondentId)) {
+      throw new Error(
+        `Respondent ${entry.respondentId} does not belong to the active tenant.`,
+      );
+    }
+
     const commodity = commodityById.get(entry.commodityId);
+    if (!commodity) {
+      throw new Error(
+        `Commodity ${entry.commodityId} does not belong to the active tenant.`,
+      );
+    }
     const basisCode = commodity
       ? getDeliveryBasisConfigForCommodityCode(commodity.code).code
       : getConfiguredDeliveryBasisCodes()[0];
@@ -460,8 +484,9 @@ async function saveDatabaseDailyInputs(
 
     const existing = await db.priceSubmission.findUnique({
       where: {
-        tenantId_tradeDate_commodityId_deliveryBasisId_respondentId_source: {
+        tenantId_indexProductId_tradeDate_commodityId_deliveryBasisId_respondentId_source: {
           tenantId: tenantScope.tenantId,
+          indexProductId: tenantScope.indexProductId,
           tradeDate,
           commodityId: entry.commodityId,
           deliveryBasisId: basis.id,
@@ -473,8 +498,9 @@ async function saveDatabaseDailyInputs(
 
     const saved = await db.priceSubmission.upsert({
       where: {
-        tenantId_tradeDate_commodityId_deliveryBasisId_respondentId_source: {
+        tenantId_indexProductId_tradeDate_commodityId_deliveryBasisId_respondentId_source: {
           tenantId: tenantScope.tenantId,
+          indexProductId: tenantScope.indexProductId,
           tradeDate,
           commodityId: entry.commodityId,
           deliveryBasisId: basis.id,

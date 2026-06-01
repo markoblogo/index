@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Codex Security Follow-up Scan - 2026-06-01</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.55; margin: 40px; max-width: 980px; color: #17211b; }
+    h1, h2, h3 { line-height: 1.2; }
+    table { border-collapse: collapse; width: 100%; margin: 18px 0; }
+    th, td { border: 1px solid #cfd8d3; padding: 8px 10px; vertical-align: top; }
+    th { background: #f3f7f5; text-align: left; }
+    code, pre { background: #f6f8fa; border-radius: 4px; }
+    code { padding: 1px 4px; }
+    pre { padding: 12px; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <h1>Codex Security Follow-up Scan - 2026-06-01</h1>
+  <p>This follow-up validates the eight reportable findings from <code>docs/security-deep-scan-2026-06-01.md</code> after remediation work.</p>
+  <p><strong>Result:</strong> all eight deep-scan findings are closed in the current working tree.</p>
+  <table>
+    <thead><tr><th>ID</th><th>Finding</th><th>Disposition</th></tr></thead>
+    <tbody>
+      <tr><td>F1</td><td>Unsigned legacy sessions allow forged access</td><td>Closed. Unsigned cookies are rejected, legacy cookies require HMAC, and signed sessions require matching tenant/index claims.</td></tr>
+      <tr><td>F2</td><td>Database login not tenant scoped</td><td>Closed. User and respondent ownership checks are tenant/index scoped.</td></tr>
+      <tr><td>F3</td><td>Respondent survey reads/writes not tenant-owned</td><td>Closed. Survey reads/writes validate tenant/index-owned respondent, commodity, basis, submission, and audit records.</td></tr>
+      <tr><td>F4</td><td>Admin respondent child mutations unscoped</td><td>Closed. Child mutations validate scoped parent respondents or use scoped relation filters.</td></tr>
+      <tr><td>F5</td><td>Admin daily inputs can write arbitrary respondent ids</td><td>Closed. Respondent and commodity ids are validated before writes.</td></tr>
+      <tr><td>F6</td><td>Survey tokens reusable/plaintext/unscoped</td><td>Closed. Tokens are digested, scoped, and consumed atomically.</td></tr>
+      <tr><td>F7</td><td>Notification scheduling and Telegram token issuance unscoped</td><td>Closed. Main paths are scoped and composite FKs enforce respondent ownership for deliveries/tokens.</td></tr>
+      <tr><td>F8</td><td>Spike admin respondent preview unscoped</td><td>Closed. Preview selection is tenant/index scoped.</td></tr>
+    </tbody>
+  </table>
+  <h2>Verification</h2>
+  <pre><code>npx prisma generate
+npm run test
+npm run lint
+npm run build
+npm audit --omit=dev</code></pre>
+  <p>All commands passed. Vitest reported <code>21 passed</code> test files and <code>60 passed</code> tests. npm audit reported <code>found 0 vulnerabilities</code>.</p>
+  <h2>Release Note</h2>
+  <p>Run migrations against a staging copy first. The new composite foreign keys intentionally fail if historical rows have inconsistent tenant/index ownership.</p>
+</body>
+</html>

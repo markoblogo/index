@@ -38,7 +38,7 @@ export async function upsertRespondentPrice(input: RespondentPriceInput) {
     return null;
   }
 
-  const [commodity, basis, respondent] = await Promise.all([
+  const [commodity, basis, existingRespondent] = await Promise.all([
     db.commodity.findFirst({
       where: { ...tenantScope, code: commodityConfig.dbCode },
     }),
@@ -48,16 +48,34 @@ export async function upsertRespondentPrice(input: RespondentPriceInput) {
         code: getDeliveryBasisConfigForCommodityCode(commodityConfig.dbCode, activeIndex).code,
       },
     }),
-    db.respondent.upsert({
+    db.respondent.findUnique({
       where: { id: input.respondentCode },
-      update: {
+    }),
+  ]);
+  let respondent = existingRespondent;
+
+  if (
+    respondent &&
+    (respondent.tenantId !== tenantScope.tenantId ||
+      respondent.indexProductId !== tenantScope.indexProductId)
+  ) {
+    throw new Error("Respondent id belongs to another tenant.");
+  }
+
+  if (respondent) {
+    respondent = await db.respondent.update({
+      where: { id: respondent.id },
+      data: {
         active: true,
         collectionMode: "manual_outreach",
         displayName: getRespondentDisplayName(input.respondentCode),
         legalName: getRespondentDisplayName(input.respondentCode),
         status: "active",
       },
-      create: {
+    });
+  } else {
+    respondent = await db.respondent.create({
+      data: {
         ...tenantScope,
         id: input.respondentCode,
         active: true,
@@ -66,8 +84,8 @@ export async function upsertRespondentPrice(input: RespondentPriceInput) {
         legalName: getRespondentDisplayName(input.respondentCode),
         status: "active",
       },
-    }),
-  ]);
+    });
+  }
 
   if (!commodity) {
     throw new Error(`Commodity is not seeded: ${commodityConfig.dbCode}`);
@@ -80,8 +98,9 @@ export async function upsertRespondentPrice(input: RespondentPriceInput) {
   const tradeDate = dateToUtcDate(input.date);
   const existing = await db.priceSubmission.findUnique({
     where: {
-        tenantId_tradeDate_commodityId_deliveryBasisId_respondentId_source: {
+        tenantId_indexProductId_tradeDate_commodityId_deliveryBasisId_respondentId_source: {
           tenantId: tenantScope.tenantId,
+          indexProductId: tenantScope.indexProductId,
           tradeDate,
           commodityId: commodity.id,
         deliveryBasisId: basis.id,
@@ -98,8 +117,9 @@ export async function upsertRespondentPrice(input: RespondentPriceInput) {
   } satisfies Prisma.InputJsonObject;
   const saved = await db.priceSubmission.upsert({
     where: {
-        tenantId_tradeDate_commodityId_deliveryBasisId_respondentId_source: {
+        tenantId_indexProductId_tradeDate_commodityId_deliveryBasisId_respondentId_source: {
           tenantId: tenantScope.tenantId,
+          indexProductId: tenantScope.indexProductId,
           tradeDate,
           commodityId: commodity.id,
         deliveryBasisId: basis.id,
@@ -182,8 +202,9 @@ export async function clearRespondentPrice(input: ClearRespondentPriceInput) {
   const tradeDate = dateToUtcDate(input.date);
   const existing = await db.priceSubmission.findUnique({
     where: {
-        tenantId_tradeDate_commodityId_deliveryBasisId_respondentId_source: {
+        tenantId_indexProductId_tradeDate_commodityId_deliveryBasisId_respondentId_source: {
           tenantId: tenantScope.tenantId,
+          indexProductId: tenantScope.indexProductId,
           tradeDate,
           commodityId: commodity.id,
         deliveryBasisId: basis.id,

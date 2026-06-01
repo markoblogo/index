@@ -1,5 +1,9 @@
-import { randomBytes } from "node:crypto";
 import { db, hasDatabaseUrl } from "@/lib/db";
+import {
+  createRespondentSurveyToken,
+  digestRespondentSurveyToken,
+} from "@/lib/respondent-survey-token";
+import { tenantScopedWhere } from "@/lib/tenant-data-scope";
 
 type TelegramTrigger = "manual" | "scheduled" | "smoke";
 
@@ -87,6 +91,7 @@ async function getTelegramRecipients(
       },
     },
     where: {
+      ...tenantScopedWhere(),
       active: true,
       collectionMode: "self_service",
       id: respondentId
@@ -118,6 +123,7 @@ async function getSmokeRecipients(): Promise<TelegramRecipient[]> {
 
   const respondent = await db.respondent.findFirst({
     where: {
+      ...tenantScopedWhere(),
       active: true,
       collectionMode: "self_service",
       id: { not: process.env.MN7R_INDEX_RESPONDENT_CODE ?? "MN7R_MONITOR" },
@@ -183,6 +189,7 @@ async function sendTelegramSurveyMessage({
 
   await db.respondentEmailDelivery.create({
     data: {
+      ...tenantScopedWhere(),
       contactId: recipient.contactId,
       email: `telegram:${recipient.chatId}`,
       error: status === "failed" ? payload.description ?? response.statusText : null,
@@ -206,16 +213,18 @@ async function sendTelegramSurveyMessage({
 }
 
 async function createSurveyUrl(recipient: TelegramRecipient) {
-  const token = randomBytes(24).toString("base64url");
+  const token = createRespondentSurveyToken();
   const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 8);
+  const tenantScope = tenantScopedWhere();
 
   await db.respondentSurveyToken.create({
     data: {
+      ...tenantScope,
       contactId: recipient.contactId === "telegram-smoke" ? null : recipient.contactId,
       email: `telegram:${recipient.chatId}`,
       expiresAt,
       respondentId: recipient.respondentId,
-      token,
+      tokenDigest: digestRespondentSurveyToken(token),
     },
   });
 

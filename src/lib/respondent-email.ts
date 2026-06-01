@@ -1,4 +1,3 @@
-import { randomBytes } from "node:crypto";
 import { allowMockFallback, db, hasDatabaseUrl } from "@/lib/db";
 import {
   getRespondentDirectoryData,
@@ -6,6 +5,11 @@ import {
   type RespondentDirectoryEntry,
   type RespondentEmailScheduleSettings,
 } from "@/lib/respondent-directory";
+import {
+  createRespondentSurveyToken,
+  digestRespondentSurveyToken,
+} from "@/lib/respondent-survey-token";
+import { tenantScopedWhere } from "@/lib/tenant-data-scope";
 
 type SendTrigger = "manual" | "scheduled";
 
@@ -195,6 +199,7 @@ async function logEmailDelivery({
   try {
     await db.respondentEmailDelivery.create({
       data: {
+        ...tenantScopedWhere(),
         contactId: recipient.contactId,
         email: result.email,
         error: result.error ?? null,
@@ -228,6 +233,7 @@ async function wasScheduledEmailAlreadySentToday(
 
   const count = await db.respondentEmailDelivery.count({
     where: {
+      ...tenantScopedWhere(),
       sentAt: {
         gte: start,
         lte: end,
@@ -289,16 +295,18 @@ async function getRecipientSurveyUrl(
     return absoluteUrl(schedule.surveyUrl);
   }
 
-  const token = randomBytes(24).toString("base64url");
+  const token = createRespondentSurveyToken();
   const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 48);
+  const tenantScope = tenantScopedWhere();
 
   await db.respondentSurveyToken.create({
     data: {
+      ...tenantScope,
       contactId: recipient.contactId,
       email: recipient.email,
       expiresAt,
       respondentId: recipient.respondentId,
-      token,
+      tokenDigest: digestRespondentSurveyToken(token),
     },
   });
 

@@ -254,14 +254,17 @@ async function getDatabaseRespondentSurveyData({
   respondentId: string;
 }): Promise<RespondentSurveyData> {
   const tradeDate = dateToUtcDate(date);
+  const tenantScope = tenantScopedWhere();
   const [bases, respondent, dbCommodities] = await Promise.all([
     db.deliveryBasis.findMany({
-      where: { ...tenantScopedWhere(), code: { in: getConfiguredDeliveryBasisCodes() } },
+      where: { ...tenantScope, code: { in: getConfiguredDeliveryBasisCodes() } },
     }),
-    db.respondent.findUnique({ where: { id: respondentId } }),
+    db.respondent.findFirst({
+      where: { ...tenantScope, id: respondentId, active: true, status: "active" },
+    }),
     db.commodity.findMany({
       orderBy: { sortOrder: "asc" },
-      where: { status: "published" },
+      where: { ...tenantScope, status: "published" },
     }),
   ]);
 
@@ -277,6 +280,7 @@ async function getDatabaseRespondentSurveyData({
 
   const submissions = await db.priceSubmission.findMany({
     where: {
+      ...tenantScope,
       tradeDate,
       deliveryBasisId: { in: basisIds },
       respondentId,
@@ -326,12 +330,20 @@ async function saveDatabaseRespondentSurvey({
   user: DemoUser;
 }) {
   const tradeDate = dateToUtcDate(date);
-  const [bases, dbCommodities] = await Promise.all([
+  const tenantScope = tenantScopedWhere();
+  const [bases, dbCommodities, respondent] = await Promise.all([
     db.deliveryBasis.findMany({
-      where: { ...tenantScopedWhere(), code: { in: getConfiguredDeliveryBasisCodes() } },
+      where: { ...tenantScope, code: { in: getConfiguredDeliveryBasisCodes() } },
     }),
     db.commodity.findMany({
-      where: { id: { in: [...new Set(entries.map((entry) => entry.commodityId))] } },
+      where: {
+        ...tenantScope,
+        id: { in: [...new Set(entries.map((entry) => entry.commodityId))] },
+      },
+    }),
+    db.respondent.findFirst({
+      where: { ...tenantScope, id: respondentId, active: true, status: "active" },
+      select: { id: true },
     }),
   ]);
   const basisByCode = new Map(bases.map((basis) => [basis.code, basis]));
@@ -339,12 +351,19 @@ async function saveDatabaseRespondentSurvey({
     dbCommodities.map((commodity) => [commodity.id, commodity]),
   );
 
+  if (!respondent) {
+    throw new Error("Respondent does not belong to the active tenant.");
+  }
+
   if (bases.length === 0) {
     throw new Error("Delivery bases are not seeded.");
   }
 
   for (const entry of entries) {
     const commodity = commodityById.get(entry.commodityId);
+    if (!commodity) {
+      throw new Error(`Commodity ${entry.commodityId} does not belong to the active tenant.`);
+    }
     const basisCode = commodity
       ? getDeliveryBasisConfigForCommodityCode(commodity.code).code
       : getConfiguredDeliveryBasisCodes()[0];
@@ -356,8 +375,9 @@ async function saveDatabaseRespondentSurvey({
 
     const saved = await db.priceSubmission.upsert({
       where: {
-        tenantId_tradeDate_commodityId_deliveryBasisId_respondentId_source: {
-          tenantId: tenantScopedWhere().tenantId,
+        tenantId_indexProductId_tradeDate_commodityId_deliveryBasisId_respondentId_source: {
+          tenantId: tenantScope.tenantId,
+          indexProductId: tenantScope.indexProductId,
           tradeDate,
           commodityId: entry.commodityId,
           deliveryBasisId: basis.id,
@@ -366,12 +386,13 @@ async function saveDatabaseRespondentSurvey({
         },
       },
       update: {
+        ...tenantScope,
         priceUsdPerMt: new Prisma.Decimal(entry.price),
         status,
         submittedAt: status === "submitted" ? new Date() : null,
       },
       create: {
-        ...tenantScopedWhere(),
+        ...tenantScope,
         tradeDate,
         commodityId: entry.commodityId,
         deliveryBasisId: basis.id,
@@ -385,7 +406,7 @@ async function saveDatabaseRespondentSurvey({
 
     await db.auditLog.create({
       data: {
-        ...tenantScopedWhere(),
+        ...tenantScope,
         actorRole: "respondent",
         action:
           status === "submitted"

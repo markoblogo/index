@@ -6,6 +6,8 @@ import { redirect } from "next/navigation";
 import { db, hasDatabaseUrl } from "@/lib/db";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import { isSpikeAdminEmail } from "@/lib/spike-admin-access";
+import { tenantScopedWhere } from "@/lib/tenant-data-scope";
+import { getTenantContext } from "@/lib/tenant-context";
 
 export const LEGACY_DEMO_SESSION_COOKIE = "uga_demo_session";
 export const DEMO_SESSION_COOKIE =
@@ -17,6 +19,8 @@ export type DemoRole = "admin" | "respondent" | "member";
 
 export type DemoUser = {
   userId: string;
+  tenantId?: string;
+  indexProductId?: string;
   email: string;
   name: string;
   username: string;
@@ -52,6 +56,15 @@ export function parseDemoSessionCookieValue(value?: string): DemoUser | null {
   const payload = verifySessionCookie(value);
 
   if (!payload || payload.expiresAt <= Math.floor(Date.now() / 1000)) {
+    return null;
+  }
+
+  const context = getTenantContext();
+  if (payload.tenantId !== context.tenantId) {
+    return null;
+  }
+
+  if (context.indexProductId && payload.indexProductId !== context.indexProductId) {
     return null;
   }
 
@@ -168,6 +181,7 @@ async function getSpikeAdminRespondentPreviewUser(
   const respondent = await db.respondent.findFirst({
     orderBy: { createdAt: "asc" },
     where: {
+      ...tenantScopedWhere(),
       active: true,
       collectionMode: "self_service",
       id: { not: process.env.MN7R_INDEX_RESPONDENT_CODE ?? "MN7R_MONITOR" },
@@ -208,11 +222,13 @@ async function findOpenDemoDbUser(role: Exclude<DemoRole, "member">) {
         createdAt: "asc",
       },
       where: {
+        ...tenantScopedWhere(),
         active: true,
         role,
         ...(role === "respondent"
           ? {
               respondent: {
+                ...tenantScopedWhere(),
                 status: "active",
               },
             }
@@ -281,8 +297,11 @@ export function getSafeRoleRedirect(role: DemoRole, next?: string | null) {
 
 export function createDemoSessionCookieValue(user: SessionSourceUser) {
   const now = Math.floor(Date.now() / 1000);
+  const tenantScope = tenantScopedWhere();
   const payload: DemoSessionPayload = {
     userId: user.userId,
+    tenantId: tenantScope.tenantId,
+    indexProductId: tenantScope.indexProductId,
     email: user.email,
     name: user.name,
     username: user.email,
@@ -306,7 +325,7 @@ function verifySessionCookie(value: string): DemoSessionPayload | null {
   const encodedPayload = value.startsWith("session.")
     ? verifySignedCookie(value)
     : value.startsWith("demo.")
-      ? value.slice("demo.".length)
+      ? null
       : verifyLegacySignedCookie(value);
 
   if (!encodedPayload) {
@@ -336,6 +355,11 @@ function parseSessionPayload(encodedPayload: string): DemoSessionPayload | null 
 
     return {
       userId: parsed.userId,
+      tenantId: typeof parsed.tenantId === "string" ? parsed.tenantId : undefined,
+      indexProductId:
+        typeof parsed.indexProductId === "string"
+          ? parsed.indexProductId
+          : undefined,
       email: parsed.email,
       name: parsed.name,
       username: parsed.username,
@@ -381,7 +405,23 @@ function verifySignedCookie(value: string) {
 
 function verifyLegacySignedCookie(value: string) {
   const [encodedPayload, signature] = value.split(".");
-  return encodedPayload && signature ? encodedPayload : null;
+
+  if (!encodedPayload || !signature) {
+    return null;
+  }
+
+  const expected = signPayload(encodedPayload);
+  const actualSignature = Buffer.from(signature);
+  const expectedSignature = Buffer.from(expected);
+
+  if (
+    actualSignature.length !== expectedSignature.length ||
+    !timingSafeEqual(actualSignature, expectedSignature)
+  ) {
+    return null;
+  }
+
+  return encodedPayload;
 }
 
 function signPayload(encodedPayload: string) {

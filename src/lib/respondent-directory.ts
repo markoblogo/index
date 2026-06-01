@@ -261,8 +261,9 @@ export async function getRespondentEmailScheduleData() {
   }
 
   try {
+    const tenantScope = tenantScopedWhere();
     const schedule = await db.respondentEmailSchedule.findUnique({
-      where: { id: "default" },
+      where: { id: tenantScope.tenantId },
     });
 
     if (!schedule) {
@@ -301,11 +302,13 @@ export async function updateRespondentEmailScheduleData(
     return schedule;
   }
 
+  const tenantScope = tenantScopedWhere();
   await db.respondentEmailSchedule.upsert({
-    where: { id: "default" },
+    where: { id: tenantScope.tenantId },
     update: schedule,
     create: {
-      id: "default",
+      ...tenantScope,
+      id: tenantScope.tenantId,
       ...schedule,
     },
   });
@@ -332,6 +335,7 @@ export async function getRespondentDirectoryData() {
           orderBy: { sentAt: "desc" },
           take: 1,
           where: {
+            ...tenantScope,
             sentAt: {
               gte: kyivDateBounds.start,
               lt: kyivDateBounds.end,
@@ -554,26 +558,40 @@ export async function addRespondentDirectoryEntryData(
   const tenantScope = tenantScopedWhere();
 
   await db.$transaction(async (tx) => {
-    await tx.respondent.upsert({
-      where: { id },
-      update: {
-        ...tenantScope,
-        active: input.status === "active",
-        collectionMode: input.collectionMode,
-        displayName: input.companyName.trim(),
-        legalName: input.companyName.trim(),
-        status: input.status,
-      },
-      create: {
-        ...tenantScope,
-        id,
-        active: input.status === "active",
-        collectionMode: input.collectionMode,
-        displayName: input.companyName.trim(),
-        legalName: input.companyName.trim(),
-        status: input.status,
-      },
-    });
+    const existingRespondent = await tx.respondent.findUnique({ where: { id } });
+
+    if (
+      existingRespondent &&
+      (existingRespondent.tenantId !== tenantScope.tenantId ||
+        existingRespondent.indexProductId !== tenantScope.indexProductId)
+    ) {
+      throw new Error("Respondent id belongs to another tenant.");
+    }
+
+    if (existingRespondent) {
+      await tx.respondent.update({
+        where: { id },
+        data: {
+          active: input.status === "active",
+          collectionMode: input.collectionMode,
+          displayName: input.companyName.trim(),
+          legalName: input.companyName.trim(),
+          status: input.status,
+        },
+      });
+    } else {
+      await tx.respondent.create({
+        data: {
+          ...tenantScope,
+          id,
+          active: input.status === "active",
+          collectionMode: input.collectionMode,
+          displayName: input.companyName.trim(),
+          legalName: input.companyName.trim(),
+          status: input.status,
+        },
+      });
+    }
 
     await tx.respondentContact.create({
       data: {
@@ -606,24 +624,38 @@ export async function addRespondentDirectoryEntryData(
       },
     });
 
-    await tx.user.upsert({
-      where: { email: loginEmail },
-      update: {
-        ...tenantScope,
-        active: input.status === "active",
-        name: `${input.companyName.trim()} respondent`,
-        respondentId: id,
-        role: "respondent",
-      },
-      create: {
-        ...tenantScope,
-        active: input.status === "active",
-        email: loginEmail,
-        name: `${input.companyName.trim()} respondent`,
-        respondentId: id,
-        role: "respondent",
-      },
-    });
+    const existingUser = await tx.user.findUnique({ where: { email: loginEmail } });
+
+    if (
+      existingUser &&
+      (existingUser.tenantId !== tenantScope.tenantId ||
+        existingUser.indexProductId !== tenantScope.indexProductId)
+    ) {
+      throw new Error("Login email belongs to another tenant.");
+    }
+
+    if (existingUser) {
+      await tx.user.update({
+        where: { id: existingUser.id },
+        data: {
+          active: input.status === "active",
+          name: `${input.companyName.trim()} respondent`,
+          respondentId: id,
+          role: "respondent",
+        },
+      });
+    } else {
+      await tx.user.create({
+        data: {
+          ...tenantScope,
+          active: input.status === "active",
+          email: loginEmail,
+          name: `${input.companyName.trim()} respondent`,
+          respondentId: id,
+          role: "respondent",
+        },
+      });
+    }
   });
 }
 
@@ -657,13 +689,15 @@ export async function deleteRespondentDirectoryEntryData(id: string) {
     const tenantScope = tenantScopedWhere();
 
     await tx.user.deleteMany({ where: { respondentId: id, ...tenantScope } });
-    await tx.respondentAuthAccount.deleteMany({ where: { respondentId: id } });
+    await tx.respondentAuthAccount.deleteMany({
+      where: { respondentId: id, respondent: tenantScope },
+    });
     await tx.respondentContact.updateMany({
-      where: { respondentId: id },
+      where: { respondentId: id, respondent: tenantScope },
       data: { active: false, primary: false },
     });
     await tx.basketRespondent.updateMany({
-      where: { respondentId: id },
+      where: { respondentId: id, respondent: tenantScope },
       data: { active: false },
     });
     await tx.respondent.updateMany({
@@ -685,9 +719,19 @@ export async function addRespondentContactData(
   }
 
   await db.$transaction(async (tx) => {
+    const tenantScope = tenantScopedWhere();
+    const respondent = await tx.respondent.findFirst({
+      where: { id: input.respondentId, ...tenantScope },
+      select: { id: true },
+    });
+
+    if (!respondent) {
+      throw new Error("Respondent does not belong to the active tenant.");
+    }
+
     if (input.primary) {
       await tx.respondentContact.updateMany({
-        where: { respondentId: input.respondentId },
+        where: { respondentId: input.respondentId, respondent: tenantScope },
         data: { primary: false },
       });
     }
@@ -717,15 +761,29 @@ export async function updateRespondentContactData(
   }
 
   await db.$transaction(async (tx) => {
+    const tenantScope = tenantScopedWhere();
+    const contact = await tx.respondentContact.findFirst({
+      where: {
+        id: input.contactId,
+        respondentId: input.respondentId,
+        respondent: tenantScope,
+      },
+      select: { id: true },
+    });
+
+    if (!contact) {
+      throw new Error("Contact does not belong to the active tenant.");
+    }
+
     if (input.primary) {
       await tx.respondentContact.updateMany({
-        where: { respondentId: input.respondentId },
+        where: { respondentId: input.respondentId, respondent: tenantScope },
         data: { primary: false },
       });
     }
 
     await tx.respondentContact.update({
-      where: { id: input.contactId },
+      where: { id: contact.id },
       data: {
         email: input.email.trim() || null,
         name: input.name.trim(),
@@ -750,29 +808,46 @@ export async function deleteRespondentContactData(input: {
   }
 
   const contactCount = await db.respondentContact.count({
-    where: { respondentId: input.respondentId, active: true },
+    where: {
+      respondentId: input.respondentId,
+      active: true,
+      respondent: tenantScopedWhere(),
+    },
   });
 
   if (contactCount <= 1) {
     return;
   }
 
-  await db.respondentContact.update({
-    where: { id: input.contactId },
+  const contactUpdate = await db.respondentContact.updateMany({
+    where: {
+      id: input.contactId,
+      respondentId: input.respondentId,
+      respondent: tenantScopedWhere(),
+    },
     data: { active: false, primary: false },
   });
+
+  if (contactUpdate.count === 0) {
+    throw new Error("Contact does not belong to the active tenant.");
+  }
 
   const primaryCount = await db.respondentContact.count({
     where: {
       active: true,
       primary: true,
       respondentId: input.respondentId,
+      respondent: tenantScopedWhere(),
     },
   });
 
   if (primaryCount === 0) {
     const firstContact = await db.respondentContact.findFirst({
-      where: { active: true, respondentId: input.respondentId },
+      where: {
+        active: true,
+        respondentId: input.respondentId,
+        respondent: tenantScopedWhere(),
+      },
       orderBy: { createdAt: "asc" },
     });
 
@@ -797,6 +872,14 @@ export async function updateRespondentAuthAccountData(
   const tenantScope = tenantScopedWhere();
 
   await db.$transaction(async (tx) => {
+    const respondent = await tx.respondent.findFirst({
+      where: { id: input.respondentId, ...tenantScope },
+    });
+
+    if (!respondent) {
+      throw new Error("Respondent does not belong to the active tenant.");
+    }
+
     const auth = await tx.respondentAuthAccount.upsert({
       where: { respondentId: input.respondentId },
       update: {
@@ -811,21 +894,29 @@ export async function updateRespondentAuthAccountData(
         lastGeneratedAt: new Date(),
       },
     });
-    const respondent = await tx.respondent.findUnique({
-      where: { id: input.respondentId },
-    });
+    const existingUser = await tx.user.findUnique({ where: { email: auth.loginEmail } });
 
-    if (respondent && respondent.tenantId === tenantScope.tenantId) {
-      await tx.user.upsert({
-        where: { email: auth.loginEmail },
-        update: {
-          ...tenantScope,
+    if (
+      existingUser &&
+      (existingUser.tenantId !== tenantScope.tenantId ||
+        existingUser.indexProductId !== tenantScope.indexProductId)
+    ) {
+      throw new Error("Login email belongs to another tenant.");
+    }
+
+    if (existingUser) {
+      await tx.user.update({
+        where: { id: existingUser.id },
+        data: {
           active: respondent.active,
           name: `${respondent.legalName} respondent`,
           respondentId: respondent.id,
           role: "respondent",
         },
-        create: {
+      });
+    } else {
+      await tx.user.create({
+        data: {
           ...tenantScope,
           active: respondent.active,
           email: auth.loginEmail,
@@ -849,6 +940,16 @@ export async function regenerateRespondentTemporaryPasswordData(
   const generatedAt = new Date();
 
   const setupLinkTarget = await db.$transaction(async (tx) => {
+    const tenantScope = tenantScopedWhere();
+    const respondent = await tx.respondent.findFirst({
+      where: { id: respondentId, ...tenantScope },
+      select: { id: true },
+    });
+
+    if (!respondent) {
+      throw new Error("Respondent does not belong to the active tenant.");
+    }
+
     const auth = await tx.respondentAuthAccount.update({
       where: { respondentId },
       data: {
@@ -861,7 +962,7 @@ export async function regenerateRespondentTemporaryPasswordData(
     });
 
     await tx.user.updateMany({
-      where: { OR: [{ respondentId }, { email: auth.loginEmail }] },
+      where: { ...tenantScope, OR: [{ respondentId }, { email: auth.loginEmail }] },
       data: {
         lastGeneratedAt: generatedAt,
         passwordHash: null,
@@ -872,7 +973,7 @@ export async function regenerateRespondentTemporaryPasswordData(
     });
 
     const user = await tx.user.findFirst({
-      where: { OR: [{ respondentId }, { email: auth.loginEmail }] },
+      where: { ...tenantScope, OR: [{ respondentId }, { email: auth.loginEmail }] },
     });
 
     if (user) {

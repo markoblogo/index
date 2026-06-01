@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
-  createDemoSessionCookieValue,
   getCurrentDemoUser,
   getSafeRoleRedirect,
 } from "@/lib/demo-auth";
@@ -72,13 +71,6 @@ export default async function SetupPasswordPage({
         <form action="/api/setup-password" className="mt-5 grid gap-4" method="post">
           <input name="next" type="hidden" value={next ?? ""} />
           {token ? <input name="setupToken" type="hidden" value={token} /> : null}
-          {user ? (
-            <input
-              name="setupSession"
-              type="hidden"
-              value={createDemoSessionCookieValue(user)}
-            />
-          ) : null}
           <label
             className={
               isSpike

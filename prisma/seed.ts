@@ -583,8 +583,9 @@ async function main() {
 
             return prisma.priceSubmission.upsert({
               where: {
-                tenantId_tradeDate_commodityId_deliveryBasisId_respondentId_source: {
+                tenantId_indexProductId_tradeDate_commodityId_deliveryBasisId_respondentId_source: {
                   tenantId: tenantScope.tenantId,
+                  indexProductId: tenantScope.indexProductId,
                   tradeDate,
                   commodityId: commodity.id,
                   deliveryBasisId: deliveryBasis.id,
@@ -662,7 +663,7 @@ async function main() {
   }
 
   await prisma.respondentEmailSchedule.upsert({
-    where: { id: "default" },
+    where: { id: tenantScope.tenantId },
     update: {
       enabled: true,
       replyTo: "inbox@uga.ua",
@@ -676,7 +677,8 @@ async function main() {
       workdays: "Monday-Friday",
     },
     create: {
-      id: "default",
+      id: tenantScope.tenantId,
+      ...tenantScope,
       enabled: true,
       replyTo: "inbox@uga.ua",
       sender: "UGA Index <onboarding@resend.dev>",

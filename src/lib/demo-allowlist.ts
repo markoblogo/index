@@ -10,6 +10,7 @@ import {
   isSpikeAdminEmail,
 } from "@/lib/spike-admin-access";
 import { getRuntimeMode } from "@/lib/tenant-context";
+import { tenantScopedWhere } from "@/lib/tenant-data-scope";
 
 export type DemoAllowlistRole = "admin" | "respondent";
 
@@ -277,6 +278,7 @@ function getDatabaseAdminEmail() {
 
 async function authenticateDatabaseUser(login: string, password: string) {
   const activeIndex = getActiveIndexConfig();
+  const tenantScope = tenantScopedWhere();
   const user = await db.user.findFirst({
     include: {
       respondent: {
@@ -286,6 +288,7 @@ async function authenticateDatabaseUser(login: string, password: string) {
       },
     },
     where: {
+      ...tenantScope,
       active: true,
       email: login,
       role: { in: ["admin", "respondent"] },
@@ -293,6 +296,14 @@ async function authenticateDatabaseUser(login: string, password: string) {
   });
 
   if (!user) {
+    return null;
+  }
+
+  if (
+    user.respondent &&
+    (user.respondent.tenantId !== tenantScope.tenantId ||
+      user.respondent.indexProductId !== tenantScope.indexProductId)
+  ) {
     return null;
   }
 
@@ -337,6 +348,7 @@ async function authenticateDatabaseUser(login: string, password: string) {
 }
 
 async function authenticateFirstDatabaseRespondent(password: string) {
+  const tenantScope = tenantScopedWhere();
   const user = await db.user.findFirst({
     include: {
       respondent: {
@@ -349,9 +361,11 @@ async function authenticateFirstDatabaseRespondent(password: string) {
       createdAt: "asc",
     },
     where: {
+      ...tenantScope,
       active: true,
       role: "respondent",
       respondent: {
+        ...tenantScope,
         status: "active",
       },
     },

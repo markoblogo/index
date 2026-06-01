@@ -20,8 +20,19 @@ export async function setPermanentPasswordForUser(
 
   if (user.role === "respondent" && user.respondentId) {
     await db.$transaction(async (tx) => {
+      const respondent = await tx.respondent.findFirst({
+        where: { id: user.respondentId, ...tenantScope },
+        select: { id: true },
+      });
+
+      if (!respondent) {
+        throw new Error(
+          `Password setup respondent was not found for ${user.email}.`,
+        );
+      }
+
       await tx.respondentAuthAccount.update({
-        where: { respondentId: user.respondentId },
+        where: { respondentId: respondent.id },
         data: {
           passwordHash,
           passwordSetAt: now,
@@ -30,7 +41,7 @@ export async function setPermanentPasswordForUser(
         },
       });
       await tx.user.updateMany({
-        where: { id: user.userId },
+        where: { id: user.userId, ...tenantScope },
         data: {
           passwordHash,
           passwordSetAt: now,
@@ -56,6 +67,7 @@ export async function setPermanentPasswordForUser(
   await db.$transaction(async (tx) => {
     const dbUser = await tx.user.findFirst({
       where: {
+        ...tenantScope,
         active: true,
         role: user.role,
         OR: [{ id: user.userId }, { email: user.email }],
