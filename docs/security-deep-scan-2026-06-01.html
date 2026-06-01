@@ -1,0 +1,992 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>index Codex Security Scan</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #fff;
+      --bg-elev: #fafafa;
+      --bg-muted: #f5f5f7;
+      --fg: #111827;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --accent: #2563eb;
+      --code: #f3f4f6;
+      --shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0b0f14;
+        --bg-elev: #0f141b;
+        --bg-muted: #121923;
+        --fg: #e5e7eb;
+        --muted: #9ca3af;
+        --border: #243040;
+        --accent: #60a5fa;
+        --code: #111827;
+        --shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+      }
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font: 15px/1.55 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    body.sidebar-collapsed .layout { grid-template-columns: 44px minmax(0, 1fr); }
+
+    .sidebar {
+      min-height: 100vh;
+      border-right: 1px solid var(--border);
+      background: var(--bg-muted);
+    }
+
+    .toc-inner {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+      padding: 10px 8px;
+    }
+
+    .nav-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      margin: 0 0 8px;
+      text-transform: uppercase;
+    }
+
+    .nav-toggle {
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--fg);
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 5px;
+    }
+
+    .nav-toggle:hover { box-shadow: var(--shadow); }
+    .nav-meta { color: var(--muted); font-size: 12px; margin: 0 0 12px; padding: 0 4px; }
+
+    body.sidebar-collapsed .toc-inner {
+      display: flex;
+      align-items: center;
+      padding: 8px 6px;
+    }
+
+    body.sidebar-collapsed .nav-title span,
+    body.sidebar-collapsed .nav-meta,
+    body.sidebar-collapsed .toc { display: none; }
+
+    main { max-width: 1040px; padding: 32px 44px 80px; }
+    h1, h2, h3 { line-height: 1.2; margin-top: 1.7em; }
+    h1:first-child { margin-top: 0; }
+    h2 { border-top: 1px solid var(--border); padding-top: 1em; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code { background: var(--code); border-radius: 4px; padding: 0.1em 0.3em; }
+    pre { background: var(--code); border: 1px solid var(--border); border-radius: 8px; overflow: auto; padding: 16px; }
+    pre code { background: transparent; padding: 0; }
+    table { border-collapse: collapse; width: 100%; margin: 18px 0; }
+    th, td { border: 1px solid var(--border); padding: 8px 10px; vertical-align: top; }
+    th { text-align: left; background: var(--code); }
+
+    main h3[id^="0-"] + table,
+    main h3[id^="1-"] + table,
+    main h3[id^="2-"] + table,
+    main h3[id^="3-"] + table,
+    main h3[id^="4-"] + table,
+    main h3[id^="5-"] + table,
+    main h3[id^="6-"] + table,
+    main h3[id^="7-"] + table,
+    main h3[id^="8-"] + table,
+    main h3[id^="9-"] + table {
+      margin: 10px 0 24px;
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      background: var(--bg-elev);
+      box-shadow: var(--shadow);
+    }
+
+    main h3[id^="0-"] + table th,
+    main h3[id^="1-"] + table th,
+    main h3[id^="2-"] + table th,
+    main h3[id^="3-"] + table th,
+    main h3[id^="4-"] + table th,
+    main h3[id^="5-"] + table th,
+    main h3[id^="6-"] + table th,
+    main h3[id^="7-"] + table th,
+    main h3[id^="8-"] + table th,
+    main h3[id^="9-"] + table th { display: none; }
+
+    main h3[id^="0-"] + table td:first-child,
+    main h3[id^="1-"] + table td:first-child,
+    main h3[id^="2-"] + table td:first-child,
+    main h3[id^="3-"] + table td:first-child,
+    main h3[id^="4-"] + table td:first-child,
+    main h3[id^="5-"] + table td:first-child,
+    main h3[id^="6-"] + table td:first-child,
+    main h3[id^="7-"] + table td:first-child,
+    main h3[id^="8-"] + table td:first-child,
+    main h3[id^="9-"] + table td:first-child {
+      width: 170px;
+      color: var(--muted);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    main h3[id^="0-"] + table td,
+    main h3[id^="1-"] + table td,
+    main h3[id^="2-"] + table td,
+    main h3[id^="3-"] + table td,
+    main h3[id^="4-"] + table td,
+    main h3[id^="5-"] + table td,
+    main h3[id^="6-"] + table td,
+    main h3[id^="7-"] + table td,
+    main h3[id^="8-"] + table td,
+    main h3[id^="9-"] + table td { border-left: 0; border-right: 0; }
+
+    .toc { list-style: none; padding: 0; margin: 0; }
+    .toc a {
+      display: block;
+      border-radius: 6px;
+      color: var(--fg);
+      font-size: 13px;
+      line-height: 1.3;
+      padding: 4px 6px;
+      position: relative;
+      transition: background 160ms ease, color 160ms ease, padding-left 160ms ease;
+    }
+
+    .toc a:hover { background: var(--bg-elev); text-decoration: none; }
+    .toc-item { list-style: none; margin: 1px 0; }
+    .toc-item.depth-1 > a { font-weight: 700; }
+    .toc-item.depth-2 { padding-left: 14px; }
+    .toc-item.depth-3 { padding-left: 28px; }
+
+    .toc-item.active > a {
+      color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 12%, transparent);
+      font-weight: 700;
+      padding-left: 10px;
+    }
+
+    .toc-item.active > a::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 4px;
+      bottom: 4px;
+      width: 3px;
+      border-radius: 2px;
+      background: var(--accent);
+    }
+
+    @media (max-width: 900px) {
+      .layout { display: block; }
+      .sidebar { min-height: 0; border-right: 0; border-bottom: 1px solid var(--border); }
+      .toc-inner { position: static; height: auto; max-height: 45vh; }
+      main { padding: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" aria-label="Table of contents">
+      <div class="toc-inner">
+        <div class="nav-title">
+          <span>Outline</span>
+          <button id="navToggle" class="nav-toggle" aria-pressed="false" aria-label="Collapse sidebar" title="Collapse sidebar">
+            <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path id="navToggleIcon" d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+        <div class="nav-meta">index Codex Security Scan</div>
+        <ul class="toc">
+          <li class="toc-item depth-1"><a href="#security-review-index">Security Review: index</a></li>
+<li class="toc-item depth-2"><a href="#scope">Scope</a></li>
+<li class="toc-item depth-3"><a href="#scan-summary">Scan Summary</a></li>
+<li class="toc-item depth-2"><a href="#threat-model">Threat Model</a></li>
+<li class="toc-item depth-3"><a href="#assets-and-security-invariants">Assets And Security Invariants</a></li>
+<li class="toc-item depth-3"><a href="#trust-boundaries">Trust Boundaries</a></li>
+<li class="toc-item depth-3"><a href="#attacker-controlled-inputs">Attacker-Controlled Inputs</a></li>
+<li class="toc-item depth-3"><a href="#highest-risk-failure-modes">Highest-Risk Failure Modes</a></li>
+<li class="toc-item depth-2"><a href="#findings">Findings</a></li>
+<li class="toc-item depth-3"><a href="#confidence-scale">Confidence Scale</a></li>
+<li class="toc-item depth-3"><a href="#1-unsigned-legacy-sessions-allow-forged-admin-respondent-access">[1] Unsigned legacy sessions allow forged admin/respondent access</a></li>
+<li class="toc-item depth-3"><a href="#2-database-login-is-not-scoped-to-the-active-tenant">[2] Database login is not scoped to the active tenant</a></li>
+<li class="toc-item depth-3"><a href="#3-respondent-survey-reads-and-writes-are-not-fully-tenant-owned">[3] Respondent survey reads and writes are not fully tenant-owned</a></li>
+<li class="toc-item depth-3"><a href="#4-admin-respondent-management-mutates-child-records-by-unscoped-ids">[4] Admin respondent management mutates child records by unscoped ids</a></li>
+<li class="toc-item depth-3"><a href="#5-admin-daily-inputs-can-write-prices-for-arbitrary-respondent-ids">[5] Admin daily inputs can write prices for arbitrary respondent ids</a></li>
+<li class="toc-item depth-3"><a href="#6-survey-access-tokens-are-reusable-plaintext-bearer-tokens-without-tenant-scope">[6] Survey access tokens are reusable plaintext bearer tokens without tenant scope</a></li>
+<li class="toc-item depth-3"><a href="#7-respondent-notification-scheduling-and-telegram-token-issuance-are-not-tenant-scoped">[7] Respondent notification scheduling and Telegram token issuance are not tenant-scoped</a></li>
+<li class="toc-item depth-3"><a href="#8-spike-admin-respondent-preview-selects-an-unscoped-respondent">[8] Spike admin respondent preview selects an unscoped respondent</a></li>
+<li class="toc-item depth-2"><a href="#reviewed-surfaces">Reviewed Surfaces</a></li>
+<li class="toc-item depth-2"><a href="#open-questions-and-follow-up">Open Questions And Follow Up</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main>
+      <h1 id="security-review-index">Security Review: index</h1>
+
+<h2 id="scope">Scope</h2>
+
+<ul><li>Scan mode: Codex Security Deep Security Scan, repository-wide.</li><li>Repository: <code>/Users/antonbiletskiy-volokh/Downloads/Projects/index</code> at commit <code>9cd2a9f</code>.</li><li>In scope: Next.js app routes, server actions, Prisma schema and migrations, tenant-scoped data access, admin/respondent auth and notification flows, cron/internal endpoints, setup/password flows, and market-data write paths.</li><li>Artifacts reviewed: three rounds of worker discovery artifacts under <code>/tmp/codex-security-scans/index/9cd2a9f_20260601T125019Z/artifacts/deep_discovery</code>, canonical discovery artifacts under <code>artifacts/02_discovery</code>, validation notes in this report, and source-level code traces.</li><li>Limitations: validation used static code tracing and existing local test/build evidence, not a live production database. Production deployment secrets and Vercel proxy behavior were not inspected.</li></ul>
+
+<h3 id="scan-summary">Scan Summary</h3>
+
+<table>
+<thead><tr>
+<th>Field</th>
+<th>Value</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>Reportable findings</td>
+<td>8</td>
+</tr>
+<tr>
+<td>Severity mix</td>
+<td>1 critical, 4 high, 3 medium</td>
+</tr>
+<tr>
+<td>Confidence mix</td>
+<td>7 high, 1 medium</td>
+</tr>
+<tr>
+<td>Coverage</td>
+<td>526 repository worklist rows generated; three deep-discovery rounds; Round 03 added no new canonical clusters</td>
+</tr>
+<tr>
+<td>Validation mode</td>
+<td>Centralized source trace over surviving canonical candidates</td>
+</tr>
+<tr>
+<td>Final markdown</td>
+<td><code>/tmp/codex-security-scans/index/9cd2a9f_20260601T125019Z/report.md</code></td>
+</tr>
+<tr>
+<td>Final HTML</td>
+<td><code>/tmp/codex-security-scans/index/9cd2a9f_20260601T125019Z/report.html</code></td>
+</tr>
+</tbody></table>
+
+<h2 id="threat-model">Threat Model</h2>
+
+<h3 id="assets-and-security-invariants">Assets And Security Invariants</h3>
+
+<ul><li>Tenant-scoped market data for UGA, Spike and future index products must never be readable or writable across tenants.</li><li>Admin, respondent and member sessions must be unforgeable and bound to the active tenant/product context.</li><li>Respondent price submissions, survey tokens, contact data and publication controls are integrity-sensitive because they influence public market index values.</li><li>Operational endpoints, cron jobs and internal setup helpers must be authenticated and fail closed in production.</li></ul>
+
+<h3 id="trust-boundaries">Trust Boundaries</h3>
+
+<ul><li>Internet-facing Next.js routes: public pages, <code>/login</code>, <code>/setup-password</code>, <code>/respondent/access/[token]</code>, respondent forms and public APIs.</li><li>Authenticated admin/member/respondent server actions and pages.</li><li>Cron/internal APIs protected by bearer secrets.</li><li>Database rows shared by tenants when deployment uses a common production database.</li><li>Third-party providers: Resend, Telegram, MN7R/NBU integrations.</li></ul>
+
+<h3 id="attacker-controlled-inputs">Attacker-Controlled Inputs</h3>
+
+<ul><li>Cookies and form fields submitted to login/setup/respondent/admin routes.</li><li>Survey access tokens delivered through email or Telegram.</li><li>Admin form ids such as respondent, contact, commodity and auth-account identifiers.</li><li>Forwarded request headers when not guaranteed by the deployment proxy.</li><li>Tenant selection through deployment env and host configuration.</li></ul>
+
+<h3 id="highest-risk-failure-modes">Highest-Risk Failure Modes</h3>
+
+<ul><li>Forged sessions or setup flows that allow account takeover or role confusion.</li><li>Missing tenant scoping on database reads/writes that causes cross-tenant data exposure or index pollution.</li><li>Reusable bearer tokens or plaintext secrets that allow respondent impersonation.</li><li>Internal setup helpers that retain broad mutation or credential exposure paths outside tightly controlled development.</li></ul>
+
+<h2 id="findings">Findings</h2>
+
+<table>
+<thead><tr>
+<th>#</th>
+<th>Severity</th>
+<th>Confidence</th>
+<th>Title</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Critical</td>
+<td>High</td>
+<td><a href="#1-unsigned-legacy-sessions-allow-forged-adminrespondent-access">Unsigned legacy sessions allow forged admin/respondent access</a></td>
+</tr>
+<tr>
+<td>2</td>
+<td>High</td>
+<td>High</td>
+<td><a href="#2-database-login-is-not-scoped-to-the-active-tenant">Database login is not scoped to the active tenant</a></td>
+</tr>
+<tr>
+<td>3</td>
+<td>High</td>
+<td>High</td>
+<td><a href="#3-respondent-survey-reads-and-writes-are-not-fully-tenant-owned">Respondent survey reads and writes are not fully tenant-owned</a></td>
+</tr>
+<tr>
+<td>4</td>
+<td>High</td>
+<td>High</td>
+<td><a href="#4-admin-respondent-management-mutates-child-records-by-unscoped-ids">Admin respondent management mutates child records by unscoped ids</a></td>
+</tr>
+<tr>
+<td>5</td>
+<td>High</td>
+<td>High</td>
+<td><a href="#5-admin-daily-inputs-can-write-prices-for-arbitrary-respondent-ids">Admin daily inputs can write prices for arbitrary respondent ids</a></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Medium</td>
+<td>High</td>
+<td><a href="#6-survey-access-tokens-are-reusable-plaintext-bearer-tokens-without-tenant-scope">Survey access tokens are reusable plaintext bearer tokens without tenant scope</a></td>
+</tr>
+<tr>
+<td>7</td>
+<td>Medium</td>
+<td>High</td>
+<td><a href="#7-respondent-notification-scheduling-and-telegram-token-issuance-are-not-tenant-scoped">Respondent notification scheduling and Telegram token issuance are not tenant-scoped</a></td>
+</tr>
+<tr>
+<td>8</td>
+<td>Medium</td>
+<td>Medium</td>
+<td><a href="#8-spike-admin-respondent-preview-selects-an-unscoped-respondent">Spike admin respondent preview selects an unscoped respondent</a></td>
+</tr>
+</tbody></table>
+
+<h3 id="confidence-scale">Confidence Scale</h3>
+
+<table>
+<thead><tr>
+<th>Label</th>
+<th>Meaning</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>high</td>
+<td>Direct source, configuration, or runtime evidence supports the finding, with no material unresolved reachability or exploitability blocker.</td>
+</tr>
+<tr>
+<td>medium</td>
+<td>Source evidence supports a plausible issue, but runtime behavior, deployment configuration, role reachability, type constraints, or exploit reliability still need proof.</td>
+</tr>
+<tr>
+<td>low</td>
+<td>Weak or incomplete evidence; included only for follow-up candidates.</td>
+</tr>
+</tbody></table>
+
+<h3 id="1-unsigned-legacy-sessions-allow-forged-admin-respondent-access">[1] Unsigned legacy sessions allow forged admin/respondent access</h3>
+
+<table>
+<thead><tr>
+<th>Field</th>
+<th>Value</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>Severity</td>
+<td>Critical</td>
+</tr>
+<tr>
+<td>Confidence</td>
+<td>High</td>
+</tr>
+<tr>
+<td>Confidence rationale</td>
+<td>The cookie parser accepts legacy payloads without verifying the signature, and role gates trust the parsed role and password setup status directly.</td>
+</tr>
+<tr>
+<td>Category</td>
+<td>Authentication bypass / session forgery</td>
+</tr>
+<tr>
+<td>CWE</td>
+<td>CWE-347 Improper Verification of Cryptographic Signature; CWE-287 Improper Authentication</td>
+</tr>
+<tr>
+<td>Affected lines</td>
+<td><code>src/lib/demo-auth.ts:47-62</code>, <code>src/lib/demo-auth.ts:64-110</code>, <code>src/lib/demo-auth.ts:305-316</code>, <code>src/lib/demo-auth.ts:382-385</code>, <code>src/app/api/setup-password/route.ts:29-35</code>, <code>src/lib/password-setup.ts:21-40</code>, <code>src/lib/password-setup.ts:56-78</code></td>
+</tr>
+</tbody></table>
+
+<h4 id="summary">Summary</h4>
+
+<p><code>verifyLegacySignedCookie</code> returns the payload whenever the cookie contains two dot-separated parts; it does not validate the signature. <code>parseDemoSessionCookieValue</code> then accepts that payload as a <code>DemoUser</code>, and <code>requireDemoRole</code> treats it as an authenticated admin or respondent session. The setup-password endpoint also accepts a form-supplied <code>setupSession</code>, so the same unsigned legacy payload can be used to select an account and set a permanent password.</p>
+
+<h4 id="validation">Validation</h4>
+
+<p>Static validation traced <code>getCurrentDemoUser</code> to <code>parseDemoSessionCookieValue</code>, then to <code>verifySessionCookie</code>. For values that are not <code>session.*</code> or <code>demo.*</code>, <code>verifyLegacySignedCookie</code> only checks that both payload and signature strings exist. <code>parseSessionPayload</code> allows attacker-provided <code>role</code>, <code>userId</code>, <code>email</code>, <code>respondentId</code>, <code>companyName</code>, <code>passwordSetupStatus</code>, <code>issuedAt</code>, and <code>expiresAt</code> when types are valid. No database lookup confirms that the session user exists or belongs to the active tenant before role access is granted.</p>
+
+<h4 id="dataflow">Dataflow</h4>
+
+<p>Attacker cookie or <code>setupSession</code> form field -&gt; <code>parseDemoSessionCookieValue</code> -&gt; <code>verifyLegacySignedCookie</code> returns unverified payload -&gt; <code>parseSessionPayload</code> creates <code>DemoUser</code> -&gt; <code>requireDemoRole</code> grants admin/respondent access or <code>/api/setup-password</code> calls <code>setPermanentPasswordForUser</code> -&gt; password/session is minted for the chosen identity.</p>
+
+<h4 id="reachability">Reachability</h4>
+
+<p>The affected routes are normal web entry points: protected admin/respondent pages read the session cookie, and <code>/api/setup-password</code> reads form data. An unauthenticated attacker can construct a base64url JSON payload with role <code>admin</code> and <code>passwordSetupStatus</code> <code>active</code>, or choose a respondent id for respondent flows.</p>
+
+<h4 id="severity">Severity</h4>
+
+<p>Critical: this is a direct internet-facing session forgery primitive that can grant admin/respondent access and can be used to reset passwords through the setup flow. Severity would drop only if production deployments provably block legacy cookie parsing and form-supplied setup sessions before these functions run.</p>
+
+<h4 id="remediation">Remediation</h4>
+
+<p>Remove unsigned legacy session support entirely, or require a valid HMAC for every accepted session format. Do not accept <code>setupSession</code> from form data; use only an httpOnly signed cookie or one-time setup token. Add tests proving forged legacy cookies and form-supplied sessions are rejected in production and development.</p>
+
+<h3 id="2-database-login-is-not-scoped-to-the-active-tenant">[2] Database login is not scoped to the active tenant</h3>
+
+<table>
+<thead><tr>
+<th>Field</th>
+<th>Value</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>Severity</td>
+<td>High</td>
+</tr>
+<tr>
+<td>Confidence</td>
+<td>High</td>
+</tr>
+<tr>
+<td>Confidence rationale</td>
+<td>The database login query selects by email/role without <code>tenantScopedWhere</code>, then issues a session under the currently active tenant runtime.</td>
+</tr>
+<tr>
+<td>Category</td>
+<td>Cross-tenant authentication / tenant confusion</td>
+</tr>
+<tr>
+<td>CWE</td>
+<td>CWE-639 Authorization Bypass Through User-Controlled Key; CWE-863 Incorrect Authorization</td>
+</tr>
+<tr>
+<td>Affected lines</td>
+<td><code>src/lib/demo-allowlist.ts:217-240</code>, <code>src/lib/demo-allowlist.ts:278-336</code>, <code>src/lib/demo-allowlist.ts:339-360</code></td>
+</tr>
+</tbody></table>
+
+<h4 id="summary">Summary</h4>
+
+<p>When <code>DATABASE_URL</code> is configured, login falls through to <code>authenticateDatabaseUser</code>. That function computes <code>activeIndex</code> but does not use it in the <code>db.user.findFirst</code> query. In a shared database, the first matching active user with that email and role can be authenticated into the active tenant context.</p>
+
+<h4 id="validation">Validation</h4>
+
+<p>The query at <code>src/lib/demo-allowlist.ts:280-293</code> filters <code>active</code>, <code>email</code>, and role, but not <code>tenantId</code> or <code>indexProductId</code>. <code>authenticateFirstDatabaseRespondent</code> also chooses the first active respondent globally before delegating back to the same unscoped login path.</p>
+
+<h4 id="dataflow">Dataflow</h4>
+
+<p>Login request -&gt; <code>authenticateAllowlistedUser</code> -&gt; <code>authenticateDatabaseUser</code> -&gt; unscoped <code>db.user.findFirst</code> -&gt; password verification against the returned user -&gt; returned <code>DemoAllowlistUser</code> is converted into a session for the active deployment.</p>
+
+<h4 id="reachability">Reachability</h4>
+
+<p>Any user who can submit login credentials can trigger the path. The impact requires either duplicate emails across tenants, shared demo credentials, or the <code>respondent/respondent</code> shortcut in a shared database.</p>
+
+<h4 id="severity">Severity</h4>
+
+<p>High: this breaks the core tenant isolation invariant for authentication in shared-database deployments. Severity would drop if production always uses one database per tenant and enforces unique email values outside the app.</p>
+
+<h4 id="remediation">Remediation</h4>
+
+<p>Add <code>...tenantScopedWhere()</code> or an equivalent active tenant predicate to every database login and first-respondent lookup. Add tests with two tenants sharing the same email and prove the inactive tenant cannot log into the active deployment.</p>
+
+<h3 id="3-respondent-survey-reads-and-writes-are-not-fully-tenant-owned">[3] Respondent survey reads and writes are not fully tenant-owned</h3>
+
+<table>
+<thead><tr>
+<th>Field</th>
+<th>Value</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>Severity</td>
+<td>High</td>
+</tr>
+<tr>
+<td>Confidence</td>
+<td>High</td>
+</tr>
+<tr>
+<td>Confidence rationale</td>
+<td>Respondent, commodity and submission queries use caller/session ids without consistently applying tenant scope or ownership checks.</td>
+</tr>
+<tr>
+<td>Category</td>
+<td>Cross-tenant IDOR / price submission integrity</td>
+</tr>
+<tr>
+<td>CWE</td>
+<td>CWE-639 Authorization Bypass Through User-Controlled Key; CWE-862 Missing Authorization</td>
+</tr>
+<tr>
+<td>Affected lines</td>
+<td><code>src/lib/respondent-survey.ts:247-285</code>, <code>src/lib/respondent-survey.ts:315-384</code></td>
+</tr>
+</tbody></table>
+
+<h4 id="summary">Summary</h4>
+
+<p>The respondent survey data loader fetches <code>Respondent</code> by global id and fetches commodities without tenant scope. The save path scopes the upsert unique key by the active tenant but still accepts the session respondent id and commodity ids without proving they belong to that tenant. This can expose another tenant respondent name and can create active-tenant submissions tied to foreign respondent or commodity ids.</p>
+
+<h4 id="validation">Validation</h4>
+
+<p><code>getDatabaseRespondentSurveyData</code> scopes delivery bases but uses <code>db.respondent.findUnique({ where: { id: respondentId } })</code> and <code>db.commodity.findMany({ where: { status: &quot;published&quot; } })</code>. <code>saveDatabaseRespondentSurvey</code> scopes delivery bases but loads commodities by id only, then creates <code>PriceSubmission</code> with the active tenant plus caller-provided <code>respondentId</code> and <code>commodityId</code>.</p>
+
+<h4 id="dataflow">Dataflow</h4>
+
+<p>Respondent session <code>respondentId</code> and form <code>price:&lt;commodityId&gt;</code> fields -&gt; survey data/read or save functions -&gt; unscoped respondent/commodity lookup -&gt; <code>PriceSubmission.upsert</code> under active tenant with unverified ids.</p>
+
+<h4 id="reachability">Reachability</h4>
+
+<p>A respondent session can reach these flows. The unsigned session finding makes arbitrary respondent ids trivial, but this remains a tenant-ownership bug that should be fixed independently because survey token/session creation paths also bind respondent ids from token records.</p>
+
+<h4 id="severity">Severity</h4>
+
+<p>High: the vulnerable write path can pollute market-data inputs, and the read path can disclose respondent identities across tenants. Severity would drop if production databases are physically separated and never share ids.</p>
+
+<h4 id="remediation">Remediation</h4>
+
+<p>Require <code>tenantScopedWhere()</code> on respondent and commodity lookups, validate that the session respondent belongs to the active tenant, and reject entries for unknown or foreign commodities before any upsert. Add cross-tenant repository tests for survey read and save.</p>
+
+<h3 id="4-admin-respondent-management-mutates-child-records-by-unscoped-ids">[4] Admin respondent management mutates child records by unscoped ids</h3>
+
+<table>
+<thead><tr>
+<th>Field</th>
+<th>Value</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>Severity</td>
+<td>High</td>
+</tr>
+<tr>
+<td>Confidence</td>
+<td>High</td>
+</tr>
+<tr>
+<td>Confidence rationale</td>
+<td>Multiple admin server-side respondent actions mutate contacts, auth accounts, users and basket links by raw ids before or without tenant ownership proof.</td>
+</tr>
+<tr>
+<td>Category</td>
+<td>Authorization bypass / cross-tenant object mutation</td>
+</tr>
+<tr>
+<td>CWE</td>
+<td>CWE-639 Authorization Bypass Through User-Controlled Key; CWE-862 Missing Authorization</td>
+</tr>
+<tr>
+<td>Affected lines</td>
+<td><code>src/lib/respondent-directory.ts:650-676</code>, <code>src/lib/respondent-directory.ts:679-708</code>, <code>src/lib/respondent-directory.ts:711-740</code>, <code>src/lib/respondent-directory.ts:743-785</code>, <code>src/lib/respondent-directory.ts:788-838</code>, <code>src/lib/respondent-directory.ts:841-887</code></td>
+</tr>
+</tbody></table>
+
+<h4 id="summary">Summary</h4>
+
+<p>The admin respondent directory functions partially scope the parent respondent but child-object mutations do not consistently prove tenant ownership. Contact update/delete, auth-account upsert/reset, and delete child cleanup operate by <code>respondentId</code> or <code>contactId</code> without tenant-qualified joins or prior scoped parent lookup.</p>
+
+<h4 id="validation">Validation</h4>
+
+<p>Examples include <code>respondentAuthAccount.deleteMany({ where: { respondentId: id } })</code>, <code>respondentContact.updateMany({ where: { respondentId: id } })</code>, <code>respondentContact.update({ where: { id: input.contactId } })</code>, <code>respondentAuthAccount.upsert({ where: { respondentId: input.respondentId } })</code>, and password reset user updates using <code>OR: [{ respondentId }, { email: auth.loginEmail }]</code> without tenant scope.</p>
+
+<h4 id="dataflow">Dataflow</h4>
+
+<p>Authenticated admin form values -&gt; respondent directory server action -&gt; raw respondent/contact/auth ids -&gt; Prisma update/upsert/delete on child records -&gt; cross-tenant child records mutated even when parent update is scoped or skipped.</p>
+
+<h4 id="reachability">Reachability</h4>
+
+<p>The actions are admin-only, but admin users are in scope for tenant isolation. If an admin can submit or tamper with ids from another tenant in a shared database, these paths can disable contacts, reset auth accounts, relink users, or deactivate basket links.</p>
+
+<h4 id="severity">Severity</h4>
+
+<p>High: this is a cross-tenant integrity and account-management issue in privileged workflows. Severity would drop if production never shares tenant data and admin form ids cannot be tampered with.</p>
+
+<h4 id="remediation">Remediation</h4>
+
+<p>Start each mutation with a scoped parent lookup, and perform child mutations only through tenant-owned parent relationships or scoped joins. Add tests that use foreign tenant <code>respondentId</code>, <code>contactId</code>, and auth account rows and assert no mutation occurs.</p>
+
+<h3 id="5-admin-daily-inputs-can-write-prices-for-arbitrary-respondent-ids">[5] Admin daily inputs can write prices for arbitrary respondent ids</h3>
+
+<table>
+<thead><tr>
+<th>Field</th>
+<th>Value</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>Severity</td>
+<td>High</td>
+</tr>
+<tr>
+<td>Confidence</td>
+<td>High</td>
+</tr>
+<tr>
+<td>Confidence rationale</td>
+<td>The admin save path trusts respondent ids parsed from form field names and upserts active-tenant submissions without verifying respondent ownership.</td>
+</tr>
+<tr>
+<td>Category</td>
+<td>Market-data integrity / cross-tenant IDOR</td>
+</tr>
+<tr>
+<td>CWE</td>
+<td>CWE-639 Authorization Bypass Through User-Controlled Key; CWE-862 Missing Authorization</td>
+</tr>
+<tr>
+<td>Affected lines</td>
+<td><code>src/lib/admin-daily-inputs.ts:423-502</code>, <code>src/lib/admin-daily-inputs.ts:541-580</code></td>
+</tr>
+</tbody></table>
+
+<h4 id="summary">Summary</h4>
+
+<p><code>parseSubmittedPrices</code> extracts <code>commodityId</code> and <code>respondentId</code> directly from field names. <code>saveDatabaseDailyInputs</code> validates commodity and basis tenant scope but does not verify that each respondent id belongs to the active tenant before writing <code>PriceSubmission</code> rows.</p>
+
+<h4 id="validation">Validation</h4>
+
+<p>The upsert unique key uses the active <code>tenantId</code> and the submitted <code>respondentId</code>. The create payload repeats the active tenant scope with the submitted respondent id, which can create inconsistent active-tenant market data for a foreign or invalid respondent id.</p>
+
+<h4 id="dataflow">Dataflow</h4>
+
+<p>Admin form key <code>price:&lt;commodityId&gt;:&lt;respondentId&gt;</code> -&gt; <code>parseSubmittedPrices</code> -&gt; <code>saveDatabaseDailyInputs</code> -&gt; <code>PriceSubmission.upsert</code> with active tenant and unverified respondent id.</p>
+
+<h4 id="reachability">Reachability</h4>
+
+<p>Authenticated admins can submit the form. A malicious or compromised tenant admin, or an attacker with the session forgery issue, can tamper with hidden form fields or request bodies.</p>
+
+<h4 id="severity">Severity</h4>
+
+<p>High: the path can alter market-data inputs used for calculations and publication. Severity would drop if daily input submissions are not exposed to tenant admins in shared deployments.</p>
+
+<h4 id="remediation">Remediation</h4>
+
+<p>Load active respondents with <code>tenantScopedWhere()</code> for the submitted ids and reject entries whose respondent is absent. Consider deriving respondent ids from server-side loaded daily-input state rather than trusting form field names.</p>
+
+<h3 id="6-survey-access-tokens-are-reusable-plaintext-bearer-tokens-without-tenant-scope">[6] Survey access tokens are reusable plaintext bearer tokens without tenant scope</h3>
+
+<table>
+<thead><tr>
+<th>Field</th>
+<th>Value</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>Severity</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>Confidence</td>
+<td>High</td>
+</tr>
+<tr>
+<td>Confidence rationale</td>
+<td>Schema and access route show tokens are stored as unique plaintext, looked up without tenant scope, and <code>usedAt</code> is written but never checked.</td>
+</tr>
+<tr>
+<td>Category</td>
+<td>Bearer token replay / tenant binding gap</td>
+</tr>
+<tr>
+<td>CWE</td>
+<td>CWE-294 Authentication Bypass by Capture-replay; CWE-522 Insufficiently Protected Credentials</td>
+</tr>
+<tr>
+<td>Affected lines</td>
+<td><code>prisma/schema.prisma:292-304</code>, <code>src/app/respondent/access/[token]/route.ts:31-61</code>, <code>src/lib/respondent-email.ts:292-305</code>, <code>src/lib/respondent-telegram.ts:208-220</code></td>
+</tr>
+</tbody></table>
+
+<h4 id="summary">Summary</h4>
+
+<p>Respondent survey tokens are generated as random bearer strings and stored directly in the database. The access route looks up by the plaintext token and checks expiry and respondent status, but not <code>usedAt</code>, tenant, or index product. It then sets <code>usedAt</code> after successful access, so the token can be reused until expiry.</p>
+
+<h4 id="validation">Validation</h4>
+
+<p><code>RespondentSurveyToken</code> lacks <code>tenantId</code>, <code>indexProductId</code>, and token digest fields. <code>/respondent/access/[token]</code> uses <code>findUnique({ where: { token } })</code>; the validity check omits <code>usedAt === null</code>; email and Telegram creation persist the raw token.</p>
+
+<h4 id="dataflow">Dataflow</h4>
+
+<p>Email/Telegram token generation -&gt; plaintext token row -&gt; recipient link <code>/respondent/access/&lt;token&gt;</code> -&gt; unscoped token lookup -&gt; respondent session cookie minted -&gt; <code>usedAt</code> updated but not enforced.</p>
+
+<h4 id="reachability">Reachability</h4>
+
+<p>Anyone with the link can replay it within the expiry window. The token is delivered over email/Telegram and can appear in logs, browser history, referrers, support screenshots, or database reads.</p>
+
+<h4 id="severity">Severity</h4>
+
+<p>Medium: this enables respondent impersonation for a bounded survey window and can combine with tenant gaps to affect price submissions. Severity would rise if tokens are long-lived or if links are exposed through logs or third-party analytics.</p>
+
+<h4 id="remediation">Remediation</h4>
+
+<p>Store only a token digest, add tenant/index scope to the token model and lookup, enforce <code>usedAt: null</code> before minting a session, and invalidate prior outstanding tokens per respondent/contact when issuing a new one.</p>
+
+<h3 id="7-respondent-notification-scheduling-and-telegram-token-issuance-are-not-tenant-scoped">[7] Respondent notification scheduling and Telegram token issuance are not tenant-scoped</h3>
+
+<table>
+<thead><tr>
+<th>Field</th>
+<th>Value</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>Severity</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>Confidence</td>
+<td>High</td>
+</tr>
+<tr>
+<td>Confidence rationale</td>
+<td>Schedule and sent-today state are global, and Telegram recipient/token creation queries omit active tenant scope.</td>
+</tr>
+<tr>
+<td>Category</td>
+<td>Cross-tenant notification and token issuance confusion</td>
+</tr>
+<tr>
+<td>CWE</td>
+<td>CWE-639 Authorization Bypass Through User-Controlled Key; CWE-668 Exposure of Resource to Wrong Sphere</td>
+</tr>
+<tr>
+<td>Affected lines</td>
+<td><code>prisma/schema.prisma:260-273</code>, <code>src/lib/respondent-directory.ts:258-313</code>, <code>src/lib/respondent-email.ts:218-240</code>, <code>src/lib/respondent-telegram.ts:77-110</code>, <code>src/lib/respondent-telegram.ts:112-141</code>, <code>src/lib/respondent-telegram.ts:208-220</code></td>
+</tr>
+</tbody></table>
+
+<h4 id="summary">Summary</h4>
+
+<p>Email schedule configuration is a singleton row with id <code>default</code>, with no tenant fields. Scheduled-send dedupe counts all sent deliveries for the day globally. Telegram recipient selection queries active self-service respondents without <code>tenantScopedWhere</code>, then creates unscoped survey tokens for those respondents.</p>
+
+<h4 id="validation">Validation</h4>
+
+<p>The Prisma model has no tenant/index fields. <code>getRespondentEmailScheduleData</code> and <code>updateRespondentEmailScheduleData</code> always use <code>id: default</code>. <code>wasScheduledEmailAlreadySentToday</code> counts deliveries only by time/status/trigger. <code>getTelegramRecipients</code> and <code>getSmokeRecipients</code> omit tenant scope, and <code>createSurveyUrl</code> writes a token without tenant scope.</p>
+
+<h4 id="dataflow">Dataflow</h4>
+
+<p>Cron/internal notification trigger -&gt; global schedule or unscoped respondent query -&gt; delivery rows and survey tokens created for respondents that may belong to a different tenant -&gt; recipient receives a survey link for the wrong deployment context.</p>
+
+<h4 id="reachability">Reachability</h4>
+
+<p>The path requires a scheduled cron or internal notification trigger. It is still relevant because production cron tasks are intended operational workflows for respondent collection.</p>
+
+<h4 id="severity">Severity</h4>
+
+<p>Medium: this can suppress notifications for one tenant after another tenant sends, or issue survey links to the wrong tenant&#x27;s contacts. Severity would rise if cron secrets are shared broadly or if a tenant admin can trigger these paths manually.</p>
+
+<h4 id="remediation">Remediation</h4>
+
+<p>Add tenant/index scope to schedule, delivery and survey-token models. Scope all notification recipient queries and sent-today checks. Add tenant-specific tests for scheduled email and Telegram token issuance.</p>
+
+<h3 id="8-spike-admin-respondent-preview-selects-an-unscoped-respondent">[8] Spike admin respondent preview selects an unscoped respondent</h3>
+
+<table>
+<thead><tr>
+<th>Field</th>
+<th>Value</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>Severity</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>Confidence</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>Confidence rationale</td>
+<td>The code clearly selects a first active respondent without tenant scope, but reachability is limited to Spike admins and preview behavior.</td>
+</tr>
+<tr>
+<td>Category</td>
+<td>Tenant confusion / respondent impersonation preview</td>
+</tr>
+<tr>
+<td>CWE</td>
+<td>CWE-639 Authorization Bypass Through User-Controlled Key</td>
+</tr>
+<tr>
+<td>Affected lines</td>
+<td><code>src/lib/demo-auth.ts:77-88</code>, <code>src/lib/demo-auth.ts:161-194</code></td>
+</tr>
+</tbody></table>
+
+<h4 id="summary">Summary</h4>
+
+<p>When a Spike admin reaches a respondent-only route, <code>requireDemoRole</code> creates a respondent preview user. The preview function selects the first active self-service respondent globally, without tenant scope, and returns a respondent session using that respondent id and legal name.</p>
+
+<h4 id="validation">Validation</h4>
+
+<p>The query in <code>getSpikeAdminRespondentPreviewUser</code> filters active/status/collection mode and an excluded monitor id, but does not include <code>tenantScopedWhere()</code>. The returned session uses the selected respondent id directly.</p>
+
+<h4 id="dataflow">Dataflow</h4>
+
+<p>Spike admin session -&gt; respondent-only route -&gt; <code>requireDemoRole</code> preview branch -&gt; unscoped <code>db.respondent.findFirst</code> -&gt; respondent preview session bound to selected respondent id.</p>
+
+<h4 id="reachability">Reachability</h4>
+
+<p>The actor must be a Spike admin. The impact is narrower than public session forgery, but in shared databases it can bind a privileged preview session to another tenant&#x27;s respondent.</p>
+
+<h4 id="severity">Severity</h4>
+
+<p>Medium: this can expose or modify respondent survey data through preview workflows, but requires an admin role and the preview branch. Severity would rise if tenant admins routinely use this preview in production shared databases.</p>
+
+<h4 id="remediation">Remediation</h4>
+
+<p>Add tenant scope to the respondent query, and prefer an explicit tenant-owned fallback respondent id rather than first-row selection. Add a test with a foreign tenant respondent created earlier than the Spike respondent.</p>
+
+<h2 id="reviewed-surfaces">Reviewed Surfaces</h2>
+
+<table>
+<thead><tr>
+<th>Surface</th>
+<th>Risk Area</th>
+<th>Outcome</th>
+<th>Notes</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>Demo/session auth</td>
+<td>Session forgery</td>
+<td>Reported</td>
+<td>Legacy parser accepts unsigned payloads and setup flow trusts parsed sessions.</td>
+</tr>
+<tr>
+<td>Database login</td>
+<td>Cross-tenant auth</td>
+<td>Reported</td>
+<td>Login queries omit active tenant scope.</td>
+</tr>
+<tr>
+<td>Respondent survey</td>
+<td>Tenant data isolation</td>
+<td>Reported</td>
+<td>Read/write paths mix scoped and unscoped ids.</td>
+</tr>
+<tr>
+<td>Respondent admin directory</td>
+<td>Tenant data isolation</td>
+<td>Reported</td>
+<td>Child mutations by raw ids lack complete tenant ownership proof.</td>
+</tr>
+<tr>
+<td>Admin daily inputs</td>
+<td>Market-data integrity</td>
+<td>Reported</td>
+<td>Respondent ids are trusted from form keys.</td>
+</tr>
+<tr>
+<td>Survey token model/access</td>
+<td>Bearer token replay</td>
+<td>Reported</td>
+<td>Plaintext, reusable, no tenant scope.</td>
+</tr>
+<tr>
+<td>Email/Telegram notifications</td>
+<td>Cross-tenant operational flow</td>
+<td>Reported</td>
+<td>Global schedule and unscoped Telegram recipient selection.</td>
+</tr>
+<tr>
+<td>Spike admin respondent preview</td>
+<td>Tenant confusion</td>
+<td>Reported</td>
+<td>First active respondent query is unscoped.</td>
+</tr>
+<tr>
+<td>Rate limiting</td>
+<td>Abuse control</td>
+<td>Needs follow-up</td>
+<td>Code trusts forwarded IP headers; reportability depends on Vercel/proxy normalization guarantees.</td>
+</tr>
+<tr>
+<td><code>/api/internal/spike-setup</code></td>
+<td>Internal setup helper</td>
+<td>Needs follow-up</td>
+<td>Production is disabled, but non-production helper still has broad mutations and temporary-password exposure switches. Keep blocked from production and remove after migration.</td>
+</tr>
+<tr>
+<td>Cron endpoints</td>
+<td>Internal auth</td>
+<td>No issue found</td>
+<td>Production cron auth fails closed when secrets are missing.</td>
+</tr>
+<tr>
+<td>Security headers</td>
+<td>Browser hardening</td>
+<td>No issue found</td>
+<td>Global CSP/HSTS/referrer/permissions headers are configured; embed CSP is scoped separately.</td>
+</tr>
+<tr>
+<td>Dependency audit</td>
+<td>Supply chain advisories</td>
+<td>No issue found</td>
+<td><code>npm audit --omit=dev</code> returned zero vulnerabilities in the local scan.</td>
+</tr>
+</tbody></table>
+
+<h2 id="open-questions-and-follow-up">Open Questions And Follow Up</h2>
+
+<ul><li>Validate the rate-limit header trust against the exact production ingress: confirm whether clients can directly set <code>x-forwarded-for</code> or <code>x-real-ip</code> before Vercel/platform normalization.</li><li>Review production Vercel env and database topology: if tenants are physically separated today, still fix tenant-scoped code before any shared-database rollout.</li><li>Remove or permanently quarantine <code>/api/internal/spike-setup</code> after the setup migration; keep it unavailable in production.</li><li>After fixes, run targeted regression tests for forged legacy cookies, cross-tenant login, survey token replay, respondent/admin IDORs, and notification tenant scope.</li></ul>
+    </main>
+  </div>
+  <script>
+    const toggle = document.getElementById('navToggle');
+    const icon = document.getElementById('navToggleIcon');
+    const collapsedKey = 'codex-security-report:sidebar-collapsed';
+
+    function setCollapsed(collapsed) {
+      document.body.classList.toggle('sidebar-collapsed', collapsed);
+      if (toggle) {
+        toggle.setAttribute('aria-pressed', collapsed ? 'true' : 'false');
+        toggle.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+        toggle.setAttribute('title', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+      }
+      if (icon) icon.setAttribute('d', collapsed ? 'M9 6l6 6-6 6' : 'M15 6l-6 6 6 6');
+      try { localStorage.setItem(collapsedKey, collapsed ? '1' : '0'); } catch {}
+    }
+
+    try { setCollapsed(localStorage.getItem(collapsedKey) === '1'); } catch {}
+    if (toggle) toggle.addEventListener('click', () => setCollapsed(!document.body.classList.contains('sidebar-collapsed')));
+
+    const tocLinks = Array.from(document.querySelectorAll('.toc a'));
+    const sections = tocLinks.map((link) => {
+      const id = decodeURIComponent(link.getAttribute('href').slice(1));
+      return [link, document.getElementById(id)];
+    }).filter((pair) => pair[1]);
+
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries
+        .filter((entry) => entry.isIntersecting)
+        .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+      if (!visible) return;
+      tocLinks.forEach((link) => link.parentElement.classList.remove('active'));
+      const active = tocLinks.find((link) => link.getAttribute('href') === '#' + visible.target.id);
+      if (active) active.parentElement.classList.add('active');
+    }, { rootMargin: '-10% 0px -75% 0px', threshold: [0, 1] });
+
+    sections.forEach(([, section]) => observer.observe(section));
+  </script>
+</body>
+</html>

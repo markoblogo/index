@@ -33,5 +33,11 @@ Local security scan artifact:
 - `docs/security-scan-2026-06-01.md`
 - `docs/security-scan-2026-06-01.html`
 
-The full Codex Security Deep Scan with subagents remains a release gate and
-requires explicit authorization before it can be run in this thread.
+Codex Security Deep Scan artifact:
+
+- `docs/security-deep-scan-2026-06-01.md`
+- `docs/security-deep-scan-2026-06-01.html`
+
+The full Deep Scan ran with explicit subagent authorization. It found reportable
+security findings, so the production release gate is not closed until those
+findings are fixed and a follow-up scan validates the fixes.
