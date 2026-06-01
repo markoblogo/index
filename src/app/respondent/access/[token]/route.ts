@@ -7,7 +7,7 @@ import {
 } from "@/lib/demo-auth";
 import { db, hasDatabaseUrl } from "@/lib/db";
 import { checkRateLimit, getRequestRateLimitKey } from "@/lib/rate-limit";
-import { digestRespondentSurveyToken } from "@/lib/respondent-survey-token";
+import { digestRespondentSurveyToken } from "@1d3x/auth";
 import { tenantScopedWhere } from "@/lib/tenant-data-scope";
 
 export const dynamic = "force-dynamic";

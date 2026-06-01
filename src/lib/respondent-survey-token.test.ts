@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { digestRespondentSurveyToken } from "@/lib/respondent-survey-token";
+import { digestRespondentSurveyToken } from "@1d3x/auth";
 
 describe("respondent survey tokens", () => {
   it("stores a deterministic digest instead of the bearer token", () => {

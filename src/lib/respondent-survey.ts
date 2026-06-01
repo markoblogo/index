@@ -38,6 +38,11 @@ export type RespondentSurveyData = {
   commodities: RespondentSurveyCommodity[];
 };
 
+export type RespondentSurveyAutoPublishLogger = Pick<
+  Console,
+  "error" | "warn"
+>;
+
 const activeIndex = getActiveIndexTenant();
 const isSpike = activeIndex.id === "spike-ua";
 
@@ -68,6 +73,7 @@ const labels = {
     statusEmpty: "Not started",
     statusSubmitted: `Submitted to ${isSpike ? "Spike Brokers" : "UGA"}`,
     submit: "Submit",
+    submitting: "Submitting...",
     submittedSuccess:
       "Your data has been accepted and has been forwarded to the index calculation.",
     telegramSubmittedNotice:
@@ -105,6 +111,7 @@ const labels = {
     statusEmpty: "Не розпочато",
     statusSubmitted: `Передано ${isSpike ? "Spike Brokers" : "в УЗА"}`,
     submit: "Подати",
+    submitting: "Подається...",
     submitted: "Подано",
     submittedSuccess:
       "Ваші дані успішно прийнято. Вони будуть використані в розрахунку індексу.",
@@ -191,13 +198,35 @@ export async function saveRespondentSurvey(formData: FormData, user: DemoUser) {
   }
 
   await saveDatabaseRespondentSurvey({ date, entries, respondentId, status: intent, user });
-  if (isSpike && intent === "submitted" && date === todayInputDate()) {
-    await autoPublishSpikeDailyIndices(date, { replaceExisting: true });
-  }
+  await autoPublishAfterRespondentSubmit({ date, status: intent });
   revalidatePath("/admin/daily-inputs");
   redirect(
     `/respondent?locale=${locale}&saved=${intent}${respondentChannel === "telegram" ? "&channel=telegram&inTelegram=1" : ""}`,
   );
+}
+
+export async function autoPublishAfterRespondentSubmit({
+  date,
+  logger = console,
+  status,
+}: {
+  date: string;
+  logger?: RespondentSurveyAutoPublishLogger;
+  status: DemoSubmissionStatus;
+}) {
+  if (!isSpike || status !== "submitted" || date !== todayInputDate()) {
+    return { attempted: false, ok: true } as const;
+  }
+
+  try {
+    await autoPublishSpikeDailyIndices(date, { replaceExisting: true });
+
+    return { attempted: true, ok: true } as const;
+  } catch (error) {
+    logger.error("Respondent submission saved, but auto-publish failed.", error);
+
+    return { attempted: true, ok: false } as const;
+  }
 }
 
 function getMockRespondentSurveyData({

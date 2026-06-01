@@ -33,6 +33,18 @@ The staging migration gate is now executable instead of only documented:
   setup tokens and basket links;
 - `npm run db:validate-staging-migrations` exposes the gate as a package script.
 
+### Auth Package Extraction
+
+The workspace package migration now owns a concrete piece of auth/token logic
+rather than only re-exporting root runtime modules:
+
+- `packages/auth/src/respondent-survey-token.ts` contains respondent survey
+  token generation and digesting;
+- respondent email, Telegram and survey-access routes import survey token
+  crypto through `@1d3x/auth`;
+- `src/lib/respondent-survey-token.ts` remains as a compatibility re-export
+  while callers migrate to workspace package imports.
+
 ### Setup-Link Onboarding Replaces Visible Temporary Password Delivery
 
 The remaining visible temporary-password onboarding paths were converted to
@@ -72,6 +84,7 @@ Commands run successfully after the latest changes:
 ```bash
 node --check scripts/provision-spike-respondents.mjs
 node --check scripts/validate-staging-migrations.mjs
+npm --workspace @1d3x/auth run typecheck
 npm run lint
 npm run test
 npm run build

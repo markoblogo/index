@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { RespondentSubmitActions } from "@/components/respondent/respondent-submit-actions";
 import { requireDemoRole } from "@/lib/demo-auth";
 import { todayInputDate } from "@/lib/admin-daily-inputs";
 import {
@@ -173,24 +174,11 @@ export default async function RespondentPage({
             ))}
           </div>
 
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
-            <button
-              className="rounded-[3px] border border-black px-5 py-3 text-sm font-semibold text-uga-dark transition hover:border-uga-green hover:text-uga-green"
-              name="intent"
-              type="submit"
-              value="draft"
-            >
-              {labels.saveDraft}
-            </button>
-            <button
-              className="rounded-[3px] bg-uga-green px-5 py-3 text-sm font-semibold text-white transition hover:bg-uga-dark"
-              name="intent"
-              type="submit"
-              value="submit"
-            >
-              {labels.submit}
-            </button>
-          </div>
+          <RespondentSubmitActions
+            saveDraftLabel={labels.saveDraft}
+            submitLabel={labels.submit}
+            submittingLabel={labels.submitting}
+          />
         </form>
       )}
 

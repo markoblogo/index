@@ -13,3 +13,7 @@ export {
   setPermanentPasswordWithSetupToken,
 } from "@/lib/password-setup-token";
 export { hashPassword, verifyPassword } from "@/lib/password-hash";
+export {
+  createRespondentSurveyToken,
+  digestRespondentSurveyToken,
+} from "./respondent-survey-token";

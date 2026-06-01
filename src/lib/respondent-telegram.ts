@@ -2,7 +2,7 @@ import { db, hasDatabaseUrl } from "@/lib/db";
 import {
   createRespondentSurveyToken,
   digestRespondentSurveyToken,
-} from "@/lib/respondent-survey-token";
+} from "@1d3x/auth";
 import { tenantScopedWhere } from "@/lib/tenant-data-scope";
 
 type TelegramTrigger = "manual" | "scheduled" | "smoke";

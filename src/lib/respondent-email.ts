@@ -8,7 +8,7 @@ import {
 import {
   createRespondentSurveyToken,
   digestRespondentSurveyToken,
-} from "@/lib/respondent-survey-token";
+} from "@1d3x/auth";
 import { tenantScopedWhere } from "@/lib/tenant-data-scope";
 
 type SendTrigger = "manual" | "scheduled";
