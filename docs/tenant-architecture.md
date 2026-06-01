@@ -1,8 +1,25 @@
 # 1D3X Tenant Architecture
 
 The platform is moving to a workspace monorepo with explicit tenant and market
-scope. The current runtime still lives in the root Next.js app while package
-boundaries are introduced incrementally.
+scope. The current Next.js runtime still lives in the root app, but workspace
+entrypoints now exist for `apps/platform-web` and `apps/index-web`. Those app
+packages set the active tenant explicitly and delegate to the root runtime while
+code continues moving behind package boundaries.
+
+## Workspace Apps
+
+- `apps/platform-web` runs the 1D3X umbrella site with tenant `1d3x`.
+- `apps/index-web` runs UGA and Spike index surfaces with tenants `uga-ua` and
+  `spike-ua`.
+
+Root scripts expose the same app boundaries:
+
+```bash
+npm run build:platform
+npm run build:uga
+npm run build:spike
+npm run build:tenants
+```
 
 ## Runtime Scope
 

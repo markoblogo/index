@@ -3,6 +3,9 @@
 The current production runtime remains in the root Next.js app while the codebase
 is migrated toward npm workspaces.
 
+- `apps/platform-web`: runnable 1D3X umbrella site entrypoint.
+- `apps/index-web`: runnable UGA/Spike index entrypoint for public index,
+  embeds, admin and respondent surfaces.
 - `index-engine`: calculation, publication, outlier rules and locks.
 - `data`: tenant-scoped repositories and Prisma access.
 - `auth`: sessions, setup links, survey tokens and role checks.
