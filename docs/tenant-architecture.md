@@ -32,6 +32,12 @@ Market packs describe product-specific configuration:
 
 UGA and Spike are market packs under the 1D3X ecosystem. Future countries or
 territories should be added as new market packs rather than copied projects.
+Use `MarketPackTemplate` from `src/lib/market-pack-template.ts` for new
+country/territory onboarding. The template requires tenant/market/product IDs,
+brand/domain/locales/theme, methodology and legal assets, deployment env,
+integration adapters, delivery bases, commodities and seed respondents. A
+synthetic future pack is covered by unit tests so new packs can be validated
+before they are added to the runtime tenant union.
 
 ## Database Migration State
 
@@ -41,17 +47,17 @@ Migration `20260601120000_tenant_market_foundation` creates:
 - `Market`;
 - `IndexProduct`.
 
-It intentionally does not yet add required tenant foreign keys to the existing
-market-data tables. That cutover needs a dedicated backfill migration because
-existing UGA and Spike deployments may use separate production databases today.
+The follow-up migrations now backfill and require tenant/product scope on the
+core market-data tables:
 
-The next migration phase should:
+- `20260601124500_optional_tenant_scope_columns`;
+- `20260601143000_require_tenant_scope`;
+- `20260601150000_tenant_scoped_market_uniqueness`.
 
-1. Add nullable tenant/product columns to market-data tables.
-2. Backfill rows from the deployment tenant and configured market pack.
-3. Add tenant-scoped unique indexes.
-4. Update the remaining repositories to require `TenantContext`.
-5. Make tenant/product columns required after validation.
+Market-data uniqueness for commodities, delivery bases, baskets, submissions,
+calculations and publications is tenant-scoped. This allows UGA, Spike and
+future country packs to reuse local commodity and delivery-basis codes without
+cross-tenant collisions.
 
 Current runtime reads for public index data, public APIs, admin daily inputs,
 calculation/publication, respondent directory, audit export and operational
