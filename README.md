@@ -151,6 +151,21 @@ Before production rollout, run migrations against a staging copy first. Recent
 security migrations add composite tenant/index ownership constraints and will
 correctly fail if historical rows contain inconsistent ownership.
 
+Repeatable staging validation:
+
+```bash
+STAGING_DATABASE_URL="postgresql://..." npm run db:validate-staging-migrations
+```
+
+To restore production data into a staging database first:
+
+```bash
+SOURCE_DATABASE_URL="postgresql://production-read-url" \
+STAGING_DATABASE_URL="postgresql://staging-copy-url" \
+RESET_STAGING_DATABASE=1 \
+npm run db:validate-staging-migrations
+```
+
 ## Environment
 
 Common production variables:
@@ -228,7 +243,7 @@ scan validates that those findings are fixed in the current codebase.
 Current security gates before regulated production rollout:
 
 1. Run migrations on staging data and confirm tenant/index ownership constraints
-   apply cleanly.
+   apply cleanly with `npm run db:validate-staging-migrations`.
 2. Run the validation command set above.
 3. Verify production env with `npm run check:production-env`.
 4. Confirm `GET /api/health` is healthy for each tenant deployment.

@@ -45,7 +45,16 @@ For each production database:
 2. Record database provider, project name, region and retention window.
 3. Before migrations, create a manual backup or restore point.
 4. Test restore into a non-production database before destructive migrations.
-5. Run `npx prisma migrate deploy` only after restore verification.
+5. Run staging validation before production migration:
+
+```bash
+SOURCE_DATABASE_URL="postgresql://production-read-url" \
+STAGING_DATABASE_URL="postgresql://staging-copy-url" \
+RESET_STAGING_DATABASE=1 \
+npm run db:validate-staging-migrations
+```
+
+6. Run `npx prisma migrate deploy` only after restore and validation pass.
 
 UGA and Spike can remain in separate production databases. If they move into a
 shared database, tenant-scoped constraints must be applied first.

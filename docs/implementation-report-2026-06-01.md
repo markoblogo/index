@@ -18,6 +18,21 @@ still need external state or broader product decisions.
 
 ## Implemented In This Pass
 
+### Repeatable Staging Migration Gate
+
+The staging migration gate is now executable instead of only documented:
+
+- `scripts/validate-staging-migrations.mjs` applies committed Prisma migrations
+  to `STAGING_DATABASE_URL`;
+- it can optionally restore `SOURCE_DATABASE_URL` into staging first when
+  `RESET_STAGING_DATABASE=1`;
+- it refuses to run against targets that do not look like staging/copy/local
+  databases unless `ALLOW_NON_STAGING_TARGET=1` is explicitly set;
+- it runs SQL integrity checks for tenant/index ownership across respondents,
+  notification deliveries, survey tokens, price submissions, users, password
+  setup tokens and basket links;
+- `npm run db:validate-staging-migrations` exposes the gate as a package script.
+
 ### Setup-Link Onboarding Replaces Visible Temporary Password Delivery
 
 The remaining visible temporary-password onboarding paths were converted to
@@ -56,6 +71,7 @@ Commands run successfully after the latest changes:
 
 ```bash
 node --check scripts/provision-spike-respondents.mjs
+node --check scripts/validate-staging-migrations.mjs
 npm run lint
 npm run test
 npm run build
@@ -64,7 +80,7 @@ npm audit --omit=dev
 
 Observed results:
 
-- script syntax check passed;
+- script syntax checks passed;
 - ESLint passed with no warnings;
 - Vitest: `21 passed`, `60 passed`;
 - Next.js production build passed;
@@ -95,13 +111,17 @@ Current blocker:
 What was verified:
 
 - all 12 migrations apply cleanly on a fresh local PostgreSQL database when
-  using an explicit local DB user.
+  using an explicit local DB user;
+- `npm run db:validate-staging-migrations` was smoke-tested on a fresh local
+  PostgreSQL database and passed all migration and integrity checks;
+- the new staging validation script is syntax-checked and wired into
+  `package.json`.
 
 What is still required:
 
 - provide a real staging database URL, or a readable production database URL
   plus permission to dump/restore into a local staging copy;
-- run `npx prisma migrate deploy` against that copy;
+- run `npm run db:validate-staging-migrations` against that copy;
 - inspect any composite-FK failures and either fix historical rows or write a
   deliberate data-repair migration.
 

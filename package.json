@@ -27,6 +27,7 @@
     "test:e2e:tenants": "npm run test:e2e:platform && npm run test:e2e:uga && npm run test:e2e:spike",
     "check:production-env": "node scripts/check-production-env.mjs",
     "db:generate": "prisma generate",
+    "db:validate-staging-migrations": "node scripts/validate-staging-migrations.mjs",
     "db:seed": "prisma db seed",
     "deploy:1d3x": "node scripts/verify-vercel-project.mjs --project 1d3x && vercel --prod --yes --scope abvcreative --project 1d3x",
     "deploy:uga": "node scripts/verify-vercel-project.mjs --project uga-index && vercel --prod --yes --scope abvcreative --project uga-index",
