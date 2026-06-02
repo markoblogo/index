@@ -13,6 +13,11 @@ type TelegramRecipient = {
   respondentId: string;
 };
 
+export type TelegramSubmissionSummaryItem = {
+  commodityId: string;
+  price: number;
+};
+
 export async function sendRespondentTelegramNotifications({
   reminderLevel,
   respondentId,
@@ -49,6 +54,76 @@ export async function sendRespondentTelegramNotifications({
         recipient,
         reminderLevel: level ?? "initial",
         trigger,
+      }),
+    ),
+  );
+
+  return { delivered, skippedReason: null };
+}
+
+export async function sendRespondentTelegramSubmissionConfirmation({
+  date,
+  items,
+  locale,
+  respondentId,
+}: {
+  date: string;
+  items: TelegramSubmissionSummaryItem[];
+  locale: "uk" | "en";
+  respondentId: string;
+}) {
+  if (!hasDatabaseUrl()) {
+    return { delivered: [], skippedReason: "database_not_configured" };
+  }
+
+  const token = process.env.SPIKE_TELEGRAM_BOT_TOKEN;
+
+  if (!token) {
+    return { delivered: [], skippedReason: "telegram_bot_token_missing" };
+  }
+
+  const respondent = await db.respondent.findUnique({
+    include: {
+      contacts: {
+        where: {
+          active: true,
+          telegramChatId: { not: null },
+        },
+      },
+    },
+    where: { id: respondentId },
+  });
+
+  if (!respondent || respondent.contacts.length === 0) {
+    return { delivered: [], skippedReason: "telegram_contact_missing" };
+  }
+
+  const commodityIds = items.map((item) => item.commodityId);
+  const commodities = await db.commodity.findMany({
+    where: { id: { in: commodityIds } },
+  });
+  const commodityById = new Map(commodities.map((commodity) => [commodity.id, commodity]));
+  const summary = items.map((item) => {
+    const commodity = commodityById.get(item.commodityId);
+
+    return {
+      name:
+        locale === "uk"
+          ? commodity?.nameUk ?? item.commodityId
+          : commodity?.nameEn ?? commodity?.nameUk ?? item.commodityId,
+      price: item.price,
+    };
+  });
+  const delivered = await Promise.all(
+    respondent.contacts.map((contact) =>
+      sendTelegramConfirmationMessage({
+        botToken: token,
+        chatId: contact.telegramChatId ?? "",
+        contactId: contact.id,
+        date,
+        locale,
+        respondentId,
+        summary,
       }),
     ),
   );
@@ -205,6 +280,104 @@ async function sendTelegramSurveyMessage({
   };
 }
 
+async function sendTelegramConfirmationMessage({
+  botToken,
+  chatId,
+  contactId,
+  date,
+  locale,
+  respondentId,
+  summary,
+}: {
+  botToken: string;
+  chatId: string;
+  contactId: string;
+  date: string;
+  locale: "uk" | "en";
+  respondentId: string;
+  summary: Array<{ name: string; price: number }>;
+}) {
+  const response = await fetch(
+    `https://api.telegram.org/bot${botToken}/sendMessage`,
+    {
+      body: JSON.stringify({
+        chat_id: chatId,
+        parse_mode: "HTML",
+        text: buildTelegramSubmissionConfirmationText({ date, locale, summary }),
+      }),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    },
+  );
+  const payload = (await response.json().catch(() => ({}))) as {
+    description?: string;
+    ok?: boolean;
+    result?: { message_id?: number };
+  };
+  const status = response.ok && payload.ok ? "sent" : "failed";
+
+  await db.respondentEmailDelivery.create({
+    data: {
+      contactId,
+      email: `telegram:${chatId}`,
+      error: status === "failed" ? payload.description ?? response.statusText : null,
+      providerId: payload.result?.message_id
+        ? String(payload.result.message_id)
+        : null,
+      respondentId,
+      status,
+      subject: "Telegram submission confirmation",
+      trigger: "telegram_submission_confirmation",
+    },
+  });
+
+  return {
+    chatId,
+    error: status === "failed" ? payload.description ?? response.statusText : undefined,
+    providerId: payload.result?.message_id,
+    respondentId,
+    status,
+  };
+}
+
+export function buildTelegramSubmissionConfirmationText({
+  date,
+  locale,
+  summary,
+}: {
+  date: string;
+  locale: "uk" | "en";
+  summary: Array<{ name: string; price: number }>;
+}) {
+  const values = summary
+    .map((item) => `• ${escapeTelegramHtml(item.name)} — ${formatTelegramPrice(item.price)} USD/t`)
+    .join("\n");
+
+  if (locale === "en") {
+    return [
+      "Thank you. Your SPIKE SPOT INDEX data has been accepted by the service and recorded in the daily collection.",
+      "",
+      `Date: ${escapeTelegramHtml(date)}`,
+      "",
+      "Submitted values:",
+      values,
+      "",
+      "If needed, you can return to the survey form and update the values before the daily calculation is finalized.",
+    ].join("\n");
+  }
+
+  return [
+    "Дякуємо. Ваші дані для SPIKE SPOT INDEX прийнято сервісом і зафіксовано у щоденному зборі.",
+    "",
+    `Дата: ${escapeTelegramHtml(date)}`,
+    "",
+    "Подані значення:",
+    values,
+    "",
+    "За потреби ви можете повернутися до анкети та відредагувати значення до фінального розрахунку дня.",
+  ].join("\n");
+}
+
 async function createSurveyUrl(recipient: TelegramRecipient) {
   const token = randomBytes(24).toString("base64url");
   const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 8);
@@ -249,6 +422,20 @@ function getTelegramText(
 
 function getButtonLabel(locale: "uk" | "en") {
   return locale === "en" ? "Submit prices" : "Внести ціни";
+}
+
+function escapeTelegramHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+function formatTelegramPrice(value: number) {
+  return new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: Number.isInteger(value) ? 0 : 2,
+  }).format(value);
 }
 
 function absoluteUrl(pathOrUrl: string) {
