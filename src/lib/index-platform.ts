@@ -248,7 +248,7 @@ export const INDEX_CONFIGS: Record<IndexTenantId, IndexConfig> = {
     id: "uga-ua",
     name: "UGA Index",
     legalName: { uk: "Українська зернова асоціація", en: "Ukrainian Grain Association" },
-    publicSiteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "https://uga.1d3x.com",
+    publicSiteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "https://index.uga.ua",
     brandUrl: "https://uga.ua/",
     logoPath: "/brand/uga-logo.png",
     logoHeaderPath: "/brand/uga-logo-header.png",

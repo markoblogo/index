@@ -16,17 +16,20 @@ The current live products are:
 | Tenant | Public Product | Domain | Runtime Status |
 | --- | --- | --- | --- |
 | `1d3x` | 1d3x | [1d3x.com](https://1d3x.com) | Corporate landing site and partnership entry point |
-| `uga-ua` | UGA Index | [uga.1d3x.com](https://uga.1d3x.com) | Production-style deployment |
+| `uga-ua` | UGA Index | [index.uga.ua](https://index.uga.ua) | Production-style deployment |
 | `spike-ua` | SPIKE SPOT INDEX | [spike.1d3x.com](https://spike.1d3x.com) | Production-style deployment, active development |
 
 This is not a mixed "UGA plus Spike" app. It is a multi-brand index platform
 where UGA and Spike are two clients running on the same calculation,
 publication, respondent and analytics foundation.
 
-Legacy `cr0pto.com` domains are configured as permanent redirects:
+UGA Index is also available on the 1d3x mirror domain
+[uga.1d3x.com](https://uga.1d3x.com). This mirror stays active and must not
+redirect to the UGA-owned domain. Legacy `cr0pto.com` domains are configured as
+permanent redirects:
 
 - [index-uga.cr0pto.com](https://index-uga.cr0pto.com) redirects to
-  [uga.1d3x.com](https://uga.1d3x.com);
+  [index.uga.ua](https://index.uga.ua) once the UGA DNS cutover is complete;
 - [spike-ua.cr0pto.com](https://spike-ua.cr0pto.com) redirects to
   [spike.1d3x.com](https://spike.1d3x.com).
 
@@ -85,7 +88,8 @@ Current production-oriented state:
 
 - hosting: Vercel;
 - platform domain: `https://1d3x.com`;
-- UGA domain: `https://uga.1d3x.com`;
+- UGA domain: `https://index.uga.ua`;
+- UGA 1d3x mirror domain: `https://uga.1d3x.com`;
 - Spike domain: `https://spike.1d3x.com`;
 - legacy redirects: `https://index-uga.cr0pto.com` and
   `https://spike-ua.cr0pto.com`;
@@ -297,10 +301,10 @@ PLATFORM_CONTACT_TO_EMAIL="a.biletskiy@gmail.com"
 UGA production example:
 
 ```bash
-NEXT_PUBLIC_SITE_URL="https://uga.1d3x.com"
+NEXT_PUBLIC_SITE_URL="https://index.uga.ua"
 INDEX_TENANT="uga-ua"
 NEXT_PUBLIC_INDEX_TENANT="uga-ua"
-ALLOWED_EMBED_ORIGINS="https://uga.ua https://www.uga.ua https://1d3x.com https://www.1d3x.com https://uga.1d3x.com https://index-uga.cr0pto.com"
+ALLOWED_EMBED_ORIGINS="https://uga.ua https://www.uga.ua https://index.uga.ua https://1d3x.com https://www.1d3x.com https://uga.1d3x.com https://index-uga.cr0pto.com"
 RESEND_API_KEY="set-in-vercel"
 RESPONDENT_EMAIL_CRON_SECRET="set-in-vercel"
 UGA_SPIKE_PUBLIC_API_BASE="https://spike.1d3x.com"
@@ -437,7 +441,7 @@ UGA full-site iframe example:
 
 ```html
 <iframe
-  src="https://uga.1d3x.com/embed/site?locale=uk&theme=light&view=index"
+  src="https://index.uga.ua/embed/site?locale=uk&theme=light&view=index"
   title="UGA Index"
   loading="lazy"
   style="width:100%;height:860px;border:0;"
@@ -454,11 +458,13 @@ UGA JS loader example:
   data-theme="light"
   data-layout="site"
 ></div>
-<script src="https://uga.1d3x.com/embed/uga-index.js" async></script>
+<script src="https://index.uga.ua/embed/uga-index.js" async></script>
 ```
 
-For new integrations, prefer the `1d3x.com` subdomains. Legacy `cr0pto.com`
-embed URLs remain available through redirects for compatibility.
+For UGA integrations, prefer `https://index.uga.ua` once DNS is configured.
+The `https://uga.1d3x.com` mirror remains available in parallel and should not
+redirect. Legacy `cr0pto.com` embed URLs remain available through redirects for
+compatibility.
 
 Full details:
 
@@ -548,6 +554,7 @@ Project docs:
 - `docs/auth.md`
 - `docs/deployment.md`
 - `docs/embed.md`
+- `docs/uga-domain-cutover.md`
 - `docs/demo-script.md`
 - `docs/known-limitations.md`
 - `docs/legal.md`

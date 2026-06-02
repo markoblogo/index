@@ -9,7 +9,7 @@ The app is ready to deploy on Vercel as a Next.js App Router project.
 | Vercel Project | Primary Domain | Alias / Redirect Domain | Tenant runtime |
 | --- | --- | --- | --- |
 | `1d3x` | `https://1d3x.com` | `www.1d3x.com` | `1d3x` |
-| `uga-index` | `https://uga.1d3x.com` | `https://index-uga.cr0pto.com` | `uga-ua` |
+| `uga-index` | `https://index.uga.ua` | `https://uga.1d3x.com`, `https://index-uga.cr0pto.com` | `uga-ua` |
 | `spike-ua-index` | `https://spike.1d3x.com` | `https://spike-ua.cr0pto.com` | `spike-ua` |
 
 ### How to deploy safely (important)
@@ -62,8 +62,8 @@ curl -L https://spike-ua.cr0pto.com/en/about | rg -o "Spot-Market Handbook|Downl
 
 ```bash
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/uga_index?schema=public"
-NEXT_PUBLIC_SITE_URL="https://index-uga.cr0pto.com"
-ALLOWED_EMBED_ORIGINS="https://uga.ua https://www.uga.ua https://index-uga.cr0pto.com http://localhost:* http://127.0.0.1:*"
+NEXT_PUBLIC_SITE_URL="https://index.uga.ua"
+ALLOWED_EMBED_ORIGINS="https://uga.ua https://www.uga.ua https://index.uga.ua https://uga.1d3x.com https://index-uga.cr0pto.com http://localhost:* http://127.0.0.1:*"
 DEMO_AUTH_SECRET="replace-with-a-long-random-secret"
 UGA_INDEX_RUNTIME_MODE="production"
 RESEND_API_KEY="set-in-vercel-or-local-env"

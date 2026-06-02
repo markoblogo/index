@@ -80,7 +80,7 @@ export const metadata: Metadata = {
       ? getPlatformSiteUrl()
       : normalizePublicUrl(
           process.env.NEXT_PUBLIC_SITE_URL,
-          "https://uga.1d3x.com",
+          "https://index.uga.ua",
         ),
   ),
 };
