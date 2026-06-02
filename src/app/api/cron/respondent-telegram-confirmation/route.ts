@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   if (
     !isCronRequestAuthorized(request, [
+      process.env.TELEGRAM_CONFIRMATION_CRON_SECRET,
       process.env.RESPONDENT_TELEGRAM_CRON_SECRET,
       process.env.CRON_SECRET,
     ])
