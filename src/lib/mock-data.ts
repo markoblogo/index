@@ -12,6 +12,7 @@ export type Commodity = {
   code: string;
   marker: string;
   name: Record<Locale, string>;
+  shortName?: Record<Locale, string>;
   latest: number | null;
   absoluteChange: number;
   percentChange: number;
@@ -52,19 +53,22 @@ export const indexUpdatedAt =
     ? "2026-05-14T10:30:00.000Z"
     : "2026-05-08T10:30:00.000Z";
 
-export const commodities: Commodity[] = activeIndex.commodities.map((commodity) => ({
-  id: commodity.id,
-  code: commodity.code,
-  marker: commodity.marker,
-  name: commodity.name,
-  latest: commodity.basePrice,
-  absoluteChange: commodity.absoluteChange,
-  percentChange: commodity.percentChange,
-  sparkline: commodity.sparkline,
-  group: commodity.group,
-  vatIncluded: commodity.vatIncluded,
-  detailMetrics: commodity.detailMetrics,
-}));
+export const commodities: Commodity[] = activeIndex.commodities.map(
+  (commodity) => ({
+    id: commodity.id,
+    code: commodity.code,
+    marker: commodity.marker,
+    name: commodity.name,
+    shortName: commodity.shortName,
+    latest: commodity.basePrice,
+    absoluteChange: commodity.absoluteChange,
+    percentChange: commodity.percentChange,
+    sparkline: commodity.sparkline,
+    group: commodity.group,
+    vatIncluded: commodity.vatIncluded,
+    detailMetrics: commodity.detailMetrics,
+  }),
+);
 
 export const respondents: Respondent[] = activeIndex.respondents;
 
@@ -91,15 +95,19 @@ export const partners: Partner[] = [
     id: activeIndex.id,
     name: activeIndex.legalName.en,
     role: {
-      uk: activeIndex.id === "spike-ua"
-        ? "Власник бренду та публічний видавець індексу"
-        : "Власник бренду та публічний видавець індексу",
+      uk:
+        activeIndex.id === "spike-ua"
+          ? "Власник бренду та публічний видавець індексу"
+          : "Власник бренду та публічний видавець індексу",
       en: "Brand owner and public publisher",
     },
   },
   {
     id: "data-partners",
-    name: activeIndex.id === "spike-ua" ? "Spike Brokers partners" : "Spike Brokers",
+    name:
+      activeIndex.id === "spike-ua"
+        ? "Spike Brokers partners"
+        : "Spike Brokers",
     role: {
       uk:
         activeIndex.id === "spike-ua"

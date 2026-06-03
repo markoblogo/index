@@ -284,6 +284,7 @@ function SpikeCommodityCard({
   officialLabel: string;
 }) {
   const hasValue = commodity.latest !== null;
+  const isBorderPosition = commodity.id === "corn-fca-chop";
   const isPositive = hasValue && commodity.absoluteChange > 0;
   const isFlat = hasValue && commodity.absoluteChange === 0;
   const trend = !hasValue || isFlat ? "flat" : isPositive ? "up" : "down";
@@ -291,27 +292,58 @@ function SpikeCommodityCard({
   const changeLabel = !hasValue
     ? "-"
     : isFlat
-    ? "0"
-    : `${changePrefix}${commodity.absoluteChange}`;
+      ? "0"
+      : `${changePrefix}${commodity.absoluteChange}`;
   const changeDisplay = hasValue && !isFlat ? `${changeLabel}$` : changeLabel;
   const isProcessing = commodity.group === "processing";
-  const tone = isProcessing
+  const tone = isBorderPosition
     ? {
-        border: "hover:border-[var(--spike-pink)]",
-        chip: "text-[var(--spike-pink)]",
-        glow:
-          "bg-[radial-gradient(circle_at_30%_0%,rgba(255,63,115,0.34),transparent_58%)]",
-        label: "text-[var(--spike-pink)]",
-        line: "border-white/14",
+        border: "hover:border-[#f3d44b]",
+        chip: "text-[#f3d44b]",
+        glow: "bg-[radial-gradient(circle_at_30%_0%,rgba(243,212,75,0.24),transparent_58%)]",
+        label: "text-[#f3d44b]",
+        line: "border-white/12",
       }
-    : {
-        border: "hover:border-[var(--spike-accent)]",
-        chip: "text-[var(--spike-accent)]",
-        glow:
-          "bg-[radial-gradient(circle_at_30%_0%,rgba(143,124,255,0.34),transparent_58%)]",
-        label: "text-[var(--spike-accent)]",
-        line: "border-white/10",
-      };
+    : isProcessing
+      ? {
+          border: "hover:border-[var(--spike-pink)]",
+          chip: "text-[var(--spike-pink)]",
+          glow: "bg-[radial-gradient(circle_at_30%_0%,rgba(255,63,115,0.34),transparent_58%)]",
+          label: "text-[var(--spike-pink)]",
+          line: "border-white/14",
+        }
+      : {
+          border: "hover:border-[var(--spike-accent)]",
+          chip: "text-[var(--spike-accent)]",
+          glow: "bg-[radial-gradient(circle_at_30%_0%,rgba(143,124,255,0.34),transparent_58%)]",
+          label: "text-[var(--spike-accent)]",
+          line: "border-white/10",
+        };
+  const compactTitle =
+    commodity.id === "wheat-115"
+      ? {
+          accent: locale === "uk" ? "11.5pro" : "11.5% protein",
+          title: commodity.shortName?.[locale] ?? commodity.name[locale],
+        }
+      : commodity.id === "corn-fca-chop"
+        ? {
+            accent: null,
+            title:
+              commodity.shortName?.[locale] ??
+              (locale === "uk" ? "Кукурудза" : "Corn"),
+          }
+        : null;
+  const titleClassName =
+    commodity.id === "wheat-115"
+      ? "max-w-[11rem] text-[1.02rem] font-black uppercase leading-[0.96] tracking-normal text-[#f8f8f2] sm:text-[1.12rem] xl:text-[1.55rem]"
+      : commodity.id === "corn-fca-chop"
+        ? "max-w-[10.5rem] text-[1.22rem] font-black uppercase leading-[0.98] tracking-normal text-[#f8f8f2] sm:text-[1.35rem] xl:text-2xl"
+        : "max-w-[10.5rem] text-[1.22rem] font-black uppercase leading-[0.98] tracking-normal text-[#f8f8f2] sm:text-[1.35rem] xl:text-2xl";
+  const aiNote =
+    commodity.aiComment?.[locale] ||
+    (locale === "uk"
+      ? "Поки немає даних для AI-нотатки."
+      : "No data for AI note yet.");
 
   return (
     <article
@@ -322,16 +354,31 @@ function SpikeCommodityCard({
         className={`pointer-events-none absolute inset-x-0 top-0 h-36 opacity-80 ${tone.glow}`}
       />
       <div className="relative z-10 min-w-0">
-        <p className={`text-[0.68rem] font-black uppercase tracking-[0.24em] ${tone.label}`}>
-          {commodity.group === "processing" ? "Processing" : "Export"}
-        </p>
-        <div className="mt-5 flex items-start justify-between gap-3">
-          <h3 className="max-w-[10.5rem] text-[1.22rem] font-black uppercase leading-[0.98] tracking-normal text-[#f8f8f2] sm:text-[1.35rem] xl:text-2xl">
-            {commodity.name[locale]}
-          </h3>
-          <span className={`rounded-full bg-white/10 px-2 py-1 text-[0.66rem] font-black ${tone.chip}`}>
+        <div className="flex items-center justify-between gap-3">
+          <p
+            className={`text-[0.68rem] font-black uppercase tracking-[0.24em] ${tone.label}`}
+          >
+            {commodity.group === "processing" ? "Processing" : "Export"}
+          </p>
+          <span
+            className={`rounded-full bg-white/10 px-2 py-1 text-[0.66rem] font-black ${tone.chip}`}
+          >
             USD
           </span>
+        </div>
+        <div className="mt-5">
+          {compactTitle ? (
+            <div className="max-w-[10.75rem]">
+              <h3 className={titleClassName}>{compactTitle.title}</h3>
+              {compactTitle.accent ? (
+                <p className="mt-2 text-[0.9rem] font-black uppercase leading-none tracking-[0.02em] text-white/92 sm:text-[1rem] xl:text-[1.18rem]">
+                  {compactTitle.accent}
+                </p>
+              ) : null}
+            </div>
+          ) : (
+            <h3 className={titleClassName}>{commodity.name[locale]}</h3>
+          )}
         </div>
       </div>
 
@@ -369,9 +416,14 @@ function SpikeCommodityCard({
         />
       </div>
 
-      <div className={`relative z-10 mt-auto grid gap-3 border-t pt-5 opacity-75 transition-opacity duration-500 hover:opacity-100 ${tone.line}`}>
+      <div
+        className={`relative z-10 mt-auto grid gap-3 border-t pt-5 opacity-75 transition-opacity duration-500 hover:opacity-100 ${tone.line}`}
+      >
         {(commodity.detailMetrics ?? []).map((metric) => (
-          <div className="grid grid-cols-[1fr_auto] gap-5" key={metric.label.en}>
+          <div
+            className="grid grid-cols-[1fr_auto] gap-5"
+            key={metric.label.en}
+          >
             <p className="text-[0.66rem] font-black uppercase tracking-[0.18em] text-white/38">
               {metric.label[locale]}
             </p>
@@ -394,16 +446,14 @@ function SpikeCommodityCard({
                 : "w/o"}
           </p>
         </div>
-        {commodity.aiComment?.[locale] ? (
-          <div className="mt-1 border-t border-white/10 pt-3">
-            <p className="text-[0.62rem] font-black uppercase tracking-[0.18em] text-[var(--spike-accent)]">
-              AI note
-            </p>
-            <p className="mt-1 text-xs font-semibold leading-5 text-white/52">
-              {commodity.aiComment[locale]}
-            </p>
-          </div>
-        ) : null}
+        <div className="mt-1 border-t border-white/10 pt-3">
+          <p className="text-[0.62rem] font-black uppercase tracking-[0.18em] text-[var(--spike-accent)]">
+            AI note
+          </p>
+          <p className="mt-1 text-xs font-semibold leading-5 text-white/52">
+            {aiNote}
+          </p>
+        </div>
       </div>
     </article>
   );
@@ -547,8 +597,8 @@ function HeroIndexCard({
           </div>
         </div>
         <p className="mt-2 truncate text-[0.65rem] font-black tracking-[0.12em] text-black/45">
-          {SITE_CONFIG.defaultDeliveryBasis} · {SITE_CONFIG.defaultDeliveryPeriod} ·
-          {` ${respondentCount} `}
+          {SITE_CONFIG.defaultDeliveryBasis} ·{" "}
+          {SITE_CONFIG.defaultDeliveryPeriod} ·{` ${respondentCount} `}
           {respondentLabel}
         </p>
       </div>
