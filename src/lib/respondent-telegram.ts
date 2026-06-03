@@ -5,7 +5,7 @@ import { syncIndexPositionDirectory } from "@/lib/position-directory-sync";
 
 type TelegramTrigger = "manual" | "scheduled" | "smoke";
 
-type TelegramReminderLevel = "initial" | "reminder_17" | "final_18";
+export type TelegramReminderLevel = "initial" | "reminder_17" | "final_18";
 
 type TelegramRecipient = {
   chatId: string;
@@ -51,8 +51,12 @@ export async function sendRespondentTelegramNotifications({
     trigger === "smoke"
       ? await getSmokeRecipients()
       : await getTelegramRecipients(respondentId);
+  const eligibleRecipients =
+    trigger === "scheduled"
+      ? await filterScheduledRecipients(recipients, level ?? "initial")
+      : recipients;
   const delivered = await Promise.all(
-    recipients.map((recipient) =>
+    eligibleRecipients.map((recipient) =>
       sendTelegramSurveyMessage({
         botToken: token,
         recipient,
@@ -137,7 +141,9 @@ export async function sendRespondentTelegramSubmissionConfirmation({
   return { delivered, skippedReason: null };
 }
 
-function getKyivReminderLevel(now = new Date()): TelegramReminderLevel | null {
+export function getKyivReminderLevel(
+  now = new Date(),
+): TelegramReminderLevel | null {
   const parts = new Intl.DateTimeFormat("en-CA", {
     hour: "2-digit",
     hour12: false,
@@ -152,7 +158,61 @@ function getKyivReminderLevel(now = new Date()): TelegramReminderLevel | null {
   }
 
   if (hour === "16") return "initial";
+  if (hour === "17") return "reminder_17";
+  if (hour === "18") return "final_18";
   return null;
+}
+
+async function filterScheduledRecipients(
+  recipients: TelegramRecipient[],
+  reminderLevel: TelegramReminderLevel,
+) {
+  if (recipients.length === 0) {
+    return recipients;
+  }
+
+  const respondentIds = [...new Set(recipients.map((recipient) => recipient.respondentId))];
+  const tradeDate = dateToUtcDate(todayKyivDate());
+  const kyivBounds = getKyivDateBounds();
+
+  const [submittedToday, alreadyDelivered] = await Promise.all([
+    db.priceSubmission.findMany({
+      distinct: ["respondentId"],
+      select: { respondentId: true },
+      where: {
+        respondentId: { in: respondentIds },
+        source: "respondent",
+        status: "submitted",
+        tradeDate,
+      },
+    }),
+    db.respondentEmailDelivery.findMany({
+      distinct: ["respondentId"],
+      select: { respondentId: true },
+      where: {
+        respondentId: { in: respondentIds },
+        sentAt: {
+          gte: kyivBounds.start,
+          lt: kyivBounds.end,
+        },
+        status: "sent",
+        trigger: `telegram_scheduled_${reminderLevel}`,
+      },
+    }),
+  ]);
+
+  const submittedRespondentIds = new Set(
+    submittedToday.map((entry) => entry.respondentId),
+  );
+  const alreadyDeliveredRespondentIds = new Set(
+    alreadyDelivered.map((entry) => entry.respondentId),
+  );
+
+  return recipients.filter(
+    (recipient) =>
+      !submittedRespondentIds.has(recipient.respondentId) &&
+      !alreadyDeliveredRespondentIds.has(recipient.respondentId),
+  );
 }
 
 async function getTelegramRecipients(
@@ -445,6 +505,72 @@ function formatTelegramPrice(value: number) {
     maximumFractionDigits: 2,
     minimumFractionDigits: Number.isInteger(value) ? 0 : 2,
   }).format(value);
+}
+
+function todayKyivDate(date = new Date()) {
+  return new Intl.DateTimeFormat("en-CA", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "Europe/Kyiv",
+    year: "numeric",
+  }).format(date);
+}
+
+function dateToUtcDate(date: string) {
+  return new Date(`${date}T00:00:00.000Z`);
+}
+
+function getKyivDateBounds(date = new Date()) {
+  const dateKey = todayKyivDate(date);
+  const [year, month, day] = dateKey.split("-").map(Number);
+  const nextDay = new Date(Date.UTC(year, month - 1, day + 1));
+
+  return {
+    end: zonedDateTimeToUtc(
+      `${nextDay.getUTCFullYear()}-${String(nextDay.getUTCMonth() + 1).padStart(2, "0")}-${String(nextDay.getUTCDate()).padStart(2, "0")}`,
+      "Europe/Kyiv",
+    ),
+    start: zonedDateTimeToUtc(dateKey, "Europe/Kyiv"),
+  };
+}
+
+function zonedDateTimeToUtc(dateKey: string, timeZone: string) {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  const utcGuess = new Date(Date.UTC(year, month - 1, day));
+  const offset = getTimeZoneOffsetMs(utcGuess, timeZone);
+  const candidate = new Date(utcGuess.getTime() - offset);
+  const correctedOffset = getTimeZoneOffsetMs(candidate, timeZone);
+
+  return new Date(utcGuess.getTime() - correctedOffset);
+}
+
+function getTimeZoneOffsetMs(date: Date, timeZone: string) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    day: "2-digit",
+    hour: "2-digit",
+    hour12: false,
+    minute: "2-digit",
+    month: "2-digit",
+    second: "2-digit",
+    timeZone,
+    year: "numeric",
+  }).formatToParts(date);
+  const values = Object.fromEntries(
+    parts
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, Number(part.value)]),
+  );
+
+  return (
+    Date.UTC(
+      values.year,
+      values.month - 1,
+      values.day,
+      values.hour === 24 ? 0 : values.hour,
+      values.minute,
+      values.second,
+    ) - date.getTime()
+  );
 }
 
 function absoluteUrl(pathOrUrl: string) {

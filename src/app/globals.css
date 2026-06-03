@@ -543,6 +543,11 @@ body[data-index="spike"] .spike-internal-shell .hover\:bg-uga-green:hover {
   color: #050505 !important;
 }
 
+body[data-index="spike"] .spike-internal-shell .admin-warning-pill {
+  background: rgba(248, 248, 242, 0.92) !important;
+  color: #050505 !important;
+}
+
 body[data-index="spike"] .spike-internal-shell .text-red-700,
 body[data-index="spike"] .spike-internal-shell .text-amber-800 {
   color: #ff8aa8;

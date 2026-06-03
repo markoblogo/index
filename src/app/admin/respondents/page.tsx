@@ -784,7 +784,7 @@ function StatusPill({
       : tone === "danger"
         ? "admin-contrast-pill bg-red-500 text-black"
       : tone === "warning"
-        ? "admin-contrast-pill bg-white text-black"
+        ? "admin-warning-pill text-black"
         : "border border-white/35 text-white/70";
 
   return (
