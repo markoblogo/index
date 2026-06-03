@@ -810,7 +810,7 @@ async function generateLlmMarketBrief({
     return null;
   }
 
-  const model = process.env.SPIKE_AI_BRIEF_MODEL || "gpt-4o-mini";
+  const model = process.env.SPIKE_AI_BRIEF_MODEL || "gpt-4.1-mini";
   const latestRows = commodities
     .map((commodity) => {
       const commodityHistory = getCommodityHistory(history, commodity.id);
@@ -847,13 +847,12 @@ async function generateLlmMarketBrief({
   };
 
   try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const response = await fetch("https://api.openai.com/v1/responses", {
       body: JSON.stringify({
-        max_tokens: 650,
-        messages: [
+        input: [
           {
             content:
-              "You generate concise market intelligence briefs for a Ukrainian agro commodity spot index. Use only the provided data. Do not invent prices, respondent names, trades, causes, or forecasts. Return strict JSON with keys: blocks, confidence. blocks must be exactly four objects with title and body. The brief is not trading advice.",
+              "You generate concise market intelligence briefs for a Ukrainian agro commodity spot index. Use only the provided data. Do not invent prices, respondent names, trades, causes, or forecasts. Return strict JSON only, with keys: blocks, confidence. blocks must be exactly four objects with title and body. The brief is not trading advice.",
             role: "system",
           },
           {
@@ -861,9 +860,8 @@ async function generateLlmMarketBrief({
             role: "user",
           },
         ],
+        max_output_tokens: 650,
         model,
-        response_format: { type: "json_object" },
-        temperature: 0.2,
       }),
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -877,16 +875,14 @@ async function generateLlmMarketBrief({
       return null;
     }
 
-    const data = (await response.json()) as {
-      choices?: Array<{ message?: { content?: string } }>;
-    };
-    const content = data.choices?.[0]?.message?.content;
+    const data = (await response.json()) as unknown;
+    const content = extractResponseText(data);
 
     if (!content) {
       return null;
     }
 
-    const parsed = JSON.parse(content) as {
+    const parsed = parseBriefJson(content) as {
       blocks?: Array<{ body?: string; title?: string }>;
       confidence?: string;
     };
@@ -911,6 +907,52 @@ async function generateLlmMarketBrief({
     console.warn("AI Market Brief generation error", error);
     return null;
   }
+}
+
+function extractResponseText(payload: unknown): string {
+  if (!payload || typeof payload !== "object") {
+    return "";
+  }
+
+  const response = payload as {
+    output?: Array<{
+      content?: Array<{ text?: string | { value?: string }; type?: string; value?: string }>;
+    }>;
+    output_text?: string;
+  };
+
+  if (typeof response.output_text === "string") {
+    return response.output_text.trim();
+  }
+
+  const chunks =
+    response.output
+      ?.flatMap((item) => item.content || [])
+      .map((content) => {
+        if (typeof content.text === "string") {
+          return content.text;
+        }
+
+        if (content.text && typeof content.text.value === "string") {
+          return content.text.value;
+        }
+
+        if (typeof content.value === "string") {
+          return content.value;
+        }
+
+        return "";
+      })
+      .filter(Boolean) || [];
+
+  return chunks.join("\n").trim();
+}
+
+function parseBriefJson(content: string) {
+  const trimmed = content.trim();
+  const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+
+  return JSON.parse(fenced?.[1] || trimmed);
 }
 
 function buildShortHash(value: string) {
