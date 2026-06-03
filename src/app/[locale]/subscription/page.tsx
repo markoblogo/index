@@ -34,6 +34,8 @@ export default async function SubscriptionPage({
         <AccessNotice copy={copy} />
       </section>
 
+      {isSpike ? <AiSubscriptionBlock locale={locale} /> : null}
+
       <section className="mx-auto max-w-7xl px-6 pb-10 lg:px-8">
         <SubscriptionTiers copy={copy} />
       </section>
@@ -45,6 +47,61 @@ export default async function SubscriptionPage({
         </div>
       </section>
     </main>
+  );
+}
+
+function AiSubscriptionBlock({ locale }: { locale: Locale }) {
+  const copy =
+    locale === "uk"
+      ? {
+          body:
+            "Після публікації індексу AI Market Brief перетворює verified spot data на короткий market intelligence note: рухи за 1D/7D/30D/90D, волатильність, спреди, покриття респондентів і caution notes. Це working preview майбутнього комерційного AI-модуля.",
+          eyebrow: "AI module",
+          items: [
+            "daily AI Market Brief",
+            "volatility and spread notes",
+            "methodology-grounded scenario notes",
+            "auditable input data hash",
+          ],
+          title: "AI market intelligence layer",
+        }
+      : {
+          body:
+            "After index publication, the AI Market Brief turns verified spot data into a compact market intelligence note: 1D/7D/30D/90D moves, volatility, spreads, respondent coverage and caution notes. This is a working preview of a future commercial AI module.",
+          eyebrow: "AI module",
+          items: [
+            "daily AI Market Brief",
+            "volatility and spread notes",
+            "methodology-grounded scenario notes",
+            "auditable input data hash",
+          ],
+          title: "AI market intelligence layer",
+        };
+
+  return (
+    <section className="mx-auto max-w-7xl px-6 pb-10 lg:px-8">
+      <div className="grid gap-5 rounded-[1.35rem] border border-white/12 bg-[#101010] p-5 lg:grid-cols-[0.74fr_1.26fr]">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.24em] text-[var(--spike-accent)]">
+            {copy.eyebrow}
+          </p>
+          <h2 className="mt-3 text-3xl font-black uppercase leading-none tracking-normal text-white">
+            {copy.title}
+          </h2>
+          <p className="mt-4 text-sm leading-6 text-white/64">{copy.body}</p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {copy.items.map((item) => (
+            <div
+              className="rounded-[1rem] border border-white/10 bg-[#f8f8f2] p-4 text-sm font-black uppercase leading-5 text-[#050505]"
+              key={item}
+            >
+              {item}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
 

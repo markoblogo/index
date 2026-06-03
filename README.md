@@ -352,6 +352,8 @@ SPIKE_ADMIN_INVITE_REPLY_TO="set-in-vercel"
 SPIKE_TELEGRAM_BOT_TOKEN="set-in-vercel"
 SPIKE_TELEGRAM_SMOKE_CHAT_ID="optional-smoke-chat-id"
 RESPONDENT_TELEGRAM_CRON_SECRET="set-in-vercel"
+OPENAI_API_KEY="set-in-vercel-for-ai-market-brief"
+SPIKE_AI_BRIEF_MODEL="gpt-4o-mini"
 ```
 
 Do not commit production secrets, connection strings or bot tokens. Use Vercel

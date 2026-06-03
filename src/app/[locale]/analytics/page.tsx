@@ -26,6 +26,14 @@ type AnalyticsPoint = {
   respondents: number;
 };
 
+type AiMarketBrief = {
+  blocks: Array<{ body: string; title: string }>;
+  confidence: string;
+  generatedAt: string;
+  inputDataHash: string;
+  model: string;
+};
+
 const profileByCommodity: Partial<Record<
   CommodityId,
   { drift: number; volatility: number; phase: number }
@@ -50,6 +58,9 @@ export default async function AnalyticsPage({
   const tableRows = selectRecentPublishedRows(history, 3);
   const isSpike = getActiveIndexConfig().id === "spike-ua";
   const hasHistory = history.length > 0;
+  const aiBrief = isSpike
+    ? await buildAiMarketBrief(history, locale, activeRespondentCount)
+    : null;
 
   return (
     <main className={isSpike ? "spike-analytics-page overflow-hidden bg-[#050505] text-[#f8f8f2]" : ""}>
@@ -72,6 +83,13 @@ export default async function AnalyticsPage({
       <section className="mx-auto max-w-7xl px-6 py-10 lg:px-8">
         <KpiStrip items={snapshot} />
       </section>
+
+      {aiBrief ? (
+        <AiMarketBriefSection
+          brief={aiBrief}
+          copy={copy.aiBrief}
+        />
+      ) : null}
 
       {hasHistory ? (
         <>
@@ -235,6 +253,64 @@ function AnalyticsPanel({
       </div>
       <div className="mt-4">{children}</div>
     </article>
+  );
+}
+
+function AiMarketBriefSection({
+  brief,
+  copy,
+}: {
+  brief: AiMarketBrief;
+  copy: AnalyticsCopy["aiBrief"];
+}) {
+  return (
+    <section className="mx-auto max-w-7xl px-6 pb-10 lg:px-8">
+      <div className="grid gap-5 rounded-[1.35rem] border border-white/12 bg-[#101010] p-5 lg:grid-cols-[0.76fr_1.24fr]">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.24em] text-[var(--spike-accent)]">
+            {copy.eyebrow}
+          </p>
+          <h2 className="mt-3 text-3xl font-black uppercase leading-none tracking-normal text-white">
+            {copy.title}
+          </h2>
+          <p className="mt-4 text-sm leading-6 text-white/64">
+            {copy.description}
+          </p>
+          <div className="mt-5 flex flex-wrap gap-2 text-[0.68rem] font-black uppercase tracking-[0.12em]">
+            <span className="rounded-full bg-[var(--spike-accent)] px-3 py-1 text-[#050505]">
+              AI-assisted
+            </span>
+            <span className="rounded-full border border-white/18 px-3 py-1 text-white/58">
+              {copy.generatedLabel}: {brief.generatedAt}
+            </span>
+            <span className="rounded-full border border-white/18 px-3 py-1 text-white/58">
+              hash {brief.inputDataHash}
+            </span>
+            <span className="rounded-full border border-white/18 px-3 py-1 text-white/58">
+              {brief.model} · {brief.confidence}
+            </span>
+          </div>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          {brief.blocks.map((block) => (
+            <article
+              className="rounded-[1rem] border border-white/10 bg-[#f8f8f2] p-4 text-[#050505]"
+              key={block.title}
+            >
+              <h3 className="text-sm font-black uppercase tracking-[0.08em] text-[#050505]">
+                {block.title}
+              </h3>
+              <p className="mt-3 text-sm font-semibold leading-6 text-black/64">
+                {block.body}
+              </p>
+            </article>
+          ))}
+          <p className="rounded-[1rem] border border-white/10 bg-black/45 p-4 text-xs font-semibold leading-5 text-white/58 md:col-span-2">
+            {copy.disclaimer}
+          </p>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -603,6 +679,250 @@ function buildMarketSnapshot(
   ];
 }
 
+async function buildAiMarketBrief(
+  history: AnalyticsPoint[],
+  locale: Locale,
+  activeRespondentCount: number,
+): Promise<AiMarketBrief> {
+  const fallback = buildDeterministicAiMarketBrief(
+    history,
+    locale,
+    activeRespondentCount,
+  );
+  const llmBlocks = await generateLlmMarketBrief({
+    activeRespondentCount,
+    fallback,
+    history,
+    locale,
+  });
+
+  return llmBlocks
+    ? {
+        ...fallback,
+        blocks: llmBlocks.blocks,
+        confidence: llmBlocks.confidence,
+        model: llmBlocks.model,
+      }
+    : fallback;
+}
+
+function buildDeterministicAiMarketBrief(
+  history: AnalyticsPoint[],
+  locale: Locale,
+  activeRespondentCount: number,
+): AiMarketBrief {
+  const copy = getAnalyticsCopy(locale).aiBrief;
+  const latestRows = commodities
+    .map((commodity) => getCommodityHistory(history, commodity.id).at(-1))
+    .filter((row): row is AnalyticsPoint => Boolean(row));
+  const latestDate = latestRows
+    .map((row) => row.date)
+    .sort((first, second) => second.localeCompare(first))[0];
+  const keyMover = latestRows.reduce<AnalyticsPoint | null>(
+    (current, row) =>
+      !current || Math.abs(row.dayChange) > Math.abs(current.dayChange)
+        ? row
+        : current,
+    null,
+  );
+  const volatilityRows = latestRows.map((row) => {
+    const commodityHistory = getCommodityHistory(history, row.commodityId);
+    return {
+      commodity: getCommodity(row.commodityId),
+      volatility: standardDeviation(
+        commodityHistory.slice(-30).map((point) => point.percentChange),
+      ),
+    };
+  });
+  const mostVolatile = volatilityRows.reduce(
+    (current, row) => (row.volatility > current.volatility ? row : current),
+    volatilityRows[0] ?? { commodity: commodities[0], volatility: 0 },
+  );
+  const keyMoverCommodity = keyMover ? getCommodity(keyMover.commodityId) : null;
+  const generatedAt = latestDate
+    ? formatShortDate(latestDate, locale)
+    : copy.notAvailable;
+
+  return {
+    blocks: [
+      {
+        title: copy.snapshotTitle,
+        body: latestDate
+          ? copy.snapshotBody(latestRows.length, activeRespondentCount)
+          : copy.noDataBody,
+      },
+      {
+        title: copy.moversTitle,
+        body:
+          keyMover && keyMoverCommodity
+            ? copy.moversBody(
+                keyMoverCommodity.name[locale],
+                formatSigned(keyMover.dayChange),
+              )
+            : copy.noDataBody,
+      },
+      {
+        title: copy.volatilityTitle,
+        body: copy.volatilityBody(
+          mostVolatile.commodity.name[locale],
+          mostVolatile.volatility.toFixed(2),
+        ),
+      },
+      {
+        title: copy.cautionTitle,
+        body:
+          activeRespondentCount < 5
+            ? copy.coverageCaution(activeRespondentCount)
+            : copy.standardCaution(activeRespondentCount),
+      },
+    ],
+    confidence: "fallback",
+    generatedAt,
+    inputDataHash: buildShortHash(
+      JSON.stringify({
+        activeRespondentCount,
+        latestDate,
+        latestRows: latestRows.map((row) => [
+          row.commodityId,
+          row.value,
+          row.dayChange,
+        ]),
+      }),
+    ),
+    model: "deterministic-fallback",
+  };
+}
+
+async function generateLlmMarketBrief({
+  activeRespondentCount,
+  fallback,
+  history,
+  locale,
+}: {
+  activeRespondentCount: number;
+  fallback: AiMarketBrief;
+  history: AnalyticsPoint[];
+  locale: Locale;
+}) {
+  const apiKey = process.env.OPENAI_API_KEY;
+
+  if (!apiKey) {
+    return null;
+  }
+
+  const model = process.env.SPIKE_AI_BRIEF_MODEL || "gpt-4o-mini";
+  const latestRows = commodities
+    .map((commodity) => {
+      const commodityHistory = getCommodityHistory(history, commodity.id);
+      const latest = commodityHistory.at(-1);
+
+      if (!latest) {
+        return null;
+      }
+
+      return {
+        code: commodity.code,
+        name: commodity.name[locale],
+        latestUsdPerMt: latest.value,
+        change1d: latest.dayChange,
+        change7d: roundOne(latest.value - getPointBack(commodityHistory, 8).value),
+        change30d: roundOne(latest.value - getPointBack(commodityHistory, 31).value),
+        change90d: roundOne(latest.value - commodityHistory[0].value),
+        volatility30d: roundOne(
+          standardDeviation(
+            commodityHistory.slice(-30).map((point) => point.percentChange),
+          ),
+        ),
+      };
+    })
+    .filter(Boolean);
+
+  const payload = {
+    locale,
+    respondentCoverage: activeRespondentCount,
+    generatedFromDate: fallback.generatedAt,
+    inputDataHash: fallback.inputDataHash,
+    positions: latestRows,
+    requiredSections: fallback.blocks.map((block) => block.title),
+  };
+
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      body: JSON.stringify({
+        max_tokens: 650,
+        messages: [
+          {
+            content:
+              "You generate concise market intelligence briefs for a Ukrainian agro commodity spot index. Use only the provided data. Do not invent prices, respondent names, trades, causes, or forecasts. Return strict JSON with keys: blocks, confidence. blocks must be exactly four objects with title and body. The brief is not trading advice.",
+            role: "system",
+          },
+          {
+            content: JSON.stringify(payload),
+            role: "user",
+          },
+        ],
+        model,
+        response_format: { type: "json_object" },
+        temperature: 0.2,
+      }),
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+    });
+
+    if (!response.ok) {
+      console.warn("AI Market Brief generation failed", response.status);
+      return null;
+    }
+
+    const data = (await response.json()) as {
+      choices?: Array<{ message?: { content?: string } }>;
+    };
+    const content = data.choices?.[0]?.message?.content;
+
+    if (!content) {
+      return null;
+    }
+
+    const parsed = JSON.parse(content) as {
+      blocks?: Array<{ body?: string; title?: string }>;
+      confidence?: string;
+    };
+    const blocks = parsed.blocks
+      ?.map((block) => ({
+        body: String(block.body || "").trim(),
+        title: String(block.title || "").trim(),
+      }))
+      .filter((block) => block.title && block.body)
+      .slice(0, 4);
+
+    if (!blocks || blocks.length !== 4) {
+      return null;
+    }
+
+    return {
+      blocks,
+      confidence: String(parsed.confidence || "medium").trim() || "medium",
+      model,
+    };
+  } catch (error) {
+    console.warn("AI Market Brief generation error", error);
+    return null;
+  }
+}
+
+function buildShortHash(value: string) {
+  let hash = 0;
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
+  }
+
+  return hash.toString(16).padStart(8, "0").slice(0, 8);
+}
+
 function getCommodityHistory(history: AnalyticsPoint[], commodityId: CommodityId) {
   return history.filter((point) => point.commodityId === commodityId);
 }
@@ -691,6 +1011,32 @@ function getAnalyticsCopy(locale: Locale) {
         "Аналітична панель доступна безкоштовно протягом першого року роботи UGA Index. З 15.06.2027 розширена аналітика та API-доступ плануються у форматі платної підписки.",
       accessTitle: "Попередній доступ до аналітики",
       allCommodities: "Усі культури",
+      aiBrief: {
+        cautionTitle: "Caution notes",
+        coverageCaution: (count: number) =>
+          `Покриття респондентів зараз ${count}. Такий brief корисний як пояснення опублікованих даних, але значення з обмеженим покриттям треба читати обережно.`,
+        description:
+          "Короткий AI-assisted шар поверх опублікованих значень: рух цін, волатильність, спреди та покриття респондентів без зміни офіційного індексу.",
+        disclaimer:
+          "AI layer не розраховує і не коригує офіційні значення SPIKE SPOT INDEX. Він пояснює вже опубліковані дані та не є торговою рекомендацією.",
+        eyebrow: "AI market intelligence",
+        generatedLabel: "generated from published data",
+        moversBody: (commodity: string, change: string) =>
+          `Найпомітніший денний рух зараз у позиції ${commodity}: ${change} USD/t. Це сигнал для аналізу, а не рекомендація купувати чи продавати.`,
+        moversTitle: "Key movements",
+        noDataBody:
+          "Після першої публікації індексу brief почне читати реальні published values і динаміку.",
+        notAvailable: "n/a",
+        snapshotBody: (positions: number, respondents: number) =>
+          `Brief читає ${positions} опублікованих позицій та поточне покриття ${respondents} респондентів. Розрахунки індексу залишаються методологічними.`,
+        snapshotTitle: "Market snapshot",
+        standardCaution: (count: number) =>
+          `Покриття респондентів: ${count}. AI summary пояснює validated data, але не має доступу до індивідуальних подань респондентів.`,
+        title: "AI Market Brief",
+        volatilityBody: (commodity: string, value: string) =>
+          `Найвища короткострокова волатильність у вибірці: ${commodity}, ${value}%. Це допомагає відокремити ринковий рух від шуму.`,
+        volatilityTitle: "Volatility and spreads",
+      },
       apiBullets: [
         "Історія опублікованих індексів",
         "Аналітика трендів за культурами",
@@ -820,7 +1166,33 @@ function getAnalyticsCopy(locale: Locale) {
     accessText:
       "The analytics dashboard is available free of charge during the first year of UGA Index operation. From 15.06.2027, extended analytics and API access are planned to move to a paid subscription model.",
     accessTitle: "Analytics access preview",
-    allCommodities: "All commodities",
+      allCommodities: "All commodities",
+    aiBrief: {
+      cautionTitle: "Caution notes",
+      coverageCaution: (count: number) =>
+        `Respondent coverage is currently ${count}. The brief is useful as an explanation of published data, but limited-coverage values should be read with caution.`,
+      description:
+        "A compact AI-assisted layer above published values: price movement, volatility, spreads and respondent coverage without changing the official index.",
+      disclaimer:
+        "The AI layer does not calculate or adjust official SPIKE SPOT INDEX values. It explains already published data and is not a trading recommendation.",
+      eyebrow: "AI market intelligence",
+      generatedLabel: "generated from published data",
+      moversBody: (commodity: string, change: string) =>
+        `The most visible daily move is currently ${commodity}: ${change} USD/t. This is an analytical signal, not a buy or sell recommendation.`,
+      moversTitle: "Key movements",
+      noDataBody:
+        "After the first index publication, the brief will read real published values and movement history.",
+      notAvailable: "n/a",
+      snapshotBody: (positions: number, respondents: number) =>
+        `The brief reads ${positions} published positions and current coverage from ${respondents} respondents. Index calculation remains methodology-driven.`,
+      snapshotTitle: "Market snapshot",
+      standardCaution: (count: number) =>
+        `Respondent coverage: ${count}. The AI summary explains validated data, but does not access individual respondent submissions.`,
+      title: "AI Market Brief",
+      volatilityBody: (commodity: string, value: string) =>
+        `The highest short-term volatility in the sample is ${commodity}, ${value}%. This helps separate market movement from noise.`,
+      volatilityTitle: "Volatility and spreads",
+    },
     apiBullets: [
       "Published index history",
       "Commodity trend analytics",

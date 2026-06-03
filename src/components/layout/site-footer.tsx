@@ -127,6 +127,10 @@ export function SiteFooter({ locale }: { locale: Locale }) {
           <p className="mt-3 border-t border-white/10 pt-3 text-xs leading-5 text-white/45">
             {dict.footer.disclaimer}
             <br />
+            {locale === "uk"
+              ? "AI-assisted analytics by 1D3X. Офіційні значення індексу залишаються методологічними і не генеруються AI."
+              : "AI-assisted analytics by 1D3X. Official index values remain methodology-based and non-AI-generated."}
+            <br />
             <FooterExternalLink href="https://1d3x.com">Index infrastructure by 1d3x</FooterExternalLink>
           </p>
         </div>

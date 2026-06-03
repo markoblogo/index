@@ -264,6 +264,8 @@ function SpikeMethodologyPage({
         </div>
       </section>
 
+      <SpikeAiPolicySection locale={locale} />
+
       <section className="mx-auto max-w-[1900px] px-6 py-8 lg:px-8 lg:py-10">
         <div className="grid gap-5 rounded-[1.35rem] border border-white/12 bg-[#101010] p-5 lg:grid-cols-[1fr_auto] lg:items-center">
           <div>
@@ -330,5 +332,72 @@ function SpikeMethodologyPage({
         </div>
       </section>
     </main>
+  );
+}
+
+function SpikeAiPolicySection({ locale }: { locale: Locale }) {
+  const copy =
+    locale === "uk"
+      ? {
+          body:
+            "SPIKE SPOT INDEX використовує hybrid AI layer лише над перевіреними published values. Офіційне значення індексу залишається результатом методології: дані респондентів, медіанна валідація, фільтр відхилень, правила покриття, audit log і locked publication. AI не встановлює, не змінює і не прогнозує офіційну ціну; він формує пояснювальний brief на основі вже опублікованих значень, волатильності, спредів і покриття респондентів.",
+          disclaimer:
+            "AI Market Brief не має доступу до індивідуальних подань респондентів і не є торговою рекомендацією.",
+          eyebrow: "AI usage policy",
+          items: [
+            "verified market data first",
+            "deterministic methodology second",
+            "AI-assisted interpretation third",
+          ],
+          title: "AI пояснює дані, але не розраховує індекс",
+        }
+      : {
+          body:
+            "SPIKE SPOT INDEX uses a hybrid AI layer only above verified published values. The official index value remains methodology-driven: respondent data, median validation, outlier filtering, coverage rules, audit log and locked publication. AI does not set, adjust or forecast the official price; it creates an explanatory brief from already published values, volatility, spreads and respondent coverage.",
+          disclaimer:
+            "The AI Market Brief does not access individual respondent submissions and is not a trading recommendation.",
+          eyebrow: "AI usage policy",
+          items: [
+            "verified market data first",
+            "deterministic methodology second",
+            "AI-assisted interpretation third",
+          ],
+          title: "AI explains data, but does not calculate the index",
+        };
+
+  return (
+    <section className="border-b border-white/10 bg-[#050505]">
+      <div className="mx-auto grid max-w-[1900px] gap-7 px-6 py-10 lg:grid-cols-[24rem_1fr] lg:px-8 lg:py-14">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.24em] text-[var(--spike-accent)]">
+            {copy.eyebrow}
+          </p>
+          <h2 className="mt-4 text-4xl font-black uppercase leading-none tracking-normal text-white">
+            {copy.title}
+          </h2>
+        </div>
+        <div className="grid gap-4">
+          <p className="text-base leading-7 text-white/64">{copy.body}</p>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {copy.items.map((item, index) => (
+              <div
+                className="rounded-[1rem] border border-white/12 bg-[#f8f8f2] p-4 text-[#050505]"
+                key={item}
+              >
+                <p className="text-xl font-black text-[var(--spike-accent)]">
+                  {String(index + 1).padStart(2, "0")}
+                </p>
+                <p className="mt-2 text-sm font-black uppercase leading-5">
+                  {item}
+                </p>
+              </div>
+            ))}
+          </div>
+          <p className="rounded-[1rem] border border-white/10 bg-black/45 p-4 text-xs font-semibold leading-5 text-white/58">
+            {copy.disclaimer}
+          </p>
+        </div>
+      </div>
+    </section>
   );
 }
