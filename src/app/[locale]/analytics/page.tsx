@@ -47,7 +47,7 @@ export default async function AnalyticsPage({
   const activeRespondentCount = await getActiveRespondentCountData();
   const history = await getAnalyticsHistory(activeRespondentCount);
   const snapshot = buildMarketSnapshot(history, locale, activeRespondentCount);
-  const tableRows = getRecentPublishedRows(history, 3);
+  const tableRows = selectRecentPublishedRows(history, 3);
   const isSpike = getActiveIndexConfig().id === "spike-ua";
   const hasHistory = history.length > 0;
 
@@ -442,7 +442,7 @@ async function getRealAnalyticsHistory(): Promise<AnalyticsPoint[]> {
     );
 }
 
-function getRecentPublishedRows(history: AnalyticsPoint[], dayCount: number) {
+function selectRecentPublishedRows(history: AnalyticsPoint[], dayCount: number) {
   const dates = [...new Set(history.map((row) => row.date))]
     .sort((first, second) => second.localeCompare(first))
     .slice(0, dayCount);
