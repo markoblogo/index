@@ -22,6 +22,7 @@ import {
 export type SurveyLocale = "uk" | "en";
 
 export type RespondentSurveyCommodity = {
+  basisLabel: string;
   id: string;
   code: string;
   name: string;
@@ -52,12 +53,13 @@ const labels = {
     lockedSubmitted: `Submitted values are locked and already transferred to ${isSpike ? "Spike Brokers" : "UGA"}.`,
     intro:
       isSpike
-        ? "Submit today's CPT Odesa / CPT parity Odesa spot price indicatives for your company. Individual submissions are used for index calculation and are not published publicly."
+        ? "Submit today's CPT Odesa / CPT parity Odesa / FCA Chop spot price indicatives for your company. Individual submissions are used for index calculation and are not published publicly."
         : "Submit today’s CPT UA Black Sea price indicatives for your company. Individual submissions are used for index calculation and are not published publicly.",
     notPublished: "Not published",
     price: "Price",
     priceHintLines: [
       "corn, wheat $/t, excl. VAT (export)",
+      "Corn FCA Chop $/t, excl. VAT (export)",
       "soybean, sunflower $/t, incl. VAT (processing)",
     ],
     publication: "Publication",
@@ -89,12 +91,13 @@ const labels = {
     lockedSubmitted: `Подані значення зафіксовані та вже передані ${isSpike ? "Spike Brokers" : "в УЗА"}.`,
     intro:
       isSpike
-        ? "Подайте сьогоднішні спотові цінові індикативи CPT Одеса / CPT паритет Одеса від вашої компанії. Індивідуальні значення використовуються для розрахунку індексу і не публікуються відкрито."
+        ? "Подайте сьогоднішні спотові цінові індикативи CPT Одеса / CPT parity Одеса / FCA Чоп від вашої компанії. Індивідуальні значення використовуються для розрахунку індексу і не публікуються відкрито."
         : "Подайте сьогоднішні цінові індикативи CPT UA Black Sea від вашої компанії. Індивідуальні значення використовуються для розрахунку індексу і не публікуються відкрито.",
     notPublished: "Не опубліковано",
     price: "Ціна",
     priceHintLines: [
       "кукурудза, пшениця $/т, без ПДВ (експорт)",
+      "кукурудза FCA Чоп $/т, без ПДВ (експорт)",
       "соя, соняшник $/т, з ПДВ (переробка)",
     ],
     publication: "Публікація",
@@ -266,6 +269,10 @@ function getMockRespondentSurveyData({
     source: "mock",
     status: submitted ? "submitted" : drafted ? "draft" : "empty",
     commodities: commodities.map((commodity, index) => ({
+      basisLabel: getDeliveryBasisConfigForCommodityCode(
+        commodity.code,
+        activeIndex,
+      ).name,
       id: commodity.id,
       code: commodity.code,
       name:
@@ -333,6 +340,10 @@ async function getDatabaseRespondentSurveyData({
       const submission = submissionByCommodity.get(commodity.id);
 
       return {
+        basisLabel: getDeliveryBasisConfigForCommodityCode(
+          commodity.code,
+          activeIndex,
+        ).name,
         id: commodity.id,
         code: commodity.code,
         name:

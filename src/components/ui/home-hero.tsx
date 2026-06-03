@@ -216,8 +216,8 @@ function SpikeHomeHero({
             <div>
               <p className="text-xs font-black uppercase tracking-[0.28em] text-white/60">
                 {locale === "uk"
-                  ? "CPT Одеса / CPT parity Одеса"
-                  : "CPT Odesa / CPT parity Odesa"}
+                  ? "CPT Одеса / CPT parity Одеса / FCA Чоп"
+                  : "CPT Odesa / CPT parity Odesa / FCA Chop"}
               </p>
               <p className="mt-1 text-sm font-semibold leading-5 text-white/65">
                 {activeIndex.home.officialNotice[locale]}
@@ -228,7 +228,7 @@ function SpikeHomeHero({
             </div>
           </div>
 
-          <div className="group flex min-h-[35rem] gap-3 overflow-x-auto pb-2 pt-2 [scrollbar-width:none] sm:gap-4 lg:min-h-[37rem] xl:overflow-visible">
+          <div className="group flex min-h-[34rem] gap-3 overflow-x-auto pb-2 pt-2 [scrollbar-width:none] sm:gap-4 lg:min-h-[36rem] xl:overflow-visible">
             {commodities.map((commodity) => (
               <SpikeCommodityCard
                 commodity={commodity}
@@ -313,7 +313,7 @@ function SpikeCommodityCard({
 
   return (
     <article
-      className={`relative grid min-w-[15.5rem] flex-[1_1_0] grid-rows-[8.25rem_12.5rem_4.25rem_1fr] overflow-hidden rounded-[2rem] border border-white/10 bg-[#050505] p-5 text-[#f8f8f2] transition-[flex-grow,transform,border-color] duration-500 ease-out hover:flex-[1.75_1_0] hover:-translate-y-1 sm:min-w-[17rem] lg:min-w-0 ${tone.border}`}
+      className={`relative grid min-w-[15.5rem] flex-[1_1_0] grid-rows-[7.75rem_11.75rem_4rem_1fr] overflow-hidden rounded-[1.65rem] border border-white/10 bg-[#050505] p-4 text-[#f8f8f2] transition-[flex-grow,transform,border-color] duration-500 ease-out hover:flex-[1.55_1_0] hover:-translate-y-1 sm:min-w-[16.25rem] lg:min-w-0 xl:p-5 ${tone.border}`}
     >
       <div
         aria-hidden="true"
@@ -324,7 +324,7 @@ function SpikeCommodityCard({
           {commodity.group === "processing" ? "Processing" : "Export"}
         </p>
         <div className="mt-5 flex items-start justify-between gap-3">
-          <h3 className="max-w-[11rem] text-[1.42rem] font-black uppercase leading-[0.98] tracking-normal text-[#f8f8f2] sm:text-2xl">
+          <h3 className="max-w-[10.5rem] text-[1.22rem] font-black uppercase leading-[0.98] tracking-normal text-[#f8f8f2] sm:text-[1.35rem] xl:text-2xl">
             {commodity.name[locale]}
           </h3>
           <span className={`rounded-full bg-white/10 px-2 py-1 text-[0.66rem] font-black ${tone.chip}`}>
@@ -336,7 +336,7 @@ function SpikeCommodityCard({
       <div className="relative z-10 grid min-w-0 content-start gap-5 self-start">
         <CurrencyValue
           block
-          className="w-full max-w-full whitespace-nowrap text-[clamp(3.35rem,5.35vw,5.25rem)] font-black leading-[0.84] tracking-normal text-white data-[currency=EUR]:text-[clamp(3rem,4.35vw,4.75rem)] data-[currency=UAH]:text-[clamp(2.05rem,3.05vw,3.45rem)] [&_.currency-unit]:text-base [&_.currency-unit]:text-white/45"
+          className="w-full max-w-full whitespace-nowrap text-[clamp(2.75rem,3.8vw,4.25rem)] font-black leading-[0.84] tracking-normal text-white data-[currency=EUR]:text-[clamp(2.45rem,3.45vw,3.85rem)] data-[currency=UAH]:text-[clamp(1.65rem,2.15vw,2.6rem)] [&_.currency-unit]:text-xs [&_.currency-unit]:text-white/45 xl:[&_.currency-unit]:text-sm"
           fxRates={fxRates}
           locale={locale}
           maximumFractionDigits={{ EUR: 0, UAH: 0, USD: 0 }}
@@ -386,7 +386,7 @@ function SpikeCommodityCard({
             {commodity.vatIncluded
               ? locale === "uk"
                 ? "в т.ч."
-              : "included"
+                : "included"
               : locale === "uk"
                 ? "без"
                 : "w/o"}

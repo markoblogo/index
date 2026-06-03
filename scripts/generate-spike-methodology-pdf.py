@@ -174,7 +174,7 @@ UK_SECTIONS = [
     (
         "2. Позиції, базиси та одиниці",
         [
-            "Поточний публічний набір включає експортні позиції на базисі CPT Одеса та переробні позиції на базисі CPT parity Одеса.",
+            "Поточний публічний набір включає експортні позиції на базисі CPT Одеса, прикордонну позицію кукурудзи на базисі FCA Чоп та переробні позиції на базисі CPT parity Одеса.",
             "Офіційна валюта публікації - USD/т. Значення в UAH/т та EUR/т можуть відображатися як перерахунок за довідковим валютним курсом.",
         ],
     ),
@@ -222,7 +222,7 @@ EN_SECTIONS = [
     (
         "2. Positions, bases and units",
         [
-            "The current public set covers export positions on CPT Odesa basis and processing positions on CPT parity Odesa basis.",
+            "The current public set covers export positions on CPT Odesa basis, the border corn position on FCA Chop basis and processing positions on CPT parity Odesa basis.",
             "The official publication currency is USD/t. UAH/t and EUR/t values may be displayed as reference conversions using the applicable FX rate.",
         ],
     ),
@@ -263,7 +263,7 @@ EN_SECTIONS = [
 UK_META = [
     ("Видавець", "Spike Brokers"),
     ("Назва індексу", "SPIKE SPOT INDEX"),
-    ("Базиси", "CPT Одеса - експорт; CPT parity Одеса - переробка"),
+    ("Базиси", "CPT Одеса - експорт; FCA Чоп - прикордонна кукурудза; CPT parity Одеса - переробка"),
     ("Офіційна одиниця", "USD/т"),
     ("Версія", "v1.0, травень 2026"),
 ]
@@ -271,7 +271,7 @@ UK_META = [
 EN_META = [
     ("Publisher", "Spike Brokers"),
     ("Index name", "SPIKE SPOT INDEX"),
-    ("Bases", "CPT Odesa - export; CPT parity Odesa - processing"),
+    ("Bases", "CPT Odesa - export; FCA Chop - border corn; CPT parity Odesa - processing"),
     ("Official unit", "USD/t"),
     ("Version", "v1.0, May 2026"),
 ]

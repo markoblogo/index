@@ -148,7 +148,7 @@ export default async function RespondentPage({
                     {commodity.name}
                   </span>
                   <span className="mt-1 block text-xs font-semibold uppercase tracking-[0.14em] text-black/45">
-                    {commodity.code} · {data.basisLabel}
+                    {commodity.code} · {commodity.basisLabel}
                   </span>
                 </span>
                 <span className="grid min-w-0 gap-1">

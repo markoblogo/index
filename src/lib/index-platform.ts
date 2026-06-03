@@ -11,6 +11,7 @@ export type IndexCommodityConfig = {
   id: string;
   code: string;
   dbCode: string;
+  deliveryBasisCode?: string;
   marker: string;
   name: Record<Locale, string>;
   shortName: Record<Locale, string>;
@@ -193,6 +194,25 @@ const spikeCommodities: IndexCommodityConfig[] = [
     ],
   },
   {
+    id: "corn-fca-chop",
+    code: "CORN FCA CHOP",
+    dbCode: "CORN_FCA_CHOP",
+    deliveryBasisCode: "FCA_CHOP_EXPORT",
+    marker: "C",
+    name: { uk: "Кукурудза FCA Чоп", en: "Corn FCA Chop" },
+    shortName: { uk: "Кукурудза Чоп", en: "Corn Chop" },
+    group: "export",
+    sortOrder: 4,
+    basePrice: 216,
+    absoluteChange: 0,
+    percentChange: 0,
+    sparkline: [214, 215, 215, 216, 216, 216, 216],
+    detailMetrics: [
+      { label: { uk: "Базис", en: "Basis" }, value: { uk: "FCA Чоп", en: "FCA Chop" } },
+      { label: { uk: "Напрям", en: "Flow" }, value: { uk: "експорт", en: "export" } },
+    ],
+  },
+  {
     id: "gmo-soybean",
     code: "GMO SOY",
     dbCode: "GMO_SOY",
@@ -200,7 +220,7 @@ const spikeCommodities: IndexCommodityConfig[] = [
     name: { uk: "Соя ГМО", en: "GMO soybean" },
     shortName: { uk: "Соя", en: "Soy" },
     group: "processing",
-    sortOrder: 4,
+    sortOrder: 5,
     basePrice: 504,
     absoluteChange: 0,
     percentChange: 0,
@@ -219,7 +239,7 @@ const spikeCommodities: IndexCommodityConfig[] = [
     name: { uk: "Соняшник", en: "Sunflower seed" },
     shortName: { uk: "Соняшник", en: "Sunflower" },
     group: "processing",
-    sortOrder: 5,
+    sortOrder: 6,
     basePrice: 739,
     absoluteChange: 0,
     percentChange: 0,
@@ -329,7 +349,7 @@ export const INDEX_CONFIGS: Record<IndexTenantId, IndexConfig> = {
     brandUrl: "https://spike.broker/en/",
     logoPath: "/brand/spike-logo-full.png",
     logoHeaderPath: "/brand/spike-logo-full.png",
-    defaultDeliveryBasis: "CPT Odesa / CPT parity Odesa",
+    defaultDeliveryBasis: "CPT Odesa / CPT parity Odesa / FCA Chop",
     defaultDeliveryPeriod: "spot",
     currency: "USD",
     unit: "t",
@@ -352,19 +372,19 @@ export const INDEX_CONFIGS: Record<IndexTenantId, IndexConfig> = {
         en: "SPIKE SPOT INDEX",
       },
       editorialLine: {
-        uk: "/ CPT Одеса · експорт і переробка",
-        en: "/ CPT Odesa · export and processing",
+        uk: "/ CPT Одеса · FCA Чоп · експорт і переробка",
+        en: "/ CPT Odesa · FCA Chop · export and processing",
       },
       boardKicker: { uk: "Market update", en: "Market update" },
       facts: {
         uk: [
-          { value: "5", label: "позицій" },
-          { value: "2", label: "базиси" },
+          { value: "6", label: "позицій" },
+          { value: "3", label: "базиси" },
           { value: "spot", label: "ринок" },
         ],
         en: [
-          { value: "5", label: "positions" },
-          { value: "2", label: "bases" },
+          { value: "6", label: "positions" },
+          { value: "3", label: "bases" },
           { value: "spot", label: "market" },
         ],
       },
@@ -406,6 +426,13 @@ export const INDEX_CONFIGS: Record<IndexTenantId, IndexConfig> = {
         region: "Odesa, Ukraine",
         basketCode: "CPT_PARITY_ODESA_PROCESSING_SPIKE",
         basketName: "CPT parity Odesa Processing Spike Basket",
+      },
+      {
+        code: "FCA_CHOP_EXPORT",
+        name: "FCA Chop, Ukraine (export)",
+        region: "Chop, Ukraine",
+        basketCode: "FCA_CHOP_EXPORT_SPIKE",
+        basketName: "FCA Chop Export Spike Basket",
       },
     ],
     respondents: [

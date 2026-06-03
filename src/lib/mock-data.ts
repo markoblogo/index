@@ -1,6 +1,7 @@
 import type { Locale } from "@/lib/i18n";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import { getActiveRespondentCount } from "@/lib/respondent-directory";
+import { getDeliveryBasisConfigForCommodityId } from "@/lib/tenant-basis";
 
 const activeIndex = getActiveIndexConfig();
 
@@ -75,11 +76,9 @@ export const latestQuotes: LatestQuote[] = commodities.map((commodity) => ({
   commodityId: commodity.id,
   date: activeIndex.id === "spike-ua" ? "2026-05-14" : "2026-05-08",
   basis:
-    activeIndex.id === "spike-ua" && commodity.group === "processing"
-      ? "CPT parity Odesa, Ukraine (processing)"
-      : activeIndex.id === "spike-ua"
-        ? "CPT Odesa, Ukraine (export)"
-        : activeIndex.defaultDeliveryBasis,
+    activeIndex.id === "spike-ua"
+      ? getDeliveryBasisConfigForCommodityId(commodity.id, activeIndex).name
+      : activeIndex.defaultDeliveryBasis,
   price: commodity.latest,
   absoluteChange: commodity.absoluteChange,
   percentChange: commodity.percentChange,

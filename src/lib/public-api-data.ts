@@ -49,6 +49,8 @@ const demoDates = [
 
 const mockCommodityIdByCode: Record<string, CommodityId> = {
   CORN: "corn",
+  CORN_FCA_CHOP: "corn-fca-chop",
+  "CORN FCA CHOP": "corn-fca-chop",
   WHT_115: "wheat-115",
   "WHT 11.5": "wheat-115",
   FEED_WHT: "feed-wheat",

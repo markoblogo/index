@@ -240,6 +240,53 @@ describe("importMn7rMonitorRespondentPrices", () => {
     expect(result).toEqual({ date: "2026-05-26", imported: 0, skipped: 1 });
     expect(calls).toEqual([]);
   });
+
+  it("imports Corn FCA Chop as a separate monitor position", async () => {
+    process.env.MN7R_API_URL = "http://monitor.test";
+    process.env.MN7R_INDEX_EXPORT_TOKEN = "token";
+
+    const payload: Mn7rPayload = {
+      source: "MN7R_MONITOR",
+      respondentCode: "MN7R_MONITOR",
+      asOfDate: "2026-06-03",
+      generatedAt: "2026-06-03T13:00:00.000Z",
+      timezone: "Europe/Kyiv",
+      methodologyVersion: "mn7r-monitor-index-v1",
+      positions: [
+        {
+          indexCode: "CORN_FCA_CHOP",
+          currency: "USD",
+          avgBid: 214,
+          avgOffer: 218,
+          monitorPrice: 216,
+          bidCount: 1,
+          offerCount: 1,
+          sampleCount: 2,
+          quality: "ok",
+        },
+      ],
+    };
+    const calls: RespondentPriceInput[] = [];
+
+    const result = await importMn7rMonitorRespondentPrices("2026-06-03", {
+      fetchImpl: async () =>
+        new Response(JSON.stringify(payload), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      upsertRespondentPriceImpl: async (input) => {
+        calls.push(input);
+      },
+    });
+
+    expect(result).toEqual({ date: "2026-06-03", imported: 1, skipped: 0 });
+    expect(calls[0]).toMatchObject({
+      currency: "USD",
+      indexCode: "CORN_FCA_CHOP",
+      price: 216,
+      respondentCode: "MN7R_MONITOR",
+    });
+  });
 });
 
 describe("formatDateKyiv", () => {

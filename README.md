@@ -66,9 +66,10 @@ UGA-specific features:
 Spike-specific features:
 
 - SPIKE SPOT INDEX brand and visual system;
-- 5 public positions: corn, wheat 11.5% protein, feed wheat, GMO soybean,
-  sunflower seed;
-- CPT Odesa / CPT parity Odesa export and processing basis language;
+- 6 public positions: corn, wheat 11.5% protein, feed wheat, corn FCA Chop,
+  GMO soybean, sunflower seed;
+- CPT Odesa / CPT parity Odesa / FCA Chop export, processing and border basis
+  language;
 - MN7R Monitor import as an automatic respondent;
 - Telegram-first respondent workflow through `@spike_spot_bot`;
 - admin and respondent password onboarding with temporary credentials;
@@ -392,9 +393,9 @@ The seed is tenant-aware:
 
 - UGA seed creates UGA commodities, respondents, contacts, baskets, fallback
   submissions, external indicatives and published values for demo/review.
-- Spike seed creates Spike commodities, CPT Odesa/CPT parity Odesa bases, MN7R
-  Monitor, Spike respondent directory entries and auth accounts. Demo history is
-  controlled by `SEED_DEMO_HISTORY`.
+- Spike seed creates Spike commodities, CPT Odesa/CPT parity Odesa/FCA Chop
+  bases, MN7R Monitor, Spike respondent directory entries and auth accounts.
+  Demo history is controlled by `SEED_DEMO_HISTORY`.
 
 More detail:
 

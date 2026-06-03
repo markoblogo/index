@@ -166,6 +166,9 @@ export default async function DailyInputsPage({
                       <span className="mt-1 block text-[0.65rem] uppercase tracking-[0.14em] text-white/50">
                         {commodity.code}
                       </span>
+                      <span className="mt-1 block text-[0.62rem] normal-case tracking-normal text-white/42">
+                        {commodity.basisLabel}
+                      </span>
                     </th>
                   ))}
                 </tr>

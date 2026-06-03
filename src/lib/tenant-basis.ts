@@ -47,6 +47,16 @@ function getDeliveryBasisConfigForCommodity(
   commodity: IndexCommodityConfig | undefined,
   activeIndex: IndexConfig,
 ) {
+  if (commodity?.deliveryBasisCode) {
+    const configuredBasis = activeIndex.deliveryBases.find(
+      (basis) => basis.code === commodity.deliveryBasisCode,
+    );
+
+    if (configuredBasis) {
+      return configuredBasis;
+    }
+  }
+
   if (
     activeIndex.id === "spike-ua" &&
     commodity?.group === "processing" &&

@@ -259,6 +259,16 @@ function getAdditionalAliases(commodity: IndexCommodityConfig) {
     return ["CRNEX"];
   }
 
+  if (commodity.dbCode === "CORN_FCA_CHOP") {
+    return [
+      "CORN_CHOP",
+      "CORN_FCA",
+      "CRN_FCA_CHOP",
+      "CRNCHOP",
+      "CRNFC",
+    ];
+  }
+
   return [];
 }
 

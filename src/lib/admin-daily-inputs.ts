@@ -39,6 +39,7 @@ export type DailyInputCell = {
 };
 
 export type DailyInputCommodity = {
+  basisLabel: string;
   id: string;
   code: string;
   name: string;
@@ -65,6 +66,7 @@ export type DailyInputData = {
 const WARNING_THRESHOLD = 0.02;
 const commodityCodeByMockId: Record<CommodityId, string> = {
   corn: "CORN",
+  "corn-fca-chop": "CORN_FCA_CHOP",
   "wheat-115": "WHT_115",
   "feed-wheat": "FEED_WHT",
   "gmo-soybean": "GMO_SOY",
@@ -284,6 +286,10 @@ async function getDatabaseDailyInputData(date: string): Promise<DailyInputData> 
       lockedPublishedCount > 0 && canManuallyUnlockPublicationDate(date),
     source: "database",
     commodities: dbCommodities.map((commodity) => ({
+      basisLabel: getDeliveryBasisConfigForCommodityCode(
+        commodity.code,
+        activeIndex,
+      ).name,
       id: commodity.id,
       code: commodity.code,
       name: commodity.nameUk,
@@ -378,6 +384,10 @@ function getMockDailyInputData(date: string): DailyInputData {
     canUnlockPublication: false,
     source: "mock",
     commodities: commodities.map((commodity) => ({
+      basisLabel: getDeliveryBasisConfigForCommodityCode(
+        commodity.code,
+        getActiveIndexTenant(),
+      ).name,
       id: commodity.id,
       code: commodity.code,
       name: commodity.name.uk,

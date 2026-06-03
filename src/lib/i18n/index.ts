@@ -787,11 +787,11 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
         description:
           "SPIKE SPOT INDEX - спотовий бенчмарк цін для українського аграрного ринку.",
         boardTitle: "SPIKE SPOT INDEX / Спотові ціни",
-        boardDescription:
-          "Ринковий бенчмарк у USD/т для CPT Одеса та CPT parity Одеса, що публікується після щоденної перевірки даних партнерів.",
+      boardDescription:
+        "Ринковий бенчмарк у USD/т для CPT Одеса, CPT parity Одеса та FCA Чоп, що публікується після щоденної перевірки даних партнерів.",
         heroSubtitle:
           "Спотовий бенчмарк цін для українського аграрного ринку.",
-        heroMeta: "CPT Одеса · spot · USD/т · публікація після EOD-перевірки",
+      heroMeta: "CPT Одеса · FCA Чоп · spot · USD/т · публікація після EOD-перевірки",
         heroAttribution:
           "Публікується Spike Brokers. Дані: партнери ринку. Технологія: Cropto/MN7R.",
         heroAttributionShort: "Spike Brokers · партнери ринку · Cropto/MN7R",
@@ -809,14 +809,14 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
         descriptionBeforeLink:
           "SPIKE SPOT INDEX - це окрема індексна платформа ",
         descriptionLinkText: "Spike Brokers",
-        descriptionAfterLink:
-          " для щоденної публікації агрегованих спотових цін за ключовими експортними та переробними позиціями України. Індекс створений, щоб дати ринку прозорий і порівнюваний орієнтир для CPT Одеса та CPT parity Одеса.",
+      descriptionAfterLink:
+        " для щоденної публікації агрегованих спотових цін за ключовими експортними, прикордонними та переробними позиціями України. Індекс створений, щоб дати ринку прозорий і порівнюваний орієнтир для CPT Одеса, CPT parity Одеса та FCA Чоп.",
         ugaHref: "https://spike.broker/",
         whyTitle: "Операційний ціновий орієнтир для угод, логістики та переробки",
         whyBody: [
           "Український аграрний ринок щодня реагує на попит експортерів, переробників, логістику, портову інфраструктуру, валюту, фрахт і якісні параметри продукції. Для роботи з такими потоками учасникам потрібен спільний орієнтир, прив'язаний до реальних торгових базисів.",
           "SPIKE SPOT INDEX агрегує ринкові оцінки партнерів Spike Brokers і перетворює їх на зіставні значення для публікації. Індекс не розкриває індивідуальні подання компаній, а показує очищений агрегований результат.",
-          "Платформа охоплює експортні позиції CPT Одеса та переробні позиції CPT parity Одеса. Для сої ГМО та соняшнику публічні значення відображаються з ПДВ, відповідно до логіки ринку переробки.",
+        "Платформа охоплює експортні позиції CPT Одеса, прикордонну позицію FCA Чоп та переробні позиції CPT parity Одеса. Для сої ГМО та соняшнику публічні значення відображаються з ПДВ, відповідно до логіки ринку переробки.",
         ],
         whyFeatures: [
           {
@@ -872,13 +872,14 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
         coreTitle: "Від EOD-оцінок партнерів до опублікованого спотового бенчмарку",
         coreNarrative: [
           "Індекс розраховується на основі щоденних цінових оцінок, які надає визначена група партнерів-респондентів Spike Brokers. Кожне подане значення має відображати справедливий ринковий рівень на кінець торгового дня для відповідної культури та базису.",
-          "Поточні публічні базиси: CPT Одеса, Україна для експортних позицій і CPT parity Одеса, Україна для позицій переробки. Ціни збираються для кожної позиції та дати розрахунку, після чого проходять валідацію. Система визначає медіану вибірки, а значення, що відхиляються від медіани більш ніж на +/-2%, виключаються як потенційні викиди.",
+        "Поточні публічні базиси: CPT Одеса, Україна для основних експортних позицій, FCA Чоп, Україна для прикордонної позиції кукурудзи та CPT parity Одеса, Україна для позицій переробки. Ціни збираються для кожної позиції та дати розрахунку, після чого проходять валідацію. Система визначає медіану вибірки, а значення, що відхиляються від медіани більш ніж на +/-2%, виключаються як потенційні викиди.",
           "Після очищення вибірки значення індексу розраховується як середнє арифметичне валідних цін. Корзина може бути опублікована лише тоді, коли після фільтрації залишається щонайменше 5 валідних цін респондентів. Окремого зовнішнього індикативу Spike Brokers у цьому інстансі немає, оскільки Spike Brokers є видавцем індексу.",
           "До публікації значення можуть перевірятися, уточнюватися та мати декілька версій. Після публікації фінальне значення фіксується. Система зберігає зміни, перерахунки та події публікації в журналі аудиту.",
         ],
         facts: [
-          { value: "CPT Odesa", label: "Базис для експортних позицій" },
-          { value: "CPT parity", label: "Базис для позицій переробки" },
+        { value: "CPT Odesa", label: "Базис для експортних позицій" },
+        { value: "FCA Chop", label: "Базис для прикордонної позиції" },
+        { value: "CPT parity", label: "Базис для позицій переробки" },
           { value: "5+", label: "Мінімум валідних респондентів" },
           { value: "EOD", label: "Оцінка ціни на кінець торгового дня" },
           { value: "+/-2%", label: "Фільтр викидів відносно медіани" },
@@ -939,11 +940,11 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
       description:
         "SPIKE SPOT INDEX is a spot price benchmark for the Ukrainian agricultural market.",
       boardTitle: "SPIKE SPOT INDEX / Spot Pricing",
-      boardDescription:
-        "USD/t market benchmark for CPT Odesa and CPT parity Odesa, published after daily partner-data review.",
+    boardDescription:
+      "USD/t market benchmark for CPT Odesa, CPT parity Odesa and FCA Chop, published after daily partner-data review.",
       heroSubtitle:
         "Spot price benchmark for the Ukrainian agricultural market.",
-      heroMeta: "CPT Odesa · spot · USD/t · published after EOD review",
+    heroMeta: "CPT Odesa · FCA Chop · spot · USD/t · published after EOD review",
       heroAttribution:
         "Published by Spike Brokers. Data: market partners. Technology: Cropto/MN7R.",
       heroAttributionShort: "Spike Brokers · market partners · Cropto/MN7R",
@@ -960,14 +961,14 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
       descriptionBeforeLink:
         "SPIKE SPOT INDEX is a dedicated index platform by ",
       descriptionLinkText: "Spike Brokers",
-      descriptionAfterLink:
-        " for publishing daily aggregated spot prices across selected Ukrainian export and processing positions. The index gives the market a transparent and comparable reference for CPT Odesa and CPT parity Odesa levels.",
+    descriptionAfterLink:
+      " for publishing daily aggregated spot prices across selected Ukrainian export, border and processing positions. The index gives the market a transparent and comparable reference for CPT Odesa, CPT parity Odesa and FCA Chop levels.",
       ugaHref: "https://spike.broker/en/",
       whyTitle: "An operational price reference for trade, logistics and processing",
       whyBody: [
         "Ukraine's agricultural market reacts daily to exporter and processor demand, logistics, port infrastructure, currency, freight and product quality. Market participants need a shared reference linked to executable trading bases.",
         "SPIKE SPOT INDEX aggregates market assessments from Spike Brokers partners and turns them into comparable public values. The index does not disclose individual company submissions; it shows a cleaned aggregated result.",
-        "The platform covers CPT Odesa export positions and CPT parity Odesa processing positions. GMO soybean and sunflower seed public values are shown VAT-included, reflecting processing-market convention.",
+      "The platform covers CPT Odesa export positions, the FCA Chop border position and CPT parity Odesa processing positions. GMO soybean and sunflower seed public values are shown VAT-included, reflecting processing-market convention.",
       ],
       whyFeatures: [
         {
@@ -1023,13 +1024,14 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
       coreTitle: "From partner EOD assessments to a published spot benchmark",
       coreNarrative: [
         "The index is calculated from daily price assessments submitted by a defined group of Spike Brokers respondent partners. Each submitted value should reflect a fair end-of-day market level for the relevant commodity and basis.",
-        "Current public bases are CPT Odesa, Ukraine for export positions and CPT parity Odesa, Ukraine for processing positions. Prices are collected for each position and calculation date, then validated. The system identifies the median value in the respondent sample and excludes prices deviating by more than +/-2% from the median as potential outliers.",
+      "Current public bases are CPT Odesa, Ukraine for core export positions, FCA Chop, Ukraine for the border corn position and CPT parity Odesa, Ukraine for processing positions. Prices are collected for each position and calculation date, then validated. The system identifies the median value in the respondent sample and excludes prices deviating by more than +/-2% from the median as potential outliers.",
         "The index value is calculated as the arithmetic average of the cleaned respondent sample. A basket is publishable only when at least 5 valid respondent prices remain after filtering. This tenant does not use a separate Spike Brokers external indicative because Spike Brokers is the index publisher.",
         "Before publication, values can be reviewed, corrected and versioned. After publication, the final value is locked. The system records changes, recalculations and publication events in an audit log.",
       ],
       facts: [
-        { value: "CPT Odesa", label: "Export-position basis" },
-        { value: "CPT parity", label: "Processing-position basis" },
+      { value: "CPT Odesa", label: "Export-position basis" },
+      { value: "FCA Chop", label: "Border-position basis" },
+      { value: "CPT parity", label: "Processing-position basis" },
         { value: "5+", label: "Minimum valid respondents" },
         { value: "EOD", label: "End-of-day price assessment" },
         { value: "+/-2%", label: "Median-based outlier filter" },
