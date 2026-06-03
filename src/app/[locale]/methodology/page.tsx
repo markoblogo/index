@@ -174,6 +174,19 @@ function SpikeMethodologyPage({
   dict: ReturnType<typeof getDictionary>;
   locale: Locale;
 }) {
+  const aiFaq =
+    locale === "uk"
+      ? {
+          answer:
+            "Ні. Офіційні значення індексу розраховуються відповідно до опублікованої методології SPIKE. AI використовується лише для інтерпретації опублікованих даних, генерації аналітичних briefs, опису волатильності та сценарних нотаток. Він не встановлює, не коригує і не валідовує офіційні значення індексу.",
+          question: "Чи розраховує AI офіційне значення SPIKE SPOT INDEX?",
+        }
+      : {
+          answer:
+            "No. Official index values are calculated according to the published SPIKE methodology. AI is used only to interpret published data, generate analytical briefs, describe volatility and produce scenario notes. It does not set, adjust or validate official index values.",
+          question: "Does AI calculate the official SPIKE SPOT INDEX value?",
+        };
+  const faqItems = [...dict.methodology.faq, aiFaq];
   const methodologyPdfPath =
     locale === "uk"
       ? "/files/spike-index-methodology-uk.pdf"
@@ -310,7 +323,7 @@ function SpikeMethodologyPage({
             </h2>
           </div>
           <div className="grid gap-3">
-            {dict.methodology.faq.map((item) => (
+            {faqItems.map((item) => (
               <details
                 className="group rounded-[1.15rem] border border-white/10 bg-[#f8f8f2] p-5 text-[#050505]"
                 key={item.question}
@@ -339,30 +352,38 @@ function SpikeAiPolicySection({ locale }: { locale: Locale }) {
   const copy =
     locale === "uk"
       ? {
-          body:
-            "SPIKE SPOT INDEX використовує hybrid AI layer лише над перевіреними published values. Офіційне значення індексу залишається результатом методології: дані респондентів, медіанна валідація, фільтр відхилень, правила покриття, audit log і locked publication. AI не встановлює, не змінює і не прогнозує офіційну ціну; він формує пояснювальний brief на основі вже опублікованих значень, волатильності, спредів і покриття респондентів.",
+          body: [
+            "SPIKE SPOT INDEX використовує hybrid approach: спочатку deterministic index calculation, потім AI-assisted interpretation.",
+            "Офіційний розрахунок індексу не спирається на AI. Опубліковані значення розраховуються за методологією SPIKE: збір даних респондентів, медіанна валідація, фільтрація викидів, арифметичне середнє очищеної вибірки, мінімальне покриття респондентів і locked publication.",
+            "AI використовується лише як аналітичний шар над опублікованими або preview-даними. Він може допомагати генерувати market briefs, scenario notes, volatility summaries та spread interpretation на основі вже розрахованих значень індексу й історичного руху.",
+            "AI outputs не є офіційними цінами, торговими сигналами чи рекомендаціями. Вони не мають доступу до індивідуальних подань респондентів і не замінюють методологію. Увесь AI-assisted content слід читати як аналітичний контекст для розуміння ринку.",
+          ],
           disclaimer:
-            "AI Market Brief не має доступу до індивідуальних подань респондентів і не є торговою рекомендацією.",
+            "Official SPIKE SPOT INDEX values are methodology-based and non-AI-generated. AI-assisted outputs are provided for analytical context only.",
           eyebrow: "AI usage policy",
           items: [
             "verified market data first",
             "deterministic methodology second",
             "AI-assisted interpretation third",
           ],
-          title: "AI пояснює дані, але не розраховує індекс",
+          title: "Як AI використовується у SPIKE SPOT INDEX",
         }
       : {
-          body:
-            "SPIKE SPOT INDEX uses a hybrid AI layer only above verified published values. The official index value remains methodology-driven: respondent data, median validation, outlier filtering, coverage rules, audit log and locked publication. AI does not set, adjust or forecast the official price; it creates an explanatory brief from already published values, volatility, spreads and respondent coverage.",
+          body: [
+            "SPIKE SPOT INDEX uses a hybrid approach: deterministic index calculation first, AI-assisted interpretation second.",
+            "The official index calculation does not rely on AI. Published values are calculated through the SPIKE methodology: respondent data collection, median validation, outlier filtering, arithmetic averaging of the cleaned sample, minimum respondent coverage and locked publication.",
+            "AI is used only as an analytical layer above published or preview data. It may help generate market briefs, scenario notes, volatility summaries and spread interpretation based on already calculated index values and historical movement.",
+            "AI outputs are not official prices, trading signals or recommendations. They do not access individual respondent submissions and do not override the methodology. All AI-assisted content should be read as analytical context for market understanding.",
+          ],
           disclaimer:
-            "The AI Market Brief does not access individual respondent submissions and is not a trading recommendation.",
+            "Official SPIKE SPOT INDEX values are methodology-based and non-AI-generated. AI-assisted outputs are provided for analytical context only.",
           eyebrow: "AI usage policy",
           items: [
             "verified market data first",
             "deterministic methodology second",
             "AI-assisted interpretation third",
           ],
-          title: "AI explains data, but does not calculate the index",
+          title: "How AI is used in SPIKE SPOT INDEX",
         };
 
   return (
@@ -377,7 +398,11 @@ function SpikeAiPolicySection({ locale }: { locale: Locale }) {
           </h2>
         </div>
         <div className="grid gap-4">
-          <p className="text-base leading-7 text-white/64">{copy.body}</p>
+          <div className="grid gap-4 text-base leading-7 text-white/64">
+            {copy.body.map((paragraph) => (
+              <p key={paragraph}>{paragraph}</p>
+            ))}
+          </div>
           <div className="grid gap-3 sm:grid-cols-3">
             {copy.items.map((item, index) => (
               <div

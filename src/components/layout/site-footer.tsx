@@ -46,8 +46,8 @@ export function SiteFooter({ locale }: { locale: Locale }) {
                 {dict.footer.disclaimer}
                 <br />
                 {locale === "uk"
-                  ? "AI-assisted analytics by 1D3X. Офіційні значення індексу залишаються методологічними і не генеруються AI."
-                  : "AI-assisted analytics by 1D3X. Official index values remain methodology-based and non-AI-generated."}
+                  ? "Official SPIKE SPOT INDEX values are methodology-based and non-AI-generated. AI-assisted outputs are provided for analytical context only."
+                  : "Official SPIKE SPOT INDEX values are methodology-based and non-AI-generated. AI-assisted outputs are provided for analytical context only."}
               </p>
             </section>
 
@@ -55,7 +55,10 @@ export function SiteFooter({ locale }: { locale: Locale }) {
               <h2 className="text-[0.68rem] font-black uppercase tracking-[0.18em] text-white">
                 {dict.footer.navigationTitle}
               </h2>
-              <nav className="mt-2 grid gap-1" aria-label={dict.footer.navigationTitle}>
+              <nav
+                className="mt-2 grid gap-1"
+                aria-label={dict.footer.navigationTitle}
+              >
                 {navItems.map((item) => (
                   <Link
                     className="w-fit text-sm font-semibold leading-5 text-white/68 transition hover:text-uga-lime"
@@ -73,7 +76,9 @@ export function SiteFooter({ locale }: { locale: Locale }) {
                 {dict.footer.contactsTitle}
               </h2>
               <div className="mt-2 text-sm leading-5">
-                <p className="font-black text-white/80">{dict.footer.addressTitle}</p>
+                <p className="font-black text-white/80">
+                  {dict.footer.addressTitle}
+                </p>
                 {activeIndex.contacts.address[locale].map((line) => (
                   <p key={line}>{line}</p>
                 ))}
@@ -83,7 +88,9 @@ export function SiteFooter({ locale }: { locale: Locale }) {
             <section>
               <div className="grid gap-2 text-sm leading-5">
                 <div>
-                  <p className="font-black text-white/80">{dict.footer.phonesTitle}</p>
+                  <p className="font-black text-white/80">
+                    {dict.footer.phonesTitle}
+                  </p>
                   {activeIndex.contacts.phones.map((phone) => (
                     <a
                       className="block transition hover:text-uga-lime"
@@ -95,7 +102,9 @@ export function SiteFooter({ locale }: { locale: Locale }) {
                   ))}
                 </div>
                 <p>
-                  <span className="font-black text-white/80">{dict.footer.emailTitle}</span>{" "}
+                  <span className="font-black text-white/80">
+                    {dict.footer.emailTitle}
+                  </span>{" "}
                   <a
                     className="transition hover:text-uga-lime"
                     href={`mailto:${activeIndex.contacts.email}`}
@@ -128,7 +137,9 @@ export function SiteFooter({ locale }: { locale: Locale }) {
                     {item.label}
                   </Link>
                 ))}
-                <FooterExternalLink href="https://1d3x.com">Index infrastructure by 1d3x</FooterExternalLink>
+                <FooterExternalLink href="https://1d3x.com">
+                  Index infrastructure by 1d3x
+                </FooterExternalLink>
               </nav>
             </section>
           </div>
@@ -154,7 +165,9 @@ export function SiteFooter({ locale }: { locale: Locale }) {
           <p className="mt-2.5 max-w-md text-xs leading-5 text-white/55">
             {dict.footer.disclaimer}
             <br />
-            <FooterExternalLink href="https://1d3x.com">Index infrastructure by 1d3x</FooterExternalLink>
+            <FooterExternalLink href="https://1d3x.com">
+              Index infrastructure by 1d3x
+            </FooterExternalLink>
           </p>
         </section>
 
@@ -162,7 +175,10 @@ export function SiteFooter({ locale }: { locale: Locale }) {
           <h2 className="text-xs font-black uppercase tracking-[0.16em] text-white">
             {dict.footer.navigationTitle}
           </h2>
-          <nav className="mt-3 grid gap-1.5" aria-label={dict.footer.navigationTitle}>
+          <nav
+            className="mt-3 grid gap-1.5"
+            aria-label={dict.footer.navigationTitle}
+          >
             {navItems.map((item) => (
               <Link
                 className="w-fit text-sm font-semibold leading-5 text-white/70 transition hover:text-uga-lime"
@@ -180,7 +196,9 @@ export function SiteFooter({ locale }: { locale: Locale }) {
             {dict.footer.contactsTitle}
           </h2>
           <div className="mt-3 text-sm leading-5">
-            <p className="font-black text-white/80">{dict.footer.addressTitle}</p>
+            <p className="font-black text-white/80">
+              {dict.footer.addressTitle}
+            </p>
             {activeIndex.contacts.address[locale].map((line) => (
               <p key={line}>{line}</p>
             ))}
@@ -190,7 +208,9 @@ export function SiteFooter({ locale }: { locale: Locale }) {
         <section className="order-5 lg:order-4 lg:pt-[1.55rem]">
           <div className="grid gap-2.5 text-sm leading-5">
             <div>
-              <p className="font-black text-white/80">{dict.footer.phonesTitle}</p>
+              <p className="font-black text-white/80">
+                {dict.footer.phonesTitle}
+              </p>
               {activeIndex.contacts.phones.map((phone) => (
                 <a
                   className="block transition hover:text-uga-lime"
@@ -202,7 +222,9 @@ export function SiteFooter({ locale }: { locale: Locale }) {
               ))}
             </div>
             <p>
-              <span className="font-black text-white/80">{dict.footer.emailTitle}</span>{" "}
+              <span className="font-black text-white/80">
+                {dict.footer.emailTitle}
+              </span>{" "}
               <a
                 className="transition hover:text-uga-lime"
                 href={`mailto:${activeIndex.contacts.email}`}
@@ -250,7 +272,9 @@ function FooterSocialLink({
   const isLinked = social.href !== "#";
 
   if (!isLinked) {
-    return <SocialPlaceholder disabled label={social.label} mark={social.mark} />;
+    return (
+      <SocialPlaceholder disabled label={social.label} mark={social.mark} />
+    );
   }
 
   return (

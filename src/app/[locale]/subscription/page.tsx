@@ -11,7 +11,13 @@ export default async function SubscriptionPage({
   const isSpike = getActiveIndexConfig().id === "spike-ua";
 
   return (
-    <main className={isSpike ? "spike-subscription-page overflow-hidden bg-[#050505] text-[#f8f8f2]" : ""}>
+    <main
+      className={
+        isSpike
+          ? "spike-subscription-page overflow-hidden bg-[#050505] text-[#f8f8f2]"
+          : ""
+      }
+    >
       <section className="border-b border-black bg-white">
         <div className="mx-auto grid max-w-7xl gap-8 px-6 py-10 lg:grid-cols-[0.82fr_1.18fr] lg:px-8 lg:py-14">
           <p className="text-xs font-black uppercase tracking-[0.18em] text-uga-green">
@@ -54,8 +60,7 @@ function AiSubscriptionBlock({ locale }: { locale: Locale }) {
   const copy =
     locale === "uk"
       ? {
-          body:
-            "Після публікації індексу AI Market Brief перетворює verified spot data на короткий market intelligence note: рухи за 1D/7D/30D/90D, волатильність, спреди, покриття респондентів і caution notes. Це working preview майбутнього комерційного AI-модуля.",
+          body: "Після публікації індексу AI Market Brief перетворює verified spot data на короткий market intelligence note: рухи за 1D/7D/30D/90D, волатильність, спреди, покриття респондентів і caution notes. Це working preview майбутнього комерційного AI-модуля.",
           eyebrow: "AI module",
           items: [
             "daily AI Market Brief",
@@ -66,8 +71,7 @@ function AiSubscriptionBlock({ locale }: { locale: Locale }) {
           title: "AI market intelligence layer",
         }
       : {
-          body:
-            "After index publication, the AI Market Brief turns verified spot data into a compact market intelligence note: 1D/7D/30D/90D moves, volatility, spreads, respondent coverage and caution notes. This is a working preview of a future commercial AI module.",
+          body: "After index publication, the AI Market Brief turns verified spot data into a compact market intelligence note: 1D/7D/30D/90D moves, volatility, spreads, respondent coverage and caution notes. This is a working preview of a future commercial AI module.",
           eyebrow: "AI module",
           items: [
             "daily AI Market Brief",
@@ -121,7 +125,8 @@ function RespondentBlock() {
             Стати респондентом Spike Spot Index
           </h2>
           <p className="mt-4 max-w-2xl text-sm leading-6 text-white/68">
-            Допоможіть формувати benchmark українського аграрного ринку на основі реальних щоденних цін.
+            Допоможіть формувати benchmark українського аграрного ринку на
+            основі реальних щоденних цін.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <a
@@ -262,7 +267,10 @@ function AccessMatrix({ copy }: { copy: SubscriptionCopy }) {
             {copy.accessMatrixRows.map((row) => (
               <tr key={row[0]}>
                 {row.map((cell) => (
-                  <td className="py-2 pr-3 font-semibold text-black/70" key={cell}>
+                  <td
+                    className="py-2 pr-3 font-semibold text-black/70"
+                    key={cell}
+                  >
                     {cell}
                   </td>
                 ))}
@@ -308,8 +316,7 @@ function getSubscriptionCopy(locale: Locale) {
       apiText:
         "Майбутній платний доступ планується з API-ендпоінтами для історії опублікованих індексів, аналітики за культурами, валютного відображення та сценарних результатів.",
       apiTitle: "Планується API для аналітики",
-      body:
-        "У цьому розділі зібрані майбутні формати співпраці, підписки, API-доступу та розширеної аналітики UGA Index.",
+      body: "У цьому розділі зібрані майбутні формати співпраці, підписки, API-доступу та розширеної аналітики UGA Index.",
       eyebrow: "Співпраця",
       previewLabel: "Попередній доступ",
       tiers: [
@@ -348,12 +355,53 @@ function getSubscriptionCopy(locale: Locale) {
     return {
       ...copy,
       accessMatrixRows: copy.accessMatrixRows.map((row) =>
-        row[0] === "UGA member" ? ["Spike partner", row[1], row[2], row[3]] : row,
+        row[0] === "UGA member"
+          ? ["Spike partner", row[1], row[2], row[3]]
+          : row,
       ),
       accessText:
         "Аналітична панель доступна як preview для SPIKE SPOT INDEX. Розширена історія, API-доступ і комерційні аналітичні зрізи можуть бути оформлені як окремі рівні доступу після запуску.",
-      body:
-        "У цьому розділі зібрані майбутні формати співпраці, підписки, API-доступу та розширеної аналітики SPIKE SPOT INDEX.",
+      apiBullets: [
+        "Історія опублікованих індексів",
+        "Аналітика трендів за культурами",
+        "Значення з валютним перерахунком",
+        "Аналітика спредів",
+        "AI-assisted scenario outputs",
+        "Доступ до generated market briefs",
+      ],
+      apiText:
+        "Майбутній платний доступ планується з API-ендпоінтами для історії опублікованих індексів, commodity-level analytics, FX-adjusted display values, spread data та AI-assisted scenario outputs.",
+      body: "У цьому розділі зібрані майбутні формати співпраці, subscription access, API access, розширена аналітика SPIKE SPOT INDEX та AI-assisted market intelligence options.",
+      tiers: [
+        {
+          description:
+            "Базовий рівень для користувачів, яким потрібні історія індексу, таблиці, спреди, volatility views і standard analytics без AI-assisted scenario modelling або generated market briefs.",
+          eyebrow: "Підписка",
+          features: [
+            "Повна історія опублікованих індексів",
+            "Trend and volatility analytics",
+            "Спреди та цінові діапазони",
+            "Експорт даних і API за планом доступу",
+            "Methodology-based market views",
+          ],
+          title: "Standard analytics",
+        },
+        {
+          description:
+            "Розширений рівень для користувачів, яким потрібна AI-assisted інтерпретація опублікованих даних SPIKE SPOT INDEX, включно зі scenario ranges, volatility notes, spread interpretation та structured market briefs.",
+          eyebrow: "AI option",
+          features: [
+            "AI-assisted market briefs",
+            "Scenario ranges by commodity",
+            "Scenario ranges by specific spread",
+            "Volatility and movement summaries",
+            "30 / 60 / 90 / 180-day analytical horizons",
+            "Base, upper and lower scenario ranges",
+            "Methodology-grounded interpretation",
+          ],
+          title: "AI-assisted market intelligence",
+        },
+      ],
       title: "Співпраця та підписка SPIKE SPOT INDEX",
     };
   }
@@ -381,8 +429,7 @@ function getSubscriptionCopy(locale: Locale) {
     apiText:
       "Future paid access is planned to include API endpoints for published index history, commodity-level analytics, FX-adjusted display values and scenario outputs.",
     apiTitle: "Analytics API planned",
-    body:
-      "This section collects future cooperation formats, subscription access, API access, and extended UGA Index analytics options.",
+    body: "This section collects future cooperation formats, subscription access, API access, and extended UGA Index analytics options.",
     eyebrow: "Cooperation",
     previewLabel: "Preview access",
     tiers: [
@@ -425,8 +472,47 @@ function getSubscriptionCopy(locale: Locale) {
     ),
     accessText:
       "The analytics dashboard is available as a preview for SPIKE SPOT INDEX. Extended history, API access and commercial analytics views can be introduced as separate access levels after launch.",
-    body:
-      "This section collects future cooperation formats, subscription access, API access, and extended SPIKE SPOT INDEX analytics options.",
+    apiBullets: [
+      "Published index history",
+      "Commodity trend analytics",
+      "Currency-adjusted values",
+      "Spread analytics",
+      "AI-assisted scenario outputs",
+      "Generated market brief access",
+    ],
+    apiText:
+      "Future paid access is planned to include API endpoints for published index history, commodity-level analytics, FX-adjusted display values, spread data and AI-assisted scenario outputs.",
+    body: "This section collects future cooperation formats, subscription access, API access, extended SPIKE SPOT INDEX analytics and AI-assisted market intelligence options.",
+    tiers: [
+      {
+        description:
+          "Base level for users who need index history, tables, spreads, volatility views and standard analytics without AI-assisted scenario modelling or generated market briefs.",
+        eyebrow: "Subscription",
+        features: [
+          "Full published index history",
+          "Trend and volatility analytics",
+          "Spreads and price ranges",
+          "Data export and API by access plan",
+          "Methodology-based market views",
+        ],
+        title: "Standard analytics",
+      },
+      {
+        description:
+          "Extended level for users who need AI-assisted interpretation of published SPIKE SPOT INDEX data, including scenario ranges, volatility notes, spread interpretation and structured market briefs.",
+        eyebrow: "AI option",
+        features: [
+          "AI-assisted market briefs",
+          "Scenario ranges by commodity",
+          "Scenario ranges by specific spread",
+          "Volatility and movement summaries",
+          "30 / 60 / 90 / 180-day analytical horizons",
+          "Base, upper and lower scenario ranges",
+          "Methodology-grounded interpretation",
+        ],
+        title: "AI-assisted market intelligence",
+      },
+    ],
     title: "SPIKE SPOT INDEX cooperation and subscription",
   };
 }

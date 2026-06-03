@@ -13,11 +13,7 @@ import { allowMockFallback, hasDatabaseUrl } from "@/lib/db";
 import { getFxRates } from "@/lib/fx-rates";
 import type { Locale } from "@/lib/i18n";
 import { getActiveIndexConfig } from "@/lib/index-platform";
-import {
-  commodities,
-  type Commodity,
-  type CommodityId,
-} from "@/lib/mock-data";
+import { commodities, type Commodity, type CommodityId } from "@/lib/mock-data";
 import { getPublicHistoryData } from "@/lib/public-api-data";
 import { getActiveRespondentCountData } from "@/lib/respondent-directory";
 
@@ -30,10 +26,9 @@ type AnalyticsPoint = {
   respondents: number;
 };
 
-const profileByCommodity: Partial<Record<
-  CommodityId,
-  { drift: number; volatility: number; phase: number }
->> = {
+const profileByCommodity: Partial<
+  Record<CommodityId, { drift: number; volatility: number; phase: number }>
+> = {
   corn: { drift: 0.22, volatility: 1.2, phase: 0.2 },
   "wheat-115": { drift: 0.31, volatility: 1.05, phase: 0.85 },
   "feed-wheat": { drift: -0.08, volatility: 0.78, phase: 1.7 },
@@ -55,11 +50,21 @@ export default async function AnalyticsPage({
   const isSpike = getActiveIndexConfig().id === "spike-ua";
   const hasHistory = history.length > 0;
   const aiBrief = isSpike
-    ? await getPublishedAiMarketBrief({ activeRespondentCount, history, locale })
+    ? await getPublishedAiMarketBrief({
+        activeRespondentCount,
+        history,
+        locale,
+      })
     : null;
 
   return (
-    <main className={isSpike ? "spike-analytics-page overflow-hidden bg-[#050505] text-[#f8f8f2]" : ""}>
+    <main
+      className={
+        isSpike
+          ? "spike-analytics-page overflow-hidden bg-[#050505] text-[#f8f8f2]"
+          : ""
+      }
+    >
       <section className="border-b border-black bg-white">
         <div className="mx-auto max-w-7xl px-6 py-10 lg:px-8 lg:py-14">
           <div>
@@ -81,10 +86,7 @@ export default async function AnalyticsPage({
       </section>
 
       {aiBrief ? (
-        <AiMarketBriefSection
-          brief={aiBrief}
-          copy={copy.aiBrief}
-        />
+        <AiMarketBriefSection brief={aiBrief} copy={copy.aiBrief} />
       ) : null}
 
       {hasHistory ? (
@@ -120,10 +122,7 @@ export default async function AnalyticsPage({
             </div>
           </section>
 
-          <SpreadAnalysisPanel
-            history={history}
-            locale={locale}
-          />
+          <SpreadAnalysisPanel history={history} locale={locale} />
         </>
       ) : (
         <section className="border-y border-black bg-uga-mist">
@@ -205,7 +204,11 @@ export default async function AnalyticsPage({
   );
 }
 
-function KpiStrip({ items }: { items: Array<{ label: string; value: string; meta: string }> }) {
+function KpiStrip({
+  items,
+}: {
+  items: Array<{ label: string; value: string; meta: string }>;
+}) {
   return (
     <div className="mt-4 grid border border-black bg-white sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
       {items.map((item) => (
@@ -338,7 +341,8 @@ function MovementSummary({
 
         const latestDate = formatShortDate(latest.date, locale);
         const sevenDay = latest.value - getPointBack(commodityHistory, 8).value;
-        const thirtyDay = latest.value - getPointBack(commodityHistory, 31).value;
+        const thirtyDay =
+          latest.value - getPointBack(commodityHistory, 31).value;
         const ninetyDay = latest.value - commodityHistory[0].value;
 
         return (
@@ -443,7 +447,10 @@ function PublishedValuesTable({
                     const commodity = getCommodity(row.commodityId);
 
                     return (
-                      <tr className="text-sm" key={`${row.date}-${row.commodityId}`}>
+                      <tr
+                        className="text-sm"
+                        key={`${row.date}-${row.commodityId}`}
+                      >
                         <td className="px-4 py-3 font-black text-black">
                           {commodity.name[locale]}
                         </td>
@@ -469,7 +476,9 @@ function PublishedValuesTable({
                           {formatSigned(row.dayChange)} USD ·{" "}
                           {formatSigned(row.percentChange)}%
                         </td>
-                        <td className="px-4 py-3 text-black/60">{row.respondents}</td>
+                        <td className="px-4 py-3 text-black/60">
+                          {row.respondents}
+                        </td>
                         <td className="px-4 py-3">
                           <span className="rounded-full border border-black/25 px-2.5 py-1 text-xs font-black uppercase text-black/55">
                             {copy.publishedLabel}
@@ -523,7 +532,10 @@ async function getRealAnalyticsHistory(): Promise<AnalyticsPoint[]> {
     );
 }
 
-function selectRecentPublishedRows(history: AnalyticsPoint[], dayCount: number) {
+function selectRecentPublishedRows(
+  history: AnalyticsPoint[],
+  dayCount: number,
+) {
   const dates = [...new Set(history.map((row) => row.date))]
     .sort((first, second) => second.localeCompare(first))
     .slice(0, dayCount);
@@ -551,7 +563,9 @@ function groupRowsByDate(rows: AnalyticsPoint[]) {
   }));
 }
 
-function buildDemoAnalyticsHistory(activeRespondentCount: number): AnalyticsPoint[] {
+function buildDemoAnalyticsHistory(
+  activeRespondentCount: number,
+): AnalyticsPoint[] {
   const dates = Array.from({ length: 360 }, (_, index) => {
     const date = new Date("2026-05-08T00:00:00.000Z");
     date.setUTCDate(date.getUTCDate() - (359 - index));
@@ -600,16 +614,18 @@ function buildMarketSnapshot(
   locale: Locale,
   activeRespondentCount: number,
 ) {
-  const latestRows = commodities.map((commodity) =>
-    getCommodityHistory(history, commodity.id).at(-1),
-  ).filter(Boolean) as AnalyticsPoint[];
+  const latestRows = commodities
+    .map((commodity) => getCommodityHistory(history, commodity.id).at(-1))
+    .filter(Boolean) as AnalyticsPoint[];
   const monthlyRows = latestRows.map((row) => {
     const commodityHistory = getCommodityHistory(history, row.commodityId);
     const previousMonthlyPoint = getPointBack(commodityHistory, 31);
     return {
       commodity: getCommodity(row.commodityId),
       change: roundOne(row.value - previousMonthlyPoint.value),
-      volatility: standardDeviation(commodityHistory.slice(-30).map((point) => point.percentChange)),
+      volatility: standardDeviation(
+        commodityHistory.slice(-30).map((point) => point.percentChange),
+      ),
     };
   });
 
@@ -617,10 +633,26 @@ function buildMarketSnapshot(
     const copy = getAnalyticsCopy(locale);
 
     return [
-      { label: copy.highestWeeklyGain, meta: copy.noRealDataMeta, value: "n/a" },
-      { label: copy.largestWeeklyDecline, meta: copy.noRealDataMeta, value: "n/a" },
-      { label: copy.mostVolatileCommodity, meta: copy.noRealDataMeta, value: "n/a" },
-      { label: copy.latestPublication, meta: SITE_CONFIG.defaultDeliveryBasis, value: "n/a" },
+      {
+        label: copy.highestWeeklyGain,
+        meta: copy.noRealDataMeta,
+        value: "n/a",
+      },
+      {
+        label: copy.largestWeeklyDecline,
+        meta: copy.noRealDataMeta,
+        value: "n/a",
+      },
+      {
+        label: copy.mostVolatileCommodity,
+        meta: copy.noRealDataMeta,
+        value: "n/a",
+      },
+      {
+        label: copy.latestPublication,
+        meta: SITE_CONFIG.defaultDeliveryBasis,
+        value: "n/a",
+      },
       { label: copy.volatilityRange, meta: copy.last30DaysMeta, value: "n/a" },
       {
         label: copy.respondentCoverage,
@@ -646,9 +678,12 @@ function buildMarketSnapshot(
   const latestDate = latestRows
     .map((row) => row.date)
     .sort((first, second) => second.localeCompare(first))[0];
-  const updatedAt = new Intl.DateTimeFormat(locale === "uk" ? "uk-UA" : "en-US", {
-    dateStyle: "medium",
-  }).format(new Date(`${latestDate}T00:00:00.000Z`));
+  const updatedAt = new Intl.DateTimeFormat(
+    locale === "uk" ? "uk-UA" : "en-US",
+    {
+      dateStyle: "medium",
+    },
+  ).format(new Date(`${latestDate}T00:00:00.000Z`));
 
   return [
     {
@@ -684,23 +719,32 @@ function buildMarketSnapshot(
   ];
 }
 
-function getCommodityHistory(history: AnalyticsPoint[], commodityId: CommodityId) {
+function getCommodityHistory(
+  history: AnalyticsPoint[],
+  commodityId: CommodityId,
+) {
   return history.filter((point) => point.commodityId === commodityId);
 }
 
 function getPointBack(history: AnalyticsPoint[], countFromEnd: number) {
-  return history.at(-countFromEnd) ?? history[0] ?? {
-    commodityId: "corn" as CommodityId,
-    date: "",
-    dayChange: 0,
-    percentChange: 0,
-    respondents: 0,
-    value: 0,
-  };
+  return (
+    history.at(-countFromEnd) ??
+    history[0] ?? {
+      commodityId: "corn" as CommodityId,
+      date: "",
+      dayChange: 0,
+      percentChange: 0,
+      respondents: 0,
+      value: 0,
+    }
+  );
 }
 
 function getCommodity(commodityId: CommodityId): Commodity {
-  return commodities.find((commodity) => commodity.id === commodityId) ?? commodities[0];
+  return (
+    commodities.find((commodity) => commodity.id === commodityId) ??
+    commodities[0]
+  );
 }
 
 function getCommodityProfile(commodityId: CommodityId) {
@@ -710,7 +754,9 @@ function getCommodityProfile(commodityId: CommodityId) {
     return configuredProfile;
   }
 
-  const commodityIndex = commodities.findIndex((commodity) => commodity.id === commodityId);
+  const commodityIndex = commodities.findIndex(
+    (commodity) => commodity.id === commodityId,
+  );
 
   return {
     drift: 0.16 + Math.max(commodityIndex, 0) * 0.06,
@@ -895,15 +941,21 @@ function getAnalyticsCopy(locale: Locale) {
     return {
       ...copy,
       accessMatrixRows: copy.accessMatrixRows.map((row) =>
-        row[0] === "UGA member" ? ["Spike partner", row[1], row[2], row[3]] : row,
+        row[0] === "UGA member"
+          ? ["Spike partner", row[1], row[2], row[3]]
+          : row,
       ),
       accessText:
         "Аналітична панель доступна як preview для SPIKE SPOT INDEX. Розширена історія, API-доступ і комерційні аналітичні зрізи можуть бути оформлені як окремі рівні доступу після запуску.",
       heroBody:
-        "Порівнюйте динаміку спотових позицій, аналізуйте експортні та переробні базиси, відстежуйте волатильність і переглядайте сценарії для українських аграрних цін Spike Brokers.",
+        "Порівнюйте динаміку спотових позицій, аналізуйте експортні та переробні базиси, відстежуйте волатильність і досліджуйте AI-assisted аналітичні сценарії на основі опублікованих даних SPIKE SPOT INDEX.",
       heroTitle: "Аналітика SPIKE SPOT INDEX",
       scenarioBody:
-        "Аналітична preview-модель будує можливі траєкторії індексів на основі історичної динаміки, короткострокового імпульсу та волатильності окремих позицій. Результат є сценарним діапазоном, а не гарантією майбутніх цін.",
+        "AI-assisted analytics layer перетворює дані SPIKE SPOT INDEX на структурований ринковий контекст. Він аналізує опублікований рух індексу, короткостроковий імпульс, волатильність, цінові діапазони та поведінку спредів, а потім генерує аналітичні нотатки, які допомагають зрозуміти, що змінилося і де ринок потребує більшої уваги. AI scenario outputs базуються на історичному русі індексу, recent momentum і позиційній волатильності. Вони створені для market exploration, а не для прогнозування. AI layer не генерує офіційні значення індексу, не має доступу до індивідуальних подань респондентів і не надає торгових порад. Офіційні значення залишаються методологічними та locked після публікації.",
+      scenarioDisclaimer:
+        "AI-assisted outputs є лише аналітичними previews. Вони не є інвестиційною порадою, торговою рекомендацією або гарантованим прогнозом.",
+      scenarioEyebrow: "AI-assisted analytics",
+      scenarioTitle: "AI-assisted market intelligence",
       spreadDescription:
         "Відносні спреди показують, як експортні та переробні позиції рухаються одна відносно одної.",
       spreadTitle: "Спреди та премії між позиціями",
@@ -918,7 +970,7 @@ function getAnalyticsCopy(locale: Locale) {
     accessMatrixEyebrow: "Access",
     accessMatrixHeaders: ["Access level", "History", "Analytics", "API"],
     accessMatrixRows: [
-        ["Public preview", "30 days", "limited", "no"],
+      ["Public preview", "30 days", "limited", "no"],
       ["Registered preview", "1 year", "standard", "no"],
       ["UGA member", "full period", "extended", "planned"],
       ["Paid/API", "full period", "extended", "yes"],
@@ -927,7 +979,7 @@ function getAnalyticsCopy(locale: Locale) {
     accessText:
       "The analytics dashboard is available free of charge during the first year of UGA Index operation. From 15.06.2027, extended analytics and API access are planned to move to a paid subscription model.",
     accessTitle: "Analytics access preview",
-      allCommodities: "All commodities",
+    allCommodities: "All commodities",
     aiBrief: {
       cautionTitle: "Caution notes",
       coverageCaution: (count: number) =>
@@ -1056,10 +1108,14 @@ function getAnalyticsCopy(locale: Locale) {
     accessText:
       "The analytics dashboard is available as a preview for SPIKE SPOT INDEX. Extended history, API access and commercial analytics views can be introduced as separate access levels after launch.",
     heroBody:
-      "Compare spot-position dynamics, review export and processing bases, track volatility and explore analytical scenarios for Spike Brokers Ukrainian agricultural prices.",
+      "Compare spot-position dynamics, review export and processing bases, track volatility and explore AI-assisted analytical scenarios based on published SPIKE SPOT INDEX data.",
     heroTitle: "SPIKE SPOT INDEX analytics",
     scenarioBody:
-      "An analytical preview model projects possible index paths using historical index movement, short-term momentum and position-specific volatility. The output is a scenario range, not a guarantee of future prices.",
+      "The AI-assisted analytics layer turns SPIKE SPOT INDEX data into structured market context. It reviews published index movement, short-term momentum, volatility, price ranges and spread behaviour, then generates analytical notes that help users understand what changed and where the market may require closer attention. AI scenario outputs are based on historical index movement, recent momentum and position-specific volatility. They are designed for market exploration, not prediction. The AI layer does not generate official index values, does not access individual respondent submissions and does not provide trading advice. Official values remain methodology-based and locked after publication.",
+    scenarioDisclaimer:
+      "AI-assisted outputs are analytical previews only. They are not investment advice, trading recommendations or guaranteed forecasts.",
+    scenarioEyebrow: "AI-assisted analytics",
+    scenarioTitle: "AI-assisted market intelligence",
     spreadDescription:
       "Relative spreads help show how export and processing positions move against each other.",
     spreadTitle: "Position spreads and premiums",

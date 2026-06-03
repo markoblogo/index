@@ -118,26 +118,29 @@ export default async function AboutPage({
             </div>
             <div className="grid border border-black bg-white sm:grid-cols-2">
               {respondents.map((respondent) => {
-                const respondentHref = respondentLinks.get(respondent.id) ?? "#";
+                const respondentHref =
+                  respondentLinks.get(respondent.id) ?? "#";
                 const hasExternalLink = respondentHref !== "#";
 
                 return (
-                <a
-                  className={`group border-b border-black px-4 py-3 text-sm font-black text-black transition sm:border-r odd:sm:border-r even:sm:border-r-0 [&:nth-last-child(-n+2)]:sm:border-b-0 last:border-b-0 ${
-                    hasExternalLink ? "hover:bg-uga-lime" : "pointer-events-none"
-                  }`}
-                  href={respondentHref}
-                  key={respondent.id}
-                  rel="noopener noreferrer"
-                  target="_blank"
-                >
-                  {hasExternalLink ? (
-                    <span className="mr-2 text-[0.62rem] uppercase text-uga-green transition group-hover:text-black">
-                      URL
-                    </span>
-                  ) : null}
-                  {respondent.legalName}
-                </a>
+                  <a
+                    className={`group border-b border-black px-4 py-3 text-sm font-black text-black transition sm:border-r odd:sm:border-r even:sm:border-r-0 [&:nth-last-child(-n+2)]:sm:border-b-0 last:border-b-0 ${
+                      hasExternalLink
+                        ? "hover:bg-uga-lime"
+                        : "pointer-events-none"
+                    }`}
+                    href={respondentHref}
+                    key={respondent.id}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    {hasExternalLink ? (
+                      <span className="mr-2 text-[0.62rem] uppercase text-uga-green transition group-hover:text-black">
+                        URL
+                      </span>
+                    ) : null}
+                    {respondent.legalName}
+                  </a>
                 );
               })}
             </div>
@@ -302,6 +305,8 @@ function SpikeAboutPage({
         </div>
       </section>
 
+      <SpikeAboutAiLayer locale={locale} />
+
       {showResourcesSection ? (
         <section className="border-y border-white/10 bg-[#090909]">
           <div className="mx-auto grid max-w-[1900px] gap-6 px-6 py-10 lg:grid-cols-[24rem_1fr] lg:px-8 lg:py-14">
@@ -361,8 +366,9 @@ function SpikeAboutPage({
                       ) : null}
                       {dict.about.resources.releaseLanguage ? (
                         <p>
-                          {dict.about.resources.releaseLanguageLabel ?? "Language"}:{" "}
-                          {dict.about.resources.releaseLanguage}
+                          {dict.about.resources.releaseLanguageLabel ??
+                            "Language"}
+                          : {dict.about.resources.releaseLanguage}
                         </p>
                       ) : null}
                       {dict.about.resources.audience ? (
@@ -502,5 +508,56 @@ function SpikeAboutPage({
         </div>
       </section>
     </main>
+  );
+}
+
+function SpikeAboutAiLayer({ locale }: { locale: Locale }) {
+  const copy =
+    locale === "uk"
+      ? {
+          body: [
+            "SPIKE SPOT INDEX розвивається не лише як щоденний benchmark спотових цін, а й як AI-assisted market intelligence layer для українських аграрних commodities.",
+            "Офіційне значення індексу залишається методологічним. Воно базується на оцінках партнерів-респондентів, медіанній валідації, фільтрації викидів, правилах мінімального покриття та locked publication.",
+            "AI layer працює над опублікованими даними індексу. Він допомагає користувачам структуровано інтерпретувати ринковий рух, волатильність, спреди та короткострокові сценарії. AI не встановлює, не коригує і не замінює офіційні значення індексу. Він перетворює перевірені ринкові дані на зрозуміліший аналітичний контекст.",
+          ],
+          card: "Офіційні значення залишаються методологічними. AI використовується для пояснення опублікованого руху індексу, волатильності, спредів і сценаріїв, а не для генерації чи коригування самого індексу.",
+          eyebrow: "AI layer",
+          title:
+            "AI-assisted market intelligence над перевіреними даними індексу",
+        }
+      : {
+          body: [
+            "SPIKE SPOT INDEX is being developed not only as a daily spot-price benchmark, but also as an AI-assisted market intelligence layer for Ukrainian agricultural commodities.",
+            "The official index value remains methodology-driven. It is based on respondent-partner assessments, median validation, outlier filtering, minimum coverage rules and locked publication.",
+            "The AI layer works above the published index data. It helps users interpret market movement, volatility, spreads and short-term scenarios in a structured way. AI does not set, correct or replace official index values. It turns verified market data into clearer analytical context.",
+          ],
+          card: "Official values remain methodology-based. AI is used to explain published index movements, volatility, spreads and scenarios, not to generate or adjust the index itself.",
+          eyebrow: "AI layer",
+          title: "AI-assisted market intelligence above verified index data",
+        };
+
+  return (
+    <section className="border-y border-white/10 bg-[#090909]">
+      <div className="mx-auto grid max-w-[1900px] gap-6 px-6 py-10 lg:grid-cols-[24rem_1fr] lg:px-8 lg:py-14">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.24em] text-[var(--spike-accent)]">
+            {copy.eyebrow}
+          </p>
+          <h2 className="mt-4 text-3xl font-black uppercase leading-tight tracking-normal text-white lg:text-4xl">
+            {copy.title}
+          </h2>
+        </div>
+        <div className="grid gap-4">
+          <div className="grid gap-4 text-base leading-7 text-white/64">
+            {copy.body.map((paragraph) => (
+              <p key={paragraph}>{paragraph}</p>
+            ))}
+          </div>
+          <p className="rounded-[1.15rem] border border-[var(--spike-accent)]/70 bg-[#f8f8f2] p-5 text-sm font-black leading-6 text-[#050505]">
+            {copy.card}
+          </p>
+        </div>
+      </div>
+    </section>
   );
 }
