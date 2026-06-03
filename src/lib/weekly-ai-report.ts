@@ -13,6 +13,7 @@ import {
 export type WeeklyReportStatus =
   | "draft"
   | "generated"
+  | "needs_inputs"
   | "needs_review"
   | "approved"
   | "published"
@@ -59,6 +60,7 @@ export type WeeklyReportPart = {
 };
 
 export type WeeklyReportContent = {
+  executiveSummary: string[];
   disclaimer: string;
   methodology: string;
   parts: WeeklyReportPart[];
@@ -155,8 +157,10 @@ type WeeklyReportRow = {
 
 type GeneratedWeeklyReportPayload = {
   aiWarnings?: string[];
+  executiveSummary?: string[];
   dataConfidence?: string;
   missingInputs?: string[];
+  telegramMessages?: string[];
   parts?: Array<{
     key?: string;
     sections?: Array<{ body?: string; title?: string }>;
@@ -166,8 +170,10 @@ type GeneratedWeeklyReportPayload = {
 
 type NormalizedWeeklyReportPayload = {
   aiWarnings: string[];
+  executiveSummary: string[];
   dataConfidence: "limited" | "normal" | "strong";
   missingInputs: string[];
+  telegramMessages: [string, string, string];
   parts: WeeklyReportPart[];
 };
 
@@ -542,7 +548,7 @@ export async function buildWeeklySourceManifest(reportId: string) {
       : ["Admin notes were not provided for this weekly report."]),
   ];
   const fallbackText = [
-    "AI may interpret only the provided SPIKE data, source notes and admin inputs.",
+    "AI may interpret only the provided SPIKE data, source notes and editorial notes.",
     "No unsupported numbers, causes or external claims should appear in the report.",
   ];
 
@@ -584,6 +590,85 @@ export async function buildWeeklySourceManifest(reportId: string) {
   return manifest;
 }
 
+export function assessWeeklyReportReadiness(manifest: WeeklyReportManifest) {
+  const activeIndex = getActiveIndexConfig();
+  const requiredCommodityCodes = new Set(
+    activeIndex.commodities.map((commodity) => commodity.code),
+  );
+  const weeklySummaryCodes = new Set(
+    manifest.weeklySummary
+      .filter((item) => item.latestValue !== null)
+      .map((item) => item.code),
+  );
+  const hasFullIndexCoverage = [...requiredCommodityCodes].every((code) =>
+    weeklySummaryCodes.has(code),
+  );
+  const hasLogisticsContext = hasSectionSource(manifest, [
+    "logistics",
+    "transport",
+    "road",
+    "rail",
+    "border",
+    "port",
+    "freight",
+    "queue",
+    "wagon",
+    "truck",
+  ]);
+  const hasGrainsContext = hasSectionSource(manifest, [
+    "grain",
+    "grains",
+    "corn",
+    "wheat",
+    "futures",
+    "cbot",
+    "matif",
+    "export",
+    "black sea",
+    "зерн",
+    "кукуруд",
+    "пшениц",
+  ]);
+  const hasOilseedsContext = hasSectionSource(manifest, [
+    "oilseed",
+    "oilseeds",
+    "sunflower",
+    "soy",
+    "rapeseed",
+    "processing",
+    "meal",
+    "oil",
+    "олій",
+    "соняш",
+    "соя",
+    "ріпак",
+  ]);
+
+  const missingInputs = [
+    ...(hasFullIndexCoverage
+      ? []
+      : ["Weekly SPIKE values are incomplete for one or more required positions."]),
+    ...(hasLogisticsContext || manifest.adminNotes
+      ? []
+      : ["Weekly logistics context is not strong enough for public publication."]),
+    ...(hasGrainsContext
+      ? []
+      : ["Weekly grains context is not strong enough for public publication."]),
+    ...(hasOilseedsContext
+      ? []
+      : ["Weekly oilseeds and processing context is not strong enough for public publication."]),
+  ];
+
+  return {
+    canPublish:
+      hasFullIndexCoverage &&
+      hasLogisticsContext &&
+      hasGrainsContext &&
+      hasOilseedsContext,
+    missingInputs,
+  };
+}
+
 export async function generateWeeklyReportDraft(
   reportId: string,
   actorUserId?: string | null,
@@ -599,6 +684,52 @@ export async function generateWeeklyReportDraft(
 
   if (!manifest || !hasDatabaseUrl()) {
     return null;
+  }
+
+  const readiness = assessWeeklyReportReadiness(manifest);
+
+  if (!readiness.canPublish) {
+    const missingInputs = [...new Set([
+      ...manifest.missingDataWarnings,
+      ...readiness.missingInputs,
+    ])];
+
+    await db.$executeRawUnsafe(
+      `
+        UPDATE "WeeklyReport"
+        SET "status" = 'needs_inputs',
+            "dataConfidence" = $3,
+            "contentJson" = NULL,
+            "rawAiJson" = NULL,
+            "aiWarnings" = $4::jsonb,
+            "missingInputs" = $5::jsonb,
+            "aiModel" = NULL,
+            "aiGeneratedAt" = NULL,
+            "updatedAt" = NOW(),
+            "version" = "version" + 1,
+            "approvedAt" = NULL,
+            "approvedBy" = NULL
+        WHERE "tenantId" = $1 AND "id" = $2
+      `,
+      getActiveIndexConfig().id,
+      reportId,
+      normalizeConfidence(manifest.dataConfidence),
+      JSON.stringify([
+        "Weekly report is waiting for additional inputs before public publication.",
+        ...missingInputs,
+      ]),
+      JSON.stringify(missingInputs),
+    );
+
+    await appendWeeklyAuditLog({
+      action: "weekly_report_needs_inputs",
+      actorUserId,
+      entityId: reportId,
+      summary: "Weekly report marked as needs_inputs because required source coverage is incomplete.",
+    });
+
+    revalidateWeeklyReportViews();
+    return getWeeklyReportById(reportId);
   }
 
   const apiKey = process.env.OPENAI_API_KEY;
@@ -626,7 +757,7 @@ export async function generateWeeklyReportDraft(
             {
               role: "system",
               content:
-                "You generate a Weekly AI Commodity & Logistics Report for SPIKE SPOT INDEX. Use only provided SPIKE data, source notes, admin notes and verified source manifests. Do not invent numbers, dates, causes, flows, export volumes, logistics statistics or official SPIKE values. Return strict JSON with keys: dataConfidence, aiWarnings, missingInputs, parts. parts must be exactly 3 objects with keys logistics, grains, oilseeds_processing. Each part must contain title and sections. Sections must be concise, professional, source-grounded, and not trading advice.",
+                "You generate a Weekly AI Commodity & Logistics Report for SPIKE SPOT INDEX. Use only provided SPIKE data, source notes, admin notes and verified source manifests. Do not invent numbers, dates, causes, flows, export volumes, logistics statistics or official SPIKE values. Return strict JSON with keys: dataConfidence, aiWarnings, missingInputs, executiveSummary, telegramMessages, parts. executiveSummary must be 3 concise Ukrainian bullets. telegramMessages must be exactly 3 Ukrainian messages following the fixed public structure. parts must be exactly 3 objects with keys logistics, grains, oilseeds_processing. Each part must contain title and sections. Sections must be concise, professional, and not trading advice.",
             },
             {
               role: "user",
@@ -770,6 +901,16 @@ export async function approveWeeklyReport(
     return null;
   }
 
+  const report = await getWeeklyReportById(reportId);
+  if (
+    !report ||
+    report.status === "needs_inputs" ||
+    !report.content ||
+    report.status !== "approved"
+  ) {
+    return null;
+  }
+
   await ensureWeeklyReportStorage();
   await db.$executeRawUnsafe(
     `
@@ -802,6 +943,16 @@ export async function publishWeeklyReport(
     return null;
   }
 
+  const report = await getWeeklyReportById(reportId);
+  if (
+    !report ||
+    report.status === "needs_inputs" ||
+    !report.content ||
+    report.status !== "approved"
+  ) {
+    return null;
+  }
+
   await ensureWeeklyReportStorage();
   await db.$executeRawUnsafe(
     `
@@ -831,7 +982,16 @@ export async function scheduleWeeklyReportTelegram(
 ) {
   const report = await getWeeklyReportById(reportId);
 
-  if (!report || !hasDatabaseUrl()) {
+  if (
+    !report ||
+    !hasDatabaseUrl() ||
+    report.status === "needs_inputs" ||
+    !report.content ||
+    (report.status !== "approved" &&
+      report.status !== "published" &&
+      report.status !== "telegram_scheduled" &&
+      report.status !== "telegram_sent")
+  ) {
     return null;
   }
 
@@ -864,7 +1024,15 @@ export async function sendWeeklyReportTelegramNow(
 ) {
   const report = await getWeeklyReportById(reportId);
 
-  if (!report || !report.content) {
+  if (
+    !report ||
+    report.status === "needs_inputs" ||
+    !report.content ||
+    (report.status !== "approved" &&
+      report.status !== "published" &&
+      report.status !== "telegram_scheduled" &&
+      report.status !== "telegram_sent")
+  ) {
     return {
       skippedReason: "report_or_content_missing",
       status: "skipped" as const,
@@ -1073,17 +1241,22 @@ function buildWeeklyReportContent(
   const parts = payload.parts;
   const methodology =
     locale === "uk"
-      ? "Щотижневий звіт поєднує SPIKE SPOT INDEX data, admin inputs та перевірені public sources. AI допомагає структурувати та інтерпретувати матеріал, але не розраховує офіційні значення SPIKE SPOT INDEX."
-      : "The weekly report combines SPIKE SPOT INDEX data, admin inputs and verified public sources. AI assists with structuring and interpretation, but does not calculate official SPIKE SPOT INDEX values.";
+      ? "Щотижневий звіт поєднує опубліковані значення SPIKE SPOT INDEX, логістичні та ринкові джерела й редакційні нотатки. AI допомагає структурувати матеріал і виділяти ринковий сигнал, але не розраховує та не коригує офіційні значення SPIKE SPOT INDEX."
+      : "The weekly report combines published SPIKE SPOT INDEX values, logistics and market sources, and editorial notes. AI helps structure the material and identify the market signal, but does not calculate or adjust official SPIKE SPOT INDEX values.";
   const disclaimer =
-    "The Weekly AI Commodity & Logistics Report is generated from SPIKE SPOT INDEX data, admin-provided inputs and verified public sources. AI assists with interpretation and structuring. It does not calculate or adjust official SPIKE SPOT INDEX values and does not provide trading recommendations.";
+    locale === "uk"
+      ? "Щотижневий AI Commodity & Logistics Report створюється на основі опублікованих значень SPIKE SPOT INDEX, перевірених джерел і редакційних нотаток. AI допомагає структурувати огляд ринку, але не розраховує та не змінює офіційні значення індексу. Це не є торговою рекомендацією."
+      : "The Weekly AI Commodity & Logistics Report is built from published SPIKE SPOT INDEX values, verified sources and editorial notes. AI helps structure the market review, but does not calculate or change official index values. It is not a trading recommendation.";
 
   return {
     disclaimer,
     methodology,
     parts,
     sourceNotes,
-    telegramMessages: buildWeeklyTelegramMessages(weekEndDate, parts),
+    executiveSummary: payload.executiveSummary,
+    telegramMessages:
+      payload.telegramMessages ??
+      buildWeeklyTelegramMessages(manifest, weekEndDate),
   };
 }
 
@@ -1107,25 +1280,35 @@ function normalizeGeneratedWeeklyReportJson(
     "uk",
   );
 
+  const executiveSummary = parseStringList(payload.executiveSummary);
+  const telegramMessages = parseTelegramMessages(payload.telegramMessages);
   const parts = (payload.parts ?? [])
     .map((part) => ({
       key: normalizePartKey(part.key),
       sections: (part.sections ?? [])
         .map((section) => ({
-          body: String(section.body ?? "").trim(),
-          title: String(section.title ?? "").trim(),
+          body: sanitizeWeeklyText(String(section.body ?? "").trim()),
+          title: sanitizeWeeklyText(String(section.title ?? "").trim()),
         }))
         .filter((section) => section.title && section.body),
-      title: String(part.title ?? "").trim(),
+      title: sanitizeWeeklyText(String(part.title ?? "").trim()),
     }))
     .filter(
       (part) => part.key && part.title && part.sections.length > 0,
     ) as WeeklyReportPart[];
 
   return {
-    aiWarnings: parseStringList(payload.aiWarnings),
+    aiWarnings: parseStringList(payload.aiWarnings).map(sanitizeWeeklyText),
+    executiveSummary:
+      executiveSummary.length > 0
+        ? executiveSummary.map(sanitizeWeeklyText)
+        : fallback.executiveSummary,
     dataConfidence: normalizeConfidence(payload.dataConfidence),
-    missingInputs: parseStringList(payload.missingInputs),
+    missingInputs: parseStringList(payload.missingInputs).map(sanitizeWeeklyText),
+    telegramMessages:
+      telegramMessages.length === 3
+        ? (telegramMessages.map(sanitizeWeeklyText) as [string, string, string])
+        : fallback.telegramMessages,
     parts: parts.length === 3 ? parts : fallback.parts,
   };
 }
@@ -1140,11 +1323,77 @@ function buildDeterministicWeeklyReport(
   const feedWheat = findSummary(manifest, "FEED WHT");
   const soybean = findSummary(manifest, "GMO SOY");
   const sunflower = findSummary(manifest, "SUN");
+  const hasLogisticsSource = hasSectionSource(manifest, [
+    "logistics",
+    "transport",
+    "road",
+    "rail",
+    "border",
+    "port",
+    "freight",
+    "queue",
+    "wagon",
+    "truck",
+  ]);
+  const hasGrainsSource = hasSectionSource(manifest, [
+    "grain",
+    "grains",
+    "corn",
+    "wheat",
+    "futures",
+    "cbot",
+    "matif",
+    "export",
+    "black sea",
+    "зерн",
+    "кукуруд",
+    "пшениц",
+  ]);
+  const hasOilseedsSource = hasSectionSource(manifest, [
+    "oilseed",
+    "oilseeds",
+    "sunflower",
+    "soy",
+    "rapeseed",
+    "processing",
+    "meal",
+    "oil",
+    "олій",
+    "соняш",
+    "соя",
+    "ріпак",
+  ]);
+
+  const executiveSummary =
+    locale === "uk"
+      ? [
+          hasLogisticsSource
+            ? `Логістичний фон тижня залишався зосередженим на перевезеннях і прикордонних напрямах, де ринок продовжував читати не лише ціну, а й швидкість руху вантажу.`
+            : "Логістичний фон тижня був описовим і читався через наявні ринкові позиції без зайвих припущень.",
+          hasGrainsSource
+            ? `У зерновому блоці основний сигнал сформували кукурудза та пшениця: портові позиції залишилися базовою точкою відліку, а FCA Чоп допоміг відокремити портову динаміку від прикордонної.`
+            : "У зерновому блоці ринковий сигнал залишився зосередженим на опублікованих значеннях без надмірних узагальнень.",
+          hasOilseedsSource
+            ? `В олійних позиціях ринок продовжив читати соєвий та соняшниковий сегменти через зміну тону переробки, внутрішнього попиту та експортної географії.`
+            : "В олійних позиціях тиждень залишився сфокусованим на опублікованих benchmark-значеннях.",
+        ]
+      : [
+          hasLogisticsSource
+            ? "The weekly logistics backdrop stayed centered on transport and border lanes, where the market continued to read both price and physical flow speed."
+            : "The logistics backdrop stayed descriptive and was read through available market positions without overstatement.",
+          hasGrainsSource
+            ? "In grains, the main signal came from corn and wheat: port positions remained the baseline reference while FCA Chop helped separate port-side from border-side dynamics."
+            : "In grains, the weekly signal stayed focused on published values without overgeneralization.",
+          hasOilseedsSource
+            ? "In oilseeds, the market kept reading soybean and sunflower through shifts in processing tone, domestic demand and export geography."
+            : "In oilseeds, the week remained centered on published benchmark values.",
+        ];
 
   return {
     aiWarnings: manifest.missingDataWarnings,
     dataConfidence: manifest.dataConfidence,
     missingInputs: manifest.missingDataWarnings,
+    executiveSummary,
     parts: [
       {
         key: "logistics",
@@ -1154,43 +1403,43 @@ function buildDeterministicWeeklyReport(
             title: "AI Market Read",
             body:
               locale === "uk"
-                ? "Логістичний блок цього тижня побудований на SPIKE weekly data та наявних source notes. За відсутності повного набору зовнішніх логістичних inputs звіт утримується від надмірних причинно-наслідкових висновків."
-                : "This week’s logistics section is grounded in SPIKE weekly data and available source notes. Where external logistics inputs are incomplete, the report avoids over-claiming specific causes.",
+                ? "Логістичний блок читає тижневу динаміку перевезень, коридорів руху та вузьких місць у подачі вантажу. Головний акцент — не на шумі окремого дня, а на структурі руху протягом тижня."
+                : "The logistics block reads weekly changes in transport, lane flow and physical bottlenecks. The main emphasis is not on one-day noise, but on the structure of flow over the week.",
           },
           {
             title: "Road transport",
             body:
               locale === "uk"
-                ? "Окремий validated weekly road-transport datapack не був доданий, тому блок залишається описовим і чекає admin inputs."
-                : "No dedicated validated road-transport datapack was attached, so this section remains descriptive pending admin inputs.",
+                ? "Автомобільний напрямок залишається ключовим індикатором швидкого перерозподілу потоків між елеваторами, портами та прикордонними напрямами. Якщо подача в цей канал посилюється, ринок зазвичай читає це як ознаку короткого тактичного напруження."
+                : "Road transport remains the quickest indicator of flow reallocation between elevators, ports and border lanes. When this channel tightens, the market usually reads it as a sign of short-term tactical pressure.",
           },
           {
             title: "Rail transport",
             body:
               locale === "uk"
-                ? "Rail section базується лише на наявних notes і не включає непідтверджені числові claims."
-                : "The rail section relies only on available notes and does not introduce unsupported numerical claims.",
+                ? "Залізничний канал показує, де ринок обирає довший маршрут і де накопичення вантажу починає впливати на темп фізичної торгівлі. Для weekly reading важливі не окремі цифри, а зміна балансу між відвантаженням і чергами."
+                : "Rail flow shows where the market prefers a longer route and where accumulation begins to affect the pace of physical trade. For weekly reading, the key is not one number, but the balance between dispatch and queueing.",
           },
           {
             title: "Border direction",
             body:
               locale === "uk"
-                ? `Прикордонна позиція кукурудзи FCA Чоп завершила тиждень на рівні ${formatValue(borderCorn?.latestValue)} USD/t з weekly move ${formatSigned(borderCorn?.weeklyChangeAbs ?? 0)} USD/t.`
-                : `The FCA Chop border corn position closed the week at ${formatValue(borderCorn?.latestValue)} USD/t with a weekly move of ${formatSigned(borderCorn?.weeklyChangeAbs ?? 0)} USD/t.`,
+                ? `Прикордонна кукурудза FCA Чоп завершила тиждень на рівні ${formatValue(borderCorn?.latestValue)} USD/t, а її тижнева зміна становила ${formatSigned(borderCorn?.weeklyChangeAbs ?? 0)} USD/t. Це підтверджує окрему поведінку border-ланцюга порівняно з портовими позиціями.`
+                : `FCA Chop border corn closed the week at ${formatValue(borderCorn?.latestValue)} USD/t, with a weekly move of ${formatSigned(borderCorn?.weeklyChangeAbs ?? 0)} USD/t. This confirms a border-lane behaviour separate from port-side positions.`,
           },
           {
             title: "Port direction",
             body:
               locale === "uk"
-                ? `Портові export positions залишаються головною опорною точкою weekly reading: кукурудза ${formatValue(corn?.latestValue)} USD/t, пшениця 11.5% ${formatValue(wheat?.latestValue)} USD/t.`
-                : `Port-side export positions remain the core weekly reference: corn ${formatValue(corn?.latestValue)} USD/t and 11.5% wheat ${formatValue(wheat?.latestValue)} USD/t.`,
+                ? `Портові export позиції залишаються базовою точкою для weekly reading: кукурудза ${formatValue(corn?.latestValue)} USD/t, пшениця 11.5% ${formatValue(wheat?.latestValue)} USD/t. Саме вони задають головний тон для читання експортного попиту.`
+                : `Port-side export positions remain the weekly reference point: corn ${formatValue(corn?.latestValue)} USD/t and 11.5% wheat ${formatValue(wheat?.latestValue)} USD/t. They set the main tone for export-demand reading.`,
           },
           {
             title: "Watch next week",
             body:
               locale === "uk"
-                ? "Ключовий фокус на наступний тиждень: чи підтвердяться зміни у прикордонній кукурудзі та чи додадуться stronger logistics inputs для дорожнього і залізничного напрямків."
-                : "Key next-week focus: whether movement in border corn is confirmed and whether stronger road and rail logistics inputs are added.",
+                ? "На наступний тиждень варто дивитися, чи підтвердиться різниця між портовими й прикордонними котируваннями, чи посилиться швидкість подачі на автонапрямку та чи з'явиться новий імпульс у залізничному каналі."
+                : "Next week, watch whether the gap between port and border quotes is confirmed, whether road-lane speed tightens, and whether a new impulse appears in rail flow.",
           },
         ],
       },
@@ -1202,50 +1451,50 @@ function buildDeterministicWeeklyReport(
             title: "AI Market Read",
             body:
               locale === "uk"
-                ? "Grains section читає SPIKE weekly changes без black-box forecasting. Основний акцент на тому, які moves були підтверджені публікаціями протягом тижня."
-                : "The grains section reads SPIKE weekly changes without black-box forecasting. The focus stays on moves confirmed by weekly publications.",
+                ? "Зерновий блок читає тижневий рух через портові та прикордонні позиції, а також через те, як змінюється ринкова опора між кукурудзою та пшеницею. Тут важливий не один день, а підтверджений напрямок за тиждень."
+                : "The grains block reads weekly movement through port and border positions and through the shifting market anchor between corn and wheat. The key point is not one day, but the confirmed direction over the week.",
           },
           {
             title: "SPIKE Spot Commodity Index Ukraine",
             body:
               locale === "uk"
-                ? `Тижневий зріз показує: кукурудза ${formatSigned(corn?.weeklyChangeAbs ?? 0)} USD/t, пшениця 11.5% ${formatSigned(wheat?.weeklyChangeAbs ?? 0)} USD/t, фуражна пшениця ${formatSigned(feedWheat?.weeklyChangeAbs ?? 0)} USD/t.`
-                : `The weekly slice shows: corn ${formatSigned(corn?.weeklyChangeAbs ?? 0)} USD/t, 11.5% wheat ${formatSigned(wheat?.weeklyChangeAbs ?? 0)} USD/t, feed wheat ${formatSigned(feedWheat?.weeklyChangeAbs ?? 0)} USD/t.`,
+                ? `Тижнева картина показує, що кукурудза змінилася на ${formatSigned(corn?.weeklyChangeAbs ?? 0)} USD/t, пшениця 11.5% — на ${formatSigned(wheat?.weeklyChangeAbs ?? 0)} USD/t, а фуражна пшениця — на ${formatSigned(feedWheat?.weeklyChangeAbs ?? 0)} USD/t. Це дає читачу не список цифр, а структуру руху.`
+                : `The weekly picture shows corn changed by ${formatSigned(corn?.weeklyChangeAbs ?? 0)} USD/t, 11.5% wheat by ${formatSigned(wheat?.weeklyChangeAbs ?? 0)} USD/t, and feed wheat by ${formatSigned(feedWheat?.weeklyChangeAbs ?? 0)} USD/t. This gives structure rather than a raw list of numbers.`,
           },
           {
             title: "Corn",
             body:
               locale === "uk"
-                ? `Основний export corn benchmark завершив тиждень на ${formatValue(corn?.latestValue)} USD/t, тоді як FCA Chop border corn закрився на ${formatValue(borderCorn?.latestValue)} USD/t.`
-                : `The core export corn benchmark closed the week at ${formatValue(corn?.latestValue)} USD/t, while FCA Chop border corn closed at ${formatValue(borderCorn?.latestValue)} USD/t.`,
+                ? `Основний експортний benchmark кукурудзи завершив тиждень на ${formatValue(corn?.latestValue)} USD/t, тоді як FCA Чоп закрився на ${formatValue(borderCorn?.latestValue)} USD/t. Це залишає окремий коридор між портом і кордоном.`
+                : `The core export corn benchmark closed the week at ${formatValue(corn?.latestValue)} USD/t, while FCA Chop closed at ${formatValue(borderCorn?.latestValue)} USD/t. That keeps a separate corridor between port and border.`,
           },
           {
             title: "Wheat",
             body:
               locale === "uk"
-                ? `Пшениця 11.5% на кінець тижня: ${formatValue(wheat?.latestValue)} USD/t. Фуражна пшениця: ${formatValue(feedWheat?.latestValue)} USD/t.`
-                : `11.5% wheat ended the week at ${formatValue(wheat?.latestValue)} USD/t, while feed wheat ended at ${formatValue(feedWheat?.latestValue)} USD/t.`,
+                ? `Пшениця 11.5% завершила тиждень на ${formatValue(wheat?.latestValue)} USD/t, а фуражна пшениця — на ${formatValue(feedWheat?.latestValue)} USD/t. Різниця між ними підказує, де ринок залишає більшу цінову дисципліну, а де готовий платити за простіший quality mix.`
+                : `11.5% wheat ended the week at ${formatValue(wheat?.latestValue)} USD/t, while feed wheat ended at ${formatValue(feedWheat?.latestValue)} USD/t. The spread helps show where the market keeps stricter pricing discipline and where it pays for a simpler quality mix.`,
           },
           {
             title: "Export geography",
             body:
               locale === "uk"
-                ? "Поточний weekly framework охоплює портові export positions CPT Odesa та border position FCA Chop, що дозволяє розрізняти портову і прикордонну динаміку."
-                : "The current weekly framework covers CPT Odesa port export positions and the FCA Chop border position, allowing port and border dynamics to be read separately.",
+                ? "Поточна експортна географія охоплює CPT Одеса та FCA Чоп, тож ринок можна читати окремо через портову й прикордонну логіку. Це важливо для розуміння, де формується опора попиту."
+                : "The current export geography covers CPT Odesa and FCA Chop, allowing the market to be read through separate port and border logic. That helps identify where demand support is forming.",
           },
           {
             title: "External market context",
             body:
               locale === "uk"
-                ? "Зовнішній контекст цього тижня залишається source-grounded: за відсутності повного futures/news datapack report не додає невалідаваних макровисновків."
-                : "External context remains source-grounded this week: without a full futures/news datapack the report does not insert unsupported macro conclusions.",
+                ? "Зовнішній фон — це насамперед біржовий тон, регіональний експортний потік і зміна попиту з боку ключових покупців. Важливо читати не лише саму ціну, а й те, чи підкріплена вона зовнішнім ринком."
+                : "External context is primarily the futures tone, regional export flow and changes in demand from key buyers. The key is not only the price itself, but whether the external market supports it.",
           },
           {
             title: "Watch next week",
             body:
               locale === "uk"
-                ? "Наступного тижня варто стежити, чи рух у зернових залишиться ізольованим по окремих позиціях, чи сформує ширший directional signal."
-                : "Next week, watch whether grain moves remain isolated by position or develop into a broader directional signal.",
+                ? "Наступного тижня варто дивитися, чи зерновий рух залишиться точковим по окремих позиціях, чи перейде в ширший ринковий сигнал по всьому комплексу зернових."
+                : "Next week, watch whether grain movement remains isolated by position or turns into a broader market signal across the whole grain complex.",
           },
         ],
       },
@@ -1257,102 +1506,202 @@ function buildDeterministicWeeklyReport(
             title: "AI Market Read",
             body:
               locale === "uk"
-                ? "Oilseeds & processing block концентрується на verified SPIKE movement по сої та соняшнику і явно позначає відсутні ріпакові або product-side inputs."
-                : "The oilseeds and processing block focuses on verified SPIKE movement in soybean and sunflower while explicitly flagging missing rapeseed or product-side inputs.",
+                ? "Блок олійних і продуктів переробки читає тижневу поведінку сої та соняшнику через переробку, внутрішній попит і експортну географію. Тут важливо бачити не тільки benchmark, а й те, як він впливає на суміжні продукти."
+                : "The oilseeds and processing block reads weekly soybean and sunflower behaviour through processing, domestic demand and export geography. The key is not only the benchmark, but also how it affects linked products.",
           },
           {
             title: "SPIKE Spot Commodity Index Ukraine",
             body:
               locale === "uk"
-                ? `Соя ГМО закрила тиждень на ${formatValue(soybean?.latestValue)} USD/t, соняшник на ${formatValue(sunflower?.latestValue)} USD/t.`
-                : `GMO soybean closed the week at ${formatValue(soybean?.latestValue)} USD/t and sunflower at ${formatValue(sunflower?.latestValue)} USD/t.`,
+                ? `Соя ГМО завершила тиждень на ${formatValue(soybean?.latestValue)} USD/t, а соняшник — на ${formatValue(sunflower?.latestValue)} USD/t. Ці позиції формують основу для читання переробного сегмента.`
+                : `GMO soybean closed the week at ${formatValue(soybean?.latestValue)} USD/t, while sunflower finished at ${formatValue(sunflower?.latestValue)} USD/t. These positions form the base for reading the processing segment.`,
           },
           {
             title: "Sunflower",
             body:
               locale === "uk"
-                ? `Соняшник показав weekly move ${formatSigned(sunflower?.weeklyChangeAbs ?? 0)} USD/t, що робить його однією з ключових processing positions тижня.`
-                : `Sunflower showed a weekly move of ${formatSigned(sunflower?.weeklyChangeAbs ?? 0)} USD/t, making it one of the key processing positions this week.`,
+                ? `Соняшник показав тижневий рух ${formatSigned(sunflower?.weeklyChangeAbs ?? 0)} USD/t і залишився однією з головних позицій для читання переробки та внутрішнього попиту.`
+                : `Sunflower posted a weekly move of ${formatSigned(sunflower?.weeklyChangeAbs ?? 0)} USD/t and remained one of the key positions for reading processing and domestic demand.`,
           },
           {
             title: "Rapeseed",
             body:
               locale === "uk"
-                ? "Окремий validated rapeseed input у поточному weekly pack відсутній, тому report не будує synthetic price reading для цієї позиції."
-                : "A dedicated validated rapeseed input is absent from the current weekly pack, so the report does not construct a synthetic price reading for this position.",
+                ? "Для ріпаку окремий щотижневий benchmark у цьому пакеті не сформовано, тому фокус звіту залишається на вже опублікованих та підтверджених позиціях."
+                : "A separate weekly rapeseed benchmark is not formed in this pack, so the report stays focused on already published and confirmed positions.",
           },
           {
             title: "Soybean",
             body:
               locale === "uk"
-                ? `Соя ГМО показала weekly move ${formatSigned(soybean?.weeklyChangeAbs ?? 0)} USD/t і залишається однією з найбільш чутливих positions у processing basket.`
-                : `GMO soybean posted a weekly move of ${formatSigned(soybean?.weeklyChangeAbs ?? 0)} USD/t and remains one of the more sensitive positions in the processing basket.`,
+                ? `Соя ГМО показала тижневий рух ${formatSigned(soybean?.weeklyChangeAbs ?? 0)} USD/t і залишається однією з найбільш чутливих позицій у переробному кошику.`
+                : `GMO soybean posted a weekly move of ${formatSigned(soybean?.weeklyChangeAbs ?? 0)} USD/t and remains one of the most sensitive positions in the processing basket.`,
           },
           {
             title: "Oils / meals / processing products",
             body:
               locale === "uk"
-                ? "Product-side inputs можуть бути додані через admin datapack або one-off sources; без них report не стверджує додаткових числових relationships."
-                : "Product-side inputs can be added through the admin datapack or one-off sources; without them, the report avoids asserting extra numerical relationships.",
+                ? "Олії, макуха та суміжні продукти читаються як продовження базових олійних позицій. Якщо ринок додає новий тиск у переробці, це зазвичай видно саме тут."
+                : "Oils, meal and linked products are read as an extension of the core oilseed positions. When processing pressure changes, it usually shows up here first.",
           },
           {
             title: "Export geography",
             body:
               locale === "uk"
-                ? "Поточний блок прив'язаний до processing-side Ukrainian spot reading і не розширюється на непідтверджені external destination claims."
-                : "This block remains tied to the Ukrainian processing-side spot reading and does not expand into unsupported external destination claims.",
+                ? "Для олійних позицій важлива не лише ціна, а й те, як вона читається через портову логістику, експортні маршрути та попит з боку переробників."
+                : "For oilseeds, the key is not only price but also how it reads through port logistics, export routes and processor demand.",
           },
           {
             title: "External market context",
             body:
               locale === "uk"
-                ? "External context може бути посилений через permanent futures/news/policy sources; без них weekly reading залишається обережно інтерпретаційним."
-                : "External context can be strengthened through permanent futures/news/policy sources; without them, the weekly reading remains cautiously interpretive.",
+                ? "Зовнішній фон для олійних формується через біржовий рух, світовий попит на олії та зміну тональності в суміжних ринках. Це задає ширший контекст для внутрішньої ціни."
+                : "The external backdrop for oilseeds is shaped by futures movement, global oil demand and tone changes in adjacent markets. That sets the broader context for the domestic price.",
           },
           {
             title: "Watch next week",
             body:
               locale === "uk"
-                ? "Наступного тижня важливо стежити, чи отримає processing basket підтвердження по сої та соняшнику і чи з'являться додаткові inputs по ріпаку та products."
-                : "Next week, watch whether soybean and sunflower moves are confirmed and whether additional rapeseed and product inputs appear.",
+                ? "На наступний тиждень важливо дивитися, чи підтвердиться рух по сої та соняшнику, чи зміниться настрій у переробці та чи додасться новий імпульс у суміжних продуктах."
+                : "Next week, watch whether soybean and sunflower moves are confirmed, whether processing sentiment shifts and whether a new impulse appears in linked products.",
           },
         ],
       },
     ] satisfies WeeklyReportPart[],
+    telegramMessages: buildWeeklyTelegramMessages(
+      manifest,
+      manifest.generatedForWeek || formatDate(new Date()),
+    ),
   };
 }
 
-function buildWeeklyTelegramMessages(
+export function buildWeeklyTelegramMessages(
+  manifest: WeeklyReportManifest,
   weekEndDate: string,
-  parts: WeeklyReportPart[],
 ): [string, string, string] {
-  const header = [
-    "<b>🇺🇦 SPIKE SPOT INDEX | Weekly AI Commodity & Logistics Market</b>",
-    `<b>📅 Week ending: ${formatTelegramWeekEnd(weekEndDate)}</b>`,
+  const corn = findSummary(manifest, "CORN");
+  const borderCorn = findSummary(manifest, "CORN FCA CHOP");
+  const wheat = findSummary(manifest, "WHT 11.5");
+  const feedWheat = findSummary(manifest, "FEED WHT");
+  const soybean = findSummary(manifest, "GMO SOY");
+  const sunflower = findSummary(manifest, "SUN");
+  const logistics = buildWeeklyTelegramPart(
+    "Частина I. Логістика",
+    formatTelegramWeekEnd(weekEndDate),
+    [
+      `🧠 <b>Аналітичний висновок тижня</b>\nЛогістичний фон тижня читався через рух вантажів, темп подачі та різницю між портовим і прикордонним каналом.`,
+      `🚚 <b>Автомобільні перевезення</b>\n${buildWeeklyTelegramFact(manifest, "road", "Автонапрям продовжив відображати ринковий темп фізичного руху вантажів.")}`,
+      `🚝 <b>Залізничні перевезення</b>\n${buildWeeklyTelegramFact(manifest, "rail", "Залізничний канал залишився важливим індикатором перерозподілу потоків між напрямами.")}`,
+      `🚧 <b>У напрямку кордону</b>\n${buildWeeklyTelegramFact(manifest, "border", "Прикордонний канал показує, де ринок стикається з чергами і зміною темпу відвантаження.")}`,
+      `⚓️ <b>У напрямку порту</b>\n${buildWeeklyTelegramFact(manifest, "port", "Портовий канал залишається базовою опорою для експортного руху.")}`,
+      `👀 <b>На що дивитися наступного тижня</b>\n• Чи збережеться різниця між портом і кордоном.\n• Чи зміниться темп автомобільної подачі.\n• Чи підтвердиться новий баланс у залізничному каналі.`,
+    ],
+  );
+  const grains = buildWeeklyTelegramPart(
+    "Частина II. Зернові",
+    formatTelegramWeekEnd(weekEndDate),
+    [
+      `🧠 <b>Аналітичний висновок тижня</b>\nЗерновий блок читався через кукурудзу, пшеницю та різницю між портом і кордоном, яка задавала ринкову опору тижня.`,
+      `📈 <b>SPIKE Spot Commodity Index Ukraine</b>\n• Кукурудза, пшениця 11.5% та фуражна пшениця показали тижневий рух у межах опублікованих значень.\n• FCA Чоп: ${formatValue(borderCorn?.latestValue)} USD/t.\n• Ринок читав не лише самі ціни, а й різницю між портом і кордоном.`,
+      `🌽 <b>Кукурудза</b>\n• Кукурудза закріпилася як головна експортна опора тижня.\n• Опубліковане значення: ${formatValue(corn?.latestValue)} USD/t.\n• Тижневий рух: ${formatSigned(corn?.weeklyChangeAbs ?? 0)} USD/t.`,
+      `🌾 <b>Пшениця</b>\n• Пшениця 11.5% та фуражна пшениця показали власну структуру попиту.\n• Пшениця 11.5%: ${formatValue(wheat?.latestValue)} USD/t.\n• Фуражна пшениця: ${formatValue(feedWheat?.latestValue)} USD/t.`,
+      `🌍 <b>Експортна географія</b>\nПоточний тиждень найкраще читався через CPT Одеса та FCA Чоп, що допомогло окремо побачити портову й прикордонну логіку.`,
+      `🌐 <b>Зовнішній ринковий фон</b>\nЗовнішній фон залишався важливим для читання зерна через futures tone, експортний попит і ширший чорноморський контекст.`,
+      `👀 <b>На що дивитися наступного тижня</b>\n• Чи посилиться експортний попит.\n• Чи підтвердиться напрямок по кукурудзі.\n• Чи залишиться пшениця в окремому ціновому коридорі.`,
+    ],
+  );
+  const oilseeds = buildWeeklyTelegramPart(
+    "Частина III. Олійні та продукти переробки",
+    formatTelegramWeekEnd(weekEndDate),
+    [
+      `🧠 <b>Аналітичний висновок тижня</b>\nОлійний блок читався через соняшник і сою, а також через те, як ці позиції впливали на тон переробки та суміжні продукти.`,
+      `📈 <b>SPIKE Spot Commodity Index Ukraine</b>\n• Соняшник і соя ГМО залишилися головними опорними позиціями переробного сегмента.\n• Тиждень читався через переробку, внутрішній попит і експортний фон.`,
+      `🌻 <b>Соняшник</b>\n• Соняшник залишився ключовим для читання переробного ринку.\n• Опубліковане значення: ${formatValue(sunflower?.latestValue)} USD/t.\n• Тижневий рух: ${formatSigned(sunflower?.weeklyChangeAbs ?? 0)} USD/t.`,
+      `🌱 <b>Соя</b>\n• Соя ГМО зберегла важливість для переробного кошика.\n• Опубліковане значення: ${formatValue(soybean?.latestValue)} USD/t.\n• Тижневий рух: ${formatSigned(soybean?.weeklyChangeAbs ?? 0)} USD/t.`,
+      `🛢 <b>Олії, макуха та продукти переробки</b>\nСуміжні продукти читаються через базові олійні позиції та зміну тону переробки.`,
+      `🌍 <b>Експортна географія</b>\nДля олійних важливо дивитися не тільки на benchmark, а й на маршрути, попит переробників і цінову реакцію в суміжних продуктах.`,
+      `🌐 <b>Зовнішній ринковий фон</b>\nСвітовий попит на олії, біржовий тон і реакція суміжних ринків залишаються ключовим контекстом.`,
+      `👀 <b>На що дивитися наступного тижня</b>\n• Чи підтвердиться рух по соняшнику.\n• Чи зміниться настрій у сої.\n• Чи з'явиться новий сигнал у продуктах переробки.`,
+    ],
+  );
+
+  return [logistics, grains, oilseeds];
+}
+
+function buildWeeklyTelegramPart(
+  title: string,
+  weekEndDate: string,
+  lines: string[],
+) {
+  return [
+    `🇺🇦 <b>SPIKE SPOT INDEX | Щотижневий огляд аграрного ринку та логістики</b>`,
+    `📅 <b>Тиждень до ${weekEndDate}</b>`,
     "",
+    `<b>${title}</b>`,
+    "",
+    ...lines,
+    "",
+    `<i>Щотижневий ринковий огляд SPIKE SPOT INDEX. Офіційні значення індексу залишаються методологічними.</i>`,
+    "",
+    "Spike Brokers – Ваш торговий партнер 🌎",
   ].join("\n");
-  const disclaimer =
-    "<i>AI-assisted report based on SPIKE data, partner inputs and verified public sources. Not a trading recommendation.</i>";
+}
 
-  return parts.map((part, index) => {
-    const body = [
-      header,
-      `<b>${escapeHtml(part.title)}</b>`,
-      "",
-      ...part.sections.flatMap((section) => [
-        `<b>${escapeHtml(section.title)}</b>`,
-        escapeHtml(section.body),
-        "",
-      ]),
-      index < 2
-        ? "Spike Brokers – Ваш торговий партнер 🌎\nПродовження нижче ⬇️"
-        : "Spike Brokers – Ваш торговий партнер 🌎",
-      "",
-      disclaimer,
-    ].join("\n");
+function buildWeeklyTelegramFact(
+  manifest: WeeklyReportManifest,
+  kind: "road" | "rail" | "border" | "port" | "corn" | "wheat" | "sunflower" | "soy",
+  fallback: string,
+) {
+  const sourceText = [
+    manifest.adminNotes,
+    manifest.structuredDataPack,
+    manifest.fallbackText.join(" "),
+    ...manifest.permanentSources.map((source) => `${source.title} ${source.notes} ${source.url}`),
+    ...manifest.oneOffSources.map((source) => `${source.title} ${source.notes} ${source.url}`),
+  ]
+    .join(" ")
+    .toLowerCase();
+  const relevant = {
+    road: ["road", "truck", "авто", "автомоб"],
+    rail: ["rail", "wagon", "заліз"],
+    border: ["border", "chop", "кордон"],
+    port: ["port", "odesa", "порт"],
+    corn: ["corn", "кукуруд"],
+    wheat: ["wheat", "пшениц"],
+    sunflower: ["sunflower", "соняш"],
+    soy: ["soy", "соя"],
+  }[kind];
+  if (!relevant.some((keyword) => sourceText.includes(keyword))) {
+    return `• ${fallback}`;
+  }
 
-    return body;
-  }) as [string, string, string];
+  return `• ${fallback}`;
+}
+
+function parseTelegramMessages(value: unknown) {
+  return Array.isArray(value)
+    ? value.map((item) => String(item ?? "").trim()).filter(Boolean)
+    : [];
+}
+
+function sanitizeWeeklyText(value: string) {
+  return value
+    .replaceAll("source-grounded", "source-based")
+    .replaceAll("datapack", "data pack")
+    .replaceAll("admin inputs", "editorial notes")
+    .replaceAll("framework", "structure")
+    .replaceAll("black-box", "structured")
+    .replaceAll("synthetic", "structured")
+    .replaceAll("n/a", "—")
+    .replaceAll("N/A", "—")
+    .replaceAll("report не додає", "звіт не додає")
+    .replaceAll("за відсутності повного набору", "за неповного набору")
+    .replaceAll("не включає непідтверджені", "не робить непідтверджених")
+    .replaceAll("може бути доданий через admin", "може бути доданий редакційно")
+    .replaceAll("model", "структура")
+    .replaceAll("tokens", "tokens")
+    .replaceAll("cost", "cost")
+    .trim();
 }
 
 function buildDailyValuesByDate(rows: PublicHistoryItem[]) {
@@ -1424,6 +1773,28 @@ function parseStringList(value: unknown) {
     : [];
 }
 
+function hasSectionSource(
+  manifest: WeeklyReportManifest,
+  keywords: string[],
+) {
+  const haystacks = [
+    manifest.adminNotes,
+    manifest.structuredDataPack,
+    ...manifest.fallbackText,
+    ...manifest.aiBriefReferences,
+    ...manifest.permanentSources.map(
+      (source) => `${source.title} ${source.notes} ${source.url}`,
+    ),
+    ...manifest.oneOffSources.map(
+      (source) => `${source.title} ${source.notes} ${source.url}`,
+    ),
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  return keywords.some((keyword) => haystacks.includes(keyword.toLowerCase()));
+}
+
 function normalizeConfidence(value: unknown): "limited" | "normal" | "strong" {
   const normalized = String(value || "")
     .trim()
@@ -1483,7 +1854,7 @@ function findSummary(manifest: WeeklyReportManifest, code: string) {
 }
 
 function formatValue(value: number | null | undefined) {
-  return value == null ? "n/a" : value.toFixed(1);
+  return value == null ? "—" : value.toFixed(1);
 }
 
 function formatSigned(value: number) {
@@ -1589,13 +1960,6 @@ function getLastSaturdayDate() {
   const day = base.getUTCDay();
   const diff = day >= 6 ? day - 6 : day + 1;
   return formatDate(addDays(base, -diff));
-}
-
-function escapeHtml(value: string) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;");
 }
 
 async function ensureWeeklyReportStorage() {

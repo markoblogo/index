@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { AnalyticsTrendChart } from "@/components/ui/analytics-trend-chart";
 import { CurrencyValue } from "@/components/ui/currency-toggle";
 import { ScenarioModelPanel } from "@/components/ui/scenario-model-panel";
+import { WeeklyReportView } from "@/components/reports/weekly-report-view";
 import { SpreadAnalysisPanel } from "@/components/ui/spread-analysis-panel";
 import { VolatilityRangePanel } from "@/components/ui/volatility-range-panel";
 import {
@@ -13,6 +14,7 @@ import { allowMockFallback, hasDatabaseUrl } from "@/lib/db";
 import { getFxRates } from "@/lib/fx-rates";
 import type { Locale } from "@/lib/i18n";
 import { getActiveIndexConfig } from "@/lib/index-platform";
+import { getPublishedWeeklyReports } from "@/lib/weekly-ai-report";
 import { commodities, type Commodity, type CommodityId } from "@/lib/mock-data";
 import { getPublicHistoryData } from "@/lib/public-api-data";
 import { getActiveRespondentCountData } from "@/lib/respondent-directory";
@@ -56,6 +58,8 @@ export default async function AnalyticsPage({
         locale,
       })
     : null;
+  const weeklyReports = isSpike ? await getPublishedWeeklyReports() : [];
+  const latestWeeklyReport = weeklyReports[0] ?? null;
 
   return (
     <main
@@ -90,6 +94,14 @@ export default async function AnalyticsPage({
           brief={aiBrief}
           copy={copy.aiBrief}
           locale={locale}
+        />
+      ) : null}
+
+      {isSpike ? (
+        <WeeklyReportSection
+          copy={copy.weeklyReport}
+          locale={locale}
+          report={latestWeeklyReport}
         />
       ) : null}
 
@@ -338,6 +350,120 @@ function AiMarketBriefSection({
       </div>
     </section>
   );
+}
+
+function WeeklyReportSection({
+  copy,
+  locale,
+  report,
+}: {
+  copy: AnalyticsCopy["weeklyReport"];
+  locale: Locale;
+  report: Awaited<ReturnType<typeof getPublishedWeeklyReports>>[number] | null;
+}) {
+  return (
+    <section className="mx-auto max-w-7xl px-6 pb-10 lg:px-8">
+      <div className="rounded-[1.35rem] border border-white/12 bg-[#0b0b0b] p-5 lg:p-6">
+        <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-[var(--spike-accent)]">
+              {copy.eyebrow}
+            </p>
+            <h2 className="mt-3 text-3xl font-black uppercase leading-tight tracking-normal text-white">
+              {copy.title}
+            </h2>
+            <p className="mt-4 text-sm leading-6 text-white/64">
+              {copy.description}
+            </p>
+            <div className="mt-5 flex flex-wrap gap-2 text-[0.68rem] font-black uppercase tracking-[0.12em]">
+              {report ? (
+                <>
+                  <span className="rounded-full bg-[var(--spike-accent)] px-3 py-1 text-[#050505]">
+                    AI-assisted
+                  </span>
+                  <span className="rounded-full border border-white/18 px-3 py-1 text-white/58">
+                    {copy.weekEndingLabel}:{" "}
+                    {formatWeeklyBadgeDate(report.weekEndDate, locale) ??
+                      report.weekEndDate}
+                  </span>
+                  <span className="rounded-full border border-white/18 px-3 py-1 text-white/58">
+                    {copy.publicationLabel}:{" "}
+                    {formatWeeklyBadgeDate(report.publishedAt, locale) ??
+                      report.weekEndDate}
+                  </span>
+                  <span className="rounded-full border border-white/18 px-3 py-1 text-white/58">
+                    {copy.confidenceLabel}: {report.dataConfidence}
+                  </span>
+                </>
+              ) : (
+                <span className="rounded-full border border-white/18 px-3 py-1 text-white/58">
+                  {copy.noReportLabel}
+                </span>
+              )}
+            </div>
+            {report?.content?.executiveSummary?.[0] ? (
+              <p className="mt-5 rounded-[1rem] border border-white/10 bg-white/4 p-4 text-sm leading-6 text-white/74">
+                {report.content.executiveSummary[0]}
+              </p>
+            ) : null}
+            <div className="mt-5 flex flex-wrap gap-3">
+              <a
+                className="rounded-full bg-white px-4 py-2 text-sm font-black uppercase tracking-[0.08em] text-black transition hover:bg-[var(--spike-accent)]"
+                href={report ? `/${locale}/analytics/weekly-reports/${report.slug}` : `/${locale}/analytics/weekly-reports`}
+              >
+                {report ? copy.openLatestCta : copy.viewArchiveCta}
+              </a>
+              <a
+                className="rounded-full border border-white/18 px-4 py-2 text-sm font-black uppercase tracking-[0.08em] text-white transition hover:border-[var(--spike-accent)] hover:text-[var(--spike-accent)]"
+                href={`/${locale}/analytics/weekly-reports`}
+              >
+                {copy.allReportsCta}
+              </a>
+            </div>
+          </div>
+
+          <div className="rounded-[1.15rem] border border-white/10 bg-[#050505] p-4">
+            <details className="group">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 marker:hidden">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.14em] text-white/45">
+                    {copy.previewLabel}
+                  </p>
+                  <p className="mt-2 text-lg font-black uppercase tracking-normal text-white">
+                    {copy.previewTitle}
+                  </p>
+                </div>
+                <span className="rounded-full border border-white/14 px-3 py-1 text-xs font-black uppercase text-white/65 transition group-open:bg-white group-open:text-black">
+                  {copy.expandLabel}
+                </span>
+              </summary>
+              <div className="mt-5">
+                {report ? (
+                  <WeeklyReportView report={report} />
+                ) : (
+                  <div className="rounded-[1rem] border border-white/10 bg-white/5 p-4 text-sm leading-6 text-white/64">
+                    {copy.noReportBody}
+                  </div>
+                )}
+              </div>
+            </details>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function formatWeeklyBadgeDate(value: string | null | undefined, locale: Locale) {
+  if (!value) {
+    return null;
+  }
+
+  return new Intl.DateTimeFormat(locale === "uk" ? "uk-UA" : "en-US", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(new Date(value));
 }
 
 function MovementSummary({
@@ -881,6 +1007,24 @@ function getAnalyticsCopy(locale: Locale) {
           `Найвища короткострокова волатильність у вибірці: ${commodity}, ${value}%. Це допомагає відокремити ринковий рух від шуму.`,
         volatilityTitle: "Volatility and spreads",
       },
+      weeklyReport: {
+        allReportsCta: "Усі щотижневі звіти",
+        confidenceLabel: "Рівень даних",
+        description:
+          "Щотижневий AI-assisted огляд ринку, який об’єднує дані SPIKE SPOT INDEX, логістику, експортні потоки, біржовий фон, зовнішні ринкові фактори та перевірені джерела у структурований звіт для сайту й Telegram.",
+        expandLabel: "Перегляд",
+        eyebrow: "Щотижневий звіт",
+        noReportBody:
+          "Щотижневі звіти створюються після завершення ринкового тижня і публікуються після перегляду.",
+        noReportLabel: "Ще немає опублікованого щотижневого звіту",
+        openLatestCta: "Відкрити останній звіт",
+        previewLabel: "Останній опублікований звіт",
+        previewTitle: "Згорнутий перегляд",
+        publicationLabel: "Публікація",
+        title: "Weekly AI Commodity & Logistics Report",
+        viewArchiveCta: "Переглянути архів звітів",
+        weekEndingLabel: "Тиждень до",
+      },
       apiBullets: [
         "Історія опублікованих індексів",
         "Аналітика трендів за культурами",
@@ -1017,8 +1161,8 @@ function getAnalyticsCopy(locale: Locale) {
       "The analytics dashboard is available free of charge during the first year of UGA Index operation. From 15.06.2027, extended analytics and API access are planned to move to a paid subscription model.",
     accessTitle: "Analytics access preview",
     allCommodities: "All commodities",
-    aiBrief: {
-      aiAssistedBadge: "AI-assisted",
+      aiBrief: {
+        aiAssistedBadge: "AI-assisted",
       cautionTitle: "Caution notes",
       confidenceLabel: "Data confidence",
       coverageCaution: (count: number) =>
@@ -1042,11 +1186,29 @@ function getAnalyticsCopy(locale: Locale) {
       standardCaution: (count: number) =>
         `Respondent coverage: ${count}. The AI summary explains validated data, but does not access individual respondent submissions.`,
       title: "AI Market Brief",
-      volatilityBody: (commodity: string, value: string) =>
-        `The highest short-term volatility in the sample is ${commodity}, ${value}%. This helps separate market movement from noise.`,
-      volatilityTitle: "Volatility and spreads",
-    },
-    apiBullets: [
+        volatilityBody: (commodity: string, value: string) =>
+          `The highest short-term volatility in the sample is ${commodity}, ${value}%. This helps separate market movement from noise.`,
+        volatilityTitle: "Volatility and spreads",
+      },
+      weeklyReport: {
+        allReportsCta: "All weekly reports",
+        confidenceLabel: "Data confidence",
+        description:
+          "A weekly AI-assisted market report combining SPIKE SPOT INDEX data, logistics inputs, export flows, futures context, external market factors and verified sources into a structured website and Telegram report.",
+        expandLabel: "Preview",
+        eyebrow: "Weekly report",
+        noReportBody:
+          "Weekly reports are generated after the market week closes and published after review.",
+        noReportLabel: "No published weekly report yet",
+        openLatestCta: "Open latest weekly report",
+        previewLabel: "Latest published report",
+        previewTitle: "Collapsed preview",
+        publicationLabel: "Publication",
+        title: "Weekly AI Commodity & Logistics Report",
+        viewArchiveCta: "View weekly reports",
+        weekEndingLabel: "Week ending",
+      },
+      apiBullets: [
       "Published index history",
       "Commodity trend analytics",
       "Currency-adjusted values",

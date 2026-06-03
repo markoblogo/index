@@ -9,6 +9,10 @@ export function WeeklyReportView({ report }: { report: WeeklyReportRecord }) {
     );
   }
 
+  const executiveSummary = report.content.executiveSummary ?? [];
+  const sourceNotes = report.content.sourceNotes ?? [];
+  const parts = report.content.parts ?? [];
+
   return (
     <div className="grid gap-6">
       <section className="rounded-[1.35rem] border border-white/12 bg-[#0b0b0b] p-6 text-[#f8f8f2]">
@@ -26,15 +30,27 @@ export function WeeklyReportView({ report }: { report: WeeklyReportRecord }) {
             Data confidence: {report.dataConfidence}
           </span>
         </div>
-        <h1 className="mt-4 text-3xl font-black uppercase leading-tight tracking-normal text-white">
+        <h1 className="mt-4 max-w-4xl text-3xl font-black uppercase leading-tight tracking-normal text-white">
           {report.title}
         </h1>
-        <p className="mt-4 max-w-4xl text-sm leading-6 text-white/68">
-          {report.content.methodology}
-        </p>
+        {executiveSummary.length > 0 ? (
+          <div className="mt-5 grid gap-3 rounded-[1.1rem] border border-white/10 bg-white/4 p-4">
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-[var(--spike-accent)]">
+              Executive summary
+            </p>
+            <ul className="grid gap-2 text-sm leading-6 text-white/78">
+              {executiveSummary.map((item) => (
+                <li className="flex gap-3" key={item}>
+                  <span className="mt-2 h-1.5 w-1.5 rounded-full bg-[var(--spike-accent)]" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
       </section>
 
-      {report.content.parts.map((part) => (
+      {parts.map((part) => (
         <section
           className="rounded-[1.35rem] border border-white/12 bg-[#0b0b0b] p-6 text-[#f8f8f2]"
           key={part.key}
@@ -65,8 +81,8 @@ export function WeeklyReportView({ report }: { report: WeeklyReportRecord }) {
           Source notes
         </h2>
         <div className="mt-4 grid gap-3">
-          {report.content.sourceNotes.length > 0 ? (
-            report.content.sourceNotes.map((source) => (
+          {sourceNotes.length > 0 ? (
+            sourceNotes.map((source) => (
               <div
                 className="rounded-[1rem] border border-white/10 bg-black/30 p-4"
                 key={`${source.title}-${source.url}`}
@@ -95,6 +111,15 @@ export function WeeklyReportView({ report }: { report: WeeklyReportRecord }) {
             </p>
           )}
         </div>
+      </section>
+
+      <section className="rounded-[1.35rem] border border-white/12 bg-[#0b0b0b] p-6 text-[#f8f8f2]">
+        <p className="text-xs font-black uppercase tracking-[0.14em] text-[var(--spike-accent)]">
+          Methodology
+        </p>
+        <p className="mt-3 text-sm leading-6 text-white/68">
+          {report.content.methodology}
+        </p>
       </section>
 
       <section className="rounded-[1.35rem] border border-white/12 bg-[#0b0b0b] p-6 text-xs font-semibold leading-6 text-white/56">

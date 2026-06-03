@@ -24,8 +24,9 @@ export default async function WeeklyReportsArchivePage({
           </h1>
           <p className="mt-5 max-w-4xl text-base leading-7 text-white/64">
             A weekly AI-assisted commodity and logistics market report combining
-            SPIKE SPOT INDEX data, admin inputs and verified public sources into
-            a structured three-part publication.
+            SPIKE SPOT INDEX data, logistics inputs, export flows, futures
+            context, external market factors and verified sources into a
+            structured three-part publication.
           </p>
         </div>
       </section>

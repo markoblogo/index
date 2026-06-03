@@ -16,6 +16,7 @@ import {
   scheduleWeeklyReportTelegram,
   sendWeeklyReportTelegramNow,
   setWeeklySourceEnabled,
+  type WeeklyReportRecord,
 } from "@/lib/weekly-ai-report";
 
 type WeeklyReportPageProps = {
@@ -63,6 +64,9 @@ export default async function WeeklyReportAdminPage({
       ? sources
       : await listWeeklySources(activeReport.id)
     : [];
+  const publicReadiness = activeReport
+    ? assessWeeklyReportPublicReadiness(activeReport)
+    : null;
 
   async function ensureReportAction(formData: FormData) {
     "use server";
@@ -354,7 +358,8 @@ export default async function WeeklyReportAdminPage({
                     value={activeReport.id}
                   />
                   <button
-                    className="rounded-full border border-black/15 px-4 py-2 text-sm font-semibold text-black transition hover:border-uga-green hover:text-uga-green"
+                    className="rounded-full border border-black/15 px-4 py-2 text-sm font-semibold text-black transition hover:border-uga-green hover:text-uga-green disabled:cursor-not-allowed disabled:border-black/10 disabled:text-black/30"
+                    disabled={!publicReadiness?.canPublish}
                     type="submit"
                   >
                     Publish to website
@@ -367,7 +372,8 @@ export default async function WeeklyReportAdminPage({
                     value={activeReport.id}
                   />
                   <button
-                    className="rounded-full border border-black/15 px-4 py-2 text-sm font-semibold text-black transition hover:border-uga-green hover:text-uga-green"
+                    className="rounded-full border border-black/15 px-4 py-2 text-sm font-semibold text-black transition hover:border-uga-green hover:text-uga-green disabled:cursor-not-allowed disabled:border-black/10 disabled:text-black/30"
+                    disabled={!publicReadiness?.canScheduleTelegram}
                     type="submit"
                   >
                     Schedule Telegram send
@@ -380,7 +386,8 @@ export default async function WeeklyReportAdminPage({
                     value={activeReport.id}
                   />
                   <button
-                    className="rounded-full bg-uga-dark px-4 py-2 text-sm font-semibold text-white transition hover:bg-uga-green"
+                    className="rounded-full bg-uga-dark px-4 py-2 text-sm font-semibold text-white transition hover:bg-uga-green disabled:cursor-not-allowed disabled:bg-black/20"
+                    disabled={!publicReadiness?.canSendTelegram}
                     type="submit"
                   >
                     Send to Telegram now
@@ -620,11 +627,49 @@ export default async function WeeklyReportAdminPage({
                         {(activeReport.aiWarnings.length > 0
                           ? activeReport.aiWarnings
                           : ["No AI warnings."]
-                        ).map((item) => (
-                          <li key={item}>{item}</li>
-                        ))}
+                          ).map((item) => (
+                            <li key={item}>{item}</li>
+                          ))}
                       </ul>
                     </div>
+                    {publicReadiness ? (
+                      <div className="rounded-[0.9rem] border border-black/10 bg-black/[0.02] p-4">
+                        <p className="font-black text-black">Public readiness</p>
+                        <ul className="mt-2 grid gap-2 text-sm text-black/65">
+                          {publicReadiness.checklist.map((item) => (
+                            <li className="flex items-start gap-2" key={item.label}>
+                              <span
+                                className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[0.65rem] font-black ${
+                                  item.ok
+                                    ? "bg-uga-green text-white"
+                                    : "bg-red-500 text-white"
+                                }`}
+                              >
+                                {item.ok ? "✓" : "!"}
+                              </span>
+                              <span>
+                                <span className="font-semibold text-black">
+                                  {item.label}
+                                </span>
+                                <span className="block text-black/55">
+                                  {item.detail}
+                                </span>
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                        {publicReadiness.warnings.length > 0 ? (
+                          <div className="mt-4 rounded-[0.8rem] border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+                            <p className="font-black">Quality warnings</p>
+                            <ul className="mt-2 list-disc pl-5">
+                              {publicReadiness.warnings.map((warning) => (
+                                <li key={warning}>{warning}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               </div>
@@ -681,4 +726,148 @@ function getDefaultWeekEnd() {
   const target = new Date(now);
   target.setUTCDate(target.getUTCDate() - diff);
   return target.toISOString().slice(0, 10);
+}
+
+function assessWeeklyReportPublicReadiness(report: WeeklyReportRecord) {
+  const content = report.content;
+  const approvedForWebsite = report.status === "approved";
+  const approvedForTelegram =
+    report.status === "approved" ||
+    report.status === "published" ||
+    report.status === "telegram_scheduled" ||
+    report.status === "telegram_sent";
+  const textChunks = [
+    report.title,
+    content?.methodology ?? "",
+    content?.disclaimer ?? "",
+    ...(content?.executiveSummary ?? []),
+    ...(content?.parts.flatMap((part) =>
+      [part.title, ...part.sections.map((section) => `${section.title} ${section.body}`)],
+    ) ?? []),
+    ...(content?.telegramMessages ?? []),
+  ];
+  const text = textChunks.join(" ");
+  const bannedPhrases = [
+    "source-grounded",
+    "datapack",
+    "admin inputs",
+    "framework",
+    "black-box",
+    "synthetic",
+    "n/a",
+    "tokens",
+    "cost",
+    "debug",
+    "missing data",
+  ];
+  const hasBannedPhrase = bannedPhrases.some((phrase) =>
+    text.toLowerCase().includes(phrase),
+  );
+  const mixedHeader = (content?.parts ?? []).some((part) => {
+    const header = part.title;
+    return /[A-Za-z]/.test(header) && /[А-ЯІЇЄҐа-яіїєґ]/.test(header);
+  });
+  const hasThreeParts = (content?.parts.length ?? 0) === 3;
+  const hasDisclaimer = Boolean(content?.disclaimer?.trim());
+  const hasSourceManifest = Boolean(report.sourceManifest);
+  const hasNoNA = !(content?.telegramMessages ?? []).some((message) =>
+    /n\/a/i.test(message),
+  );
+
+  return {
+    canPublish:
+      approvedForWebsite &&
+      hasThreeParts &&
+      hasDisclaimer &&
+      hasSourceManifest &&
+      hasNoNA &&
+      !hasBannedPhrase &&
+      !mixedHeader,
+    canScheduleTelegram:
+      approvedForTelegram &&
+      hasThreeParts &&
+      hasDisclaimer &&
+      hasSourceManifest &&
+      hasNoNA &&
+      !hasBannedPhrase &&
+      !mixedHeader,
+    canSendTelegram:
+      approvedForTelegram &&
+      hasThreeParts &&
+      hasDisclaimer &&
+      hasSourceManifest &&
+      hasNoNA &&
+      !hasBannedPhrase &&
+      !mixedHeader,
+    checklist: [
+      {
+        detail: approvedForWebsite
+          ? "Report is approved for website publication."
+          : "Report is not approved for website publication yet.",
+        label: "Approved for website",
+        ok: approvedForWebsite,
+      },
+      {
+        detail: approvedForTelegram
+          ? "Report is approved for Telegram distribution."
+          : "Report is not approved for Telegram distribution yet.",
+        label: "Approved for Telegram",
+        ok: approvedForTelegram,
+      },
+      {
+        detail: hasSourceManifest
+          ? "Source manifest is attached."
+          : "Source manifest is missing.",
+        label: "Has source manifest",
+        ok: hasSourceManifest,
+      },
+      {
+        detail: hasThreeParts
+          ? "Three report parts are present."
+          : "Expected three report parts.",
+        label: "Has three parts",
+        ok: hasThreeParts,
+      },
+      {
+        detail: hasDisclaimer
+          ? "Disclaimer is present."
+          : "Disclaimer is missing.",
+        label: "Has disclaimer",
+        ok: hasDisclaimer,
+      },
+      {
+        detail: hasNoNA
+          ? "Telegram content has no n/a values."
+          : "Telegram content contains n/a.",
+        label: "No n/a in Telegram",
+        ok: hasNoNA,
+      },
+      {
+        detail: !hasBannedPhrase
+          ? "No banned public phrases detected."
+          : "Banned public phrases detected.",
+        label: "No banned phrases",
+        ok: !hasBannedPhrase,
+      },
+      {
+        detail: !mixedHeader
+          ? "Section headers are consistent."
+          : "Mixed English/Ukrainian detected in headers.",
+        label: "No mixed headers",
+        ok: !mixedHeader,
+      },
+    ],
+    warnings: [
+      ...(hasBannedPhrase
+        ? ["Banned public phrases detected in weekly report content."]
+        : []),
+      ...(hasNoNA ? [] : ["Telegram message contains n/a."]),
+      ...(mixedHeader
+        ? ["Mixed Ukrainian/English detected in section headers."]
+        : []),
+      ...(hasSourceManifest
+        ? []
+        : ["Source manifest is missing from the weekly report."]),
+    ],
+  };
 }
