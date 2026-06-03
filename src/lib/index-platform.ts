@@ -360,8 +360,8 @@ export const INDEX_CONFIGS: Record<IndexTenantId, IndexConfig> = {
     theme: { dataAttribute: "spike" },
     home: {
       subtitle: {
-        uk: "Спотовий бенчмарк цін для українського аграрного ринку.",
-        en: "Spot price benchmark for the Ukrainian agricultural market.",
+        uk: "AI-native спотовий бенчмарк цін для українського аграрного ринку.",
+        en: "AI-native spot price benchmark for the Ukrainian agricultural market.",
       },
       trustStrip: {
         uk: "Дані партнерів Spike Brokers · медіанна валідація · +/-2% фільтр викидів · мінімум 5 респондентів · фіксація після публікації",

@@ -164,12 +164,12 @@ function SpikeHomeHero({
   ];
 
   return (
-    <section className="max-w-full overflow-x-hidden text-white [background:var(--spike-hero-bg)] lg:min-h-[calc(100svh-57px)]">
-      <div className="mx-auto flex max-w-[1900px] flex-col px-4 py-5 sm:px-6 lg:min-h-[calc(100svh-57px)] lg:px-8">
-        <div className="grid gap-5 border-b border-white/18 pb-5 lg:grid-cols-[minmax(0,1fr)_34rem] lg:items-end">
+    <section className="max-w-full overflow-x-hidden text-white [background:var(--spike-hero-bg)]">
+      <div className="mx-auto flex max-w-[1900px] flex-col px-4 py-4 sm:px-6 lg:px-8">
+        <div className="grid gap-4 border-b border-white/18 pb-4 lg:grid-cols-[minmax(0,1fr)_30rem] lg:items-end">
           <div className="min-w-0">
             <SpikeHeroSubtitle text={activeIndex.home.subtitle[locale]} />
-            <h1 className="mt-3 max-w-[calc(100vw-2rem)] break-words text-[clamp(1.9rem,7.4vw,2.9rem)] font-black uppercase leading-[0.92] tracking-normal sm:text-[clamp(2.35rem,5.8vw,3.85rem)] lg:max-w-5xl lg:text-[clamp(2.85rem,4.25vw,4.8rem)]">
+            <h1 className="mt-2 max-w-[calc(100vw-2rem)] break-words text-[clamp(1.9rem,7.4vw,2.9rem)] font-black uppercase leading-[0.92] tracking-normal sm:text-[clamp(2.35rem,5.8vw,3.85rem)] lg:max-w-none lg:whitespace-nowrap lg:text-[clamp(3rem,5.05vw,5.65rem)]">
               <SpikeHeroTitle />
             </h1>
           </div>
@@ -183,36 +183,11 @@ function SpikeHomeHero({
                 {updatedAt}
               </p>
             </div>
-            <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-4 lg:max-w-[34rem]">
-              {facts.map((fact) => (
-                <div
-                  className="rounded-[1.15rem] border border-white/18 bg-black/20 px-4 py-3 backdrop-blur"
-                  key={fact.label}
-                >
-                  <p className="text-2xl font-black lowercase leading-none text-white">
-                    {fact.label === "index" ? (
-                      <span className="inline-flex items-center justify-end gap-2">
-                        <span
-                          aria-hidden="true"
-                          className="h-2.5 w-2.5 rounded-full bg-[var(--spike-accent)] shadow-[0_0_18px_rgba(57,255,20,0.95)]"
-                        />
-                        {fact.value}
-                      </span>
-                    ) : (
-                      fact.value
-                    )}
-                  </p>
-                  <p className="mt-1 text-[0.58rem] font-black uppercase tracking-[0.18em] text-white/52">
-                    {fact.label}
-                  </p>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
 
-        <div className="min-w-0 max-w-[calc(100vw-2rem)] py-5 lg:max-w-full">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0 max-w-[calc(100vw-2rem)] py-4 lg:max-w-full">
+          <div className="mb-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.28em] text-white/60">
                 {locale === "uk"
@@ -223,12 +198,39 @@ function SpikeHomeHero({
                 {activeIndex.home.officialNotice[locale]}
               </p>
             </div>
-            <div className="rounded-full border border-white/18 bg-black/22 p-1.5 backdrop-blur">
-              <CurrencyToggle label={copy.currencyToggleLabel} />
+            <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-center">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:w-[35rem]">
+                {facts.map((fact) => (
+                  <div
+                    className="rounded-[0.85rem] border border-white/18 bg-black/16 px-3 py-2.5 text-center backdrop-blur"
+                    key={fact.label}
+                  >
+                    <p className="text-xl font-black lowercase leading-none text-white">
+                      {fact.label === "index" ? (
+                        <span className="inline-flex items-center justify-center gap-2">
+                          <span
+                            aria-hidden="true"
+                            className="h-2 w-2 rounded-full bg-[var(--spike-accent)] shadow-[0_0_18px_rgba(57,255,20,0.95)]"
+                          />
+                          {fact.value}
+                        </span>
+                      ) : (
+                        fact.value
+                      )}
+                    </p>
+                    <p className="mt-1 text-[0.52rem] font-black uppercase tracking-[0.18em] text-white/52">
+                      {fact.label}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <div className="rounded-full border border-white/18 bg-black/22 p-1.5 backdrop-blur">
+                <CurrencyToggle label={copy.currencyToggleLabel} />
+              </div>
             </div>
           </div>
 
-          <div className="group flex min-h-[34rem] gap-3 overflow-x-auto pb-2 pt-2 [scrollbar-width:none] sm:gap-4 lg:min-h-[36rem] xl:overflow-visible">
+          <div className="group flex min-h-[34rem] gap-3 overflow-x-auto pb-2 pt-1 [scrollbar-width:none] sm:gap-4 lg:min-h-[36rem] xl:overflow-visible">
             {commodities.map((commodity) => (
               <SpikeCommodityCard
                 commodity={commodity}
@@ -264,8 +266,8 @@ function SpikeHeroSubtitle({ text }: { text: string }) {
 function SpikeHeroTitle() {
   return (
     <>
-      <span className="block">SPIKE SPOT</span>
-      <span className="block">INDEX</span>
+      <span className="block lg:inline">SPIKE SPOT</span>
+      <span className="block lg:ml-5 lg:inline">INDEX</span>
     </>
   );
 }
