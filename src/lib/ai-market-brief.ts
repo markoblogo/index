@@ -52,6 +52,7 @@ type GenerateOptions = {
 
 const BRIEF_KIND = "daily_market_brief";
 const PROVIDER = "openai";
+let storageReady: Promise<void> | null = null;
 
 export async function getPublishedAiMarketBrief({
   activeRespondentCount,
@@ -109,6 +110,7 @@ export async function getAiMarketBriefAdminStatus(date: string) {
     };
   }
 
+  await ensureAiMarketBriefStorage();
   const rows = await db.aiMarketBrief.findMany({
     orderBy: [{ locale: "asc" }],
     where: {
@@ -509,6 +511,7 @@ async function upsertBrief({
       ? null
       : new Prisma.Decimal(generated.estimatedCostUsd.toFixed(6));
 
+  await ensureAiMarketBriefStorage();
   return db.aiMarketBrief.upsert({
     create: {
       cardCommentsJson: cardComments,
@@ -567,6 +570,7 @@ async function findStoredBrief(locale: Locale, date?: string | null) {
     return null;
   }
 
+  await ensureAiMarketBriefStorage();
   return db.aiMarketBrief.findFirst({
     orderBy: { tradeDate: "desc" },
     where: {
@@ -577,6 +581,55 @@ async function findStoredBrief(locale: Locale, date?: string | null) {
       ...(date ? { tradeDate: dateToUtcDate(date) } : {}),
     },
   });
+}
+
+async function ensureAiMarketBriefStorage() {
+  if (!hasDatabaseUrl()) {
+    return;
+  }
+
+  storageReady ??= (async () => {
+    await db.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "AiMarketBrief" (
+        "id" TEXT NOT NULL,
+        "tenantId" TEXT NOT NULL,
+        "tradeDate" DATE NOT NULL,
+        "locale" TEXT NOT NULL,
+        "kind" TEXT NOT NULL DEFAULT 'daily_market_brief',
+        "status" TEXT NOT NULL,
+        "provider" TEXT NOT NULL DEFAULT 'openai',
+        "model" TEXT NOT NULL,
+        "confidence" TEXT,
+        "generatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "inputDataHash" TEXT NOT NULL,
+        "inputJson" JSONB NOT NULL,
+        "outputJson" JSONB,
+        "cardCommentsJson" JSONB,
+        "promptTokens" INTEGER,
+        "completionTokens" INTEGER,
+        "totalTokens" INTEGER,
+        "estimatedCostUsd" DECIMAL(12,6),
+        "fallbackReason" TEXT,
+        "error" TEXT,
+        "generatedById" TEXT,
+        "source" TEXT NOT NULL DEFAULT 'system',
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMP(3) NOT NULL,
+        CONSTRAINT "AiMarketBrief_pkey" PRIMARY KEY ("id")
+      )
+    `);
+    await db.$executeRawUnsafe(`
+      CREATE UNIQUE INDEX IF NOT EXISTS "AiMarketBrief_tenantId_tradeDate_locale_kind_key" ON "AiMarketBrief"("tenantId", "tradeDate", "locale", "kind")
+    `);
+    await db.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS "AiMarketBrief_tenantId_tradeDate_status_idx" ON "AiMarketBrief"("tenantId", "tradeDate", "status")
+    `);
+    await db.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS "AiMarketBrief_generatedAt_idx" ON "AiMarketBrief"("generatedAt")
+    `);
+  })();
+
+  await storageReady;
 }
 
 function mapStoredBrief(
