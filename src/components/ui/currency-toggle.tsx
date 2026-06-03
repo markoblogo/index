@@ -46,6 +46,11 @@ export function CurrencyToggle({ label }: CurrencyToggleProps) {
   );
 }
 
+export function useCurrentDisplayCurrency() {
+  const [currency] = useDisplayCurrency();
+  return currency;
+}
+
 type CurrencyValueProps = {
   officialUsd: number | null;
   fxRates: FxRates;
@@ -97,10 +102,7 @@ export function CurrencyValue({
         className={`${block ? "block" : ""} ${className}`}
         data-currency={currency}
       >
-        {formattedValue}{" "}
-        <span className="currency-unit text-sm font-black tracking-normal text-black/55">
-          USD/t
-        </span>
+        {formattedValue}
       </span>
     );
   }
@@ -110,12 +112,7 @@ export function CurrencyValue({
       className={`${block ? "flex" : "inline-flex"} flex-col ${className}`}
       data-currency={currency}
     >
-      <span>
-        ≈ {formattedValue}{" "}
-        <span className="currency-unit text-sm font-black tracking-normal text-black/55">
-          {currency}/t
-        </span>
-      </span>
+      <span>≈ {formattedValue}</span>
       <span
         className={`font-semibold leading-none text-black/45 ${
           compact ? "mt-1 text-[0.7rem]" : "mt-1.5 text-[0.72rem]"
@@ -170,7 +167,9 @@ function useDisplayCurrency() {
   function setCurrency(nextCurrency: DisplayCurrency) {
     setCurrencyState(nextCurrency);
     window.localStorage.setItem(STORAGE_KEY, nextCurrency);
-    window.dispatchEvent(new CustomEvent(CHANGE_EVENT, { detail: nextCurrency }));
+    window.dispatchEvent(
+      new CustomEvent(CHANGE_EVENT, { detail: nextCurrency }),
+    );
   }
 
   return [currency, setCurrency] as const;

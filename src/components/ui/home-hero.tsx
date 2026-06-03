@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CurrencyToggle, CurrencyValue } from "@/components/ui/currency-toggle";
+import { useCurrentDisplayCurrency } from "@/components/ui/currency-toggle";
 import { IndexSparkline } from "@/components/ui/index-sparkline";
 import { SITE_CONFIG } from "@/lib/constants";
 import type { FxRates } from "@/lib/fx-rates";
@@ -283,6 +284,7 @@ function SpikeCommodityCard({
   locale: Locale;
   officialLabel: string;
 }) {
+  const displayCurrency = useCurrentDisplayCurrency();
   const hasValue = commodity.latest !== null;
   const isBorderPosition = commodity.id === "corn-fca-chop";
   const isPositive = hasValue && commodity.absoluteChange > 0;
@@ -344,6 +346,7 @@ function SpikeCommodityCard({
     (locale === "uk"
       ? "Поки немає даних для AI-нотатки."
       : "No data for AI note yet.");
+  const currencyChipLabel = `${displayCurrency}/t`;
 
   return (
     <article
@@ -363,7 +366,7 @@ function SpikeCommodityCard({
           <span
             className={`rounded-full bg-white/10 px-2 py-1 text-[0.66rem] font-black ${tone.chip}`}
           >
-            USD
+            {currencyChipLabel}
           </span>
         </div>
         <div className="mt-5">
@@ -385,7 +388,7 @@ function SpikeCommodityCard({
       <div className="relative z-10 grid min-w-0 content-start gap-5 self-start">
         <CurrencyValue
           block
-          className="w-full max-w-full whitespace-nowrap text-[clamp(2.75rem,3.8vw,4.25rem)] font-black leading-[0.84] tracking-normal text-white data-[currency=EUR]:text-[clamp(2.45rem,3.45vw,3.85rem)] data-[currency=UAH]:text-[clamp(1.65rem,2.15vw,2.6rem)] [&_.currency-unit]:text-xs [&_.currency-unit]:text-white/45 xl:[&_.currency-unit]:text-sm"
+          className="w-full max-w-full whitespace-nowrap text-[clamp(2.75rem,3.8vw,4.25rem)] font-black leading-[0.84] tracking-normal text-white data-[currency=EUR]:text-[clamp(2.45rem,3.45vw,3.85rem)] data-[currency=UAH]:text-[clamp(1.65rem,2.15vw,2.6rem)]"
           fxRates={fxRates}
           locale={locale}
           maximumFractionDigits={{ EUR: 0, UAH: 0, USD: 0 }}
@@ -416,9 +419,7 @@ function SpikeCommodityCard({
         />
       </div>
 
-      <div
-        className={`relative z-10 mt-auto grid gap-3 border-t pt-5 opacity-75 transition-opacity duration-500 hover:opacity-100 ${tone.line}`}
-      >
+      <div className="relative z-10 mt-auto grid gap-3 pt-5 opacity-75 transition-opacity duration-500 hover:opacity-100">
         {(commodity.detailMetrics ?? []).map((metric) => (
           <div
             className="grid grid-cols-[1fr_auto] gap-5"
