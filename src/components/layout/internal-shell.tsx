@@ -17,11 +17,10 @@ const baseNavByRole = {
     { href: "/admin/daily-inputs", label: "Daily input" },
     { href: "/admin/respondents", label: "Respondents" },
     { href: "/admin/calculate", label: "Publish index" },
+    { href: "/admin/weekly-report", label: "Weekly Report" },
     { href: "/admin/embed", label: "Website embed" },
   ],
-  respondent: [
-    { href: "/respondent", label: "Survey form" },
-  ],
+  respondent: [{ href: "/respondent", label: "Survey form" }],
   member: [
     { href: "/member", label: "Member view" },
     { href: "/member", label: "Published indices" },
@@ -67,7 +66,10 @@ export function InternalShell({ children, user }: InternalShellProps) {
       >
         <div className="mx-auto flex max-w-[118rem] flex-col gap-4 px-6 py-4 lg:flex-row lg:items-center lg:justify-between lg:px-8">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Link className="flex w-fit items-center gap-3" href={`/${user.role}`}>
+            <Link
+              className="flex w-fit items-center gap-3"
+              href={`/${user.role}`}
+            >
               {SITE_CONFIG.logoPath ? (
                 <Image
                   alt={`${SITE_CONFIG.name} logo`}
@@ -140,7 +142,9 @@ export function InternalShell({ children, user }: InternalShellProps) {
           </p>
           <InternalNav isSpike={isSpike} items={navItems} />
         </aside>
-        <main className={isSpike ? "spike-internal-main" : undefined}>{children}</main>
+        <main className={isSpike ? "spike-internal-main" : undefined}>
+          {children}
+        </main>
       </div>
     </div>
   );
