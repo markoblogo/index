@@ -112,7 +112,7 @@ function AiSubscriptionBlock({ locale }: { locale: Locale }) {
 function RespondentBlock() {
   const pdfHref = "/files/spike-spot-index-respondents-presentation.pdf";
   const youtubeSrc =
-    "https://www.youtube.com/embed/LhJyA-cyqyE?autoplay=1&mute=1&loop=1&playlist=LhJyA-cyqyE&controls=0&playsinline=1&rel=0&modestbranding=1";
+    "https://www.youtube.com/embed/scZm2uFZdPQ?autoplay=1&mute=1&loop=1&playlist=scZm2uFZdPQ&controls=0&playsinline=1&rel=0&modestbranding=1";
 
   return (
     <section className="border-y border-white/10 bg-[#090909]">
