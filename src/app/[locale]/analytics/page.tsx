@@ -47,7 +47,7 @@ export default async function AnalyticsPage({
   const activeRespondentCount = await getActiveRespondentCountData();
   const history = await getAnalyticsHistory(activeRespondentCount);
   const snapshot = buildMarketSnapshot(history, locale, activeRespondentCount);
-  const tableRows = history.slice(-14).reverse();
+  const tableRows = getRecentPublishedRows(history, 3);
   const isSpike = getActiveIndexConfig().id === "spike-ua";
   const hasHistory = history.length > 0;
 
@@ -323,62 +323,85 @@ function PublishedValuesTable({
   locale: Locale;
   rows: AnalyticsPoint[];
 }) {
-  return (
-    <div className="min-w-0 overflow-hidden border border-black bg-white">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[860px] text-left">
-          <thead className="bg-uga-dark text-xs uppercase tracking-[0.14em] text-white/70">
-            <tr>
-              {copy.tableHeaders.map((header) => (
-                <th className="px-4 py-3 font-black" key={header}>
-                  {header}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-black">
-            {rows.map((row) => {
-              const commodity = getCommodity(row.commodityId);
+  const groups = groupRowsByDate(rows);
 
-              return (
-                <tr className="text-sm" key={`${row.date}-${row.commodityId}`}>
-                  <td className="px-4 py-3 text-black/60">{row.date}</td>
-                  <td className="px-4 py-3 font-black text-black">
-                    {commodity.name[locale]}
-                  </td>
-                  <td className="px-4 py-3 text-black/60">
-                    {SITE_CONFIG.defaultDeliveryBasis}
-                  </td>
-                  <td className="px-4 py-3 font-black text-black">
-                    <CurrencyValue
-                      compact
-                      fxRates={fxRates}
-                      locale={locale}
-                      officialLabel={copy.officialLabel}
-                      officialUsd={row.value}
-                    />
-                  </td>
-                  <td
-                    className={
-                      row.dayChange >= 0
-                        ? "px-4 py-3 font-black text-uga-green"
-                        : "px-4 py-3 font-black text-[color:var(--color-negative)]"
-                    }
-                  >
-                    {formatSigned(row.dayChange)} USD ·{" "}
-                    {formatSigned(row.percentChange)}%
-                  </td>
-                  <td className="px-4 py-3 text-black/60">{row.respondents}</td>
-                  <td className="px-4 py-3">
-                    <span className="rounded-full border border-black/25 px-2.5 py-1 text-xs font-black uppercase text-black/55">
-                      {copy.publishedLabel}
-                    </span>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+  return (
+    <div className="min-w-0 border border-black bg-white">
+      <div className="border-b border-black bg-uga-mist px-4 py-3 text-xs font-semibold leading-5 text-black/60">
+        {copy.historyPublicLimit}
+      </div>
+      <div className="divide-y divide-black">
+        {groups.map((group) => (
+          <details className="group" key={group.date}>
+            <summary className="grid cursor-pointer grid-cols-[1fr_auto] gap-4 px-4 py-4 text-left marker:hidden">
+              <span>
+                <span className="block text-sm font-black uppercase tracking-[0.12em] text-black">
+                  {formatShortDate(group.date, locale)}
+                </span>
+                <span className="mt-1 block text-xs font-semibold text-black/55">
+                  {group.rows.length} {copy.historyPositionsLabel}
+                </span>
+              </span>
+              <span className="self-center rounded-full border border-black px-3 py-1 text-xs font-black uppercase text-black transition group-open:bg-black group-open:text-white">
+                {copy.expandLabel}
+              </span>
+            </summary>
+            <div className="overflow-x-auto border-t border-black">
+              <table className="w-full min-w-[760px] text-left">
+                <thead className="bg-uga-dark text-xs uppercase tracking-[0.14em] text-white/70">
+                  <tr>
+                    {copy.tableHeaders.slice(1).map((header) => (
+                      <th className="px-4 py-3 font-black" key={header}>
+                        {header}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-black">
+                  {group.rows.map((row) => {
+                    const commodity = getCommodity(row.commodityId);
+
+                    return (
+                      <tr className="text-sm" key={`${row.date}-${row.commodityId}`}>
+                        <td className="px-4 py-3 font-black text-black">
+                          {commodity.name[locale]}
+                        </td>
+                        <td className="px-4 py-3 text-black/60">
+                          {SITE_CONFIG.defaultDeliveryBasis}
+                        </td>
+                        <td className="px-4 py-3 font-black text-black">
+                          <CurrencyValue
+                            compact
+                            fxRates={fxRates}
+                            locale={locale}
+                            officialLabel={copy.officialLabel}
+                            officialUsd={row.value}
+                          />
+                        </td>
+                        <td
+                          className={
+                            row.dayChange >= 0
+                              ? "px-4 py-3 font-black text-uga-green"
+                              : "px-4 py-3 font-black text-[color:var(--color-negative)]"
+                          }
+                        >
+                          {formatSigned(row.dayChange)} USD ·{" "}
+                          {formatSigned(row.percentChange)}%
+                        </td>
+                        <td className="px-4 py-3 text-black/60">{row.respondents}</td>
+                        <td className="px-4 py-3">
+                          <span className="rounded-full border border-black/25 px-2.5 py-1 text-xs font-black uppercase text-black/55">
+                            {copy.publishedLabel}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </details>
+        ))}
       </div>
     </div>
   );
@@ -417,6 +440,34 @@ async function getRealAnalyticsHistory(): Promise<AnalyticsPoint[]> {
         ? a.commodityId.localeCompare(b.commodityId)
         : a.date.localeCompare(b.date),
     );
+}
+
+function getRecentPublishedRows(history: AnalyticsPoint[], dayCount: number) {
+  const dates = [...new Set(history.map((row) => row.date))]
+    .sort((first, second) => second.localeCompare(first))
+    .slice(0, dayCount);
+  const dateSet = new Set(dates);
+
+  return history
+    .filter((row) => dateSet.has(row.date))
+    .sort((first, second) =>
+      first.date === second.date
+        ? first.commodityId.localeCompare(second.commodityId)
+        : second.date.localeCompare(first.date),
+    );
+}
+
+function groupRowsByDate(rows: AnalyticsPoint[]) {
+  const groups = new Map<string, AnalyticsPoint[]>();
+
+  for (const row of rows) {
+    groups.set(row.date, [...(groups.get(row.date) ?? []), row]);
+  }
+
+  return [...groups.entries()].map(([date, groupRows]) => ({
+    date,
+    rows: groupRows,
+  }));
 }
 
 function buildDemoAnalyticsHistory(activeRespondentCount: number): AnalyticsPoint[] {
@@ -656,6 +707,7 @@ function getAnalyticsCopy(locale: Locale) {
       currencyToggleLabel: "Валюта відображення",
       currentBasket: "поточна корзина",
       dateRangeFilter: "Період",
+      expandLabel: "розгорнути",
       filtersTitle: "Фільтри",
       fullPeriod: "Повний період",
       heroBody:
@@ -665,8 +717,11 @@ function getAnalyticsCopy(locale: Locale) {
       highestWeeklyGain: "Найбільше місячне зростання",
       historyActions: ["Повна історія", "Export CSV", "API access"],
       historyDescription:
-        "Останні опубліковані значення з базисом, зміною, кількістю респондентів і статусом публікації.",
+        "У відкритому блоці показані тільки останні три дні публікацій. Повна історія зберігається в системі для довгострокової аналітики, але не виводиться у публічну площину.",
       historyEyebrow: "Історія",
+      historyPositionsLabel: "позицій",
+      historyPublicLimit:
+        "Публічний перегляд обмежено останніми 3 днями. Кожен день згорнутий за замовчуванням.",
       historyTitle: "Історія опублікованих значень",
       largestWeeklyDecline: "Найбільше місячне зниження",
       last30Days: "Останні 30 днів",
@@ -782,6 +837,7 @@ function getAnalyticsCopy(locale: Locale) {
     currencyToggleLabel: "Display currency",
     currentBasket: "current basket",
     dateRangeFilter: "Date range",
+    expandLabel: "expand",
     filtersTitle: "Filters",
     fullPeriod: "Full period",
     heroBody:
@@ -791,8 +847,11 @@ function getAnalyticsCopy(locale: Locale) {
     highestWeeklyGain: "Highest monthly gain",
     historyActions: ["View full history", "Export CSV", "API access"],
     historyDescription:
-      "Recent published values with basis, change, respondent count and publication status.",
+      "The public block shows only the last three publication days. The full archive remains stored in the system for long-term analytics, but is not exposed publicly.",
     historyEyebrow: "History",
+    historyPositionsLabel: "positions",
+    historyPublicLimit:
+      "Public view is limited to the last 3 days. Each day is collapsed by default.",
     historyTitle: "Published values history",
     largestWeeklyDecline: "Largest monthly decline",
     last30Days: "Last 30 days",
