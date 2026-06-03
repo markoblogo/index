@@ -86,7 +86,11 @@ export default async function AnalyticsPage({
       </section>
 
       {aiBrief ? (
-        <AiMarketBriefSection brief={aiBrief} copy={copy.aiBrief} />
+        <AiMarketBriefSection
+          brief={aiBrief}
+          copy={copy.aiBrief}
+          locale={locale}
+        />
       ) : null}
 
       {hasHistory ? (
@@ -258,9 +262,11 @@ function AnalyticsPanel({
 function AiMarketBriefSection({
   brief,
   copy,
+  locale,
 }: {
   brief: PublicAiMarketBrief;
   copy: AnalyticsCopy["aiBrief"];
+  locale: Locale;
 }) {
   return (
     <section className="mx-auto max-w-7xl px-6 pb-10 lg:px-8">
@@ -277,30 +283,32 @@ function AiMarketBriefSection({
           </p>
           <div className="mt-5 flex flex-wrap gap-2 text-[0.68rem] font-black uppercase tracking-[0.12em]">
             <span className="rounded-full bg-[var(--spike-accent)] px-3 py-1 text-[#050505]">
-              AI-assisted
+              {copy.aiAssistedBadge}
             </span>
             <span className="rounded-full border border-white/18 px-3 py-1 text-white/58">
               {copy.generatedLabel}: {brief.generatedAt}
             </span>
             <span className="rounded-full border border-white/18 px-3 py-1 text-white/58">
-              hash {brief.inputDataHash}
+              {copy.confidenceLabel}:{" "}
+              {mapBriefConfidenceLabel(brief.confidence, locale)}
             </span>
             <span className="rounded-full border border-white/18 px-3 py-1 text-white/58">
-              {brief.model} · {brief.confidence}
-            </span>
-            <span className="rounded-full border border-white/18 px-3 py-1 text-white/58">
-              {brief.observability.status}
-              {brief.observability.totalTokens != null
-                ? ` · ${brief.observability.totalTokens} tokens`
-                : ""}
-              {brief.observability.estimatedCostUsd != null
-                ? ` · $${brief.observability.estimatedCostUsd.toFixed(4)} est.`
-                : ""}
+              {copy.officialUnchangedBadge}
             </span>
           </div>
         </div>
         <div className="grid gap-3 md:grid-cols-2">
-          {brief.blocks.map((block) => (
+          {brief.blocks[0] ? (
+            <article className="rounded-[1rem] border border-[var(--spike-accent)]/60 bg-[#f8f8f2] p-5 text-[#050505] md:col-span-2">
+              <h3 className="text-sm font-black uppercase tracking-[0.08em] text-[#050505]">
+                {brief.blocks[0].title}
+              </h3>
+              <p className="mt-3 text-sm font-semibold leading-6 text-black/68">
+                {brief.blocks[0].body}
+              </p>
+            </article>
+          ) : null}
+          {brief.blocks.slice(1, 3).map((block) => (
             <article
               className="rounded-[1rem] border border-white/10 bg-[#f8f8f2] p-4 text-[#050505]"
               key={block.title}
@@ -313,6 +321,16 @@ function AiMarketBriefSection({
               </p>
             </article>
           ))}
+          {brief.blocks[3] ? (
+            <article className="rounded-[1rem] border border-white/10 bg-[#f8f8f2] p-4 text-[#050505] md:col-span-2">
+              <h3 className="text-sm font-black uppercase tracking-[0.08em] text-[#050505]">
+                {brief.blocks[3].title}
+              </h3>
+              <p className="mt-3 text-sm font-semibold leading-6 text-black/64">
+                {brief.blocks[3].body}
+              </p>
+            </article>
+          ) : null}
           <p className="rounded-[1rem] border border-white/10 bg-black/45 p-4 text-xs font-semibold leading-5 text-white/58 md:col-span-2">
             {copy.disclaimer}
           </p>
@@ -795,6 +813,22 @@ function standardDeviation(values: number[]) {
 
 type AnalyticsCopy = ReturnType<typeof getAnalyticsCopy>;
 
+function mapBriefConfidenceLabel(confidence: string, locale: Locale) {
+  if (locale === "uk") {
+    return confidence === "limited"
+      ? "обмежена"
+      : confidence === "strong"
+        ? "висока"
+        : "нормальна";
+  }
+
+  return confidence === "limited"
+    ? "limited"
+    : confidence === "strong"
+      ? "strong"
+      : "normal";
+}
+
 function getAnalyticsCopy(locale: Locale) {
   const activeIndex = getActiveIndexConfig();
 
@@ -819,11 +853,13 @@ function getAnalyticsCopy(locale: Locale) {
       accessTitle: "Попередній доступ до аналітики",
       allCommodities: "Усі культури",
       aiBrief: {
+        aiAssistedBadge: "AI-assisted",
         cautionTitle: "Caution notes",
+        confidenceLabel: "Data confidence",
         coverageCaution: (count: number) =>
           `Покриття респондентів зараз ${count}. Такий brief корисний як пояснення опублікованих даних, але значення з обмеженим покриттям треба читати обережно.`,
         description:
-          "Короткий AI-assisted шар поверх опублікованих значень: рух цін, волатильність, спреди та покриття респондентів без зміни офіційного індексу.",
+          "Компактний AI-assisted шар над опублікованими значеннями, який не повторює індексну таблицю, а підсвічує головний сигнал дня, значущі рухи, зони нестабільності та short-term watch points.",
         disclaimer:
           "AI layer не розраховує і не коригує офіційні значення SPIKE SPOT INDEX. Він пояснює вже опубліковані дані та не є торговою рекомендацією.",
         eyebrow: "AI market intelligence",
@@ -834,6 +870,7 @@ function getAnalyticsCopy(locale: Locale) {
         noDataBody:
           "Після першої публікації індексу brief почне читати реальні published values і динаміку.",
         notAvailable: "n/a",
+        officialUnchangedBadge: "Official values unchanged by AI",
         snapshotBody: (positions: number, respondents: number) =>
           `Brief читає ${positions} опублікованих позицій та поточне покриття ${respondents} респондентів. Розрахунки індексу залишаються методологічними.`,
         snapshotTitle: "Market snapshot",
@@ -981,11 +1018,13 @@ function getAnalyticsCopy(locale: Locale) {
     accessTitle: "Analytics access preview",
     allCommodities: "All commodities",
     aiBrief: {
+      aiAssistedBadge: "AI-assisted",
       cautionTitle: "Caution notes",
+      confidenceLabel: "Data confidence",
       coverageCaution: (count: number) =>
         `Respondent coverage is currently ${count}. The brief is useful as an explanation of published data, but limited-coverage values should be read with caution.`,
       description:
-        "A compact AI-assisted layer above published values: price movement, volatility, spreads and respondent coverage without changing the official index.",
+        "A compact AI-assisted interpretation layer above published values. It does not repeat the index table and instead highlights the main signal, meaningful moves, stability risk and short-term watch points.",
       disclaimer:
         "The AI layer does not calculate or adjust official SPIKE SPOT INDEX values. It explains already published data and is not a trading recommendation.",
       eyebrow: "AI market intelligence",
@@ -996,6 +1035,7 @@ function getAnalyticsCopy(locale: Locale) {
       noDataBody:
         "After the first index publication, the brief will read real published values and movement history.",
       notAvailable: "n/a",
+      officialUnchangedBadge: "Official values unchanged by AI",
       snapshotBody: (positions: number, respondents: number) =>
         `The brief reads ${positions} published positions and current coverage from ${respondents} respondents. Index calculation remains methodology-driven.`,
       snapshotTitle: "Market snapshot",

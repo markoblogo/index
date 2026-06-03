@@ -23,6 +23,7 @@ export type PublicAiMarketBrief = {
   generatedAt: string;
   inputDataHash: string;
   model: string;
+  tradeDate: string;
   observability: {
     estimatedCostUsd: number | null;
     fallbackReason: string | null;
@@ -35,6 +36,15 @@ export type PublicAiMarketBrief = {
 type StoredBriefOutput = {
   blocks?: Array<{ body?: string; title?: string }>;
   confidence?: string;
+};
+
+type GeneratedBriefJson = {
+  cardComments?: StoredCardComment[];
+  dataConfidence?: string;
+  keyMovers?: string[] | string;
+  marketSignal?: string;
+  riskRead?: string;
+  watchNext?: string[] | string;
 };
 
 type StoredCardComment = {
@@ -82,9 +92,14 @@ export async function getPublishedAiMarketBrief({
     }
   }
 
-  return buildDeterministicAiMarketBrief(history, locale, activeRespondentCount, {
-    fallbackReason: "demo_or_missing_saved_brief",
-  });
+  return buildDeterministicAiMarketBrief(
+    history,
+    locale,
+    activeRespondentCount,
+    {
+      fallbackReason: "demo_or_missing_saved_brief",
+    },
+  );
 }
 
 export async function getLatestAiCardComments(locale: Locale) {
@@ -170,7 +185,11 @@ export async function generateAndStoreDailyAiMarketBrief({
   }
 
   if (!hasDatabaseUrl()) {
-    return { locale, skippedReason: "database_not_configured", status: "skipped" };
+    return {
+      locale,
+      skippedReason: "database_not_configured",
+      status: "skipped",
+    };
   }
 
   const activeRespondentCount = await getActiveRespondentCountData();
@@ -198,7 +217,12 @@ export async function generateAndStoreDailyAiMarketBrief({
   }
 
   const existing = await findStoredBrief(locale, tradeDate);
-  const input = buildBriefInput(history, locale, activeRespondentCount, tradeDate);
+  const input = buildBriefInput(
+    history,
+    locale,
+    activeRespondentCount,
+    tradeDate,
+  );
   const fallback = buildDeterministicAiMarketBrief(
     history,
     locale,
@@ -235,7 +259,13 @@ export async function generateAndStoreDailyAiMarketBrief({
       status: "fallback",
     });
 
-    return { date: tradeDate, id: row.id, inputDataHash: row.inputDataHash, locale, status: row.status };
+    return {
+      date: tradeDate,
+      id: row.id,
+      inputDataHash: row.inputDataHash,
+      locale,
+      status: row.status,
+    };
   }
 
   try {
@@ -291,9 +321,13 @@ export async function generateAndStoreDailyAiMarketBrief({
   }
 }
 
-export async function sendAiBriefTelegramSummary(date: string, locale: Locale = "uk") {
+export async function sendAiBriefTelegramSummary(
+  date: string,
+  locale: Locale = "uk",
+) {
   const botToken =
-    process.env.SPIKE_TELEGRAM_BOT_TOKEN ?? process.env.INDEX_TELEGRAM_BOT_TOKEN;
+    process.env.SPIKE_TELEGRAM_BOT_TOKEN ??
+    process.env.INDEX_TELEGRAM_BOT_TOKEN;
   const chatId =
     process.env.SPIKE_AI_TELEGRAM_CHAT_ID ??
     process.env.UGA_TELEGRAM_ADMIN_CHAT_ID ??
@@ -310,31 +344,20 @@ export async function sendAiBriefTelegramSummary(date: string, locale: Locale = 
   }
 
   const brief = mapStoredBrief(stored, locale);
-  const text = [
-    locale === "uk"
-      ? `AI Market Brief SPIKE SPOT INDEX за ${date}`
-      : `AI Market Brief SPIKE SPOT INDEX for ${date}`,
-    "",
-    ...brief.blocks.map((block) => `• ${block.title}: ${block.body}`),
-    "",
-    `Model: ${brief.model}`,
-    `Status: ${brief.observability.status}`,
-    `Tokens: ${brief.observability.totalTokens ?? "n/a"}`,
-    `Cost: ${
-      brief.observability.estimatedCostUsd == null
-        ? "n/a"
-        : `$${brief.observability.estimatedCostUsd.toFixed(6)} est.`
-    }`,
-  ].join("\n");
-  const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-    body: JSON.stringify({
-      chat_id: chatId,
-      disable_web_page_preview: true,
-      text,
-    }),
-    headers: { "Content-Type": "application/json" },
-    method: "POST",
-  });
+  const text = buildAiBriefTelegramSummaryText(brief, locale);
+  const response = await fetch(
+    `https://api.telegram.org/bot${botToken}/sendMessage`,
+    {
+      body: JSON.stringify({
+        chat_id: chatId,
+        disable_web_page_preview: true,
+        parse_mode: "HTML",
+        text,
+      }),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    },
+  );
 
   if (!response.ok) {
     return {
@@ -354,9 +377,10 @@ function buildBriefInput(
 ) {
   const latestRows = commodities
     .map((commodity) => {
-      const commodityHistory = getCommodityHistory(history, commodity.id).filter(
-        (point) => point.date <= tradeDate,
-      );
+      const commodityHistory = getCommodityHistory(
+        history,
+        commodity.id,
+      ).filter((point) => point.date <= tradeDate);
       const latest = commodityHistory.at(-1);
 
       if (!latest || latest.date !== tradeDate) {
@@ -365,8 +389,12 @@ function buildBriefInput(
 
       return {
         change1d: latest.dayChange,
-        change7d: roundOne(latest.value - getPointBack(commodityHistory, 8).value),
-        change30d: roundOne(latest.value - getPointBack(commodityHistory, 31).value),
+        change7d: roundOne(
+          latest.value - getPointBack(commodityHistory, 8).value,
+        ),
+        change30d: roundOne(
+          latest.value - getPointBack(commodityHistory, 31).value,
+        ),
         change90d: roundOne(latest.value - commodityHistory[0].value),
         code: commodity.code,
         commodityId: commodity.id,
@@ -386,10 +414,10 @@ function buildBriefInput(
     positions: latestRows,
     respondentCoverage: activeRespondentCount,
     requiredSections: [
-      "Market snapshot",
-      "Key movers",
-      "Volatility note",
-      "Coverage caution",
+      "Today's Market Signal",
+      "Key Movers",
+      "Risk / Stability Read",
+      "What to Watch Next",
     ],
   };
 
@@ -409,7 +437,7 @@ async function callOpenAiBrief(
       input: [
         {
           content:
-            "You generate concise market intelligence briefs for SPIKE SPOT INDEX, a Ukrainian agro commodity spot benchmark. Use only the provided data. Do not invent prices, respondent names, trades, causes, news, or forecasts. Return strict JSON only with keys: blocks, cardComments, confidence. blocks must be exactly four objects with title and body. cardComments must contain one short object per provided position with code and comment. The brief is not trading advice.",
+            "You generate concise market intelligence briefs for SPIKE SPOT INDEX, a Ukrainian agro commodity spot benchmark. Use only the provided data. Do not invent prices, respondent names, trades, causes, news, or forecasts. Do not restate the full index table. Do not list all prices unless a value is necessary to explain a signal. Do not present scenarios as forecasts. Do not give trading advice. Public outputs must not expose model, token, cost, or debug data. The brief must answer: 1) what is the main market signal today, 2) which movements are meaningful, 3) where instability or divergence is visible, 4) what should be watched in the next publication cycle. Return strict JSON only with keys: marketSignal, keyMovers, riskRead, watchNext, dataConfidence, cardComments. keyMovers and watchNext should contain 2-3 short items each. dataConfidence must be one of limited, normal, strong. cardComments must contain one short object per provided position with code and comment. The brief is not trading advice.",
           role: "system",
         },
         {
@@ -428,7 +456,9 @@ async function callOpenAiBrief(
   });
 
   if (!response.ok) {
-    throw new Error(`OpenAI brief generation failed: ${response.status} ${await response.text()}`);
+    throw new Error(
+      `OpenAI brief generation failed: ${response.status} ${await response.text()}`,
+    );
   }
 
   const payload = (await response.json()) as {
@@ -444,14 +474,15 @@ async function callOpenAiBrief(
     throw new Error("OpenAI brief generation returned empty text.");
   }
 
-  const parsed = parseBriefJson(content) as StoredBriefOutput & {
-    cardComments?: StoredCardComment[];
-  };
-  const blocks = normalizeBlocks(parsed.blocks);
+  const parsed = parseBriefJson(content) as GeneratedBriefJson;
+  const confidence = normalizeConfidence(parsed.dataConfidence);
+  const blocks = buildBlocksFromGeneratedJson(parsed, input.locale);
   const cardComments = normalizeCardComments(parsed.cardComments);
 
   if (blocks.length !== 4) {
-    throw new Error("OpenAI brief generation returned invalid block count.");
+    throw new Error(
+      "OpenAI brief generation returned invalid section payload.",
+    );
   }
 
   const promptTokens = payload.usage?.input_tokens ?? null;
@@ -461,7 +492,7 @@ async function callOpenAiBrief(
   return {
     blocks,
     cardComments,
-    confidence: String(parsed.confidence || "medium").trim() || "medium",
+    confidence,
     estimatedCostUsd: estimateCostUsd(promptTokens, completionTokens),
     model,
     promptTokens,
@@ -494,7 +525,10 @@ async function upsertBrief({
   const activeIndex = getActiveIndexConfig();
   const output = generated
     ? { blocks: generated.blocks, confidence: generated.confidence }
-    : { blocks: fallback?.blocks ?? [], confidence: fallback?.confidence ?? "fallback" };
+    : {
+        blocks: fallback?.blocks ?? [],
+        confidence: fallback?.confidence ?? "fallback",
+      };
   const cardComments = generated
     ? generated.cardComments
     : Object.entries(fallback?.cardComments ?? {}).map(([code, comment]) => ({
@@ -519,7 +553,9 @@ async function upsertBrief({
       confidence: output.confidence,
       error: error ?? null,
       estimatedCostUsd,
-      fallbackReason: generated ? null : fallback?.observability.fallbackReason ?? "fallback",
+      fallbackReason: generated
+        ? null
+        : (fallback?.observability.fallbackReason ?? "fallback"),
       generatedById: actorUserId ?? null,
       inputDataHash,
       inputJson: input as Prisma.InputJsonValue,
@@ -541,7 +577,9 @@ async function upsertBrief({
       confidence: output.confidence,
       error: error ?? null,
       estimatedCostUsd,
-      fallbackReason: generated ? null : fallback?.observability.fallbackReason ?? "fallback",
+      fallbackReason: generated
+        ? null
+        : (fallback?.observability.fallbackReason ?? "fallback"),
       generatedAt: new Date(),
       generatedById: actorUserId ?? null,
       inputDataHash,
@@ -633,7 +671,9 @@ async function ensureAiMarketBriefStorage() {
 }
 
 function mapStoredBrief(
-  row: Awaited<ReturnType<typeof findStoredBrief>> extends infer T ? NonNullable<T> : never,
+  row: Awaited<ReturnType<typeof findStoredBrief>> extends infer T
+    ? NonNullable<T>
+    : never,
   locale: Locale,
 ): PublicAiMarketBrief {
   const output = row.outputJson as StoredBriefOutput | null;
@@ -641,10 +681,14 @@ function mapStoredBrief(
   return {
     blocks: normalizeBlocks(output?.blocks),
     cardComments: mapCardComments(row.cardCommentsJson, locale),
-    confidence: row.confidence ?? output?.confidence ?? "medium",
-    generatedAt: formatShortDate(row.tradeDate.toISOString().slice(0, 10), locale),
+    confidence: normalizeConfidence(row.confidence ?? output?.confidence),
+    generatedAt: formatShortDate(
+      row.tradeDate.toISOString().slice(0, 10),
+      locale,
+    ),
     inputDataHash: row.inputDataHash,
     model: row.model,
+    tradeDate: row.tradeDate.toISOString().slice(0, 10),
     observability: {
       estimatedCostUsd: row.estimatedCostUsd?.toNumber() ?? null,
       fallbackReason: row.fallbackReason,
@@ -675,7 +719,9 @@ function buildDeterministicAiMarketBrief(
   const volatilityRows = latestRows.map((row) => {
     const commodityHistory = getCommodityHistory(history, row.commodityId);
     return {
-      commodity: commodities.find((commodity) => commodity.id === row.commodityId) ?? commodities[0],
+      commodity:
+        commodities.find((commodity) => commodity.id === row.commodityId) ??
+        commodities[0],
       volatility: standardDeviation(
         commodityHistory.slice(-30).map((point) => point.percentChange),
       ),
@@ -689,52 +735,56 @@ function buildDeterministicAiMarketBrief(
     ? commodities.find((commodity) => commodity.id === keyMover.commodityId)
     : null;
   const copy = getFallbackCopy(locale);
+  const confidence =
+    activeRespondentCount < 5
+      ? "limited"
+      : activeRespondentCount >= 7
+        ? "strong"
+        : "normal";
 
   return {
     blocks: [
       {
-        body: latestDate
-          ? copy.snapshotBody(latestRows.length, activeRespondentCount)
-          : copy.noDataBody,
-        title: copy.snapshotTitle,
-      },
-      {
         body:
           keyMover && keyMoverCommodity
-            ? copy.moversBody(
+            ? copy.signalBody(
                 keyMoverCommodity.name[locale],
                 formatSigned(keyMover.dayChange),
               )
             : copy.noDataBody,
+        title: copy.signalTitle,
+      },
+      {
+        body: buildFallbackKeyMoversBody(latestRows, locale, copy),
         title: copy.moversTitle,
       },
       {
-        body: copy.volatilityBody(
+        body: copy.riskBody(
           mostVolatile.commodity.name[locale],
           mostVolatile.volatility.toFixed(2),
         ),
-        title: copy.volatilityTitle,
+        title: copy.riskTitle,
       },
       {
-        body:
-          activeRespondentCount < 5
-            ? copy.coverageCaution(activeRespondentCount)
-            : copy.standardCaution(activeRespondentCount),
-        title: copy.cautionTitle,
+        body: buildFallbackWatchNextBody(latestRows, locale, copy),
+        title: copy.watchTitle,
       },
     ],
     cardComments: Object.fromEntries(
       latestRows.map((row) => {
         const commodity =
-          commodities.find((item) => item.id === row.commodityId) ?? commodities[0];
+          commodities.find((item) => item.id === row.commodityId) ??
+          commodities[0];
         return [
           commodity.code,
           copy.cardComment(commodity.name[locale], formatSigned(row.dayChange)),
         ];
       }),
     ),
-    confidence: "fallback",
-    generatedAt: latestDate ? formatShortDate(latestDate, locale) : copy.notAvailable,
+    confidence,
+    generatedAt: latestDate
+      ? formatShortDate(latestDate, locale)
+      : copy.notAvailable,
     inputDataHash: buildShortHash(
       JSON.stringify({
         activeRespondentCount,
@@ -747,6 +797,7 @@ function buildDeterministicAiMarketBrief(
       }),
     ),
     model: "deterministic-fallback",
+    tradeDate: latestDate ?? todayKyivDate(),
     observability: {
       estimatedCostUsd: 0,
       fallbackReason: options.fallbackReason ?? "deterministic_fallback",
@@ -777,7 +828,8 @@ async function getRealAnalyticsHistory(): Promise<AiAnalyticsPoint[]> {
 }
 
 function mapCardComments(value: unknown, locale: Locale) {
-  const fallback = locale === "uk" ? "AI-коментар очікує публікації." : "AI note pending.";
+  const fallback =
+    locale === "uk" ? "AI-коментар очікує публікації." : "AI note pending.";
 
   if (!Array.isArray(value)) {
     return {};
@@ -815,13 +867,18 @@ function normalizeCardComments(comments: StoredCardComment[] | undefined) {
     .slice(0, commodities.length);
 }
 
-function estimateCostUsd(promptTokens: number | null, completionTokens: number | null) {
+function estimateCostUsd(
+  promptTokens: number | null,
+  completionTokens: number | null,
+) {
   if (promptTokens == null && completionTokens == null) {
     return null;
   }
 
   const inputPerMillion = Number(process.env.SPIKE_AI_INPUT_USD_PER_1M ?? 0.4);
-  const outputPerMillion = Number(process.env.SPIKE_AI_OUTPUT_USD_PER_1M ?? 1.6);
+  const outputPerMillion = Number(
+    process.env.SPIKE_AI_OUTPUT_USD_PER_1M ?? 1.6,
+  );
 
   return (
     ((promptTokens ?? 0) / 1_000_000) * inputPerMillion +
@@ -872,23 +929,34 @@ function parseBriefJson(content: string) {
   return JSON.parse(fenced?.[1] || trimmed);
 }
 
-function getCommodityHistory(history: AiAnalyticsPoint[], commodityId: CommodityId) {
+function getCommodityHistory(
+  history: AiAnalyticsPoint[],
+  commodityId: CommodityId,
+) {
   return history.filter((point) => point.commodityId === commodityId);
 }
 
 function getPointBack(history: AiAnalyticsPoint[], countFromEnd: number) {
-  return history.at(-countFromEnd) ?? history[0] ?? {
-    commodityId: "corn" as CommodityId,
-    date: "",
-    dayChange: 0,
-    percentChange: 0,
-    respondents: 0,
-    value: 0,
-  };
+  return (
+    history.at(-countFromEnd) ??
+    history[0] ?? {
+      commodityId: "corn" as CommodityId,
+      date: "",
+      dayChange: 0,
+      percentChange: 0,
+      respondents: 0,
+      value: 0,
+    }
+  );
 }
 
 function getLatestHistoryDate(history: AiAnalyticsPoint[]) {
-  return history.map((row) => row.date).sort().at(-1) ?? null;
+  return (
+    history
+      .map((row) => row.date)
+      .sort()
+      .at(-1) ?? null
+  );
 }
 
 function revalidateAiBriefViews() {
@@ -916,7 +984,8 @@ function standardDeviation(values: number[]) {
 
   const average = values.reduce((sum, value) => sum + value, 0) / values.length;
   const variance =
-    values.reduce((sum, value) => sum + (value - average) ** 2, 0) / values.length;
+    values.reduce((sum, value) => sum + (value - average) ** 2, 0) /
+    values.length;
 
   return Math.sqrt(variance);
 }
@@ -949,48 +1018,267 @@ function dateToUtcDate(date: string) {
   return new Date(`${date}T00:00:00.000Z`);
 }
 
+function buildBlocksFromGeneratedJson(
+  payload: GeneratedBriefJson,
+  locale: Locale,
+) {
+  const titles =
+    locale === "uk"
+      ? {
+          keyMovers: "Що рухалося найсильніше",
+          marketSignal: "Головний сигнал дня",
+          riskRead: "Стійкість / ризик",
+          watchNext: "На що дивитися далі",
+        }
+      : {
+          keyMovers: "Key Movers",
+          marketSignal: "Today's Market Signal",
+          riskRead: "Risk / Stability Read",
+          watchNext: "What to Watch Next",
+        };
+
+  return normalizeBlocks([
+    {
+      body: String(payload.marketSignal || "").trim(),
+      title: titles.marketSignal,
+    },
+    {
+      body: joinBulletLikeBody(payload.keyMovers),
+      title: titles.keyMovers,
+    },
+    {
+      body: String(payload.riskRead || "").trim(),
+      title: titles.riskRead,
+    },
+    {
+      body: joinBulletLikeBody(payload.watchNext),
+      title: titles.watchNext,
+    },
+  ]);
+}
+
+function joinBulletLikeBody(value: string[] | string | undefined) {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => String(item || "").trim())
+      .filter(Boolean)
+      .slice(0, 3)
+      .join(" ");
+  }
+
+  return String(value || "").trim();
+}
+
+function normalizeConfidence(value: unknown) {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
+
+  if (
+    normalized === "limited" ||
+    normalized === "normal" ||
+    normalized === "strong"
+  ) {
+    return normalized;
+  }
+
+  if (normalized === "low") {
+    return "limited";
+  }
+
+  if (normalized === "high") {
+    return "strong";
+  }
+
+  return "normal";
+}
+
+function buildFallbackKeyMoversBody(
+  latestRows: AiAnalyticsPoint[],
+  locale: Locale,
+  copy: ReturnType<typeof getFallbackCopy>,
+) {
+  const ranked = [...latestRows]
+    .sort((a, b) => Math.abs(b.dayChange) - Math.abs(a.dayChange))
+    .slice(0, 2);
+
+  if (ranked.length === 0) {
+    return copy.noDataBody;
+  }
+
+  return ranked
+    .map((row) => {
+      const commodity =
+        commodities.find((item) => item.id === row.commodityId) ??
+        commodities[0];
+      return copy.moverLine(
+        commodity.name[locale],
+        formatSigned(row.dayChange),
+      );
+    })
+    .join(" ");
+}
+
+function buildFallbackWatchNextBody(
+  latestRows: AiAnalyticsPoint[],
+  locale: Locale,
+  copy: ReturnType<typeof getFallbackCopy>,
+) {
+  const positive =
+    [...latestRows].sort((a, b) => b.dayChange - a.dayChange)[0] ?? null;
+  const negative =
+    [...latestRows].sort((a, b) => a.dayChange - b.dayChange)[0] ?? null;
+
+  if (!positive && !negative) {
+    return copy.noDataBody;
+  }
+
+  const focusNames = [positive, negative]
+    .filter(
+      (row, index, array): row is AiAnalyticsPoint =>
+        Boolean(row) && array.indexOf(row) === index,
+    )
+    .map((row) => {
+      const commodity =
+        commodities.find((item) => item.id === row.commodityId) ??
+        commodities[0];
+      return commodity.name[locale];
+    });
+
+  return copy.watchBody(focusNames);
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+function formatTelegramDate(date: string, locale: Locale) {
+  return new Intl.DateTimeFormat(locale === "uk" ? "uk-UA" : "en-US", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(new Date(`${date}T00:00:00Z`));
+}
+
+export function buildAiBriefTelegramSummaryText(
+  brief: PublicAiMarketBrief,
+  locale: Locale,
+) {
+  const signal = brief.blocks[0];
+  const movers = brief.blocks[1];
+  const risk = brief.blocks[2];
+  const watch = brief.blocks[3];
+  const confidence =
+    locale === "uk"
+      ? mapConfidenceLabel(brief.confidence, locale)
+      : `Data confidence: ${mapConfidenceLabel(brief.confidence, locale)}`;
+
+  if (locale === "uk") {
+    return [
+      "<b>🌾 AI Market Brief · SPIKE SPOT INDEX</b>",
+      `<b>📅 ${escapeHtml(formatTelegramDate(brief.tradeDate, locale))}</b>`,
+      "",
+      `<b>🔎 ${escapeHtml(signal?.title ?? "Головний сигнал дня")}</b>`,
+      escapeHtml(signal?.body ?? ""),
+      "",
+      `<b>📈 ${escapeHtml(movers?.title ?? "Що рухалося найсильніше")}</b>`,
+      escapeHtml(movers?.body ?? ""),
+      "",
+      `<b>⚖️ ${escapeHtml(risk?.title ?? "Стійкість / ризик")}</b>`,
+      escapeHtml(risk?.body ?? ""),
+      "",
+      `<b>👀 ${escapeHtml(watch?.title ?? "На що дивитися далі")}</b>`,
+      escapeHtml(watch?.body ?? ""),
+      "",
+      `<i>${escapeHtml(confidence)}</i>`,
+      "<i>AI-assisted brief based on published SPIKE SPOT INDEX data. Not a trading recommendation.</i>",
+    ].join("\n");
+  }
+
+  return [
+    "<b>🌾 AI Market Brief · SPIKE SPOT INDEX</b>",
+    `<b>📅 ${escapeHtml(formatTelegramDate(brief.tradeDate, locale))}</b>`,
+    "",
+    `<b>🔎 ${escapeHtml(signal?.title ?? "Today's Market Signal")}</b>`,
+    escapeHtml(signal?.body ?? ""),
+    "",
+    `<b>📈 ${escapeHtml(movers?.title ?? "Key Movers")}</b>`,
+    escapeHtml(movers?.body ?? ""),
+    "",
+    `<b>⚖️ ${escapeHtml(risk?.title ?? "Risk / Stability Read")}</b>`,
+    escapeHtml(risk?.body ?? ""),
+    "",
+    `<b>👀 ${escapeHtml(watch?.title ?? "What to Watch Next")}</b>`,
+    escapeHtml(watch?.body ?? ""),
+    "",
+    `<i>${escapeHtml(confidence)}</i>`,
+    "<i>AI-assisted brief based on published SPIKE SPOT INDEX data. Not a trading recommendation.</i>",
+  ].join("\n");
+}
+
 function getFallbackCopy(locale: Locale) {
   return locale === "uk"
     ? {
         cardComment: (commodity: string, change: string) =>
           `${commodity}: денний рух ${change} USD/t. AI-коментар базується на опублікованих значеннях.`,
-        cautionTitle: "Обмеження",
-        coverageCaution: (count: number) =>
-          `Покриття респондентів: ${count}. AI summary пояснює validated data, але значення з обмеженим покриттям слід читати обережно.`,
-        moversBody: (commodity: string, change: string) =>
-          `Найпомітніший денний рух зараз ${commodity}: ${change} USD/t. Це аналітичний сигнал, а не рекомендація купівлі чи продажу.`,
-        moversTitle: "Ключовий рух",
+        moverLine: (commodity: string, change: string) =>
+          `${commodity} показує один із найпомітніших короткострокових рухів: ${change} USD/t.`,
+        moversTitle: "Що рухалося найсильніше",
         noDataBody:
           "Після першої публікації індексу brief почне читати реальні published values і динаміку.",
         notAvailable: "n/a",
-        snapshotBody: (positions: number, respondents: number) =>
-          `Brief читає ${positions} published positions і поточне покриття ${respondents} респондентів. Розрахунок індексу залишається методологічним.`,
-        snapshotTitle: "Market snapshot",
-        standardCaution: (count: number) =>
-          `Покриття ${count} респондентів підтримує базове читання індексу, але AI layer залишається лише поясненням опублікованих даних.`,
-        volatilityBody: (commodity: string, volatility: string) =>
-          `${commodity} має найвищу 30-денну волатильність у вибірці: ${volatility}%.`,
-        volatilityTitle: "Волатильність",
+        riskBody: (commodity: string, volatility: string) =>
+          `${commodity} зараз має найвищий сигнал нестабільності у вибірці, тоді як інші позиції виглядають більш стримано. Орієнтовна 30-денна волатильність становить ${volatility}%.`,
+        riskTitle: "Стійкість / ризик",
+        signalBody: (commodity: string, change: string) =>
+          `${commodity} формує головний сигнал дня з рухом ${change} USD/t, але цей імпульс поки виглядає більш локальним, ніж загальноринковим.`,
+        signalTitle: "Головний сигнал дня",
+        watchBody: (commoditiesToWatch: string[]) =>
+          commoditiesToWatch.length > 0
+            ? `У наступній публікації варто стежити, чи підтвердиться рух у позиціях ${commoditiesToWatch.join(", ")} і чи пошириться сигнал ширше по ринку.`
+            : "Наступна публікація покаже, чи підтвердиться поточний рух і чи сформується ширший ринковий сигнал.",
+        watchTitle: "На що дивитися далі",
       }
     : {
         cardComment: (commodity: string, change: string) =>
           `${commodity}: daily move ${change} USD/t. AI note is based on published values.`,
-        cautionTitle: "Limitations",
-        coverageCaution: (count: number) =>
-          `Respondent coverage is currently ${count}. The brief is useful as an explanation of published data, but limited-coverage values should be read with caution.`,
-        moversBody: (commodity: string, change: string) =>
-          `The most visible daily move is currently ${commodity}: ${change} USD/t. This is an analytical signal, not a buy or sell recommendation.`,
-        moversTitle: "Key mover",
+        moverLine: (commodity: string, change: string) =>
+          `${commodity} is one of the most visible short-term movers at ${change} USD/t.`,
+        moversTitle: "Key Movers",
         noDataBody:
           "After the first index publication, the brief will read real published values and movement history.",
         notAvailable: "n/a",
-        snapshotBody: (positions: number, respondents: number) =>
-          `The brief reads ${positions} published positions and current coverage from ${respondents} respondents. Index calculation remains methodology-driven.`,
-        snapshotTitle: "Market snapshot",
-        standardCaution: (count: number) =>
-          `Coverage from ${count} respondents supports the baseline index reading, while the AI layer remains explanatory only.`,
-        volatilityBody: (commodity: string, volatility: string) =>
-          `${commodity} shows the highest 30-day volatility in the current set: ${volatility}%.`,
-        volatilityTitle: "Volatility",
+        riskBody: (commodity: string, volatility: string) =>
+          `${commodity} currently carries the clearest instability signal in the sample, while the rest of the basket looks more restrained. Indicative 30-day volatility is ${volatility}%.`,
+        riskTitle: "Risk / Stability Read",
+        signalBody: (commodity: string, change: string) =>
+          `${commodity} defines the main signal of the day with a move of ${change} USD/t, although the impulse still looks more isolated than market-wide.`,
+        signalTitle: "Today's Market Signal",
+        watchBody: (commoditiesToWatch: string[]) =>
+          commoditiesToWatch.length > 0
+            ? `Watch whether movement in ${commoditiesToWatch.join(", ")} is confirmed in the next publication cycle and whether the signal broadens across the market.`
+            : "Watch whether the current move is confirmed in the next publication cycle and broadens across the market.",
+        watchTitle: "What to Watch Next",
       };
+}
+
+export function mapConfidenceLabel(confidence: string, locale: Locale) {
+  const value = normalizeConfidence(confidence);
+
+  if (locale === "uk") {
+    return value === "limited"
+      ? "Data confidence: обмежена"
+      : value === "strong"
+        ? "Data confidence: висока"
+        : "Data confidence: нормальна";
+  }
+
+  return value === "limited"
+    ? "limited"
+    : value === "strong"
+      ? "strong"
+      : "normal";
 }
