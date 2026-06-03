@@ -34,7 +34,7 @@ export default async function SubscriptionPage({
         </div>
       </section>
 
-      {isSpike && locale === "uk" ? <RespondentBlock /> : null}
+      {isSpike ? <RespondentBlock locale={locale} /> : null}
 
       <section className="mx-auto max-w-7xl px-6 py-10 lg:px-8">
         <AccessNotice copy={copy} />
@@ -109,24 +109,46 @@ function AiSubscriptionBlock({ locale }: { locale: Locale }) {
   );
 }
 
-function RespondentBlock() {
-  const pdfHref = "/files/spike-spot-index-respondents-presentation.pdf";
-  const youtubeSrc =
-    "https://www.youtube.com/embed/scZm2uFZdPQ?autoplay=1&mute=1&loop=1&playlist=scZm2uFZdPQ&controls=0&playsinline=1&rel=0&modestbranding=1";
+function RespondentBlock({ locale }: { locale: Locale }) {
+  const isUk = locale === "uk";
+  const pdfHref = isUk
+    ? "/files/spike-spot-index-respondents-presentation.pdf"
+    : "/files/spike-spot-index-global-partner-deck-2026.pdf";
+  const youtubeSrc = isUk
+    ? "https://www.youtube.com/embed/scZm2uFZdPQ?autoplay=1&mute=1&loop=1&playlist=scZm2uFZdPQ&controls=0&playsinline=1&rel=0&modestbranding=1"
+    : "https://www.youtube.com/embed/T_SHKLwRZRA?autoplay=1&mute=1&loop=1&playlist=T_SHKLwRZRA&controls=0&playsinline=1&rel=0&modestbranding=1";
+  const copy = isUk
+    ? {
+        eyebrow: "Співпраця",
+        subtitle:
+          "Допоможіть формувати benchmark українського аграрного ринку на основі реальних щоденних цін.",
+        title: "Стати респондентом Spike Spot Index",
+        download: "Завантажити презентацію pdf",
+        watch: "Передивитись презентацію",
+        videoTitle: "Spike Spot Index Respondents Presentation",
+      }
+    : {
+        eyebrow: "Cooperation",
+        subtitle:
+          "Help shape a benchmark for the Ukrainian agricultural market based on real daily prices.",
+        title: "Become a Spike Spot Index respondent",
+        download: "Download presentation pdf",
+        watch: "View presentation",
+        videoTitle: "Spike Spot Index Global Partner Deck",
+      };
 
   return (
     <section className="border-y border-white/10 bg-[#090909]">
       <div className="mx-auto max-w-[1900px] grid gap-6 px-6 py-10 lg:grid-cols-[1fr_1.2fr] lg:px-8 lg:py-14">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.24em] text-[var(--spike-accent)]">
-            Співпраця
+            {copy.eyebrow}
           </p>
           <h2 className="mt-4 text-3xl font-black uppercase leading-tight tracking-normal text-white">
-            Стати респондентом Spike Spot Index
+            {copy.title}
           </h2>
           <p className="mt-4 max-w-2xl text-sm leading-6 text-white/68">
-            Допоможіть формувати benchmark українського аграрного ринку на
-            основі реальних щоденних цін.
+            {copy.subtitle}
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <a
@@ -134,7 +156,7 @@ function RespondentBlock() {
               download
               href={pdfHref}
             >
-              Завантажити презентацію pdf
+              {copy.download}
             </a>
             <a
               className="inline-flex rounded-full border border-[#f8f8f2]/45 bg-[#050505] px-5 py-2.5 text-sm font-black uppercase tracking-[0.12em] text-[#f8f8f2] transition hover:border-[var(--spike-accent)] hover:bg-[var(--spike-accent)] hover:text-[#050505]"
@@ -142,7 +164,7 @@ function RespondentBlock() {
               rel="noopener noreferrer"
               target="_blank"
             >
-              Передивитись презентацію
+              {copy.watch}
             </a>
           </div>
         </div>
@@ -150,7 +172,7 @@ function RespondentBlock() {
           <iframe
             className="aspect-video w-full"
             src={youtubeSrc}
-            title="Spike Spot Index Respondents Presentation"
+            title={copy.videoTitle}
             allowFullScreen
             loading="lazy"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
