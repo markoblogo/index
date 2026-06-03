@@ -130,8 +130,8 @@ function RespondentBlock({ locale }: { locale: Locale }) {
     : {
         eyebrow: "Cooperation",
         subtitle:
-          "Help shape a benchmark for the Ukrainian agricultural market based on real daily prices.",
-        title: "Become a Spike Spot Index respondent",
+          "A presentation for potential international partners, clients, investors and franchise partners interested in building local benchmark indices.",
+        title: "Become a Spike Spot Index partner",
         download: "Download presentation pdf",
         watch: "View presentation",
         videoTitle: "Spike Spot Index Global Partner Deck",
