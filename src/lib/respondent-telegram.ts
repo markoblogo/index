@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { db, hasDatabaseUrl } from "@/lib/db";
+import { getActiveIndexConfig } from "@/lib/index-platform";
 
 type TelegramTrigger = "manual" | "scheduled" | "smoke";
 
@@ -31,7 +32,7 @@ export async function sendRespondentTelegramNotifications({
     return { delivered: [], skippedReason: "database_not_configured" };
   }
 
-  const token = process.env.SPIKE_TELEGRAM_BOT_TOKEN;
+  const token = getTelegramBotToken();
 
   if (!token) {
     return { delivered: [], skippedReason: "telegram_bot_token_missing" };
@@ -76,7 +77,7 @@ export async function sendRespondentTelegramSubmissionConfirmation({
     return { delivered: [], skippedReason: "database_not_configured" };
   }
 
-  const token = process.env.SPIKE_TELEGRAM_BOT_TOKEN;
+  const token = getTelegramBotToken();
 
   if (!token) {
     return { delivered: [], skippedReason: "telegram_bot_token_missing" };
@@ -185,7 +186,7 @@ async function getTelegramRecipients(
 }
 
 async function getSmokeRecipients(): Promise<TelegramRecipient[]> {
-  const chatId = process.env.SPIKE_TELEGRAM_SMOKE_CHAT_ID;
+  const chatId = getTelegramSmokeChatId();
 
   if (!chatId) {
     return [];
@@ -349,13 +350,14 @@ export function buildTelegramSubmissionConfirmationText({
   locale: "uk" | "en";
   summary: Array<{ name: string; price: number }>;
 }) {
+  const indexName = getActiveIndexConfig().name;
   const values = summary
     .map((item) => `• ${escapeTelegramHtml(item.name)} — ${formatTelegramPrice(item.price)} USD/t`)
     .join("\n");
 
   if (locale === "en") {
     return [
-      "Thank you. Your SPIKE SPOT INDEX data has been accepted by the service and recorded in the daily collection.",
+      `Thank you. Your ${indexName} data has been accepted by the service and recorded in the daily collection.`,
       "",
       `Date: ${escapeTelegramHtml(date)}`,
       "",
@@ -367,7 +369,7 @@ export function buildTelegramSubmissionConfirmationText({
   }
 
   return [
-    "Дякуємо. Ваші дані для SPIKE SPOT INDEX прийнято сервісом і зафіксовано у щоденному зборі.",
+    `Дякуємо. Ваші дані для ${indexName} прийнято сервісом і зафіксовано у щоденному зборі.`,
     "",
     `Дата: ${escapeTelegramHtml(date)}`,
     "",
@@ -401,23 +403,25 @@ function getTelegramText(
   recipient: TelegramRecipient,
   reminderLevel: TelegramReminderLevel,
 ) {
+  const indexName = getActiveIndexConfig().name;
+
   if (recipient.locale === "en") {
     if (reminderLevel === "reminder_17") {
-      return `Reminder: please submit today's SPIKE SPOT INDEX prices for ${recipient.companyName}.`;
+      return `Reminder: please submit today's ${indexName} prices for ${recipient.companyName}.`;
     }
     if (reminderLevel === "final_18") {
       return `Final reminder: please submit today's prices now, otherwise they may not be included in today's index calculation.`;
     }
-    return `Please submit today's SPIKE SPOT INDEX prices for ${recipient.companyName}.`;
+    return `Please submit today's ${indexName} prices for ${recipient.companyName}.`;
   }
 
   if (reminderLevel === "reminder_17") {
-    return `Нагадуємо: будь ласка, внесіть сьогоднішні ціни для SPIKE SPOT INDEX (${recipient.companyName}).`;
+    return `Нагадуємо: будь ласка, внесіть сьогоднішні ціни для ${indexName} (${recipient.companyName}).`;
   }
   if (reminderLevel === "final_18") {
     return "Фінальне нагадування: внесіть ціни зараз, інакше вони можуть не потрапити до сьогоднішнього розрахунку індексу.";
   }
-  return `Будь ласка, внесіть сьогоднішні ціни для SPIKE SPOT INDEX (${recipient.companyName}).`;
+  return `Будь ласка, внесіть сьогоднішні ціни для ${indexName} (${recipient.companyName}).`;
 }
 
 function getButtonLabel(locale: "uk" | "en") {
@@ -448,4 +452,33 @@ function absoluteUrl(pathOrUrl: string) {
     "http://localhost:3000";
 
   return `${siteUrl}${pathOrUrl.startsWith("/") ? "" : "/"}${pathOrUrl}`;
+}
+
+function getTelegramBotToken() {
+  const activeIndex = getActiveIndexConfig();
+
+  if (activeIndex.id === "uga-ua") {
+    return process.env.UGA_TELEGRAM_BOT_TOKEN ?? process.env.INDEX_TELEGRAM_BOT_TOKEN;
+  }
+
+  return (
+    process.env.SPIKE_TELEGRAM_BOT_TOKEN ??
+    process.env.INDEX_TELEGRAM_BOT_TOKEN
+  );
+}
+
+function getTelegramSmokeChatId() {
+  const activeIndex = getActiveIndexConfig();
+
+  if (activeIndex.id === "uga-ua") {
+    return (
+      process.env.UGA_TELEGRAM_ADMIN_CHAT_ID ??
+      process.env.INDEX_TELEGRAM_SMOKE_CHAT_ID
+    );
+  }
+
+  return (
+    process.env.SPIKE_TELEGRAM_SMOKE_CHAT_ID ??
+    process.env.INDEX_TELEGRAM_SMOKE_CHAT_ID
+  );
 }

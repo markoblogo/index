@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (process.env.UGA_SPIKE_DEMO_SYNC_ENABLED === "disabled") {
+  if (process.env.UGA_SPIKE_DEMO_SYNC_ENABLED !== "enabled") {
     return NextResponse.json({
       copied: 0,
       skippedReason: "uga_spike_demo_sync_disabled",

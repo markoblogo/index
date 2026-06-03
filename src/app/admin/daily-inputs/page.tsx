@@ -273,7 +273,7 @@ function MatrixCell({
           type="hidden"
           value={cell.status}
         />
-        {showSpikeComparison ? (
+        {showSpikeComparison && cell.spikeIndicative !== null ? (
           <dl className="grid gap-1 text-xs text-black/55">
             <div className="flex justify-between gap-2">
               <dt>Benchmark</dt>

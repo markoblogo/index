@@ -78,11 +78,8 @@ export default async function AdminRespondentsPage() {
         </section>
       </div>
 
-      {isSpike ? (
-        <TelegramNotificationSettings />
-      ) : (
-        <SurveyNotificationSettings schedule={emailSchedule} />
-      )}
+      <TelegramNotificationSettings />
+      {!isSpike ? <SurveyNotificationSettings schedule={emailSchedule} /> : null}
     </section>
   );
 }
@@ -224,8 +221,10 @@ function SurveyNotificationSettings({
 }
 
 function TelegramNotificationSettings() {
+  const isSpike = SITE_CONFIG.tenantId === "spike-ua";
+  const botLabel = isSpike ? "@spike_spot_bot" : "@uga_index_bot";
   const telegramTemplate = [
-    "Будь ласка, внесіть сьогоднішні ціни для SPIKE SPOT INDEX ({{companyName}}).",
+    `Будь ласка, внесіть сьогоднішні ціни для ${SITE_CONFIG.name} ({{companyName}}).`,
     "Кнопка відкриває персональну форму респондента у Telegram WebApp.",
     "Фінальне нагадування о 18:00: якщо дані не внесені зараз, вони можуть не потрапити до сьогоднішнього розрахунку індексу.",
   ].join("\n\n");
@@ -241,7 +240,7 @@ function TelegramNotificationSettings() {
             Telegram respondent workflow
           </h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-black/65">
-            SPIKE SPOT INDEX uses Telegram as the main daily respondent channel.
+            {SITE_CONFIG.name} uses Telegram as the main daily respondent channel.
             The bot sends a Ukrainian request with a secure personal WebApp form;
             the site form remains available as a reserve input route.
           </p>
@@ -260,12 +259,12 @@ function TelegramNotificationSettings() {
             <ReadOnlyField label="Timezone" value="Europe/Kyiv" />
           </div>
           <div className="grid gap-3 lg:grid-cols-3">
-            <ReadOnlyField label="Bot" value="@spike_spot_bot" />
+            <ReadOnlyField label="Bot" value={botLabel} />
             <ReadOnlyField label="Reminder 1" value="17:00" />
             <ReadOnlyField label="Final reminder" value="18:00" />
           </div>
           <div className="grid gap-3 lg:grid-cols-[1fr_0.65fr]">
-            <ReadOnlyField label="Project" value="SPIKE SPOT INDEX" />
+            <ReadOnlyField label="Project" value={SITE_CONFIG.name} />
             <ReadOnlyField label="WebApp / fallback" value="/respondent" />
           </div>
           <Field label="Telegram template · Ukrainian">

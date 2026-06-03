@@ -160,8 +160,15 @@ Scheduled Spike processes:
 - MN7R import: `/api/cron/mn7r-monitor-prices`;
 - respondent Telegram notifications: `/api/cron/respondent-telegram`;
 - auto-publish: `/api/cron/spike-auto-publish`;
-- temporary UGA demo sync from Spike public indices: `/api/cron/uga-spike-demo-sync`;
 - admin invite/onboarding helper: `/api/cron/spike-admin-invites`.
+
+Scheduled UGA processes:
+
+- respondent Telegram notifications: `/api/cron/respondent-telegram`;
+- respondent email notifications remain available as a backup channel:
+  `/api/cron/respondent-emails`;
+- temporary Spike-to-UGA demo sync exists at `/api/cron/uga-spike-demo-sync`, but
+  is disabled by default and must stay disabled for real UGA respondent testing.
 
 Current `vercel.json` cron schedule:
 
@@ -178,16 +185,13 @@ Current `vercel.json` cron schedule:
 Times are UTC in Vercel. The application code applies Kyiv-time business rules
 where needed.
 
-UGA demo liveliness sync:
+UGA Spike fallback status:
 
-- `/api/cron/uga-spike-demo-sync` copies published Spike Spot Index public values
-  into UGA `PublishedIndex` rows for Corn, Wheat 11.5% protein, Feed wheat and
-  GMO soybean;
-- Sunflower is intentionally excluded because it is not part of the UGA basket;
-- this is a temporary demo-mode bridge until UGA switches fully to its own
-  respondent publication workflow;
-- run manually with `npm run sync:uga-from-spike` when `DATABASE_URL` points to
-  the target UGA database.
+- UGA production should not copy or fall back to Spike Spot Index values.
+- `UGA_SPIKE_DEMO_SYNC_ENABLED` must be `disabled` unless a temporary demo sync
+  is explicitly requested again.
+- UGA daily inputs and public values are now expected to come from admin-entered
+  values, respondent submissions, and UGA publication workflow only.
 
 Telegram respondent UX:
 
@@ -195,6 +199,7 @@ Telegram respondent UX:
 - reminders around 17:00 and 18:00 Kyiv when no submission exists;
 - secure WebApp/survey token opens the daily form;
 - respondent sees a success summary and can return to edit the submission;
+- UGA uses `@uga_index_bot`; Spike uses `@spike_spot_bot`;
 - admin/super-admin can inspect submissions in the admin matrix.
 
 ## Architecture
@@ -307,10 +312,26 @@ NEXT_PUBLIC_INDEX_TENANT="uga-ua"
 ALLOWED_EMBED_ORIGINS="https://uga.ua https://www.uga.ua https://index.uga.ua https://1d3x.com https://www.1d3x.com https://uga.1d3x.com https://index-uga.cr0pto.com"
 RESEND_API_KEY="set-in-vercel"
 RESPONDENT_EMAIL_CRON_SECRET="set-in-vercel"
+RESPONDENT_TELEGRAM_CRON_SECRET="set-in-vercel"
+TELEGRAM_CONFIRMATION_CRON_SECRET="set-in-vercel"
+UGA_TELEGRAM_BOT_TOKEN="set-in-vercel"
+UGA_TELEGRAM_ADMIN_CHAT_ID="set-in-vercel"
 UGA_SPIKE_PUBLIC_API_BASE="https://spike.1d3x.com"
-UGA_SPIKE_DEMO_SYNC_ENABLED="enabled"
+UGA_SPIKE_DEMO_SYNC_ENABLED="disabled"
 UGA_SPIKE_DEMO_SYNC_CRON_SECRET="set-in-vercel"
 ```
+
+UGA admin provisioning:
+
+```bash
+UGA_ADMIN_EMAIL="admin@example.ua" \
+UGA_ADMIN_NAME="Імʼя Прізвище" \
+UGA_ADMIN_TEMPORARY_PASSWORD="temporary-password" \
+npm run provision:uga-admin
+```
+
+The provisioned admin signs in with the temporary password and is redirected to
+`/setup-password` to set a permanent password.
 
 Spike production example:
 

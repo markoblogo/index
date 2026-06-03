@@ -31,7 +31,7 @@ export type DailyInputCell = {
   excluded: boolean;
   respondentId: string;
   price: number | null;
-  spikeIndicative: number;
+  spikeIndicative: number | null;
   difference: number | null;
   deviationPct: number | null;
   warning: boolean;
@@ -250,7 +250,9 @@ async function getDatabaseDailyInputData(date: string): Promise<DailyInputData> 
         (basis
           ? indicativeByCommodity.get(cellKey(commodity.id, basis.id, "spike"))
           : null) ??
-        fallbackSpikeForCommodityCode(commodity.code, date);
+        (activeIndex.id === "spike-ua"
+          ? fallbackSpikeForCommodityCode(commodity.code, date)
+          : null);
       const price = selectedSubmission?.priceUsdPerMt.toNumber() ?? null;
 
       return buildCell({
@@ -582,12 +584,17 @@ function buildCell({
   excluded: boolean;
   respondentId: string;
   price: number | null;
-  spikeIndicative: number;
+  spikeIndicative: number | null;
   status: DailyInputStatus;
 }): DailyInputCell {
-  const difference = price === null ? null : roundMoney(price - spikeIndicative);
+  const difference =
+    price === null || spikeIndicative === null
+      ? null
+      : roundMoney(price - spikeIndicative);
   const deviationPct =
-    price === null ? null : (Math.abs(price - spikeIndicative) / spikeIndicative) * 100;
+    price === null || spikeIndicative === null || spikeIndicative <= 0
+      ? null
+      : (Math.abs(price - spikeIndicative) / spikeIndicative) * 100;
 
   return {
     adminChanged,
@@ -602,6 +609,8 @@ function buildCell({
     deviationPct,
     warning:
       price !== null &&
+      spikeIndicative !== null &&
+      spikeIndicative > 0 &&
       Math.abs(price - spikeIndicative) / spikeIndicative > WARNING_THRESHOLD,
     status,
   };

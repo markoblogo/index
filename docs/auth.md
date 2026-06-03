@@ -18,7 +18,7 @@ UGA Index should use an allowlist-based authentication model in production.
 
 ## Current Preview Behavior
 
-The current preview uses an allowlist flow. With `DATABASE_URL`, admin/respondent logins are read from the database auth tables where available. Respondents can sign in with a temporary password and set a permanent password. Without a database, local development falls back to the allowlist in `src/lib/demo-allowlist.ts`.
+The current preview uses an allowlist flow. With `DATABASE_URL`, admin/respondent logins are read from the database auth tables where available. Admins and respondents can sign in with a temporary password and set a permanent password. Without a database, local development falls back to the allowlist in `src/lib/demo-allowlist.ts`.
 
 The login form accepts only email/login and password. Users do not choose roles manually. The role and respondent company are inferred from the demo allowlist.
 
@@ -31,6 +31,20 @@ Presentation shortcuts are also supported:
 
 - `admin` / `admin`
 - `respondent` / `respondent`
+
+For real UGA testing, create named admin users in the database instead of using
+the generic preview admin:
+
+```bash
+UGA_ADMIN_EMAIL="admin@example.ua" \
+UGA_ADMIN_NAME="Імʼя Прізвище" \
+UGA_ADMIN_TEMPORARY_PASSWORD="temporary-password" \
+npm run provision:uga-admin
+```
+
+The user must set a permanent password on first login. Respondent accounts are
+managed from `/admin/respondents`; deleting a respondent also disables/deletes
+the linked respondent login.
 
 ## Production Implementation Options
 
