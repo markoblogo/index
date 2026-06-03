@@ -114,9 +114,8 @@ function RespondentBlock({ locale }: { locale: Locale }) {
   const pdfHref = isUk
     ? "/files/spike-spot-index-respondents-presentation.pdf"
     : "/files/spike-spot-index-global-partner-deck-2026.pdf";
-  const youtubeSrc = isUk
-    ? "https://www.youtube.com/embed/scZm2uFZdPQ?autoplay=1&mute=1&loop=1&playlist=scZm2uFZdPQ&controls=0&playsinline=1&rel=0&modestbranding=1"
-    : "https://www.youtube.com/embed/T_SHKLwRZRA?autoplay=1&mute=1&loop=1&playlist=T_SHKLwRZRA&controls=0&playsinline=1&rel=0&modestbranding=1";
+  const videoId = isUk ? "scZm2uFZdPQ" : "T_SHKLwRZRA";
+  const youtubeSrc = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}&controls=0&playsinline=1&rel=0&modestbranding=1&iv_load_policy=3&fs=0&disablekb=1`;
   const copy = isUk
     ? {
         eyebrow: "Співпраця",
