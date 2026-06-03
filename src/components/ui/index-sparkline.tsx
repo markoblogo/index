@@ -32,7 +32,7 @@ export function IndexSparkline({
         points={points}
         stroke={
           trend === "flat"
-            ? "rgba(var(--color-ink-rgb) / 0.55)"
+            ? "#8f8f8f"
             : trend === "up"
               ? "var(--color-green)"
               : "var(--color-negative)"

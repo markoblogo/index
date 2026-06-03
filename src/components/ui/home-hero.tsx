@@ -284,13 +284,14 @@ function SpikeCommodityCard({
   const hasValue = commodity.latest !== null;
   const isPositive = hasValue && commodity.absoluteChange > 0;
   const isFlat = hasValue && commodity.absoluteChange === 0;
-  const trend = isFlat ? "flat" : isPositive ? "up" : "down";
+  const trend = !hasValue || isFlat ? "flat" : isPositive ? "up" : "down";
   const changePrefix = isPositive ? "+" : "";
   const changeLabel = !hasValue
     ? "-"
     : isFlat
     ? "0"
     : `${changePrefix}${commodity.absoluteChange}`;
+  const changeDisplay = hasValue && !isFlat ? `${changeLabel}$` : changeLabel;
   const isProcessing = commodity.group === "processing";
   const tone = isProcessing
     ? {
@@ -345,18 +346,16 @@ function SpikeCommodityCard({
         <div
           className={`inline-flex w-fit max-w-full rounded-full px-4 py-2 text-sm font-black ${
             !hasValue || isFlat
-              ? "bg-white/12 text-[#f8f8f2]/70"
+              ? "bg-[#9b9b9b] text-[#050505]"
               : isPositive
-                ? isProcessing
-                  ? "bg-[var(--spike-pink)] text-[#050505]"
-                  : "bg-[var(--spike-accent)] text-[#050505]"
+                ? "bg-[var(--color-green)] text-[#050505]"
                 : "bg-red-500 text-[#050505]"
           }`}
         >
           <span aria-hidden="true">
             {!hasValue || isFlat ? "→" : isPositive ? "↗" : "↘"}
           </span>
-          <span className="ml-2">{hasValue ? `${changeLabel}$` : changeLabel}</span>
+          <span className="ml-2">{changeDisplay}</span>
         </div>
       </div>
 
@@ -387,10 +386,10 @@ function SpikeCommodityCard({
             {commodity.vatIncluded
               ? locale === "uk"
                 ? "в т.ч."
-                : "included"
+              : "included"
               : locale === "uk"
-                ? "без позначки"
-                : "n/a"}
+                ? "без"
+                : "w/o"}
           </p>
         </div>
       </div>
