@@ -1,9 +1,11 @@
 import { randomBytes } from "node:crypto";
+import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 
 import { isCronRequestAuthorized } from "@/lib/cron-auth";
 import { db } from "@/lib/db";
 import {
+  getActiveIndexConfig,
   MN7R_MONITOR_RESPONDENT_ID,
   SPIKE_ADMIN_FALLBACK_RESPONDENT_ID,
 } from "@/lib/index-platform";
@@ -59,6 +61,9 @@ export async function POST(request: Request) {
   const submitDraftsDate = url.searchParams.get("submitDraftsDate");
   const submitDraftsRespondentId =
     url.searchParams.get("submitDraftsRespondentId") ?? fopSolovey.id;
+  let positionDirectorySync:
+    | Awaited<ReturnType<typeof syncPositionDirectory>>
+    | undefined;
 
   await db.$executeRawUnsafe(`
     ALTER TABLE "RespondentContact"
@@ -80,6 +85,8 @@ export async function POST(request: Request) {
     : existingAuth.temporaryPassword;
 
   await db.$transaction(async (tx) => {
+    positionDirectorySync = await syncPositionDirectory(tx);
+
     await tx.respondent.updateMany({
       data: {
         active: false,
@@ -269,6 +276,7 @@ export async function POST(request: Request) {
     disabledSeedRespondents: true,
     movedMonitorAdminFallback,
     onboardingSent,
+    positionDirectorySync,
     respondentId: fopSolovey.id,
     schemaReady: true,
     submittedDrafts: submitDraftsDate
@@ -284,6 +292,91 @@ export async function POST(request: Request) {
     telegramOnboardingSent,
     telegramSurvey,
   });
+}
+
+async function syncPositionDirectory(tx: Prisma.TransactionClient) {
+  const activeIndex = getActiveIndexConfig();
+
+  if (activeIndex.id !== "spike-ua") {
+    return { skippedReason: "non_spike_tenant" };
+  }
+
+  const deliveryBases = await Promise.all(
+    activeIndex.deliveryBases.map((basis) =>
+      tx.deliveryBasis.upsert({
+        create: {
+          code: basis.code,
+          name: basis.name,
+          region: basis.region,
+          status: "published",
+        },
+        update: {
+          name: basis.name,
+          region: basis.region,
+          status: "published",
+        },
+        where: { code: basis.code },
+      }),
+    ),
+  );
+  const deliveryBasisByCode = new Map(
+    deliveryBases.map((basis) => [basis.code, basis]),
+  );
+
+  const commodities = await Promise.all(
+    activeIndex.commodities.map((commodity) =>
+      tx.commodity.upsert({
+        create: {
+          code: commodity.dbCode,
+          nameEn: commodity.name.en,
+          nameUk: commodity.name.uk,
+          sortOrder: commodity.sortOrder,
+          status: "published",
+        },
+        update: {
+          nameEn: commodity.name.en,
+          nameUk: commodity.name.uk,
+          sortOrder: commodity.sortOrder,
+          status: "published",
+        },
+        where: { code: commodity.dbCode },
+      }),
+    ),
+  );
+
+  const baskets = await Promise.all(
+    activeIndex.deliveryBases.map((basis) => {
+      const deliveryBasis = deliveryBasisByCode.get(basis.code);
+
+      if (!deliveryBasis) {
+        throw new Error(`Missing delivery basis ${basis.code}`);
+      }
+
+      return tx.basket.upsert({
+        create: {
+          active: true,
+          code: basis.basketCode,
+          deliveryBasisId: deliveryBasis.id,
+          name: basis.basketName,
+          weight: new Prisma.Decimal(1),
+        },
+        update: {
+          active: true,
+          deliveryBasisId: deliveryBasis.id,
+          name: basis.basketName,
+          weight: new Prisma.Decimal(1),
+        },
+        where: { code: basis.basketCode },
+      });
+    }),
+  );
+
+  return {
+    baskets: baskets.length,
+    commodities: commodities.length,
+    deliveryBases: deliveryBases.length,
+    skippedReason: null,
+  };
 }
 
 async function cleanupNonMonitorSubmissions(date: string) {
