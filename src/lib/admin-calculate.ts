@@ -27,6 +27,7 @@ import {
   canManuallyUnlockPublicationDate,
   revalidatePublishedIndexViews,
 } from "@/lib/admin-publication-lock";
+import { generateAndStoreDailyAiMarketBriefs } from "@/lib/ai-market-brief";
 import { getActiveRespondentCount } from "@/lib/respondent-directory";
 import { syncIndexPositionDirectory } from "@/lib/position-directory-sync";
 import {
@@ -154,6 +155,12 @@ export async function publishAdminIndices(formData: FormData, user: DemoUser) {
 
   const calculations = await persistDatabaseCalculations(date, user);
   await publishDatabaseCalculations(date, calculations, user, benchmarkBlendCommodityIds);
+  await generateAndStoreDailyAiMarketBriefs({
+    actorUserId: user.userId,
+    date,
+    force: true,
+    source: "admin_publish",
+  });
   revalidatePublishedIndexViews();
   redirect(`/admin/calculate?date=${date}&notice=published_database`);
 }

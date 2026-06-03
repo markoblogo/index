@@ -354,11 +354,36 @@ SPIKE_TELEGRAM_SMOKE_CHAT_ID="optional-smoke-chat-id"
 RESPONDENT_TELEGRAM_CRON_SECRET="set-in-vercel"
 OPENAI_API_KEY="set-in-vercel-for-ai-market-brief"
 SPIKE_AI_BRIEF_MODEL="gpt-4.1-mini"
+SPIKE_AI_BRIEF_CRON_SECRET="set-in-vercel-if-ai-api-post-is-used"
+SPIKE_AI_TELEGRAM_CHAT_ID="optional-admin-telegram-chat-id"
+SPIKE_AI_INPUT_USD_PER_1M="0.4"
+SPIKE_AI_OUTPUT_USD_PER_1M="1.6"
 ```
 
 Do not commit production secrets, connection strings or bot tokens. Use Vercel
 Environment Variables or an untracked local `.env` file for operational
 commands.
+
+## SPIKE AI Market Brief
+
+SPIKE uses a cost-controlled AI layer above published index values. The model is
+not called on public page views. A daily brief is generated once per trade date
+and locale, stored in `AiMarketBrief`, and then reused by the public analytics
+page, index-card AI notes, the admin publication workflow and the AI API.
+
+- Default model: `SPIKE_AI_BRIEF_MODEL` (`gpt-4.1-mini`).
+- API: `GET /api/ai/market-brief?locale=uk|en` returns the saved public brief.
+- Regeneration: `POST /api/ai/market-brief?date=YYYY-MM-DD&force=1` with
+  `Authorization: Bearer $SPIKE_AI_BRIEF_CRON_SECRET`.
+- Admin: `/admin/calculate` shows saved brief status, model, hash, tokens,
+  estimated cost, fallback reason and errors, with a manual regenerate button.
+- Auto-publish: when Spike auto-publishes daily values, it also generates and
+  stores the UK/EN daily AI brief.
+- Telegram: if `SPIKE_AI_TELEGRAM_CHAT_ID` is set, auto-publish sends the UK
+  AI summary to that chat.
+- Cost logging: token usage is saved from OpenAI Responses API usage. Estimated
+  cost uses `SPIKE_AI_INPUT_USD_PER_1M` and `SPIKE_AI_OUTPUT_USD_PER_1M`, which
+  can be updated if provider pricing changes.
 
 ## Database
 

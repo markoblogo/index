@@ -4,6 +4,10 @@ import { CurrencyValue } from "@/components/ui/currency-toggle";
 import { ScenarioModelPanel } from "@/components/ui/scenario-model-panel";
 import { SpreadAnalysisPanel } from "@/components/ui/spread-analysis-panel";
 import { VolatilityRangePanel } from "@/components/ui/volatility-range-panel";
+import {
+  getPublishedAiMarketBrief,
+  type PublicAiMarketBrief,
+} from "@/lib/ai-market-brief";
 import { SITE_CONFIG } from "@/lib/constants";
 import { allowMockFallback, hasDatabaseUrl } from "@/lib/db";
 import { getFxRates } from "@/lib/fx-rates";
@@ -24,14 +28,6 @@ type AnalyticsPoint = {
   dayChange: number;
   percentChange: number;
   respondents: number;
-};
-
-type AiMarketBrief = {
-  blocks: Array<{ body: string; title: string }>;
-  confidence: string;
-  generatedAt: string;
-  inputDataHash: string;
-  model: string;
 };
 
 const profileByCommodity: Partial<Record<
@@ -59,7 +55,7 @@ export default async function AnalyticsPage({
   const isSpike = getActiveIndexConfig().id === "spike-ua";
   const hasHistory = history.length > 0;
   const aiBrief = isSpike
-    ? await buildAiMarketBrief(history, locale, activeRespondentCount)
+    ? await getPublishedAiMarketBrief({ activeRespondentCount, history, locale })
     : null;
 
   return (
@@ -260,7 +256,7 @@ function AiMarketBriefSection({
   brief,
   copy,
 }: {
-  brief: AiMarketBrief;
+  brief: PublicAiMarketBrief;
   copy: AnalyticsCopy["aiBrief"];
 }) {
   return (
@@ -288,6 +284,15 @@ function AiMarketBriefSection({
             </span>
             <span className="rounded-full border border-white/18 px-3 py-1 text-white/58">
               {brief.model} · {brief.confidence}
+            </span>
+            <span className="rounded-full border border-white/18 px-3 py-1 text-white/58">
+              {brief.observability.status}
+              {brief.observability.totalTokens != null
+                ? ` · ${brief.observability.totalTokens} tokens`
+                : ""}
+              {brief.observability.estimatedCostUsd != null
+                ? ` · $${brief.observability.estimatedCostUsd.toFixed(4)} est.`
+                : ""}
             </span>
           </div>
         </div>
@@ -677,292 +682,6 @@ function buildMarketSnapshot(
       value: String(activeRespondentCount),
     },
   ];
-}
-
-async function buildAiMarketBrief(
-  history: AnalyticsPoint[],
-  locale: Locale,
-  activeRespondentCount: number,
-): Promise<AiMarketBrief> {
-  const fallback = buildDeterministicAiMarketBrief(
-    history,
-    locale,
-    activeRespondentCount,
-  );
-  const llmBlocks = await generateLlmMarketBrief({
-    activeRespondentCount,
-    fallback,
-    history,
-    locale,
-  });
-
-  return llmBlocks
-    ? {
-        ...fallback,
-        blocks: llmBlocks.blocks,
-        confidence: llmBlocks.confidence,
-        model: llmBlocks.model,
-      }
-    : fallback;
-}
-
-function buildDeterministicAiMarketBrief(
-  history: AnalyticsPoint[],
-  locale: Locale,
-  activeRespondentCount: number,
-): AiMarketBrief {
-  const copy = getAnalyticsCopy(locale).aiBrief;
-  const latestRows = commodities
-    .map((commodity) => getCommodityHistory(history, commodity.id).at(-1))
-    .filter((row): row is AnalyticsPoint => Boolean(row));
-  const latestDate = latestRows
-    .map((row) => row.date)
-    .sort((first, second) => second.localeCompare(first))[0];
-  const keyMover = latestRows.reduce<AnalyticsPoint | null>(
-    (current, row) =>
-      !current || Math.abs(row.dayChange) > Math.abs(current.dayChange)
-        ? row
-        : current,
-    null,
-  );
-  const volatilityRows = latestRows.map((row) => {
-    const commodityHistory = getCommodityHistory(history, row.commodityId);
-    return {
-      commodity: getCommodity(row.commodityId),
-      volatility: standardDeviation(
-        commodityHistory.slice(-30).map((point) => point.percentChange),
-      ),
-    };
-  });
-  const mostVolatile = volatilityRows.reduce(
-    (current, row) => (row.volatility > current.volatility ? row : current),
-    volatilityRows[0] ?? { commodity: commodities[0], volatility: 0 },
-  );
-  const keyMoverCommodity = keyMover ? getCommodity(keyMover.commodityId) : null;
-  const generatedAt = latestDate
-    ? formatShortDate(latestDate, locale)
-    : copy.notAvailable;
-
-  return {
-    blocks: [
-      {
-        title: copy.snapshotTitle,
-        body: latestDate
-          ? copy.snapshotBody(latestRows.length, activeRespondentCount)
-          : copy.noDataBody,
-      },
-      {
-        title: copy.moversTitle,
-        body:
-          keyMover && keyMoverCommodity
-            ? copy.moversBody(
-                keyMoverCommodity.name[locale],
-                formatSigned(keyMover.dayChange),
-              )
-            : copy.noDataBody,
-      },
-      {
-        title: copy.volatilityTitle,
-        body: copy.volatilityBody(
-          mostVolatile.commodity.name[locale],
-          mostVolatile.volatility.toFixed(2),
-        ),
-      },
-      {
-        title: copy.cautionTitle,
-        body:
-          activeRespondentCount < 5
-            ? copy.coverageCaution(activeRespondentCount)
-            : copy.standardCaution(activeRespondentCount),
-      },
-    ],
-    confidence: "fallback",
-    generatedAt,
-    inputDataHash: buildShortHash(
-      JSON.stringify({
-        activeRespondentCount,
-        latestDate,
-        latestRows: latestRows.map((row) => [
-          row.commodityId,
-          row.value,
-          row.dayChange,
-        ]),
-      }),
-    ),
-    model: "deterministic-fallback",
-  };
-}
-
-async function generateLlmMarketBrief({
-  activeRespondentCount,
-  fallback,
-  history,
-  locale,
-}: {
-  activeRespondentCount: number;
-  fallback: AiMarketBrief;
-  history: AnalyticsPoint[];
-  locale: Locale;
-}) {
-  const apiKey = process.env.OPENAI_API_KEY;
-
-  if (!apiKey) {
-    return null;
-  }
-
-  const model = process.env.SPIKE_AI_BRIEF_MODEL || "gpt-4.1-mini";
-  const latestRows = commodities
-    .map((commodity) => {
-      const commodityHistory = getCommodityHistory(history, commodity.id);
-      const latest = commodityHistory.at(-1);
-
-      if (!latest) {
-        return null;
-      }
-
-      return {
-        code: commodity.code,
-        name: commodity.name[locale],
-        latestUsdPerMt: latest.value,
-        change1d: latest.dayChange,
-        change7d: roundOne(latest.value - getPointBack(commodityHistory, 8).value),
-        change30d: roundOne(latest.value - getPointBack(commodityHistory, 31).value),
-        change90d: roundOne(latest.value - commodityHistory[0].value),
-        volatility30d: roundOne(
-          standardDeviation(
-            commodityHistory.slice(-30).map((point) => point.percentChange),
-          ),
-        ),
-      };
-    })
-    .filter(Boolean);
-
-  const payload = {
-    locale,
-    respondentCoverage: activeRespondentCount,
-    generatedFromDate: fallback.generatedAt,
-    inputDataHash: fallback.inputDataHash,
-    positions: latestRows,
-    requiredSections: fallback.blocks.map((block) => block.title),
-  };
-
-  try {
-    const response = await fetch("https://api.openai.com/v1/responses", {
-      body: JSON.stringify({
-        input: [
-          {
-            content:
-              "You generate concise market intelligence briefs for a Ukrainian agro commodity spot index. Use only the provided data. Do not invent prices, respondent names, trades, causes, or forecasts. Return strict JSON only, with keys: blocks, confidence. blocks must be exactly four objects with title and body. The brief is not trading advice.",
-            role: "system",
-          },
-          {
-            content: JSON.stringify(payload),
-            role: "user",
-          },
-        ],
-        max_output_tokens: 650,
-        model,
-      }),
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      method: "POST",
-    });
-
-    if (!response.ok) {
-      console.warn("AI Market Brief generation failed", response.status);
-      return null;
-    }
-
-    const data = (await response.json()) as unknown;
-    const content = extractResponseText(data);
-
-    if (!content) {
-      return null;
-    }
-
-    const parsed = parseBriefJson(content) as {
-      blocks?: Array<{ body?: string; title?: string }>;
-      confidence?: string;
-    };
-    const blocks = parsed.blocks
-      ?.map((block) => ({
-        body: String(block.body || "").trim(),
-        title: String(block.title || "").trim(),
-      }))
-      .filter((block) => block.title && block.body)
-      .slice(0, 4);
-
-    if (!blocks || blocks.length !== 4) {
-      return null;
-    }
-
-    return {
-      blocks,
-      confidence: String(parsed.confidence || "medium").trim() || "medium",
-      model,
-    };
-  } catch (error) {
-    console.warn("AI Market Brief generation error", error);
-    return null;
-  }
-}
-
-function extractResponseText(payload: unknown): string {
-  if (!payload || typeof payload !== "object") {
-    return "";
-  }
-
-  const response = payload as {
-    output?: Array<{
-      content?: Array<{ text?: string | { value?: string }; type?: string; value?: string }>;
-    }>;
-    output_text?: string;
-  };
-
-  if (typeof response.output_text === "string") {
-    return response.output_text.trim();
-  }
-
-  const chunks =
-    response.output
-      ?.flatMap((item) => item.content || [])
-      .map((content) => {
-        if (typeof content.text === "string") {
-          return content.text;
-        }
-
-        if (content.text && typeof content.text.value === "string") {
-          return content.text.value;
-        }
-
-        if (typeof content.value === "string") {
-          return content.value;
-        }
-
-        return "";
-      })
-      .filter(Boolean) || [];
-
-  return chunks.join("\n").trim();
-}
-
-function parseBriefJson(content: string) {
-  const trimmed = content.trim();
-  const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
-
-  return JSON.parse(fenced?.[1] || trimmed);
-}
-
-function buildShortHash(value: string) {
-  let hash = 0;
-
-  for (let index = 0; index < value.length; index += 1) {
-    hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
-  }
-
-  return hash.toString(16).padStart(8, "0").slice(0, 8);
 }
 
 function getCommodityHistory(history: AnalyticsPoint[], commodityId: CommodityId) {

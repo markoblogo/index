@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { db, hasDatabaseUrl } from "@/lib/db";
+import { generateAndStoreDailyAiMarketBriefs } from "@/lib/ai-market-brief";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import { computePublishedChange } from "@/lib/index-publish";
 import { syncIndexPositionDirectory } from "@/lib/position-directory-sync";
@@ -30,6 +31,7 @@ export type AutoPublishPlanItem = {
 };
 
 export type AutoPublishResult = {
+  aiBrief?: Awaited<ReturnType<typeof generateAndStoreDailyAiMarketBriefs>> | null;
   date: string;
   published: number;
   skippedReason: string | null;
@@ -316,7 +318,16 @@ export async function autoPublishSpikeDailyIndices(
   revalidatePath("/api/public/latest");
   revalidatePath("/api/public/history");
 
+  const aiBrief =
+    published > 0
+      ? await generateAndStoreDailyAiMarketBriefs({
+          date,
+          source: "auto_publish",
+        })
+      : null;
+
   return {
+    aiBrief,
     date,
     published,
     skippedReason: published > 0 ? null : "no_publishable_positions",

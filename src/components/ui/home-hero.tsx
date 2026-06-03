@@ -392,6 +392,16 @@ function SpikeCommodityCard({
                 : "w/o"}
           </p>
         </div>
+        {commodity.aiComment?.[locale] ? (
+          <div className="mt-1 border-t border-white/10 pt-3">
+            <p className="text-[0.62rem] font-black uppercase tracking-[0.18em] text-[var(--spike-accent)]">
+              AI note
+            </p>
+            <p className="mt-1 text-xs font-semibold leading-5 text-white/52">
+              {commodity.aiComment[locale]}
+            </p>
+          </div>
+        ) : null}
       </div>
     </article>
   );

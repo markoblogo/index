@@ -1,4 +1,5 @@
 import { allowMockFallback, db, hasDatabaseUrl } from "@/lib/db";
+import { getLatestAiCardComments } from "@/lib/ai-market-brief";
 import { getLatestDemoPublishedIndices } from "@/lib/demo-published-index-store";
 import { getDemoSubmission } from "@/lib/demo-submission-store";
 import { getActiveIndexConfig } from "@/lib/index-platform";
@@ -373,11 +374,22 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
       .filter((index): index is NonNullable<typeof index> => Boolean(index))
       .map((index) => [index.commodityId, index]),
   );
+  const [aiCommentsUk, aiCommentsEn] =
+    activeIndex.id === "spike-ua"
+      ? await Promise.all([
+          getLatestAiCardComments("uk"),
+          getLatestAiCardComments("en"),
+        ])
+      : [{}, {}];
   const publicCommodities = dbCommodities.map((commodity) => {
     const mockCommodity = mockCommodityByCode.get(commodity.code) ?? commodities[0];
     const liveValue = liveValues.get(commodity.id);
     const publishedIndex = publishedByCommodityId.get(commodity.id);
     const history = recentPublishedByCommodityId.get(commodity.id) ?? [];
+    const aiComment = {
+      en: aiCommentsEn[commodity.code] ?? aiCommentsEn[mockCommodity.code] ?? "",
+      uk: aiCommentsUk[commodity.code] ?? aiCommentsUk[mockCommodity.code] ?? "",
+    };
 
     if (liveValue) {
       const previous =
@@ -398,6 +410,7 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
           date: today,
           value: latest,
         }),
+        aiComment,
       };
     }
 
@@ -410,6 +423,7 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
         absoluteChange: 0,
         percentChange: 0,
         sparkline: buildRealSparkline(history, null),
+        aiComment,
       };
     }
 
@@ -423,6 +437,7 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
       absoluteChange: publishedIndex.changeAbsUsdPerMt?.toNumber() ?? 0,
       percentChange: publishedIndex.changePct?.toNumber() ?? 0,
       sparkline: buildRealSparkline(history, latest),
+      aiComment,
     };
   });
   const publicLatestQuotes = dbCommodities.map((commodity) => {

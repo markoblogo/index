@@ -22,6 +22,7 @@ export type Commodity = {
     label: Record<Locale, string>;
     value: Record<Locale, string>;
   }>;
+  aiComment?: Record<Locale, string>;
 };
 
 export type Respondent = {
