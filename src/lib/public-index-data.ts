@@ -16,6 +16,7 @@ import {
   getActiveRespondentCount,
   getActiveRespondentCountData,
 } from "@/lib/respondent-directory";
+import { syncIndexPositionDirectory } from "@/lib/position-directory-sync";
 import { buildRealSparkline } from "@/lib/sparkline";
 import {
   getConfiguredDeliveryBasisCodes,
@@ -182,6 +183,8 @@ function getMockLiveSubmissionValues(date: string) {
 }
 
 async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
+  await syncIndexPositionDirectory(activeIndex);
+
   const activeRespondentCount = await getActiveRespondentCountData();
   const today = todayKyivDate();
   const todayTradeDate = dateToUtcDate(today);
