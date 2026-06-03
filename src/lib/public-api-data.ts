@@ -7,6 +7,7 @@ import {
   type CommodityId,
 } from "@/lib/mock-data";
 import { getPublicIndexSnapshot } from "@/lib/public-index-data";
+import { syncIndexPositionDirectory } from "@/lib/position-directory-sync";
 import {
   getActiveRespondentCount,
   getActiveRespondentCountData,
@@ -153,6 +154,8 @@ function getMockHistoryData(): PublicHistoryItem[] {
 }
 
 async function getDatabaseLatestData(): Promise<PublicLatestItem[]> {
+  await syncIndexPositionDirectory(activeIndex);
+
   const [bases, baskets, dbCommodities] = await Promise.all([
     db.deliveryBasis.findMany({
       where: { code: { in: getConfiguredDeliveryBasisCodes(activeIndex) } },
@@ -234,6 +237,8 @@ async function getDatabaseLatestData(): Promise<PublicLatestItem[]> {
 }
 
 async function getDatabaseHistoryData(): Promise<PublicHistoryItem[]> {
+  await syncIndexPositionDirectory(activeIndex);
+
   const [bases, baskets] = await Promise.all([
     db.deliveryBasis.findMany({
       where: { code: { in: getConfiguredDeliveryBasisCodes(activeIndex) } },

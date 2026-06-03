@@ -16,6 +16,7 @@ import {
   getDeliveryBasisConfigForCommodityCode,
 } from "@/lib/tenant-basis";
 import { orderDailyInputRespondents } from "@/lib/respondent-ordering";
+import { syncIndexPositionDirectory } from "@/lib/position-directory-sync";
 
 export type DailyInputStatus =
   | "missing"
@@ -145,6 +146,8 @@ export async function saveDailyInputs(formData: FormData, user: DemoUser) {
 async function getDatabaseDailyInputData(date: string): Promise<DailyInputData> {
   const tradeDate = dateToUtcDate(date);
   const activeIndex = getActiveIndexTenant();
+  await syncIndexPositionDirectory(activeIndex);
+
   const basisCodes = getConfiguredDeliveryBasisCodes(activeIndex);
   const [bases, dbCommodities, dbRespondents] = await Promise.all([
     db.deliveryBasis.findMany({ where: { code: { in: basisCodes } } }),
@@ -431,6 +434,8 @@ async function saveDatabaseDailyInputs(
   user: DemoUser,
 ) {
   const tradeDate = dateToUtcDate(date);
+  await syncIndexPositionDirectory(getActiveIndexTenant());
+
   const [bases, dbCommodities] = await Promise.all([
     db.deliveryBasis.findMany({
       where: { code: { in: getConfiguredDeliveryBasisCodes() } },

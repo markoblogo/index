@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { db, hasDatabaseUrl } from "@/lib/db";
 import { getActiveIndexConfig } from "@/lib/index-platform";
+import { syncIndexPositionDirectory } from "@/lib/position-directory-sync";
 
 type TelegramTrigger = "manual" | "scheduled" | "smoke";
 
@@ -31,6 +32,8 @@ export async function sendRespondentTelegramNotifications({
   if (!hasDatabaseUrl()) {
     return { delivered: [], skippedReason: "database_not_configured" };
   }
+
+  await syncIndexPositionDirectory(getActiveIndexConfig());
 
   const token = getTelegramBotToken();
 
@@ -76,6 +79,8 @@ export async function sendRespondentTelegramSubmissionConfirmation({
   if (!hasDatabaseUrl()) {
     return { delivered: [], skippedReason: "database_not_configured" };
   }
+
+  await syncIndexPositionDirectory(getActiveIndexConfig());
 
   const token = getTelegramBotToken();
 

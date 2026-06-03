@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { db, hasDatabaseUrl } from "@/lib/db";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import { computePublishedChange } from "@/lib/index-publish";
+import { syncIndexPositionDirectory } from "@/lib/position-directory-sync";
 import {
   getConfiguredDeliveryBasisCodes,
   getDeliveryBasketCodeForCommodityCode,
@@ -47,6 +48,8 @@ export async function autoPublishSpikeDailyIndices(
   if (!hasDatabaseUrl()) {
     return { date, published: 0, skippedReason: "database_not_configured" };
   }
+
+  await syncIndexPositionDirectory(activeIndex);
 
   const tradeDate = dateToUtcDate(date);
   const basisCodes = getConfiguredDeliveryBasisCodes(activeIndex);

@@ -12,6 +12,7 @@ import {
 import { commodities, respondents } from "@/lib/mock-data";
 import { todayInputDate } from "@/lib/admin-daily-inputs";
 import { autoPublishSpikeDailyIndices } from "@/lib/auto-publish";
+import { syncIndexPositionDirectory } from "@/lib/position-directory-sync";
 import { sendRespondentTelegramSubmissionConfirmation } from "@/lib/respondent-telegram";
 import {
   getActiveIndexTenant,
@@ -294,6 +295,8 @@ async function getDatabaseRespondentSurveyData({
   respondentId: string;
 }): Promise<RespondentSurveyData> {
   const tradeDate = dateToUtcDate(date);
+  await syncIndexPositionDirectory(getActiveIndexTenant());
+
   const [bases, respondent, dbCommodities] = await Promise.all([
     db.deliveryBasis.findMany({
       where: { code: { in: getConfiguredDeliveryBasisCodes() } },

@@ -28,6 +28,7 @@ import {
   revalidatePublishedIndexViews,
 } from "@/lib/admin-publication-lock";
 import { getActiveRespondentCount } from "@/lib/respondent-directory";
+import { syncIndexPositionDirectory } from "@/lib/position-directory-sync";
 import {
   getActiveIndexTenant,
   getConfiguredDeliveryBasisCodes,
@@ -612,6 +613,8 @@ function isPublishableDatabaseCalculation(status: string) {
 async function getDatabaseCalculationContext(date: string) {
   const tradeDate = dateToUtcDate(date);
   const activeIndex = getActiveIndexTenant();
+  await syncIndexPositionDirectory(activeIndex);
+
   const basisCodes = getConfiguredDeliveryBasisCodes(activeIndex);
   const basketCodes = activeIndex.deliveryBases.map((basis) => basis.basketCode);
   const [bases, baskets, dbCommodities, dbRespondents] = await Promise.all([
