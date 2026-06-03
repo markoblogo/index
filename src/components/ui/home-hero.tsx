@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { CurrencyToggle, CurrencyValue } from "@/components/ui/currency-toggle";
 import { useCurrentDisplayCurrency } from "@/components/ui/currency-toggle";
