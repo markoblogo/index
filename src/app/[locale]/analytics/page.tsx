@@ -281,8 +281,8 @@ function AiMarketBriefSection({
   locale: Locale;
 }) {
   return (
-    <section className="mx-auto max-w-7xl px-6 pb-10 lg:px-8">
-      <div className="grid gap-5 rounded-[1.35rem] border border-white/12 bg-[#101010] p-5 lg:grid-cols-[0.76fr_1.24fr]">
+    <section className="border-y border-white/10 bg-[#101010]">
+      <div className="mx-auto grid max-w-7xl gap-5 px-6 py-10 lg:grid-cols-[0.76fr_1.24fr] lg:px-8 lg:py-14">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.24em] text-[var(--spike-accent)]">
             {copy.eyebrow}
@@ -362,8 +362,8 @@ function WeeklyReportSection({
   report: Awaited<ReturnType<typeof getPublishedWeeklyReports>>[number] | null;
 }) {
   return (
-    <section className="mx-auto max-w-7xl px-6 pb-10 lg:px-8">
-      <div className="rounded-[1.35rem] border border-white/12 bg-[#0b0b0b] p-5 lg:p-6">
+    <section className="border-y border-white/10 bg-[#0b0b0b]">
+      <div className="mx-auto max-w-7xl px-6 py-10 lg:px-8 lg:py-14">
         <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.24em] text-[var(--spike-accent)]">

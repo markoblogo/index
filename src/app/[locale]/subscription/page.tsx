@@ -83,8 +83,8 @@ function AiSubscriptionBlock({ locale }: { locale: Locale }) {
         };
 
   return (
-    <section className="mx-auto max-w-7xl px-6 pb-10 lg:px-8">
-      <div className="grid gap-5 rounded-[1.35rem] border border-white/12 bg-[#101010] p-5 lg:grid-cols-[0.74fr_1.26fr]">
+    <section className="border-y border-white/10 bg-[#101010]">
+      <div className="mx-auto grid max-w-7xl gap-5 px-6 py-10 lg:grid-cols-[0.74fr_1.26fr] lg:px-8 lg:py-14">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.24em] text-[var(--spike-accent)]">
             {copy.eyebrow}
