@@ -23,6 +23,7 @@ import {
 import { todayInputDate } from "@/lib/admin-daily-inputs";
 import {
   getDailyTelegramDigest,
+  setTelegramCollectedPostIncluded,
   getWeeklyTelegramDigest,
   syncTelegramWorkspaceResources,
   type TelegramSourceDigest,
@@ -60,6 +61,7 @@ const noticeMap: Record<string, string> = {
   published: "Weekly report published.",
   report_ready: "Weekly report loaded.",
   resource_added: "Resource added.",
+  post_filter_updated: "Collected post filter updated.",
   resource_toggled: "Resource status updated.",
   scheduled: "Weekly Telegram send scheduled.",
   sent: "Weekly report sent to Telegram.",
@@ -269,6 +271,15 @@ export default async function ReportsWorkspacePage({
     redirect(buildRedirectUrl(params, "sources_synced"));
   }
 
+  async function toggleCollectedPostAction(formData: FormData) {
+    "use server";
+
+    const postId = String(formData.get("postId") ?? "");
+    const included = String(formData.get("included") ?? "0") === "1";
+    await setTelegramCollectedPostIncluded(postId, included);
+    redirect(buildRedirectUrl(params, "post_filter_updated"));
+  }
+
   return (
     <section className="grid gap-6">
       <header className="rounded-[1.5rem] border border-white/12 bg-[#050505] p-6 shadow-2xl shadow-black/20">
@@ -444,6 +455,7 @@ export default async function ReportsWorkspacePage({
             reportId={null}
             reportKind="daily"
             syncSourcesAction={syncSourcesAction}
+            toggleCollectedPostAction={toggleCollectedPostAction}
             title="Daily collected Telegram posts"
           />
         </WorkspaceLane>
@@ -466,6 +478,7 @@ export default async function ReportsWorkspacePage({
                 reportId={activeWeeklyReport.id}
                 reportKind="weekly"
                 syncSourcesAction={syncSourcesAction}
+                toggleCollectedPostAction={toggleCollectedPostAction}
                 title="Weekly collected Telegram posts"
               />
               <WeeklyWorkflowCard
@@ -907,12 +920,14 @@ function TelegramDigestPreview({
   reportId,
   reportKind,
   syncSourcesAction,
+  toggleCollectedPostAction,
   title,
 }: {
   digest: TelegramSourceDigest;
   reportId: string | null;
   reportKind: ReportKind;
   syncSourcesAction: (formData: FormData) => Promise<void>;
+  toggleCollectedPostAction: (formData: FormData) => Promise<void>;
   title: string;
 }) {
   return (
@@ -921,7 +936,7 @@ function TelegramDigestPreview({
         <div>
           <h3 className="text-base font-semibold text-white">{title}</h3>
           <p className="mt-1 text-sm leading-6 text-white/62">
-            Window: {formatDigestDate(digest.startAt)} → {formatDigestDate(digest.endAt)} · {digest.postCount} posts
+            Window: {formatDigestDate(digest.startAt)} → {formatDigestDate(digest.endAt)} · {digest.postCount} included posts
           </p>
         </div>
         <form action={syncSourcesAction}>
@@ -937,9 +952,9 @@ function TelegramDigestPreview({
       </div>
 
       <div className="grid gap-3">
-        {digest.channels.some((channel) => channel.postCount > 0) ? (
+        {digest.channels.some((channel) => channel.posts.length > 0) ? (
           digest.channels
-            .filter((channel) => channel.postCount > 0)
+            .filter((channel) => channel.posts.length > 0)
             .map((channel) => (
               <details
                 className="rounded-[1rem] border border-white/10 bg-black/20 p-4"
@@ -952,7 +967,7 @@ function TelegramDigestPreview({
                         @{channel.channelHandle}
                       </p>
                       <p className="mt-1 text-xs uppercase tracking-[0.12em] text-white/45">
-                        {channel.postCount} posts{channel.peerId ? ` · peer ${channel.peerId}` : ""}
+                        {channel.includedPostCount} included · {channel.excludedPostCount} excluded{channel.peerId ? ` · peer ${channel.peerId}` : ""}
                       </p>
                     </div>
                     <span className="text-xs font-semibold uppercase tracking-[0.12em] text-uga-green">
@@ -963,21 +978,56 @@ function TelegramDigestPreview({
                 <div className="mt-4 grid gap-3">
                   {channel.posts.map((post) => (
                     <article
-                      className="rounded-[0.9rem] border border-white/10 bg-black/30 p-3"
-                      key={`${channel.channelHandle}-${post.externalPostId}`}
+                      className={`rounded-[0.9rem] border p-3 ${
+                        post.included
+                          ? "border-white/10 bg-black/30"
+                          : "border-amber-400/20 bg-amber-400/5"
+                      }`}
+                      key={post.id}
                     >
                       <div className="flex flex-wrap items-center justify-between gap-3">
-                        <p className="text-xs uppercase tracking-[0.12em] text-white/45">
-                          {formatDigestDate(post.publishedAt)}
-                        </p>
-                        <a
-                          className="text-xs text-uga-green hover:underline"
-                          href={post.postUrl}
-                          rel="noreferrer"
-                          target="_blank"
-                        >
-                          Open original
-                        </a>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-xs uppercase tracking-[0.12em] text-white/45">
+                            {formatDigestDate(post.publishedAt)}
+                          </p>
+                          <span
+                            className={`rounded-full px-2 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.12em] ${
+                              post.included
+                                ? "bg-uga-green/15 text-uga-green"
+                                : "bg-amber-400/15 text-amber-200"
+                            }`}
+                          >
+                            {post.included ? "included" : "excluded"}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-3">
+                          <a
+                            className="text-xs text-uga-green hover:underline"
+                            href={post.postUrl}
+                            rel="noreferrer"
+                            target="_blank"
+                          >
+                            Open original
+                          </a>
+                          <form action={toggleCollectedPostAction}>
+                            <input name="postId" type="hidden" value={post.id} />
+                            <input
+                              name="included"
+                              type="hidden"
+                              value={post.included ? "0" : "1"}
+                            />
+                            <button
+                              className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                                post.included
+                                  ? "border-amber-400/40 text-amber-100 hover:border-amber-300"
+                                  : "border-uga-green/40 text-uga-green hover:border-uga-green"
+                              }`}
+                              type="submit"
+                            >
+                              {post.included ? "Exclude from digest" : "Include in digest"}
+                            </button>
+                          </form>
+                        </div>
                       </div>
                       <pre className="mt-3 whitespace-pre-wrap text-xs leading-6 text-white/72">
                         {post.text}

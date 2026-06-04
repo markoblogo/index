@@ -18,6 +18,7 @@ type StoredTelegramPostRow = {
   externalPostId: string;
   fetchedAt: Date;
   id: string;
+  included: boolean;
   peerId: string | null;
   postUrl: string;
   publishedAt: Date;
@@ -31,6 +32,8 @@ export type TelegramCollectedPost = {
   channelHandle: string;
   channelTitle: string;
   externalPostId: string;
+  id: string;
+  included: boolean;
   peerId: string | null;
   postUrl: string;
   publishedAt: string;
@@ -41,6 +44,8 @@ export type TelegramSourceDigest = {
   channels: Array<{
     channelHandle: string;
     channelTitle: string;
+    excludedPostCount: number;
+    includedPostCount: number;
     peerId: string | null;
     postCount: number;
     posts: TelegramCollectedPost[];
@@ -114,6 +119,31 @@ export async function getWeeklyTelegramDigest(
   return getTelegramDigestForWindow("weekly", startAt, endAt, reportId ?? null);
 }
 
+export async function setTelegramCollectedPostIncluded(
+  id: string,
+  included: boolean,
+) {
+  if (!hasDatabaseUrl()) {
+    return null;
+  }
+
+  await ensureTelegramCollectorStorage();
+  await db.$executeRawUnsafe(
+    `
+      UPDATE "TelegramCollectedPost"
+      SET "included" = $3,
+          "updatedAt" = NOW()
+      WHERE "tenantId" = $1 AND "id" = $2
+    `,
+    getActiveIndexConfig().id,
+    id,
+    included,
+  );
+
+  revalidateTelegramCollectorViews();
+  return { id, included };
+}
+
 async function getTelegramDigestForWindow(
   reportKind: ReportKind,
   startAt: Date,
@@ -149,21 +179,31 @@ async function getTelegramDigestForWindow(
     endAt.toISOString(),
   );
 
-  const postsByHandle = new Map<string, TelegramCollectedPost[]>();
+  const includedPostsByHandle = new Map<string, TelegramCollectedPost[]>();
+  const allPostsByHandle = new Map<string, TelegramCollectedPost[]>();
   for (const row of rows) {
     const next = mapStoredTelegramPost(row);
-    const list = postsByHandle.get(row.channelHandle) ?? [];
-    list.push(next);
-    postsByHandle.set(row.channelHandle, list);
+    const allList = allPostsByHandle.get(row.channelHandle) ?? [];
+    allList.push(next);
+    allPostsByHandle.set(row.channelHandle, allList);
+
+    if (next.included) {
+      const includedList = includedPostsByHandle.get(row.channelHandle) ?? [];
+      includedList.push(next);
+      includedPostsByHandle.set(row.channelHandle, includedList);
+    }
   }
 
   const channels = telegramSources.map((source) => {
-    const posts = postsByHandle.get(source.handle) ?? [];
+    const posts = allPostsByHandle.get(source.handle) ?? [];
+    const includedPosts = includedPostsByHandle.get(source.handle) ?? [];
     return {
       channelHandle: source.handle,
       channelTitle: source.title,
+      excludedPostCount: Math.max(posts.length - includedPosts.length, 0),
+      includedPostCount: includedPosts.length,
       peerId: source.peerId,
-      postCount: posts.length,
+      postCount: includedPosts.length,
       posts,
     };
   });
@@ -171,7 +211,7 @@ async function getTelegramDigestForWindow(
   return {
     channels,
     endAt: endAt.toISOString(),
-    postCount: rows.length,
+    postCount: rows.filter((row) => row.included).length,
     startAt: startAt.toISOString(),
   };
 }
@@ -332,6 +372,7 @@ async function ensureTelegramCollectorStorage() {
         "externalPostId" TEXT NOT NULL,
         "postUrl" TEXT NOT NULL,
         "publishedAt" TIMESTAMP(3) NOT NULL,
+        "included" BOOLEAN NOT NULL DEFAULT TRUE,
         "text" TEXT NOT NULL,
         "rawHtml" TEXT,
         "textHash" TEXT NOT NULL,
@@ -352,6 +393,10 @@ async function ensureTelegramCollectorStorage() {
     await db.$executeRawUnsafe(`
       CREATE INDEX IF NOT EXISTS "TelegramCollectedPost_tenantId_channelHandle_publishedAt_idx"
       ON "TelegramCollectedPost"("tenantId", "channelHandle", "publishedAt")
+    `);
+    await db.$executeRawUnsafe(`
+      ALTER TABLE "TelegramCollectedPost"
+      ADD COLUMN IF NOT EXISTS "included" BOOLEAN NOT NULL DEFAULT TRUE
     `);
   })();
 
@@ -492,6 +537,8 @@ function mapStoredTelegramPost(row: StoredTelegramPostRow): TelegramCollectedPos
     channelHandle: row.channelHandle,
     channelTitle: row.channelTitle ?? row.channelHandle,
     externalPostId: row.externalPostId,
+    id: row.id,
+    included: row.included,
     peerId: row.peerId,
     postUrl: row.postUrl,
     publishedAt: row.publishedAt.toISOString(),
