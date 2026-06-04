@@ -3,8 +3,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { SITE_CONFIG } from "@/lib/constants";
 import type { DemoUser } from "@/lib/demo-auth";
-import { InternalNav } from "@/components/layout/internal-nav";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { InternalNav } from "@/components/layout/internal-nav";
 
 type InternalShellProps = {
   children: ReactNode;
@@ -129,19 +129,29 @@ export function InternalShell({ children, user }: InternalShellProps) {
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-[118rem] gap-6 px-6 py-7 lg:grid-cols-[14rem_minmax(0,1fr)] lg:items-start lg:px-8">
-        <aside
-          className={
-            isSpike
-              ? "spike-internal-sidebar self-start rounded-[1.2rem] border border-white/18 bg-[#050505]/88 p-4 shadow-2xl shadow-black/20"
-              : "self-start border border-black bg-white p-4"
-          }
-        >
-          <p className="px-3 text-xs font-semibold uppercase tracking-[0.16em] text-black/40">
-            Navigation
-          </p>
-          <InternalNav isSpike={isSpike} items={navItems} />
-        </aside>
+      <div
+        className={
+          isSpike
+            ? "border-b border-white/10 bg-[#16153c]"
+            : "border-b border-black/10 bg-white"
+        }
+      >
+        <div className="mx-auto max-w-[118rem] px-6 py-3 lg:px-8">
+          <div
+            className={
+              isSpike
+                ? "overflow-x-auto rounded-[1.15rem] border border-white/12 bg-[#050505]/72 px-3 py-2 shadow-xl shadow-black/10"
+                : "overflow-x-auto rounded-[1.15rem] border border-black/10 bg-white px-3 py-2"
+            }
+          >
+            <div className="min-w-max">
+              <InternalNav isSpike={isSpike} items={navItems} layout="horizontal" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-[118rem] px-6 py-7 lg:px-8">
         <main className={isSpike ? "spike-internal-main" : undefined}>
           {children}
         </main>
