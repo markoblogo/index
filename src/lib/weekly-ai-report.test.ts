@@ -52,6 +52,7 @@ function buildManifest(overrides: Partial<WeeklyReportManifest> = {}) {
       channels: [],
       endAt: "2026-05-30T09:00:00.000Z",
       postCount: 0,
+      signature: "empty",
       startAt: "2026-05-23T09:00:00.000Z",
     },
     oneOffSources: [

@@ -52,6 +52,7 @@ export type TelegramSourceDigest = {
   }>;
   endAt: string;
   postCount: number;
+  signature: string;
   startAt: string;
 };
 
@@ -216,7 +217,7 @@ async function getTelegramDigestForWindow(
   reportId?: string | null,
 ): Promise<TelegramSourceDigest> {
   if (!hasDatabaseUrl()) {
-    return { channels: [], endAt: endAt.toISOString(), postCount: 0, startAt: startAt.toISOString() };
+    return { channels: [], endAt: endAt.toISOString(), postCount: 0, signature: "empty", startAt: startAt.toISOString() };
   }
 
   await ensureTelegramCollectorStorage();
@@ -225,7 +226,7 @@ async function getTelegramDigestForWindow(
   const handles = telegramSources.map((source) => source.handle);
 
   if (handles.length === 0) {
-    return { channels: [], endAt: endAt.toISOString(), postCount: 0, startAt: startAt.toISOString() };
+    return { channels: [], endAt: endAt.toISOString(), postCount: 0, signature: "empty", startAt: startAt.toISOString() };
   }
 
   const rows = await db.$queryRawUnsafe<StoredTelegramPostRow[]>(
@@ -277,6 +278,16 @@ async function getTelegramDigestForWindow(
     channels,
     endAt: endAt.toISOString(),
     postCount: rows.filter((row) => row.included).length,
+    signature: buildDigestSignature(
+      rows
+        .filter((row) => row.included)
+        .map((row) => ({
+          channelHandle: row.channelHandle,
+          externalPostId: row.externalPostId,
+          publishedAt: row.publishedAt.toISOString(),
+          textHash: row.textHash,
+        })),
+    ),
     startAt: startAt.toISOString(),
   };
 }
@@ -609,6 +620,35 @@ function mapStoredTelegramPost(row: StoredTelegramPostRow): TelegramCollectedPos
     publishedAt: row.publishedAt.toISOString(),
     text: row.text,
   };
+}
+
+function buildDigestSignature(
+  rows: Array<{
+    channelHandle: string;
+    externalPostId: string;
+    publishedAt: string;
+    textHash: string;
+  }>,
+) {
+  if (rows.length === 0) {
+    return "empty";
+  }
+
+  return createHash("sha1")
+    .update(
+      rows
+        .map((row) =>
+          [
+            row.channelHandle,
+            row.externalPostId,
+            row.publishedAt,
+            row.textHash,
+          ].join(":"),
+        )
+        .join("|"),
+    )
+    .digest("hex")
+    .slice(0, 12);
 }
 
 function escapeRegExp(value: string) {

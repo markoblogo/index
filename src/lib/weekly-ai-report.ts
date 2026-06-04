@@ -132,6 +132,7 @@ export type WeeklyReportManifest = {
     }>;
     endAt: string;
     postCount: number;
+    signature: string;
     startAt: string;
   };
   oneOffSources: WeeklyReportSource[];
@@ -1690,6 +1691,7 @@ function normalizeGeneratedWeeklyReportJson(
         channels: [],
         endAt: "",
         postCount: 0,
+        signature: "empty",
         startAt: "",
       },
       oneOffSources: [],

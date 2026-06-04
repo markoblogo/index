@@ -134,6 +134,10 @@ export default async function ReportsWorkspacePage({
     hasDatabase,
     weeklyResources,
   });
+  const weeklySurfaceState =
+    activeWeeklyReport && weeklyReadiness
+      ? assessWeeklyWorkflowSurface(activeWeeklyReport, weeklyDigest, editorialPost)
+      : null;
 
   async function saveConfigAction(formData: FormData) {
     "use server";
@@ -520,6 +524,43 @@ export default async function ReportsWorkspacePage({
         ) : null}
       </section>
 
+      {activeWeeklyReport && weeklySurfaceState ? (
+        <section className="grid gap-4 rounded-[1.5rem] border border-white/12 bg-[#050505] p-5">
+          <div>
+            <h2 className="text-lg font-semibold text-white">Weekly control center</h2>
+            <p className="mt-2 text-sm leading-6 text-white/62">
+              One-place orientation for draft freshness, publication state and editorial sync health.
+            </p>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <SurfaceStatusCard
+              detail={`Window ${formatDigestDate(weeklyDigest.startAt)} → ${formatDigestDate(weeklyDigest.endAt)} · ${weeklyDigest.postCount} included / ${weeklySurfaceState.excludedPosts} excluded`}
+              label="Filtered source set"
+              tone={weeklySurfaceState.digestMatchesCurrent ? "ok" : "warn"}
+              value={weeklySurfaceState.digestMatchesCurrent ? "current" : "stale"}
+            />
+            <SurfaceStatusCard
+              detail={`Status ${activeWeeklyReport.status} · generated ${activeWeeklyReport.aiGeneratedAt ?? "n/a"}`}
+              label="Weekly draft"
+              tone={weeklySurfaceState.digestMatchesCurrent ? "ok" : "warn"}
+              value={weeklySurfaceState.digestMatchesCurrent ? "aligned" : "needs regenerate"}
+            />
+            <SurfaceStatusCard
+              detail={`Website ${activeWeeklyReport.status} · Telegram ${activeWeeklyReport.telegramSendAt ?? "n/a"}${activeWeeklyReport.adminEditedContent?.holdPublication ? " · hold enabled" : ""}`}
+              label="Publication path"
+              tone={activeWeeklyReport.adminEditedContent?.holdPublication ? "warn" : "ok"}
+              value={activeWeeklyReport.adminEditedContent?.holdPublication ? "held" : "armed"}
+            />
+            <SurfaceStatusCard
+              detail={`Editorial ${weeklySurfaceState.editorialStatusLabel} · slug ${weeklySurfaceState.editorialSlug}`}
+              label="Public editorial post"
+              tone={weeklySurfaceState.editorialMatchesCurrent ? "ok" : "warn"}
+              value={weeklySurfaceState.editorialMatchesCurrent ? "current" : "out of sync"}
+            />
+          </div>
+        </section>
+      ) : null}
+
       <div className="grid gap-6 xl:grid-cols-2">
         <WorkspaceLane
           addResourceAction={addResourceAction}
@@ -566,6 +607,7 @@ export default async function ReportsWorkspacePage({
               <TelegramDigestPreview
                 digest={dailyDigest}
                 generateAction={null}
+                generationState={null}
                 reportId={null}
                 reportKind="daily"
                 resetWindowFiltersAction={resetWindowFiltersAction}
@@ -592,6 +634,15 @@ export default async function ReportsWorkspacePage({
               <TelegramDigestPreview
                 digest={weeklyDigest}
                 generateAction={generateAction}
+                generationState={
+                  weeklySurfaceState
+                    ? {
+                        generatedAt: activeWeeklyReport.aiGeneratedAt,
+                        isCurrent: weeklySurfaceState.digestMatchesCurrent,
+                        signature: weeklyDigest.signature,
+                      }
+                    : null
+                }
                 reportId={activeWeeklyReport.id}
                 reportKind="weekly"
                 resetWindowFiltersAction={resetWindowFiltersAction}
@@ -1053,6 +1104,7 @@ function ResourceList({
 function TelegramDigestPreview({
   digest,
   generateAction,
+  generationState,
   reportId,
   reportKind,
   resetWindowFiltersAction,
@@ -1063,6 +1115,11 @@ function TelegramDigestPreview({
 }: {
   digest: TelegramSourceDigest;
   generateAction: ((formData: FormData) => Promise<void>) | null;
+  generationState: {
+    generatedAt: string | null;
+    isCurrent: boolean;
+    signature: string;
+  } | null;
   reportId: string | null;
   reportKind: ReportKind;
   resetWindowFiltersAction: (formData: FormData) => Promise<void>;
@@ -1137,8 +1194,18 @@ function TelegramDigestPreview({
             <form action={generateAction} className="flex items-center gap-3">
               <input name="reportId" type="hidden" value={reportId} />
               <div className="text-right text-xs leading-5 text-white/55">
-                <p>Generation uses only currently included posts.</p>
-                <p>Excluded posts stay out of the prompt context.</p>
+                <p>
+                  {generationState
+                    ? generationState.isCurrent
+                      ? "Current weekly draft matches this filtered source set."
+                      : "Current weekly draft is stale versus this filtered source set."
+                    : "Generation uses only currently included posts."}
+                </p>
+                <p>
+                  {generationState
+                    ? `Last generation: ${generationState.generatedAt ?? "n/a"} · set ${generationState.signature}`
+                    : "Excluded posts stay out of the prompt context."}
+                </p>
               </div>
               <button
                 className="rounded-full bg-uga-green px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#82ff4d] disabled:cursor-not-allowed disabled:bg-white/15 disabled:text-white/35"
@@ -1459,6 +1526,7 @@ function WeeklyWorkflowCard({
             activeReport={activeReport}
             canPublishEditorialArticle={canPublishEditorialArticle}
             editorialPost={editorialPost}
+            editorialSyncState={assessEditorialSyncState(activeReport, editorialPost)}
             publishEditorialArticleAction={publishEditorialArticleAction}
             republishEditorialArticleAction={republishEditorialArticleAction}
             syncEditorialArticleAction={syncEditorialArticleAction}
@@ -1529,6 +1597,7 @@ function EditorialPublishBox({
   activeReport,
   canPublishEditorialArticle,
   editorialPost,
+  editorialSyncState,
   publishEditorialArticleAction,
   republishEditorialArticleAction,
   syncEditorialArticleAction,
@@ -1537,6 +1606,11 @@ function EditorialPublishBox({
   activeReport: WeeklyReportRecord;
   canPublishEditorialArticle: boolean;
   editorialPost: WeeklyEditorialPostRow | null;
+  editorialSyncState: {
+    currentSignature: string;
+    isCurrent: boolean;
+    storedSignature: string | null;
+  };
   publishEditorialArticleAction: (formData: FormData) => Promise<void>;
   republishEditorialArticleAction: (formData: FormData) => Promise<void>;
   syncEditorialArticleAction: (formData: FormData) => Promise<void>;
@@ -1605,10 +1679,13 @@ function EditorialPublishBox({
       </div>
       <div className="mt-3 grid gap-2 text-sm text-white/68">
         <p><span className="font-semibold text-white">Status:</span> {status === "not_materialized" ? "not materialized" : status}</p>
+        <p><span className="font-semibold text-white">Sync state:</span> {editorialSyncState.isCurrent ? "current" : "source changed since last sync"}</p>
         <p><span className="font-semibold text-white">URL:</span> {publicUrl ?? predictedUrl}</p>
         <p><span className="font-semibold text-white">Slug:</span> {effectiveSlug}</p>
         <p><span className="font-semibold text-white">Slug override:</span> {activeReport.adminEditedContent?.editorialSlugOverride?.trim() || "none"}</p>
         <p><span className="font-semibold text-white">Published at:</span> {editorialPost?.publishedAt?.toISOString() ?? "n/a"}</p>
+        <p><span className="font-semibold text-white">Current signature:</span> {editorialSyncState.currentSignature}</p>
+        <p><span className="font-semibold text-white">Stored signature:</span> {editorialSyncState.storedSignature ?? "n/a"}</p>
         <p><span className="font-semibold text-white">Source:</span> {activeReport.content?.blogDraft ? "weekly blogDraft available" : "blogDraft missing"}</p>
         {publicUrl ? (
           <p>
@@ -1643,6 +1720,126 @@ function buildRedirectUrl(
   }
   search.set("notice", notice);
   return `/admin/reports?${search.toString()}`;
+}
+
+function SurfaceStatusCard({
+  detail,
+  label,
+  tone,
+  value,
+}: {
+  detail: string;
+  label: string;
+  tone: "ok" | "warn";
+  value: string;
+}) {
+  return (
+    <article className="rounded-[1rem] border border-white/10 bg-black/30 p-4">
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-sm font-semibold text-white">{label}</h3>
+        <span
+          className={`rounded-full px-2 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.12em] ${
+            tone === "ok"
+              ? "bg-uga-green/15 text-uga-green"
+              : "bg-amber-400/15 text-amber-100"
+          }`}
+        >
+          {value}
+        </span>
+      </div>
+      <p className="mt-3 text-sm leading-6 text-white/68">{detail}</p>
+    </article>
+  );
+}
+
+function assessWeeklyWorkflowSurface(
+  report: WeeklyReportRecord,
+  digest: TelegramSourceDigest,
+  editorialPost: WeeklyEditorialPostRow | null,
+) {
+  const totalExcluded = digest.channels.reduce(
+    (sum, channel) => sum + channel.excludedPostCount,
+    0,
+  );
+  const manifestSignature = report.sourceManifest?.telegramDigest?.signature ?? null;
+  const digestMatchesCurrent = manifestSignature === digest.signature;
+  const editorialSyncState = assessEditorialSyncState(report, editorialPost);
+
+  return {
+    digestMatchesCurrent,
+    editorialMatchesCurrent: editorialSyncState.isCurrent,
+    editorialSlug:
+      editorialPost?.slug ||
+      report.adminEditedContent?.editorialSlugOverride?.trim() ||
+      report.content?.blogDraft?.slug ||
+      "n/a",
+    editorialStatusLabel: editorialPost
+      ? editorialPost.status === "published"
+        ? "published"
+        : "draft"
+      : "not materialized",
+    excludedPosts: totalExcluded,
+  };
+}
+
+function assessEditorialSyncState(
+  report: WeeklyReportRecord,
+  editorialPost: WeeklyEditorialPostRow | null,
+) {
+  const currentSignature = buildEditorialDraftSignature(report);
+  const storedSignature = editorialPost
+    ? buildEditorialStoredSignature(editorialPost)
+    : null;
+
+  return {
+    currentSignature,
+    isCurrent: Boolean(storedSignature) && storedSignature === currentSignature,
+    storedSignature,
+  };
+}
+
+function buildEditorialDraftSignature(report: WeeklyReportRecord) {
+  const draft = report.content?.blogDraft;
+  const slug =
+    report.adminEditedContent?.editorialSlugOverride?.trim() || draft?.slug || "";
+  const payload = JSON.stringify({
+    coverImageAlt:
+      report.adminEditedContent?.coverImageAlt?.trim() || draft?.coverAlt || "",
+    coverImageUrl: report.adminEditedContent?.coverImageUrl?.trim() || "",
+    intro: draft?.intro || "",
+    sections: draft?.sections || [],
+    seoDescription: draft?.seoDescription || "",
+    slug,
+    subtitle: draft?.subtitle || "",
+    title: draft?.title || "",
+  });
+
+  return shortHash(payload);
+}
+
+function buildEditorialStoredSignature(post: WeeklyEditorialPostRow) {
+  return shortHash(
+    JSON.stringify({
+      coverImageAlt: post.coverImageAlt || "",
+      coverImageUrl: post.coverImageUrl || "",
+      intro: post.intro,
+      sections: post.sectionsJson,
+      seoDescription: post.seoDescription,
+      slug: post.slug,
+      subtitle: post.subtitle,
+      title: post.title,
+    }),
+  );
+}
+
+function shortHash(value: string) {
+  let hash = 0;
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
+  }
+
+  return hash.toString(16).padStart(8, "0").slice(0, 8);
 }
 
 function buildOperationalReadiness({
