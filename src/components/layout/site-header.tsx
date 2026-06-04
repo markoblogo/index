@@ -16,7 +16,13 @@ export function SiteHeader({ locale }: { locale: Locale }) {
     { href: `/${locale}/analytics`, label: dict.nav.analytics },
     { href: `/${locale}/subscription`, label: dict.nav.subscription },
     ...(SITE_CONFIG.tenantId === "spike-ua"
-      ? [{ href: `/${locale}/blog`, label: locale === "uk" ? "Блог" : "Blog" }]
+      ? [
+          { href: `/${locale}/blog`, label: locale === "uk" ? "Блог" : "Blog" },
+          {
+            href: `/${locale}/market-intelligence`,
+            label: locale === "uk" ? "Market Intelligence" : "Market Intelligence",
+          },
+        ]
       : []),
   ];
 
