@@ -6,7 +6,7 @@ import { db, hasDatabaseUrl } from "@/lib/db";
 import { createGeneratedMediaAsset } from "@/lib/generated-media-asset";
 import type { Locale } from "@/lib/i18n";
 import { getActiveIndexConfig } from "@/lib/index-platform";
-import { upsertWeeklyEditorialPostFromSnapshot } from "@/lib/weekly-editorial-post-storage";
+import { syncWeeklyEditorialPostFromReport } from "@/lib/weekly-editorial-posts";
 import {
   getLocalizedReportWorkspaceText,
   getReportWorkspaceConfig,
@@ -153,6 +153,7 @@ export type WeeklyReportRecord = {
     coverImageCaption?: string;
     coverImageUrl?: string;
     coverImageAlt?: string;
+    editorialSlugOverride?: string;
     holdPublication?: boolean;
     manualNotes?: string;
     structuredDataPack?: string;
@@ -512,6 +513,7 @@ export async function saveWeeklyReportAdminInputs(
     coverImageAlt?: string;
     coverImageCaption?: string;
     coverImageUrl?: string;
+    editorialSlugOverride?: string;
     holdPublication?: boolean;
     manualNotes?: string;
     structuredDataPack?: string;
@@ -535,6 +537,10 @@ export async function saveWeeklyReportAdminInputs(
       "",
     coverImageUrl:
       payload.coverImageUrl ?? report.adminEditedContent?.coverImageUrl ?? "",
+    editorialSlugOverride:
+      payload.editorialSlugOverride ??
+      report.adminEditedContent?.editorialSlugOverride ??
+      "",
     holdPublication:
       payload.holdPublication ?? report.adminEditedContent?.holdPublication ?? false,
     manualNotes:
@@ -1303,24 +1309,7 @@ export async function publishWeeklyReport(
   });
   const publishedReport = await getWeeklyReportById(reportId);
   if (publishedReport?.content?.blogDraft) {
-    await upsertWeeklyEditorialPostFromSnapshot({
-      coverImageAlt:
-        publishedReport.adminEditedContent?.coverImageAlt?.trim() ||
-        publishedReport.content.blogDraft.coverAlt,
-      coverImageUrl:
-        publishedReport.adminEditedContent?.coverImageUrl?.trim() || null,
-      intro: publishedReport.content.blogDraft.intro,
-      language: publishedReport.language,
-      relatedReportId: publishedReport.id,
-      relatedReportSlug: publishedReport.slug,
-      relatedReportTitle: publishedReport.title,
-      sections: publishedReport.content.blogDraft.sections,
-      seoDescription: publishedReport.content.blogDraft.seoDescription,
-      slug: publishedReport.content.blogDraft.slug,
-      subtitle: publishedReport.content.blogDraft.subtitle,
-      title: publishedReport.content.blogDraft.title,
-      weekEndDate: publishedReport.weekEndDate,
-    }, {
+    await syncWeeklyEditorialPostFromReport(publishedReport, {
       preserveStatus: true,
     });
   }

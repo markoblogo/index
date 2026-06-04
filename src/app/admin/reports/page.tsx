@@ -46,10 +46,12 @@ import {
   type WeeklyReportRecord,
 } from "@/lib/weekly-ai-report";
 import {
+  syncWeeklyEditorialPostFromReport,
+} from "@/lib/weekly-editorial-posts";
+import {
   getWeeklyEditorialPostRowByReportId,
   publishWeeklyEditorialPostByReportId,
   unpublishWeeklyEditorialPostByReportId,
-  upsertWeeklyEditorialPostFromSnapshot,
   type WeeklyEditorialPostRow,
 } from "@/lib/weekly-editorial-post-storage";
 
@@ -73,6 +75,8 @@ const noticeMap: Record<string, string> = {
   published: "Weekly report published.",
   article_published: "Market-intelligence article published.",
   article_unpublished: "Market-intelligence article moved back to draft.",
+  article_synced: "Market-intelligence article draft synced.",
+  article_republished: "Published market-intelligence article synced.",
   report_ready: "Weekly report loaded.",
   resource_added: "Resource added.",
   post_filter_updated: "Collected post filter updated.",
@@ -213,6 +217,7 @@ export default async function ReportsWorkspacePage({
       coverImageAlt: String(formData.get("coverImageAlt") ?? ""),
       coverImageCaption: String(formData.get("coverImageCaption") ?? ""),
       coverImageUrl: String(formData.get("coverImageUrl") ?? ""),
+      editorialSlugOverride: String(formData.get("editorialSlugOverride") ?? ""),
       holdPublication: String(formData.get("holdPublication") ?? "") === "1",
       manualNotes: String(formData.get("manualNotes") ?? ""),
       structuredDataPack: String(formData.get("structuredDataPack") ?? ""),
@@ -263,23 +268,7 @@ export default async function ReportsWorkspacePage({
     const reportId = String(formData.get("reportId") ?? "");
     const report = await getWeeklyReportById(reportId);
     if (report?.content?.blogDraft) {
-      await upsertWeeklyEditorialPostFromSnapshot({
-        coverImageAlt:
-          report.adminEditedContent?.coverImageAlt?.trim() ||
-          report.content.blogDraft.coverAlt,
-        coverImageUrl: report.adminEditedContent?.coverImageUrl?.trim() || null,
-        intro: report.content.blogDraft.intro,
-        language: report.language,
-        relatedReportId: report.id,
-        relatedReportSlug: report.slug,
-        relatedReportTitle: report.title,
-        sections: report.content.blogDraft.sections,
-        seoDescription: report.content.blogDraft.seoDescription,
-        slug: report.content.blogDraft.slug,
-        subtitle: report.content.blogDraft.subtitle,
-        title: report.content.blogDraft.title,
-        weekEndDate: report.weekEndDate,
-      }, {
+      await syncWeeklyEditorialPostFromReport(report, {
         preserveStatus: true,
       });
       await publishWeeklyEditorialPostByReportId(reportId);
@@ -295,6 +284,35 @@ export default async function ReportsWorkspacePage({
     await unpublishWeeklyEditorialPostByReportId(reportId);
     const nextReport = await getWeeklyReportById(reportId);
     redirect(`/admin/reports?reportId=${reportId}&week=${nextReport?.weekEndDate ?? getDefaultWeekEnd()}&lang=${nextReport?.language ?? selectedLanguage}&notice=article_unpublished`);
+  }
+
+  async function syncEditorialArticleAction(formData: FormData) {
+    "use server";
+
+    const reportId = String(formData.get("reportId") ?? "");
+    const report = await getWeeklyReportById(reportId);
+    if (report?.content?.blogDraft) {
+      await syncWeeklyEditorialPostFromReport(report, {
+        preserveStatus: true,
+      });
+    }
+    const nextReport = await getWeeklyReportById(reportId);
+    redirect(`/admin/reports?reportId=${reportId}&week=${nextReport?.weekEndDate ?? getDefaultWeekEnd()}&lang=${nextReport?.language ?? selectedLanguage}&notice=article_synced`);
+  }
+
+  async function republishEditorialArticleAction(formData: FormData) {
+    "use server";
+
+    const reportId = String(formData.get("reportId") ?? "");
+    const report = await getWeeklyReportById(reportId);
+    if (report?.content?.blogDraft) {
+      await syncWeeklyEditorialPostFromReport(report, {
+        preserveStatus: false,
+        status: "published",
+      });
+    }
+    const nextReport = await getWeeklyReportById(reportId);
+    redirect(`/admin/reports?reportId=${reportId}&week=${nextReport?.weekEndDate ?? getDefaultWeekEnd()}&lang=${nextReport?.language ?? selectedLanguage}&notice=article_republished`);
   }
 
   async function scheduleTelegramAction(formData: FormData) {
@@ -591,10 +609,12 @@ export default async function ReportsWorkspacePage({
               publishAction={publishAction}
               publishEditorialArticleAction={publishEditorialArticleAction}
               publicReadiness={weeklyReadiness}
+              republishEditorialArticleAction={republishEditorialArticleAction}
               rebuildManifestAction={rebuildManifestAction}
               saveNotesAction={saveNotesAction}
               scheduleTelegramAction={scheduleTelegramAction}
               sendTelegramNowAction={sendTelegramNowAction}
+              syncEditorialArticleAction={syncEditorialArticleAction}
               unpublishEditorialArticleAction={unpublishEditorialArticleAction}
               />
             </>
@@ -1267,10 +1287,12 @@ function WeeklyWorkflowCard({
   publishAction,
   publishEditorialArticleAction,
   publicReadiness,
+  republishEditorialArticleAction,
   rebuildManifestAction,
   saveNotesAction,
   scheduleTelegramAction,
   sendTelegramNowAction,
+  syncEditorialArticleAction,
   unpublishEditorialArticleAction,
 }: {
   activeReport: WeeklyReportRecord;
@@ -1281,10 +1303,12 @@ function WeeklyWorkflowCard({
   publishAction: (formData: FormData) => Promise<void>;
   publishEditorialArticleAction: (formData: FormData) => Promise<void>;
   publicReadiness: ReturnType<typeof assessWeeklyReportPublicReadiness> | null;
+  republishEditorialArticleAction: (formData: FormData) => Promise<void>;
   rebuildManifestAction: (formData: FormData) => Promise<void>;
   saveNotesAction: (formData: FormData) => Promise<void>;
   scheduleTelegramAction: (formData: FormData) => Promise<void>;
   sendTelegramNowAction: (formData: FormData) => Promise<void>;
+  syncEditorialArticleAction: (formData: FormData) => Promise<void>;
   unpublishEditorialArticleAction: (formData: FormData) => Promise<void>;
 }) {
   const editorialStatus =
@@ -1335,17 +1359,6 @@ function WeeklyWorkflowCard({
           { action: generateCoverAction, label: "Generate cover asset", disabled: !activeReport.content?.blogDraft },
           { action: approveAction, label: "Approve" },
           { action: publishAction, label: "Publish weekly report", disabled: !publicReadiness?.canPublish },
-          {
-            action:
-              editorialStatus === "published"
-                ? unpublishEditorialArticleAction
-                : publishEditorialArticleAction,
-            label:
-              editorialStatus === "published"
-                ? "Unpublish market-intelligence article"
-                : "Publish market-intelligence article",
-            disabled: !canPublishEditorialArticle,
-          },
           { action: scheduleTelegramAction, label: "Schedule Telegram", disabled: !publicReadiness?.canScheduleTelegram },
           { action: sendTelegramNowAction, label: "Send Telegram now", disabled: !publicReadiness?.canSendTelegram },
         ].map((item) => (
@@ -1402,26 +1415,35 @@ function WeeklyWorkflowCard({
             Weekly cover caption
             <input
               className="rounded-xl border border-white/12 bg-black px-3 py-2 text-sm text-white"
-            defaultValue={activeReport.adminEditedContent?.coverImageCaption ?? ""}
-            name="coverImageCaption"
-          />
-        </label>
-        <label className="flex items-start gap-3 rounded-xl border border-red-400/18 bg-red-400/6 px-4 py-3 text-sm text-white/78 md:col-span-2">
-          <input
-            className="mt-1 h-4 w-4"
-            defaultChecked={holdPublication}
-            name="holdPublication"
-            type="checkbox"
-            value="1"
-          />
-          <span>
-            <span className="font-semibold text-white">Hold automatic publication</span>
-            <span className="block text-white/62">
-              Stops deadline fail-safe publication for both website and Telegram until manually released.
+              defaultValue={activeReport.adminEditedContent?.coverImageCaption ?? ""}
+              name="coverImageCaption"
+            />
+          </label>
+          <label className="grid gap-2 text-sm font-semibold text-white/78 md:col-span-2">
+            Editorial slug override
+            <input
+              className="rounded-xl border border-white/12 bg-black px-3 py-2 text-sm text-white"
+              defaultValue={activeReport.adminEditedContent?.editorialSlugOverride ?? ""}
+              name="editorialSlugOverride"
+              placeholder={activeReport.content?.blogDraft?.slug ?? "weekly-market-intelligence-slug"}
+            />
+          </label>
+          <label className="flex items-start gap-3 rounded-xl border border-red-400/18 bg-red-400/6 px-4 py-3 text-sm text-white/78 md:col-span-2">
+            <input
+              className="mt-1 h-4 w-4"
+              defaultChecked={holdPublication}
+              name="holdPublication"
+              type="checkbox"
+              value="1"
+            />
+            <span>
+              <span className="font-semibold text-white">Hold automatic publication</span>
+              <span className="block text-white/62">
+                Stops deadline fail-safe publication for both website and Telegram until manually released.
+              </span>
             </span>
-          </span>
-        </label>
-      </div>
+          </label>
+        </div>
         <button className="w-fit rounded-full bg-uga-green px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#82ff4d]" type="submit">
           Save weekly inputs
         </button>
@@ -1435,7 +1457,12 @@ function WeeklyWorkflowCard({
           ) : null}
           <EditorialPublishBox
             activeReport={activeReport}
+            canPublishEditorialArticle={canPublishEditorialArticle}
             editorialPost={editorialPost}
+            publishEditorialArticleAction={publishEditorialArticleAction}
+            republishEditorialArticleAction={republishEditorialArticleAction}
+            syncEditorialArticleAction={syncEditorialArticleAction}
+            unpublishEditorialArticleAction={unpublishEditorialArticleAction}
           />
         </div>
       </div>
@@ -1500,23 +1527,87 @@ function ReadinessBox({
 
 function EditorialPublishBox({
   activeReport,
+  canPublishEditorialArticle,
   editorialPost,
+  publishEditorialArticleAction,
+  republishEditorialArticleAction,
+  syncEditorialArticleAction,
+  unpublishEditorialArticleAction,
 }: {
   activeReport: WeeklyReportRecord;
+  canPublishEditorialArticle: boolean;
   editorialPost: WeeklyEditorialPostRow | null;
+  publishEditorialArticleAction: (formData: FormData) => Promise<void>;
+  republishEditorialArticleAction: (formData: FormData) => Promise<void>;
+  syncEditorialArticleAction: (formData: FormData) => Promise<void>;
+  unpublishEditorialArticleAction: (formData: FormData) => Promise<void>;
 }) {
-  const status = editorialPost?.status === "published" ? "published" : "draft";
+  const status = editorialPost
+    ? (editorialPost.status === "published" ? "published" : "draft")
+    : "not_materialized";
   const publicUrl =
     editorialPost?.status === "published"
       ? `/${activeReport.language === "uk" ? "uk" : "en"}/market-intelligence/${editorialPost.slug}`
       : null;
+  const effectiveSlug =
+    editorialPost?.slug ||
+    activeReport.adminEditedContent?.editorialSlugOverride?.trim() ||
+    activeReport.content?.blogDraft?.slug ||
+    "n/a";
+  const predictedUrl =
+    effectiveSlug !== "n/a"
+      ? `/${activeReport.language === "uk" ? "uk" : "en"}/market-intelligence/${effectiveSlug}`
+      : "n/a";
 
   return (
     <div className="rounded-[1rem] border border-white/10 p-4">
-      <h3 className="text-base font-semibold text-white">Market-intelligence article</h3>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="text-base font-semibold text-white">Public editorial post</h3>
+          <p className="mt-1 text-sm text-white/62">
+            Separate persisted public entity for SEO/LLMO article distribution.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <form action={syncEditorialArticleAction}>
+            <input name="reportId" type="hidden" value={activeReport.id} />
+            <button
+              className="rounded-full border border-white/15 px-3 py-1 text-xs font-semibold text-white transition hover:border-uga-green hover:text-uga-green disabled:cursor-not-allowed disabled:border-white/10 disabled:text-white/25"
+              disabled={!activeReport.content?.blogDraft}
+              type="submit"
+            >
+              {editorialPost ? "Sync draft" : "Materialize draft"}
+            </button>
+          </form>
+          <form action={republishEditorialArticleAction}>
+            <input name="reportId" type="hidden" value={activeReport.id} />
+            <button
+              className="rounded-full border border-uga-green/35 px-3 py-1 text-xs font-semibold text-uga-green transition hover:border-uga-green disabled:cursor-not-allowed disabled:border-white/10 disabled:text-white/25"
+              disabled={!activeReport.content?.blogDraft}
+              type="submit"
+            >
+              Republish / sync
+            </button>
+          </form>
+          <form action={status === "published" ? unpublishEditorialArticleAction : publishEditorialArticleAction}>
+            <input name="reportId" type="hidden" value={activeReport.id} />
+            <button
+              className="rounded-full border border-amber-400/35 px-3 py-1 text-xs font-semibold text-amber-100 transition hover:border-amber-300 disabled:cursor-not-allowed disabled:border-white/10 disabled:text-white/25"
+              disabled={!canPublishEditorialArticle && status !== "published"}
+              type="submit"
+            >
+              {status === "published"
+                ? "Unpublish"
+                : "Publish"}
+            </button>
+          </form>
+        </div>
+      </div>
       <div className="mt-3 grid gap-2 text-sm text-white/68">
-        <p><span className="font-semibold text-white">Status:</span> {status}</p>
-        <p><span className="font-semibold text-white">Slug:</span> {editorialPost?.slug ?? activeReport.content?.blogDraft?.slug ?? "n/a"}</p>
+        <p><span className="font-semibold text-white">Status:</span> {status === "not_materialized" ? "not materialized" : status}</p>
+        <p><span className="font-semibold text-white">URL:</span> {publicUrl ?? predictedUrl}</p>
+        <p><span className="font-semibold text-white">Slug:</span> {effectiveSlug}</p>
+        <p><span className="font-semibold text-white">Slug override:</span> {activeReport.adminEditedContent?.editorialSlugOverride?.trim() || "none"}</p>
         <p><span className="font-semibold text-white">Published at:</span> {editorialPost?.publishedAt?.toISOString() ?? "n/a"}</p>
         <p><span className="font-semibold text-white">Source:</span> {activeReport.content?.blogDraft ? "weekly blogDraft available" : "blogDraft missing"}</p>
         {publicUrl ? (

@@ -83,6 +83,24 @@ export async function getPublishedWeeklyEditorialPostByReportSlug(
   return mapWeeklyReportToEditorialPost(report);
 }
 
+export async function syncWeeklyEditorialPostFromReport(
+  report: WeeklyReportRecord,
+  options: {
+    preserveStatus?: boolean;
+    publishedAt?: string | null;
+    status?: "draft" | "published";
+  } = {},
+) {
+  if (!report.content?.blogDraft) {
+    return null;
+  }
+
+  return upsertWeeklyEditorialPostFromSnapshot(
+    buildSnapshotFromReport(report),
+    options,
+  );
+}
+
 function mapWeeklyReportToEditorialPost(report: WeeklyReportRecord): WeeklyEditorialPost {
   const blogDraft = report.content?.blogDraft;
   if (!blogDraft) {
@@ -169,6 +187,9 @@ function buildSnapshotFromReport(report: WeeklyReportRecord) {
     throw new Error("Weekly editorial post requires blogDraft");
   }
 
+  const slugOverride =
+    report.adminEditedContent?.editorialSlugOverride?.trim() || "";
+
   return {
     coverImageAlt:
       report.adminEditedContent?.coverImageAlt?.trim() || blogDraft.coverAlt,
@@ -180,7 +201,7 @@ function buildSnapshotFromReport(report: WeeklyReportRecord) {
     relatedReportTitle: report.title,
     sections: blogDraft.sections,
     seoDescription: blogDraft.seoDescription,
-    slug: blogDraft.slug,
+    slug: slugOverride || blogDraft.slug,
     subtitle: blogDraft.subtitle,
     title: blogDraft.title,
     weekEndDate: report.weekEndDate,
