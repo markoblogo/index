@@ -23,6 +23,8 @@ import {
 import { todayInputDate } from "@/lib/admin-daily-inputs";
 import {
   getDailyTelegramDigest,
+  resetTelegramCollectedPostsIncludedForWindow,
+  setTelegramCollectedPostsIncludedForChannel,
   setTelegramCollectedPostIncluded,
   getWeeklyTelegramDigest,
   syncTelegramWorkspaceResources,
@@ -60,6 +62,7 @@ const noticeMap: Record<string, string> = {
   cover_generated: "Weekly cover asset generated.",
   manifest: "Weekly source manifest rebuilt.",
   notes_saved: "Weekly editor inputs saved.",
+  post_filters_reset: "Digest filters reset for this window.",
   published: "Weekly report published.",
   report_ready: "Weekly report loaded.",
   resource_added: "Resource added.",
@@ -291,6 +294,34 @@ export default async function ReportsWorkspacePage({
     redirect(buildRedirectUrl(params, "post_filter_updated"));
   }
 
+  async function toggleChannelPostsAction(formData: FormData) {
+    "use server";
+
+    const channelHandle = String(formData.get("channelHandle") ?? "");
+    const included = String(formData.get("included") ?? "0") === "1";
+    const startAt = String(formData.get("startAt") ?? "");
+    const endAt = String(formData.get("endAt") ?? "");
+    await setTelegramCollectedPostsIncludedForChannel({
+      channelHandle,
+      endAt,
+      included,
+      startAt,
+    });
+    redirect(buildRedirectUrl(params, "post_filter_updated"));
+  }
+
+  async function resetWindowFiltersAction(formData: FormData) {
+    "use server";
+
+    const startAt = String(formData.get("startAt") ?? "");
+    const endAt = String(formData.get("endAt") ?? "");
+    await resetTelegramCollectedPostsIncludedForWindow({
+      endAt,
+      startAt,
+    });
+    redirect(buildRedirectUrl(params, "post_filters_reset"));
+  }
+
   return (
     <section className="grid gap-6">
       <header className="rounded-[1.5rem] border border-white/12 bg-[#050505] p-6 shadow-2xl shadow-black/20">
@@ -465,7 +496,9 @@ export default async function ReportsWorkspacePage({
             digest={dailyDigest}
             reportId={null}
             reportKind="daily"
+            resetWindowFiltersAction={resetWindowFiltersAction}
             syncSourcesAction={syncSourcesAction}
+            toggleChannelPostsAction={toggleChannelPostsAction}
             toggleCollectedPostAction={toggleCollectedPostAction}
             title="Daily collected Telegram posts"
           />
@@ -488,7 +521,9 @@ export default async function ReportsWorkspacePage({
                 digest={weeklyDigest}
                 reportId={activeWeeklyReport.id}
                 reportKind="weekly"
+                resetWindowFiltersAction={resetWindowFiltersAction}
                 syncSourcesAction={syncSourcesAction}
+                toggleChannelPostsAction={toggleChannelPostsAction}
                 toggleCollectedPostAction={toggleCollectedPostAction}
                 title="Weekly collected Telegram posts"
               />
@@ -941,14 +976,18 @@ function TelegramDigestPreview({
   digest,
   reportId,
   reportKind,
+  resetWindowFiltersAction,
   syncSourcesAction,
+  toggleChannelPostsAction,
   toggleCollectedPostAction,
   title,
 }: {
   digest: TelegramSourceDigest;
   reportId: string | null;
   reportKind: ReportKind;
+  resetWindowFiltersAction: (formData: FormData) => Promise<void>;
   syncSourcesAction: (formData: FormData) => Promise<void>;
+  toggleChannelPostsAction: (formData: FormData) => Promise<void>;
   toggleCollectedPostAction: (formData: FormData) => Promise<void>;
   title: string;
 }) {
@@ -961,16 +1000,28 @@ function TelegramDigestPreview({
             Window: {formatDigestDate(digest.startAt)} → {formatDigestDate(digest.endAt)} · {digest.postCount} included posts
           </p>
         </div>
-        <form action={syncSourcesAction}>
-          <input name="reportKind" type="hidden" value={reportKind} />
-          <input name="reportId" type="hidden" value={reportId ?? ""} />
-          <button
-            className="rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-white transition hover:border-uga-green hover:text-uga-green"
-            type="submit"
-          >
-            Refresh sync
-          </button>
-        </form>
+        <div className="flex flex-wrap gap-2">
+          <form action={resetWindowFiltersAction}>
+            <input name="startAt" type="hidden" value={digest.startAt} />
+            <input name="endAt" type="hidden" value={digest.endAt} />
+            <button
+              className="rounded-full border border-amber-400/35 px-4 py-2 text-sm font-semibold text-amber-100 transition hover:border-amber-300"
+              type="submit"
+            >
+              Reset filters for window
+            </button>
+          </form>
+          <form action={syncSourcesAction}>
+            <input name="reportKind" type="hidden" value={reportKind} />
+            <input name="reportId" type="hidden" value={reportId ?? ""} />
+            <button
+              className="rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-white transition hover:border-uga-green hover:text-uga-green"
+              type="submit"
+            >
+              Refresh sync
+            </button>
+          </form>
+        </div>
       </div>
 
       <div className="grid gap-3">
@@ -992,9 +1043,35 @@ function TelegramDigestPreview({
                         {channel.includedPostCount} included · {channel.excludedPostCount} excluded{channel.peerId ? ` · peer ${channel.peerId}` : ""}
                       </p>
                     </div>
-                    <span className="text-xs font-semibold uppercase tracking-[0.12em] text-uga-green">
-                      Open
-                    </span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <form action={toggleChannelPostsAction}>
+                        <input name="channelHandle" type="hidden" value={channel.channelHandle} />
+                        <input name="included" type="hidden" value="1" />
+                        <input name="startAt" type="hidden" value={digest.startAt} />
+                        <input name="endAt" type="hidden" value={digest.endAt} />
+                        <button
+                          className="rounded-full border border-uga-green/35 px-3 py-1 text-xs font-semibold text-uga-green transition hover:border-uga-green"
+                          type="submit"
+                        >
+                          Include all
+                        </button>
+                      </form>
+                      <form action={toggleChannelPostsAction}>
+                        <input name="channelHandle" type="hidden" value={channel.channelHandle} />
+                        <input name="included" type="hidden" value="0" />
+                        <input name="startAt" type="hidden" value={digest.startAt} />
+                        <input name="endAt" type="hidden" value={digest.endAt} />
+                        <button
+                          className="rounded-full border border-amber-400/35 px-3 py-1 text-xs font-semibold text-amber-100 transition hover:border-amber-300"
+                          type="submit"
+                        >
+                          Exclude all
+                        </button>
+                      </form>
+                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-uga-green">
+                        Open
+                      </span>
+                    </div>
                   </div>
                 </summary>
                 <div className="mt-4 grid gap-3">

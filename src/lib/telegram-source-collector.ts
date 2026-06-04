@@ -144,6 +144,71 @@ export async function setTelegramCollectedPostIncluded(
   return { id, included };
 }
 
+export async function setTelegramCollectedPostsIncludedForChannel(input: {
+  channelHandle: string;
+  endAt: string;
+  included: boolean;
+  startAt: string;
+}) {
+  if (!hasDatabaseUrl()) {
+    return null;
+  }
+
+  await ensureTelegramCollectorStorage();
+  await db.$executeRawUnsafe(
+    `
+      UPDATE "TelegramCollectedPost"
+      SET "included" = $5,
+          "updatedAt" = NOW()
+      WHERE "tenantId" = $1
+        AND "channelHandle" = $2
+        AND "publishedAt" >= $3
+        AND "publishedAt" < $4
+    `,
+    getActiveIndexConfig().id,
+    input.channelHandle,
+    input.startAt,
+    input.endAt,
+    input.included,
+  );
+
+  revalidateTelegramCollectorViews();
+  return {
+    channelHandle: input.channelHandle,
+    included: input.included,
+  };
+}
+
+export async function resetTelegramCollectedPostsIncludedForWindow(input: {
+  endAt: string;
+  startAt: string;
+}) {
+  if (!hasDatabaseUrl()) {
+    return null;
+  }
+
+  await ensureTelegramCollectorStorage();
+  await db.$executeRawUnsafe(
+    `
+      UPDATE "TelegramCollectedPost"
+      SET "included" = TRUE,
+          "updatedAt" = NOW()
+      WHERE "tenantId" = $1
+        AND "publishedAt" >= $2
+        AND "publishedAt" < $3
+    `,
+    getActiveIndexConfig().id,
+    input.startAt,
+    input.endAt,
+  );
+
+  revalidateTelegramCollectorViews();
+  return {
+    endAt: input.endAt,
+    startAt: input.startAt,
+  };
+}
+
 async function getTelegramDigestForWindow(
   reportKind: ReportKind,
   startAt: Date,
