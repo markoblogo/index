@@ -3,6 +3,7 @@ import { beforeAll, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 
 let buildAiBriefTelegramSummaryText: typeof import("@/lib/ai-market-brief").buildAiBriefTelegramSummaryText;
+let isAiBriefLocaleCompatible: typeof import("@/lib/ai-market-brief").isAiBriefLocaleCompatible;
 let mapConfidenceLabel: typeof import("@/lib/ai-market-brief").mapConfidenceLabel;
 
 const brief = {
@@ -40,7 +41,7 @@ const brief = {
 };
 
 beforeAll(async () => {
-  ({ buildAiBriefTelegramSummaryText, mapConfidenceLabel } =
+  ({ buildAiBriefTelegramSummaryText, isAiBriefLocaleCompatible, mapConfidenceLabel } =
     await import("@/lib/ai-market-brief"));
 });
 
@@ -67,5 +68,37 @@ describe("mapConfidenceLabel", () => {
     );
     expect(mapConfidenceLabel("normal", "en")).toBe("normal");
     expect(mapConfidenceLabel("strong", "en")).toBe("strong");
+  });
+});
+
+describe("isAiBriefLocaleCompatible", () => {
+  it("rejects english body text for Ukrainian briefs", () => {
+    expect(
+      isAiBriefLocaleCompatible(
+        {
+          ...brief,
+          blocks: brief.blocks.map((block) => ({
+            ...block,
+            body: block.body,
+          })),
+        },
+        "uk",
+      ),
+    ).toBe(false);
+  });
+
+  it("accepts Ukrainian body text for Ukrainian briefs", () => {
+    expect(
+      isAiBriefLocaleCompatible(
+        {
+          ...brief,
+          blocks: brief.blocks.map((block) => ({
+            ...block,
+            body: "Ринок не показує широкого руху по всіх позиціях.",
+          })),
+        },
+        "uk",
+      ),
+    ).toBe(true);
   });
 });

@@ -80,11 +80,14 @@ export async function getPublishedAiMarketBrief({
   }
 
   if (hasDatabaseUrl()) {
-    const latestDate = getLatestHistoryDate(history);
-    const stored = await findStoredBrief(locale, latestDate);
+    const resolved = await resolvePublishedAiMarketBrief({
+      activeRespondentCount,
+      history,
+      locale,
+    });
 
-    if (stored) {
-      return mapStoredBrief(stored, locale);
+    if (resolved) {
+      return resolved;
     }
 
     if (!allowMockFallback()) {
@@ -107,13 +110,19 @@ export async function getLatestAiCardComments(locale: Locale) {
     return {};
   }
 
-  const stored = await findStoredBrief(locale);
+  const history = await getRealAnalyticsHistory();
+  const activeRespondentCount = await getActiveRespondentCountData();
+  const brief = await resolvePublishedAiMarketBrief({
+    activeRespondentCount,
+    history,
+    locale,
+  });
 
-  if (!stored) {
+  if (!brief) {
     return {};
   }
 
-  return mapCardComments(stored.cardCommentsJson, locale);
+  return brief.cardComments;
 }
 
 export async function getAiMarketBriefAdminStatus(date: string) {
@@ -337,13 +346,19 @@ export async function sendAiBriefTelegramSummary(
     return { skippedReason: "telegram_not_configured", status: "skipped" };
   }
 
-  const stored = await findStoredBrief(locale, date);
+  const history = await getRealAnalyticsHistory();
+  const activeRespondentCount = await getActiveRespondentCountData();
+  const brief = await resolvePublishedAiMarketBrief({
+    activeRespondentCount,
+    date,
+    history,
+    locale,
+  });
 
-  if (!stored) {
+  if (!brief) {
     return { skippedReason: "brief_not_found", status: "skipped" };
   }
 
-  const brief = mapStoredBrief(stored, locale);
   const text = buildAiBriefTelegramSummaryText(brief, locale);
   const response = await fetch(
     `https://api.telegram.org/bot${botToken}/sendMessage`,
@@ -432,12 +447,16 @@ async function callOpenAiBrief(
   input: ReturnType<typeof buildBriefInput>,
 ) {
   const model = process.env.SPIKE_AI_BRIEF_MODEL || "gpt-4.1-mini";
+  const localeInstructions =
+    input.locale === "uk"
+      ? "Write every public text value in Ukrainian only. Keep commodity codes, price units, and proper nouns as needed, but all explanations, bullets, labels, and sentences must be Ukrainian."
+      : "Write every public text value in English only. Keep commodity codes, price units, and proper nouns as needed, but all explanations, bullets, labels, and sentences must be English.";
   const response = await fetch("https://api.openai.com/v1/responses", {
     body: JSON.stringify({
       input: [
         {
           content:
-            "You generate concise market intelligence briefs for SPIKE SPOT INDEX, a Ukrainian agro commodity spot benchmark. Use only the provided data. Do not invent prices, respondent names, trades, causes, news, or forecasts. Do not restate the full index table. Do not list all prices unless a value is necessary to explain a signal. Do not present scenarios as forecasts. Do not give trading advice. Public outputs must not expose model, token, cost, or debug data. The brief must answer: 1) what is the main market signal today, 2) which movements are meaningful, 3) where instability or divergence is visible, 4) what should be watched in the next publication cycle. Return strict JSON only with keys: marketSignal, keyMovers, riskRead, watchNext, dataConfidence, cardComments. keyMovers and watchNext should contain 2-3 short items each. dataConfidence must be one of limited, normal, strong. cardComments must contain one short object per provided position with code and comment. The brief is not trading advice.",
+            `You generate concise market intelligence briefs for SPIKE SPOT INDEX, a Ukrainian agro commodity spot benchmark. Use only the provided data. Do not invent prices, respondent names, trades, causes, news, or forecasts. Do not restate the full index table. Do not list all prices unless a value is necessary to explain a signal. Do not present scenarios as forecasts. Do not give trading advice. Public outputs must not expose model, token, cost, or debug data. ${localeInstructions} The brief must answer: 1) what is the main market signal today, 2) which movements are meaningful, 3) where instability or divergence is visible, 4) what should be watched in the next publication cycle. Return strict JSON only with keys: marketSignal, keyMovers, riskRead, watchNext, dataConfidence, cardComments. keyMovers and watchNext should contain 2-3 short items each. dataConfidence must be one of limited, normal, strong. cardComments must contain one short object per provided position with code and comment. The brief is not trading advice.`,
           role: "system",
         },
         {
@@ -697,6 +716,55 @@ function mapStoredBrief(
       totalTokens: row.totalTokens,
     },
   };
+}
+
+export function isAiBriefLocaleCompatible(
+  brief: PublicAiMarketBrief,
+  locale: Locale,
+) {
+  const text = brief.blocks
+    .map((block) => `${block.title}\n${block.body}`)
+    .join("\n");
+  const hasCyrillic = /[А-Яа-яЁёІіЇїЄєҐґ]/.test(text);
+  const hasLatin = /[A-Za-z]/.test(text);
+
+  return locale === "uk" ? hasCyrillic : hasLatin;
+}
+
+async function resolvePublishedAiMarketBrief({
+  activeRespondentCount,
+  date,
+  history,
+  locale,
+}: {
+  activeRespondentCount: number;
+  date?: string;
+  history: AiAnalyticsPoint[];
+  locale: Locale;
+}): Promise<PublicAiMarketBrief | null> {
+  const latestDate = date ?? getLatestHistoryDate(history);
+
+  if (!latestDate) {
+    return null;
+  }
+
+  const stored = await findStoredBrief(locale, latestDate);
+
+  if (stored) {
+    const mapped = mapStoredBrief(stored, locale);
+
+    if (isAiBriefLocaleCompatible(mapped, locale)) {
+      return mapped;
+    }
+  }
+
+  if (!stored && hasDatabaseUrl() && !allowMockFallback()) {
+    return null;
+  }
+
+  return buildDeterministicAiMarketBrief(history, locale, activeRespondentCount, {
+    fallbackReason: stored ? "locale_mismatch" : "demo_or_missing_saved_brief",
+  });
 }
 
 function buildDeterministicAiMarketBrief(
