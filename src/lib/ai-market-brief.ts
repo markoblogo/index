@@ -4,7 +4,7 @@ import { allowMockFallback, db, hasDatabaseUrl } from "@/lib/db";
 import type { Locale } from "@/lib/i18n";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import { commodities, type CommodityId } from "@/lib/mock-data";
-import { getPublicHistoryData } from "@/lib/public-api-data";
+import { getPublicHistoryData, getPublicLatestData } from "@/lib/public-api-data";
 import {
   getLocalizedReportWorkspaceText,
   getReportWorkspaceConfig,
@@ -391,10 +391,12 @@ export async function sendAiBriefTelegramSummary(
 
   const config = await getReportWorkspaceConfig("daily");
   const localized = getLocalizedReportWorkspaceText(config, locale);
+  const latestData = await getPublicLatestData();
   const text = buildAiBriefTelegramSummaryText(
     brief,
     locale,
     localized.telegramTemplate,
+    latestData,
   );
   const response = await fetch(
     `https://api.telegram.org/bot${botToken}/sendMessage`,
@@ -534,7 +536,7 @@ async function callOpenAiBrief(
       input: [
         {
           content:
-            `You generate concise market intelligence briefs for SPIKE SPOT INDEX, a Ukrainian agro commodity spot benchmark. Use only the provided data. Do not invent prices, respondent names, trades, causes, news, or forecasts. Do not restate the full index table. Do not list all prices unless a value is necessary to explain a signal. Do not present scenarios as forecasts. Do not give trading advice. Public outputs must not expose model, token, cost, or debug data. ${localeInstructions} The brief must answer: 1) what is the main market signal today, 2) which movements are meaningful, 3) where instability or divergence is visible, 4) what should be watched in the next publication cycle. Return strict JSON only with keys: marketSignal, keyMovers, riskRead, watchNext, dataConfidence, cardComments. keyMovers and watchNext should contain 2-3 short items each. dataConfidence must be one of limited, normal, strong. cardComments must contain one short object per provided position with code and comment. The brief is not trading advice.`,
+            `You generate concise but fact-dense market intelligence briefs for SPIKE SPOT INDEX, a Ukrainian agro commodity spot benchmark. Use only the provided data. Do not invent prices, respondent names, trades, causes, news, or forecasts. Do not restate the full index table. Do not list all prices unless a value is necessary to explain a signal. When telegram digest data is provided, use it to extract factual market context and concrete short observations rather than generic abstractions. Prefer specific observations about logistics, export flow, policy, trade tone, farmer selling pace, processor demand, cross-market pressure and observed market mood if such facts are present in the provided digest. Do not present scenarios as forecasts. Do not give trading advice. Public outputs must not expose model, token, cost, or debug data. ${localeInstructions} The brief must answer: 1) what is the main market signal today, 2) which movements are meaningful, 3) where instability or divergence is visible, 4) what should be watched in the next publication cycle. Return strict JSON only with keys: marketSignal, keyMovers, riskRead, watchNext, dataConfidence, cardComments. keyMovers and watchNext should contain 2-4 short fact-based items each. dataConfidence must be one of limited, normal, strong. cardComments must contain one short object per provided position with code and comment. The brief is not trading advice.`,
           role: "system",
         },
         {
@@ -1334,6 +1336,7 @@ export function buildAiBriefTelegramSummaryText(
   brief: PublicAiMarketBrief,
   locale: Locale,
   template?: string,
+  latestData: Awaited<ReturnType<typeof getPublicLatestData>> = [],
 ) {
   const signal = brief.blocks[0];
   const movers = brief.blocks[1];
@@ -1344,11 +1347,11 @@ export function buildAiBriefTelegramSummaryText(
       ? mapConfidenceLabel(brief.confidence, locale)
       : `Data confidence: ${mapConfidenceLabel(brief.confidence, locale)}`;
 
-  const defaultText =
+  const indexSummary = buildDailyIndexTelegramSection(locale, latestData);
+  const summaryOnlyText =
     locale === "uk"
       ? [
-      "<b>🌾 AI Market Brief · SPIKE SPOT INDEX</b>",
-      `<b>📅 ${escapeHtml(formatTelegramDate(brief.tradeDate, locale))}</b>`,
+      "<b>🧠 DAILY SUMMARY</b>",
       "",
       `<b>🔎 ${escapeHtml(signal?.title ?? "Головний сигнал дня")}</b>`,
       escapeHtml(signal?.body ?? ""),
@@ -1366,8 +1369,7 @@ export function buildAiBriefTelegramSummaryText(
       "<i>AI-assisted brief based on published SPIKE SPOT INDEX data. Not a trading recommendation.</i>",
     ].join("\n")
       : [
-    "<b>🌾 AI Market Brief · SPIKE SPOT INDEX</b>",
-    `<b>📅 ${escapeHtml(formatTelegramDate(brief.tradeDate, locale))}</b>`,
+    "<b>🧠 DAILY SUMMARY</b>",
     "",
     `<b>🔎 ${escapeHtml(signal?.title ?? "Today's Market Signal")}</b>`,
     escapeHtml(signal?.body ?? ""),
@@ -1385,17 +1387,106 @@ export function buildAiBriefTelegramSummaryText(
     "<i>AI-assisted brief based on published SPIKE SPOT INDEX data. Not a trading recommendation.</i>",
   ].join("\n");
 
+  const defaultText = [
+    locale === "uk"
+      ? "<b>🌾 Щоденний індекс + AI market summary · SPIKE SPOT INDEX</b>"
+      : "<b>🌾 Daily index + AI market summary · SPIKE SPOT INDEX</b>",
+    `<b>📅 ${escapeHtml(formatTelegramDate(brief.tradeDate, locale))}</b>`,
+    "",
+    indexSummary,
+    "",
+    summaryOnlyText,
+  ].join("\n");
+
   if (!template || !template.includes("{{")) {
     return defaultText;
   }
 
   return renderReportTelegramTemplate(template, {
-    ai_summary: defaultText,
-    index_summary:
-      locale === "uk"
-        ? "Індексний вступ підставляється з блоку публікації."
-        : "The index intro is injected by the publication block.",
+    ai_summary: summaryOnlyText,
+    index_summary: indexSummary,
   }).trim();
+}
+
+function buildDailyIndexTelegramSection(
+  locale: Locale,
+  latestData: Awaited<ReturnType<typeof getPublicLatestData>>,
+) {
+  const groupLabels = {
+    "CPT Odesa, Ukraine (export)":
+      locale === "uk"
+        ? "🚢 CPT ОДЕСА, УКРАЇНА (експорт)"
+        : "🚢 CPT Odesa, Ukraine (export)",
+    "FCA Chop, Ukraine (export)":
+      locale === "uk"
+        ? "🚉 FCA ЧОП, УКРАЇНА (експорт)"
+        : "🚉 FCA Chop, Ukraine (export)",
+    "CPT parity Odesa, Ukraine (processing)":
+      locale === "uk"
+        ? "🏭 CPT ПАРИТЕТ ОДЕСА, УКРАЇНА (переробка)"
+        : "🏭 CPT parity Odesa, Ukraine (processing)",
+  } as const;
+
+  const sections = Object.entries(groupLabels)
+    .map(([basis, label]) => {
+      const rows = latestData
+        .filter((row) => row.basis === basis && row.valueUsdPerMt !== null)
+        .sort((a, b) => commoditySort(a.commodityId) - commoditySort(b.commodityId));
+
+      if (rows.length === 0) {
+        return null;
+      }
+
+      return [
+        `<b>${escapeHtml(label)}</b>`,
+        ...rows.map((row) => {
+          const commodity = commodities.find((item) => item.id === row.commodityId);
+          const vatIncluded = commodity?.vatIncluded
+            ? locale === "uk"
+              ? " в т.ч. ПДВ"
+              : " VAT incl."
+            : "";
+          return `• ${escapeHtml(locale === "uk" ? row.commodityNameUk : row.commodityNameEn)} – ${Math.round(row.valueUsdPerMt ?? 0)}$${vatIncluded} (${formatDailyDelta(row.changeAbs)})`;
+        }),
+      ].join("\n");
+    })
+    .filter((section): section is string => Boolean(section));
+
+  const notes =
+    locale === "uk"
+      ? [
+          "<i>ℹ️ Примітка:</i>",
+          "<i>• Ціни вказані для поставки протягом 30 днів.</i>",
+          "<i>• Позиції переробки відображаються з ПДВ.</i>",
+          "<i>• CPT parity показує ціни заводів із різних регіонів України, приведені до базису CPT Одеса з урахуванням логістики.</i>",
+        ].join("\n")
+      : [
+          "<i>ℹ️ Notes:</i>",
+          "<i>• Prices are shown for delivery within 30 days.</i>",
+          "<i>• Processing positions are displayed VAT-included.</i>",
+          "<i>• CPT parity reflects plant bids from different Ukrainian regions normalized to CPT Odesa with logistics adjustment.</i>",
+        ].join("\n");
+
+  return [...sections, "", notes].join("\n\n");
+}
+
+function commoditySort(commodityId: string) {
+  return commodities.find((item) => item.id === commodityId)?.group === "processing"
+    ? (commodities.find((item) => item.id === commodityId)?.name.uk === "Соя ГМО" ? 10 : 11)
+    : commodities.find((item) => item.id === commodityId)?.code === "CORN FCA CHOP"
+      ? 4
+      : commodities.find((item) => item.id === commodityId)?.group === "export"
+        ? (commodities.find((item) => item.id === commodityId)?.code === "CORN" ? 1 : commodities.find((item) => item.id === commodityId)?.code === "WHT 11.5" ? 2 : 3)
+        : 99;
+}
+
+function formatDailyDelta(value: number | null) {
+  if (value == null || Math.abs(value) < 0.05) {
+    return "0$";
+  }
+
+  const rounded = Math.round(value);
+  return `${rounded > 0 ? "+" : ""}${rounded}$`;
 }
 
 function getFallbackCopy(locale: Locale) {

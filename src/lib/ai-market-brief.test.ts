@@ -49,11 +49,12 @@ describe("buildAiBriefTelegramSummaryText", () => {
   it("renders a public Ukrainian market-post format without debug metadata", () => {
     const text = buildAiBriefTelegramSummaryText(brief, "uk");
 
-    expect(text).toContain("🌾 AI Market Brief");
+    expect(text).toContain("Щоденний індекс + AI market summary");
     expect(text).toContain("🔎");
     expect(text).toContain("📈");
     expect(text).toContain("⚖️");
     expect(text).toContain("👀");
+    expect(text).toContain("ℹ️ Примітка:");
     expect(text).toContain("Data confidence: обмежена");
     expect(text).not.toContain("Model:");
     expect(text).not.toContain("Tokens:");
@@ -68,8 +69,8 @@ describe("buildAiBriefTelegramSummaryText", () => {
     );
 
     expect(text).toContain("<b>Header</b>");
-    expect(text).toContain("Індексний вступ");
-    expect(text).toContain("🌾 AI Market Brief");
+    expect(text).toContain("ℹ️ Примітка:");
+    expect(text).toContain("🧠 DAILY SUMMARY");
   });
 });
 

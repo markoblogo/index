@@ -21,6 +21,12 @@ import {
 } from "@/lib/report-workspace";
 import { todayInputDate } from "@/lib/admin-daily-inputs";
 import {
+  getDailyTelegramDigest,
+  getWeeklyTelegramDigest,
+  syncTelegramWorkspaceResources,
+  type TelegramSourceDigest,
+} from "@/lib/telegram-source-collector";
+import {
   approveWeeklyReport,
   autoPrepareWeeklyReportDraft,
   buildWeeklySourceManifest,
@@ -56,6 +62,7 @@ const noticeMap: Record<string, string> = {
   resource_toggled: "Resource status updated.",
   scheduled: "Weekly Telegram send scheduled.",
   sent: "Weekly report sent to Telegram.",
+  sources_synced: "Telegram sources synced.",
 };
 
 export const dynamic = "force-dynamic";
@@ -81,12 +88,17 @@ export default async function ReportsWorkspacePage({
       getAiMarketBriefAdminStatus(todayInputDate()),
     ]);
   const activeWeeklyReport = selectedReport ?? report;
-  const [dailyResources, weeklyResources] = await Promise.all([
+  const [dailyResources, weeklyResources, dailyDigest, weeklyDigest] = await Promise.all([
     listReportWorkspaceResources({ reportKind: "daily" }),
     listReportWorkspaceResources({
       reportId: activeWeeklyReport?.id ?? null,
       reportKind: "weekly",
     }),
+    getDailyTelegramDigest(todayInputDate()),
+    getWeeklyTelegramDigest(
+      activeWeeklyReport?.weekEndDate ?? selectedWeek,
+      activeWeeklyReport?.id ?? null,
+    ),
   ]);
   const weeklyReadiness = activeWeeklyReport
     ? assessWeeklyReportPublicReadiness(activeWeeklyReport)
@@ -171,6 +183,9 @@ export default async function ReportsWorkspacePage({
 
     const reportId = String(formData.get("reportId") ?? "");
     await saveWeeklyReportAdminInputs(reportId, {
+      coverImageAlt: String(formData.get("coverImageAlt") ?? ""),
+      coverImageCaption: String(formData.get("coverImageCaption") ?? ""),
+      coverImageUrl: String(formData.get("coverImageUrl") ?? ""),
       manualNotes: String(formData.get("manualNotes") ?? ""),
       structuredDataPack: String(formData.get("structuredDataPack") ?? ""),
     });
@@ -230,6 +245,20 @@ export default async function ReportsWorkspacePage({
     await autoPrepareWeeklyReportDraft(week);
     const nextReport = await ensureWeeklyReport(week, selectedLanguage);
     redirect(`/admin/reports?reportId=${nextReport?.id ?? ""}&week=${week}&lang=${selectedLanguage}&notice=generated`);
+  }
+
+  async function syncSourcesAction(formData: FormData) {
+    "use server";
+
+    const kind =
+      String(formData.get("reportKind") ?? "daily") === "weekly"
+        ? "weekly"
+        : "daily";
+    const reportId = String(formData.get("reportId") ?? "") || null;
+    await syncTelegramWorkspaceResources(kind, {
+      reportId,
+    });
+    redirect(buildRedirectUrl(params, "sources_synced"));
   }
 
   return (
@@ -338,6 +367,13 @@ export default async function ReportsWorkspacePage({
               )}
             </div>
           </div>
+          <TelegramDigestPreview
+            digest={dailyDigest}
+            reportId={null}
+            reportKind="daily"
+            syncSourcesAction={syncSourcesAction}
+            title="Daily collected Telegram posts"
+          />
         </WorkspaceLane>
 
         <WorkspaceLane
@@ -351,7 +387,15 @@ export default async function ReportsWorkspacePage({
           toggleResourceAction={toggleResourceAction}
         >
           {activeWeeklyReport ? (
-          <WeeklyWorkflowCard
+            <>
+              <TelegramDigestPreview
+                digest={weeklyDigest}
+                reportId={activeWeeklyReport.id}
+                reportKind="weekly"
+                syncSourcesAction={syncSourcesAction}
+                title="Weekly collected Telegram posts"
+              />
+              <WeeklyWorkflowCard
               activeReport={activeWeeklyReport}
               approveAction={approveAction}
               generateAction={generateAction}
@@ -361,7 +405,8 @@ export default async function ReportsWorkspacePage({
               saveNotesAction={saveNotesAction}
               scheduleTelegramAction={scheduleTelegramAction}
               sendTelegramNowAction={sendTelegramNowAction}
-            />
+              />
+            </>
           ) : null}
         </WorkspaceLane>
       </div>
@@ -469,6 +514,21 @@ export default async function ReportsWorkspacePage({
 
               <section className="rounded-[1.5rem] border border-white/12 bg-[#050505] p-5">
                 <h2 className="text-lg font-semibold text-white">Weekly Telegram preview</h2>
+                {activeWeeklyReport.adminEditedContent?.coverImageUrl ? (
+                  <div className="mt-4 rounded-[1rem] border border-white/10 bg-black/30 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-white/45">
+                      Cover asset
+                    </p>
+                    <p className="mt-2 break-all text-sm text-uga-green">
+                      {activeWeeklyReport.adminEditedContent.coverImageUrl}
+                    </p>
+                    {activeWeeklyReport.adminEditedContent.coverImageCaption ? (
+                      <p className="mt-2 text-sm leading-6 text-white/72">
+                        {activeWeeklyReport.adminEditedContent.coverImageCaption}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
                 <div className="mt-4 grid gap-4 lg:grid-cols-3">
                   {activeWeeklyReport.content.telegramMessages.map((message, index) => (
                     <article
@@ -484,6 +544,48 @@ export default async function ReportsWorkspacePage({
                     </article>
                   ))}
                 </div>
+              </section>
+
+              <section className="rounded-[1.5rem] border border-white/12 bg-[#050505] p-5">
+                <h2 className="text-lg font-semibold text-white">Weekly blog draft preview</h2>
+                {activeWeeklyReport.content.blogDraft ? (
+                  <article className="mt-4 rounded-[1.2rem] border border-white/10 bg-black/30 p-5">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-uga-green">
+                      Blog narrative layer
+                    </p>
+                    <h3 className="mt-3 text-2xl font-semibold text-white">
+                      {activeWeeklyReport.content.blogDraft.title}
+                    </h3>
+                    <p className="mt-2 text-sm leading-6 text-white/62">
+                      {activeWeeklyReport.content.blogDraft.subtitle}
+                    </p>
+                    <p className="mt-4 text-sm leading-7 text-white/78">
+                      {activeWeeklyReport.content.blogDraft.intro}
+                    </p>
+                    <div className="mt-5 grid gap-4">
+                      {activeWeeklyReport.content.blogDraft.sections.map((section) => (
+                        <section
+                          className="rounded-[1rem] border border-white/10 bg-black/30 p-4"
+                          key={section.title}
+                        >
+                          <h4 className="text-base font-semibold text-white">{section.title}</h4>
+                          <p className="mt-2 text-sm leading-7 text-white/72">{section.body}</p>
+                        </section>
+                      ))}
+                    </div>
+                    <div className="mt-5 grid gap-3 rounded-[1rem] border border-white/10 bg-black/30 p-4 text-sm text-white/72">
+                      <p><span className="font-semibold text-white">Closing:</span> {activeWeeklyReport.content.blogDraft.closing}</p>
+                      <p><span className="font-semibold text-white">SEO description:</span> {activeWeeklyReport.content.blogDraft.seoDescription}</p>
+                      <p><span className="font-semibold text-white">Slug:</span> {activeWeeklyReport.content.blogDraft.slug}</p>
+                      <p><span className="font-semibold text-white">Cover alt:</span> {activeWeeklyReport.content.blogDraft.coverAlt}</p>
+                      <p><span className="font-semibold text-white">Cover prompt:</span> {activeWeeklyReport.content.blogDraft.coverPrompt}</p>
+                    </div>
+                  </article>
+                ) : (
+                  <div className="mt-4 rounded-[1rem] border border-white/10 bg-black/30 p-4 text-sm text-white/62">
+                    Weekly blog draft will appear after weekly generation.
+                  </div>
+                )}
               </section>
             </>
           ) : null}
@@ -725,6 +827,101 @@ function ResourceList({
   );
 }
 
+function TelegramDigestPreview({
+  digest,
+  reportId,
+  reportKind,
+  syncSourcesAction,
+  title,
+}: {
+  digest: TelegramSourceDigest;
+  reportId: string | null;
+  reportKind: ReportKind;
+  syncSourcesAction: (formData: FormData) => Promise<void>;
+  title: string;
+}) {
+  return (
+    <section className="grid gap-4 rounded-[1.2rem] border border-white/10 bg-black/30 p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="text-base font-semibold text-white">{title}</h3>
+          <p className="mt-1 text-sm leading-6 text-white/62">
+            Window: {formatDigestDate(digest.startAt)} → {formatDigestDate(digest.endAt)} · {digest.postCount} posts
+          </p>
+        </div>
+        <form action={syncSourcesAction}>
+          <input name="reportKind" type="hidden" value={reportKind} />
+          <input name="reportId" type="hidden" value={reportId ?? ""} />
+          <button
+            className="rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-white transition hover:border-uga-green hover:text-uga-green"
+            type="submit"
+          >
+            Refresh sync
+          </button>
+        </form>
+      </div>
+
+      <div className="grid gap-3">
+        {digest.channels.some((channel) => channel.postCount > 0) ? (
+          digest.channels
+            .filter((channel) => channel.postCount > 0)
+            .map((channel) => (
+              <details
+                className="rounded-[1rem] border border-white/10 bg-black/20 p-4"
+                key={`${channel.channelHandle}-${channel.peerId ?? "none"}`}
+              >
+                <summary className="cursor-pointer list-none">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-white">
+                        @{channel.channelHandle}
+                      </p>
+                      <p className="mt-1 text-xs uppercase tracking-[0.12em] text-white/45">
+                        {channel.postCount} posts{channel.peerId ? ` · peer ${channel.peerId}` : ""}
+                      </p>
+                    </div>
+                    <span className="text-xs font-semibold uppercase tracking-[0.12em] text-uga-green">
+                      Open
+                    </span>
+                  </div>
+                </summary>
+                <div className="mt-4 grid gap-3">
+                  {channel.posts.map((post) => (
+                    <article
+                      className="rounded-[0.9rem] border border-white/10 bg-black/30 p-3"
+                      key={`${channel.channelHandle}-${post.externalPostId}`}
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <p className="text-xs uppercase tracking-[0.12em] text-white/45">
+                          {formatDigestDate(post.publishedAt)}
+                        </p>
+                        <a
+                          className="text-xs text-uga-green hover:underline"
+                          href={post.postUrl}
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          Open original
+                        </a>
+                      </div>
+                      <pre className="mt-3 whitespace-pre-wrap text-xs leading-6 text-white/72">
+                        {post.text}
+                      </pre>
+                    </article>
+                  ))}
+                </div>
+              </details>
+            ))
+        ) : (
+          <div className="rounded-[1rem] border border-white/10 bg-black/20 p-4 text-sm text-white/62">
+            No collected Telegram posts in the current window yet.
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function WeeklyWorkflowCard({
   activeReport,
   approveAction,
@@ -803,6 +1000,33 @@ function WeeklyWorkflowCard({
             name="structuredDataPack"
           />
         </label>
+        <div className="grid gap-3 md:grid-cols-2">
+          <label className="grid gap-2 text-sm font-semibold text-white/78 md:col-span-2">
+            Weekly cover asset URL
+            <input
+              className="rounded-xl border border-white/12 bg-black px-3 py-2 text-sm text-white"
+              defaultValue={activeReport.adminEditedContent?.coverImageUrl ?? ""}
+              name="coverImageUrl"
+              placeholder="https://..."
+            />
+          </label>
+          <label className="grid gap-2 text-sm font-semibold text-white/78">
+            Weekly cover alt text
+            <input
+              className="rounded-xl border border-white/12 bg-black px-3 py-2 text-sm text-white"
+              defaultValue={activeReport.adminEditedContent?.coverImageAlt ?? ""}
+              name="coverImageAlt"
+            />
+          </label>
+          <label className="grid gap-2 text-sm font-semibold text-white/78">
+            Weekly cover caption
+            <input
+              className="rounded-xl border border-white/12 bg-black px-3 py-2 text-sm text-white"
+              defaultValue={activeReport.adminEditedContent?.coverImageCaption ?? ""}
+              name="coverImageCaption"
+            />
+          </label>
+        </div>
         <button className="w-fit rounded-full bg-uga-green px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#82ff4d]" type="submit">
           Save weekly inputs
         </button>
@@ -878,6 +1102,18 @@ function buildRedirectUrl(
   }
   search.set("notice", notice);
   return `/admin/reports?${search.toString()}`;
+}
+
+function formatDigestDate(value: string) {
+  const date = new Date(value);
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(date);
 }
 
 function getDefaultWeekEnd() {

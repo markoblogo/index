@@ -66,7 +66,25 @@ export type WeeklyReportPart = {
   title: string;
 };
 
+export type WeeklyBlogSection = {
+  body: string;
+  title: string;
+};
+
+export type WeeklyBlogDraft = {
+  closing: string;
+  coverAlt: string;
+  coverPrompt: string;
+  intro: string;
+  seoDescription: string;
+  sections: WeeklyBlogSection[];
+  slug: string;
+  subtitle: string;
+  title: string;
+};
+
 export type WeeklyReportContent = {
+  blogDraft: WeeklyBlogDraft | null;
   executiveSummary: string[];
   disclaimer: string;
   methodology: string;
@@ -129,6 +147,9 @@ export type WeeklyReportManifest = {
 
 export type WeeklyReportRecord = {
   adminEditedContent: {
+    coverImageCaption?: string;
+    coverImageUrl?: string;
+    coverImageAlt?: string;
     manualNotes?: string;
     structuredDataPack?: string;
   } | null;
@@ -192,6 +213,17 @@ type WeeklyReportRow = {
 
 type GeneratedWeeklyReportPayload = {
   aiWarnings?: string[];
+  blogDraft?: {
+    closing?: string;
+    coverAlt?: string;
+    coverPrompt?: string;
+    intro?: string;
+    seoDescription?: string;
+    sections?: Array<{ body?: string; title?: string }>;
+    slug?: string;
+    subtitle?: string;
+    title?: string;
+  };
   executiveSummary?: string[];
   dataConfidence?: string;
   missingInputs?: string[];
@@ -205,6 +237,7 @@ type GeneratedWeeklyReportPayload = {
 
 type NormalizedWeeklyReportPayload = {
   aiWarnings: string[];
+  blogDraft: WeeklyBlogDraft;
   executiveSummary: string[];
   dataConfidence: "limited" | "normal" | "strong";
   missingInputs: string[];
@@ -470,7 +503,13 @@ export async function ensureWeeklyReport(weekEndDate: string, language = "uk") {
 
 export async function saveWeeklyReportAdminInputs(
   reportId: string,
-  payload: { manualNotes?: string; structuredDataPack?: string },
+  payload: {
+    coverImageAlt?: string;
+    coverImageCaption?: string;
+    coverImageUrl?: string;
+    manualNotes?: string;
+    structuredDataPack?: string;
+  },
 ) {
   const report = await getWeeklyReportById(reportId);
 
@@ -480,6 +519,14 @@ export async function saveWeeklyReportAdminInputs(
 
   const nextEdited = {
     ...(report.adminEditedContent ?? {}),
+    coverImageAlt:
+      payload.coverImageAlt ?? report.adminEditedContent?.coverImageAlt ?? "",
+    coverImageCaption:
+      payload.coverImageCaption ??
+      report.adminEditedContent?.coverImageCaption ??
+      "",
+    coverImageUrl:
+      payload.coverImageUrl ?? report.adminEditedContent?.coverImageUrl ?? "",
     manualNotes:
       payload.manualNotes ?? report.adminEditedContent?.manualNotes ?? "",
     structuredDataPack:
@@ -804,6 +851,7 @@ export async function generateWeeklyReportDraft(
     report.language === "en" ? "en" : "uk",
   );
   const model =
+    process.env.SPIKE_WEEKLY_EDITORIAL_MODEL ||
     process.env.SPIKE_WEEKLY_REPORT_MODEL ||
     process.env.SPIKE_AI_BRIEF_MODEL ||
     "gpt-4.1-mini";
@@ -831,7 +879,7 @@ export async function generateWeeklyReportDraft(
             {
               role: "system",
               content:
-                `You generate a Weekly AI Commodity & Logistics Report for SPIKE SPOT INDEX. Use only provided SPIKE data, source notes, admin notes and verified source manifests. Do not invent numbers, dates, causes, flows, export volumes, logistics statistics or official SPIKE values. Return strict JSON with keys: dataConfidence, aiWarnings, missingInputs, executiveSummary, telegramMessages, parts. executiveSummary must be 3 concise bullets. telegramMessages must be exactly 3 messages following the fixed public structure. parts must be exactly 3 objects with keys logistics, grains, oilseeds_processing. Each part must contain title and sections. Sections must be concise, professional, and not trading advice. ${localeInstruction}`,
+                `You generate a Weekly AI Commodity & Logistics Report for SPIKE SPOT INDEX. Use only provided SPIKE data, source notes, admin notes and verified source manifests. Do not invent numbers, dates, causes, flows, export volumes, logistics statistics or official SPIKE values. Return strict JSON with keys: dataConfidence, aiWarnings, missingInputs, executiveSummary, telegramMessages, parts, blogDraft. executiveSummary must be 3 concise bullets. telegramMessages must be exactly 3 messages following the fixed public structure. parts must be exactly 3 objects with keys logistics, grains, oilseeds_processing. Each part must contain title and sections. blogDraft must contain title, subtitle, intro, sections, closing, seoDescription, slug, coverPrompt, coverAlt. The blog draft must be more narrative and blog-like than the report but still factual and non-promotional. Sections must be concise, professional, and not trading advice. ${localeInstruction}`,
             },
             {
               role: "user",
@@ -1142,6 +1190,48 @@ export async function sendWeeklyReportTelegramNow(
 
   const messageIds: number[] = [];
 
+  const coverImageUrl = report.adminEditedContent?.coverImageUrl?.trim() ?? "";
+  if (coverImageUrl) {
+    const coverCaption = (
+      report.adminEditedContent?.coverImageCaption?.trim() ||
+      report.content.blogDraft?.title ||
+      report.title
+    ).slice(0, 1024);
+    const coverResponse = await fetch(
+      `https://api.telegram.org/bot${botToken}/sendPhoto`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          caption: coverCaption,
+          chat_id: chatId,
+          parse_mode: "HTML",
+          photo: coverImageUrl,
+        }),
+      },
+    );
+
+    if (!coverResponse.ok) {
+      const error = await coverResponse.text();
+      await db.$executeRawUnsafe(
+        `
+          UPDATE "WeeklyReport"
+          SET "status" = 'failed', "updatedAt" = NOW(), "aiWarnings" = COALESCE("aiWarnings", '[]'::jsonb) || to_jsonb($3::text)
+          WHERE "tenantId" = $1 AND "id" = $2
+        `,
+        getActiveIndexConfig().id,
+        reportId,
+        `Telegram cover send failed: ${error}`,
+      );
+      return { error, status: "failed" as const };
+    }
+
+    const coverPayload = (await coverResponse.json()) as {
+      result?: { message_id?: number };
+    };
+    messageIds.push(coverPayload.result?.message_id ?? 0);
+  }
+
   for (const text of report.content.telegramMessages) {
     const response = await fetch(
       `https://api.telegram.org/bot${botToken}/sendMessage`,
@@ -1350,6 +1440,7 @@ function buildWeeklyReportContent(
     methodology,
     parts,
     sourceNotes,
+    blogDraft: payload.blogDraft ?? null,
     executiveSummary: payload.executiveSummary,
     telegramMessages:
       payload.telegramMessages ??
@@ -1404,6 +1495,7 @@ function normalizeGeneratedWeeklyReportJson(
 
   return {
     aiWarnings: parseStringList(payload.aiWarnings).map(sanitizeWeeklyText),
+    blogDraft: normalizeWeeklyBlogDraft(payload.blogDraft, fallback.blogDraft),
     executiveSummary:
       executiveSummary.length > 0
         ? executiveSummary.map(sanitizeWeeklyText)
@@ -1496,6 +1588,7 @@ function buildDeterministicWeeklyReport(
 
   return {
     aiWarnings: manifest.missingDataWarnings,
+    blogDraft: buildDeterministicWeeklyBlogDraft(manifest, locale),
     dataConfidence: manifest.dataConfidence,
     missingInputs: manifest.missingDataWarnings,
     executiveSummary,
@@ -1678,6 +1771,116 @@ function buildDeterministicWeeklyReport(
       manifest.generatedForWeek || formatDate(new Date()),
     ),
   };
+}
+
+function buildDeterministicWeeklyBlogDraft(
+  manifest: WeeklyReportManifest,
+  locale: Locale,
+): WeeklyBlogDraft {
+  const dateLabel =
+    locale === "uk"
+      ? formatDateUk(manifest.generatedForWeek || formatDate(new Date()))
+      : manifest.generatedForWeek || formatDate(new Date());
+  const leadCommodity = manifest.weeklySummary[0];
+  const focusLabel = leadCommodity?.code ?? "SPIKE";
+  const title =
+    locale === "uk"
+      ? `Що тиждень показав у SPIKE SPOT INDEX: логістика, зернові та олійні до ${dateLabel}`
+      : `What the week showed in SPIKE SPOT INDEX: logistics, grains and oilseeds to ${dateLabel}`;
+  const subtitle =
+    locale === "uk"
+      ? "Тижневий блог-пост на базі weekly report, але в більш послідовній та редакторській формі."
+      : "A weekly blog draft built from the weekly report in a more narrative editorial format.";
+  const intro =
+    locale === "uk"
+      ? `Цей тиждень у SPIKE SPOT INDEX найкраще читався через поєднання логістики, експортного тону та переробних позицій. У центрі уваги залишався ${focusLabel}, але загальний сигнал формувався ширше, через поведінку всього комплексу.`
+      : `This week in SPIKE SPOT INDEX was best read through a combination of logistics, export tone and processing positions. ${focusLabel} stayed near the center of attention, but the broader market signal was wider than a single line item.`;
+  const closing =
+    locale === "uk"
+      ? "Для редактора цей блог-пост має працювати як більш читабельний narrative layer над weekly report, але без відриву від фактичної структури тижня."
+      : "For editorial use, this blog draft should act as a more readable narrative layer above the weekly report without drifting away from the factual weekly structure.";
+
+  return {
+    closing,
+    coverAlt:
+      locale === "uk"
+        ? `Редакційна обкладинка тижневого огляду SPIKE SPOT INDEX за тиждень до ${dateLabel}.`
+        : `Editorial cover for the SPIKE SPOT INDEX weekly review for the week ending ${dateLabel}.`,
+    coverPrompt:
+      locale === "uk"
+        ? `Editorial financial-agriculture blog cover, SPIKE SPOT INDEX weekly review, Ukraine grain and oilseed market, logistics + export + processing mood, confident print-magazine look, restrained palette, bold typography, no cartoon elements, week ending ${dateLabel}.`
+        : `Editorial financial-agriculture blog cover, SPIKE SPOT INDEX weekly review, Ukraine grain and oilseed market, logistics + export + processing mood, confident print-magazine look, restrained palette, bold typography, no cartoon elements, week ending ${dateLabel}.`,
+    intro,
+    seoDescription:
+      locale === "uk"
+        ? "Щотижневий блог-пост на базі SPIKE SPOT INDEX: логістика, зернові, олійні та короткий narrative огляд ринкового тону."
+        : "Weekly SPIKE SPOT INDEX blog post covering logistics, grains, oilseeds and a short narrative read of market tone.",
+    sections: [
+      {
+        title: locale === "uk" ? "Логістика як перший сигнал" : "Logistics as the first signal",
+        body:
+          locale === "uk"
+            ? "Логістичний блок тижня задає першу рамку для читання ринку: не лише ціна, а й швидкість потоку, поведінка коридорів та різниця між портовим і прикордонним напрямом."
+            : "The logistics block sets the first frame for reading the market: not only price, but also flow speed, corridor behaviour and the spread between port and border routes.",
+      },
+      {
+        title: locale === "uk" ? "Зернові: де ринок бачив опору" : "Grains: where the market saw support",
+        body:
+          locale === "uk"
+            ? "У зерновому сегменті тиждень варто читати через базові експортні позиції та те, як вони взаємодіяли з прикордонною логікою. Це дало ринку зрозумілий benchmark для загального тону."
+            : "In grains, the week is best read through the core export positions and the way they interacted with border logic. That gave the market a clearer benchmark for the overall tone.",
+      },
+      {
+        title: locale === "uk" ? "Олійні та переробка" : "Oilseeds and processing",
+        body:
+          locale === "uk"
+            ? "Олійні позиції показали, як внутрішній попит і переробка продовжують формувати окремий сегмент, який не завжди рухається синхронно із зерновими."
+            : "Oilseed positions showed how domestic demand and processing continue to shape a segment that does not always move in sync with grains.",
+      },
+    ],
+    slug: buildWeeklyBlogSlug(title),
+    subtitle,
+    title,
+  };
+}
+
+function normalizeWeeklyBlogDraft(
+  payload: GeneratedWeeklyReportPayload["blogDraft"],
+  fallback: WeeklyBlogDraft,
+): WeeklyBlogDraft {
+  if (!payload) {
+    return fallback;
+  }
+
+  const sections = (payload.sections ?? [])
+    .map((section) => ({
+      body: sanitizeWeeklyText(String(section.body ?? "").trim()),
+      title: sanitizeWeeklyText(String(section.title ?? "").trim()),
+    }))
+    .filter((section) => section.title && section.body);
+
+  return {
+    closing: sanitizeWeeklyText(String(payload.closing ?? "").trim()) || fallback.closing,
+    coverAlt: sanitizeWeeklyText(String(payload.coverAlt ?? "").trim()) || fallback.coverAlt,
+    coverPrompt: sanitizeWeeklyText(String(payload.coverPrompt ?? "").trim()) || fallback.coverPrompt,
+    intro: sanitizeWeeklyText(String(payload.intro ?? "").trim()) || fallback.intro,
+    seoDescription:
+      sanitizeWeeklyText(String(payload.seoDescription ?? "").trim()) ||
+      fallback.seoDescription,
+    sections: sections.length > 0 ? sections : fallback.sections,
+    slug: buildWeeklyBlogSlug(String(payload.slug ?? "").trim() || fallback.slug),
+    subtitle: sanitizeWeeklyText(String(payload.subtitle ?? "").trim()) || fallback.subtitle,
+    title: sanitizeWeeklyText(String(payload.title ?? "").trim()) || fallback.title,
+  };
+}
+
+function buildWeeklyBlogSlug(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9а-яіїєґ\s-]/gi, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .slice(0, 120);
 }
 
 export function buildWeeklyTelegramMessages(
