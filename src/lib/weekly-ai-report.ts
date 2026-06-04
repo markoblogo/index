@@ -6,6 +6,13 @@ import { db, hasDatabaseUrl } from "@/lib/db";
 import type { Locale } from "@/lib/i18n";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import {
+  getLocalizedReportWorkspaceText,
+  getReportWorkspaceConfig,
+  listReportWorkspaceResources,
+  type ReportWorkspaceResource,
+} from "@/lib/report-workspace";
+import { getWeeklyTelegramDigest } from "@/lib/telegram-source-collector";
+import {
   getPublicHistoryData,
   type PublicHistoryItem,
 } from "@/lib/public-api-data";
@@ -71,14 +78,42 @@ export type WeeklyReportContent = {
 export type WeeklyReportManifest = {
   adminNotes: string;
   aiBriefReferences: string[];
+  analysisSources: Array<{
+    notes: string;
+    title: string;
+    type: string;
+    url: string;
+  }>;
   dataConfidence: "limited" | "normal" | "strong";
   dailyValues: Record<
     string,
     Array<{ code: string; respondents: number; value: number }>
   >;
   fallbackText: string[];
+  formatReferences: Array<{
+    notes: string;
+    title: string;
+    type: string;
+    url: string;
+  }>;
   generatedForWeek: string;
   missingDataWarnings: string[];
+  telegramDigest: {
+    channels: Array<{
+      channelHandle: string;
+      channelTitle: string;
+      peerId: string | null;
+      postCount: number;
+      posts: Array<{
+        postUrl: string;
+        publishedAt: string;
+        text: string;
+      }>;
+    }>;
+    endAt: string;
+    postCount: number;
+    startAt: string;
+  };
   oneOffSources: WeeklyReportSource[];
   permanentSources: WeeklyReportSource[];
   structuredDataPack: string;
@@ -394,12 +429,16 @@ export async function ensureWeeklyReport(weekEndDate: string, language = "uk") {
   const weekStartDate = formatDate(
     addDays(new Date(`${weekEndDate}T00:00:00.000Z`), -6),
   );
-  const slug = `weekly-ai-commodity-logistics-report-${weekEndDate}`;
+  const slug = `weekly-ai-commodity-logistics-report-${weekEndDate}-${language}`;
   const title =
     language === "uk"
       ? `Weekly AI Commodity & Logistics Report · тиждень до ${formatDateUk(weekEndDate)}`
       : `Weekly AI Commodity & Logistics Report · week ending ${weekEndDate}`;
-  const telegramSendAt = buildKyivTargetDate(weekEndDate, 14);
+  const workspaceConfig = await getReportWorkspaceConfig("weekly");
+  const telegramSendAt = buildKyivTargetDate(
+    weekEndDate,
+    parseTimeHour(workspaceConfig.publishAt, 15),
+  );
   await db.$executeRawUnsafe(
     `
       INSERT INTO "WeeklyReport" (
@@ -469,9 +508,8 @@ export async function buildWeeklySourceManifest(reportId: string) {
     return null;
   }
 
-  const [history, sources, aiBriefRows] = await Promise.all([
+  const [history, aiBriefRows, workspaceConfig, workspaceResources, telegramDigest] = await Promise.all([
     getPublicHistoryData(),
-    listWeeklySources(report.id),
     db.aiMarketBrief.findMany({
       orderBy: { tradeDate: "asc" },
       where: {
@@ -484,18 +522,30 @@ export async function buildWeeklySourceManifest(reportId: string) {
         },
       },
     }),
+    getReportWorkspaceConfig("weekly"),
+    listReportWorkspaceResources({ reportId: report.id, reportKind: "weekly" }),
+    getWeeklyTelegramDigest(report.weekEndDate, report.id),
   ]);
 
   const weeklyRows = history.filter(
     (row) => row.date >= report.weekStartDate && row.date <= report.weekEndDate,
   );
   const grouped = groupByCommodity(weeklyRows);
-  const permanentSources = sources.filter(
-    (source) => source.scope === "permanent" && source.enabled,
+  const normalizedResources = workspaceResources
+    .filter((resource) => resource.enabled)
+    .map(mapWorkspaceResourceToWeeklySource);
+  const permanentSources = normalizedResources.filter(
+    (source) => source.scope === "permanent",
   );
-  const oneOffSources = sources.filter(
-    (source) => source.scope === "one_off" && source.enabled,
+  const oneOffSources = normalizedResources.filter(
+    (source) => source.scope === "one_off",
   );
+  const analysisSources = workspaceResources
+    .filter((resource) => resource.enabled && resource.role === "analysis_source")
+    .map(mapWorkspaceResourceReference);
+  const formatReferences = workspaceResources
+    .filter((resource) => resource.enabled && resource.role === "format_reference")
+    .map(mapWorkspaceResourceReference);
   const weeklySummary = [...grouped.entries()].map(([code, rows]) => {
     const sorted = [...rows].sort((a, b) => a.date.localeCompare(b.date));
     const first = sorted[0];
@@ -543,6 +593,9 @@ export async function buildWeeklySourceManifest(reportId: string) {
     ...(oneOffSources.length === 0
       ? ["No one-off weekly sources were attached to this report."]
       : []),
+    ...(formatReferences.length === 0
+      ? ["No weekly format references were configured."]
+      : []),
     ...(adminNotes
       ? []
       : ["Admin notes were not provided for this weekly report."]),
@@ -550,6 +603,7 @@ export async function buildWeeklySourceManifest(reportId: string) {
   const fallbackText = [
     "AI may interpret only the provided SPIKE data, source notes and editorial notes.",
     "No unsupported numbers, causes or external claims should appear in the report.",
+    workspaceConfig.sourceProcessingNotes,
   ];
 
   const manifest: WeeklyReportManifest = {
@@ -557,11 +611,22 @@ export async function buildWeeklySourceManifest(reportId: string) {
     aiBriefReferences: aiBriefRows.map((row) =>
       row.tradeDate.toISOString().slice(0, 10),
     ),
+    analysisSources,
     dailyValues: buildDailyValuesByDate(weeklyRows),
     dataConfidence,
     fallbackText,
+    formatReferences,
     generatedForWeek: report.weekEndDate,
     missingDataWarnings,
+    telegramDigest: {
+      ...telegramDigest,
+      channels: telegramDigest.channels
+        .filter((channel) => channel.postCount > 0)
+        .map((channel) => ({
+          ...channel,
+          posts: channel.posts.slice(-20),
+        })),
+    },
     oneOffSources,
     permanentSources,
     structuredDataPack,
@@ -733,6 +798,11 @@ export async function generateWeeklyReportDraft(
   }
 
   const apiKey = process.env.OPENAI_API_KEY;
+  const workspaceConfig = await getReportWorkspaceConfig("weekly");
+  const localizedConfig = getLocalizedReportWorkspaceText(
+    workspaceConfig,
+    report.language === "en" ? "en" : "uk",
+  );
   const model =
     process.env.SPIKE_WEEKLY_REPORT_MODEL ||
     process.env.SPIKE_AI_BRIEF_MODEL ||
@@ -742,6 +812,10 @@ export async function generateWeeklyReportDraft(
   let warnings = manifest.missingDataWarnings;
   let missingInputs = manifest.missingDataWarnings;
 
+  const localeInstruction =
+    report.language === "en"
+      ? "Write every public value in English only. Keep structure concise and professional."
+      : "Write every public value in Ukrainian only. Keep structure concise and professional.";
   if (apiKey) {
     try {
       const response = await fetch("https://api.openai.com/v1/responses", {
@@ -757,11 +831,18 @@ export async function generateWeeklyReportDraft(
             {
               role: "system",
               content:
-                "You generate a Weekly AI Commodity & Logistics Report for SPIKE SPOT INDEX. Use only provided SPIKE data, source notes, admin notes and verified source manifests. Do not invent numbers, dates, causes, flows, export volumes, logistics statistics or official SPIKE values. Return strict JSON with keys: dataConfidence, aiWarnings, missingInputs, executiveSummary, telegramMessages, parts. executiveSummary must be 3 concise Ukrainian bullets. telegramMessages must be exactly 3 Ukrainian messages following the fixed public structure. parts must be exactly 3 objects with keys logistics, grains, oilseeds_processing. Each part must contain title and sections. Sections must be concise, professional, and not trading advice.",
+                `You generate a Weekly AI Commodity & Logistics Report for SPIKE SPOT INDEX. Use only provided SPIKE data, source notes, admin notes and verified source manifests. Do not invent numbers, dates, causes, flows, export volumes, logistics statistics or official SPIKE values. Return strict JSON with keys: dataConfidence, aiWarnings, missingInputs, executiveSummary, telegramMessages, parts. executiveSummary must be 3 concise bullets. telegramMessages must be exactly 3 messages following the fixed public structure. parts must be exactly 3 objects with keys logistics, grains, oilseeds_processing. Each part must contain title and sections. Sections must be concise, professional, and not trading advice. ${localeInstruction}`,
             },
             {
               role: "user",
               content: JSON.stringify({
+                editorialConfig: {
+                  adminPrompt: localizedConfig.adminPrompt,
+                  collectionWindowLabel: workspaceConfig.collectionWindowLabel,
+                  reviewStartsAt: workspaceConfig.reviewStartsAt,
+                  sourceProcessingNotes: workspaceConfig.sourceProcessingNotes,
+                  telegramTemplate: localizedConfig.telegramTemplate,
+                },
                 reportWeek: report.weekEndDate,
                 language: report.language,
                 sourceManifest: manifest,
@@ -906,7 +987,7 @@ export async function approveWeeklyReport(
     !report ||
     report.status === "needs_inputs" ||
     !report.content ||
-    report.status !== "approved"
+    (report.status !== "needs_review" && report.status !== "approved")
   ) {
     return null;
   }
@@ -981,6 +1062,7 @@ export async function scheduleWeeklyReportTelegram(
   actorUserId?: string | null,
 ) {
   const report = await getWeeklyReportById(reportId);
+  const workspaceConfig = await getReportWorkspaceConfig("weekly");
 
   if (
     !report ||
@@ -995,7 +1077,10 @@ export async function scheduleWeeklyReportTelegram(
     return null;
   }
 
-  const telegramSendAt = buildKyivTargetDate(report.weekEndDate, 14);
+  const telegramSendAt = buildKyivTargetDate(
+    report.weekEndDate,
+    parseTimeHour(workspaceConfig.publishAt, 15),
+  );
   await db.$executeRawUnsafe(
     `
       UPDATE "WeeklyReport"
@@ -1151,23 +1236,35 @@ export async function sendDueWeeklyReports() {
 export async function autoPrepareWeeklyReportDraft(
   weekEndDate = getLastSaturdayDate(),
 ) {
-  const report = await ensureWeeklyReport(weekEndDate, "uk");
+  const reports = await Promise.all([
+    ensureWeeklyReport(weekEndDate, "uk"),
+    ensureWeeklyReport(weekEndDate, "en"),
+  ]);
+  const validReports = reports.filter(
+    (report): report is NonNullable<typeof report> => Boolean(report),
+  );
 
-  if (!report) {
+  if (validReports.length === 0) {
     return {
       skippedReason: "database_not_configured",
       status: "skipped" as const,
     };
   }
 
-  await buildWeeklySourceManifest(report.id);
-
-  if (report.status === "draft") {
-    await generateWeeklyReportDraft(report.id, null);
-    return { reportId: report.id, status: "generated" as const };
+  const generatedIds: string[] = [];
+  for (const report of validReports) {
+    await buildWeeklySourceManifest(report.id);
+    if (report.status === "draft") {
+      await generateWeeklyReportDraft(report.id, null);
+      generatedIds.push(report.id);
+    }
   }
 
-  return { reportId: report.id, status: "existing" as const };
+  return {
+    reportId: validReports[0]?.id ?? null,
+    reportIds: validReports.map((report) => report.id),
+    status: generatedIds.length > 0 ? ("generated" as const) : ("existing" as const),
+  };
 }
 
 async function appendWeeklyAuditLog(input: {
@@ -1267,11 +1364,19 @@ function normalizeGeneratedWeeklyReportJson(
     {
       adminNotes: "",
       aiBriefReferences: [],
+      analysisSources: [],
       dailyValues: {},
       dataConfidence: "limited",
       fallbackText: [],
+      formatReferences: [],
       generatedForWeek: "",
       missingDataWarnings: [],
+      telegramDigest: {
+        channels: [],
+        endAt: "",
+        postCount: 0,
+        startAt: "",
+      },
       oneOffSources: [],
       permanentSources: [],
       structuredDataPack: "",
@@ -1946,6 +2051,64 @@ function buildKyivTargetDate(date: string, targetHour: number) {
   }
 
   return candidate;
+}
+
+function parseTimeHour(value: string, fallback: number) {
+  const match = value.match(/^(\d{1,2})/);
+  if (!match) {
+    return fallback;
+  }
+
+  const hour = Number(match[1]);
+  return Number.isFinite(hour) && hour >= 0 && hour <= 23 ? hour : fallback;
+}
+
+function mapWorkspaceResourceToWeeklySource(
+  resource: ReportWorkspaceResource,
+): WeeklyReportSource {
+  return {
+    createdAt: resource.createdAt,
+    enabled: resource.enabled,
+    id: resource.id,
+    language: resource.language,
+    notes: resource.notes,
+    reportId: resource.reportId,
+    scope: resource.scope,
+    title: resource.title,
+    type: mapWorkspaceResourceTypeToWeeklyType(resource.type),
+    updatedAt: resource.updatedAt,
+    url: resource.url,
+  };
+}
+
+function mapWorkspaceResourceReference(resource: ReportWorkspaceResource) {
+  return {
+    notes: resource.notes,
+    title: resource.title,
+    type: resource.type,
+    url: resource.url,
+  };
+}
+
+function mapWorkspaceResourceTypeToWeeklyType(
+  type: ReportWorkspaceResource["type"],
+): WeeklySourceType {
+  switch (type) {
+    case "telegram_channel":
+      return "market_news";
+    case "website":
+      return "market_news";
+    case "blog":
+      return "market_news";
+    case "file":
+      return "other";
+    case "note":
+      return "admin_note";
+    case "prompt":
+      return "admin_note";
+    default:
+      return "other";
+  }
 }
 
 function getLastSaturdayDate() {

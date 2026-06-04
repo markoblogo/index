@@ -59,6 +59,18 @@ describe("buildAiBriefTelegramSummaryText", () => {
     expect(text).not.toContain("Tokens:");
     expect(text).not.toContain("Cost:");
   });
+
+  it("supports a configurable Telegram wrapper template", () => {
+    const text = buildAiBriefTelegramSummaryText(
+      brief,
+      "uk",
+      "<b>Header</b>\n{{index_summary}}\n\n{{ai_summary}}",
+    );
+
+    expect(text).toContain("<b>Header</b>");
+    expect(text).toContain("Індексний вступ");
+    expect(text).toContain("🌾 AI Market Brief");
+  });
 });
 
 describe("mapConfidenceLabel", () => {

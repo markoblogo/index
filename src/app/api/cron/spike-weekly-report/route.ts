@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { isCronRequestAuthorized } from "@/lib/cron-auth";
+import { syncTelegramWorkspaceResources } from "@/lib/telegram-source-collector";
 import {
   autoPrepareWeeklyReportDraft,
   sendDueWeeklyReports,
@@ -19,11 +20,13 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
   const week = url.searchParams.get("week") ?? undefined;
+  const sourceSync = await syncTelegramWorkspaceResources("weekly");
   const prepare = await autoPrepareWeeklyReportDraft(week);
   const telegram = await sendDueWeeklyReports();
 
   return NextResponse.json({
     prepare,
+    sourceSync,
     telegram,
     triggeredAt: new Date().toISOString(),
   });

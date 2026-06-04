@@ -21,6 +21,14 @@ function buildManifest(overrides: Partial<WeeklyReportManifest> = {}) {
   return {
     adminNotes: "Logistics, grain export and oilseed processing context.",
     aiBriefReferences: ["2026-05-30"],
+    analysisSources: [
+      {
+        notes: "Telegram digest for logistics and grains.",
+        title: "Weekly channel",
+        type: "telegram_channel",
+        url: "https://t.me/example",
+      },
+    ],
     dailyValues: {
       "2026-05-30": weeklySummary.map((item) => ({
         code: item.code,
@@ -30,8 +38,22 @@ function buildManifest(overrides: Partial<WeeklyReportManifest> = {}) {
     },
     dataConfidence: "strong",
     fallbackText: ["Clean fallback text."],
+    formatReferences: [
+      {
+        notes: "Use this source as a style reference.",
+        title: "Style reference",
+        type: "blog",
+        url: "https://example.com/style",
+      },
+    ],
     generatedForWeek: "2026-05-30",
     missingDataWarnings: [],
+    telegramDigest: {
+      channels: [],
+      endAt: "2026-05-30T09:00:00.000Z",
+      postCount: 0,
+      startAt: "2026-05-23T09:00:00.000Z",
+    },
     oneOffSources: [
       {
         createdAt: "2026-05-30T00:00:00.000Z",

@@ -17,7 +17,7 @@ const baseNavByRole = {
     { href: "/admin/daily-inputs", label: "Daily input" },
     { href: "/admin/respondents", label: "Respondents" },
     { href: "/admin/calculate", label: "Publish index" },
-    { href: "/admin/weekly-report", label: "Weekly Report" },
+    { href: "/admin/reports", label: "Reports workspace" },
     { href: "/admin/embed", label: "Website embed" },
   ],
   respondent: [{ href: "/respondent", label: "Survey form" }],

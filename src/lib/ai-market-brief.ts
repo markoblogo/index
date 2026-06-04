@@ -5,7 +5,14 @@ import type { Locale } from "@/lib/i18n";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import { commodities, type CommodityId } from "@/lib/mock-data";
 import { getPublicHistoryData } from "@/lib/public-api-data";
+import {
+  getLocalizedReportWorkspaceText,
+  getReportWorkspaceConfig,
+  listReportWorkspaceResources,
+  renderReportTelegramTemplate,
+} from "@/lib/report-workspace";
 import { getActiveRespondentCountData } from "@/lib/respondent-directory";
+import { getDailyTelegramDigest } from "@/lib/telegram-source-collector";
 
 export type AiAnalyticsPoint = {
   date: string;
@@ -201,8 +208,14 @@ export async function generateAndStoreDailyAiMarketBrief({
     };
   }
 
-  const activeRespondentCount = await getActiveRespondentCountData();
-  const history = await getRealAnalyticsHistory();
+  const [activeRespondentCount, history, dailyConfig, dailyResources, telegramDigest] =
+    await Promise.all([
+      getActiveRespondentCountData(),
+      getRealAnalyticsHistory(),
+      getReportWorkspaceConfig("daily"),
+      listReportWorkspaceResources({ reportKind: "daily" }),
+      getDailyTelegramDigest(date ?? todayKyivDate()),
+    ]);
   const tradeDate = date ?? getLatestHistoryDate(history);
 
   if (!tradeDate) {
@@ -231,6 +244,23 @@ export async function generateAndStoreDailyAiMarketBrief({
     locale,
     activeRespondentCount,
     tradeDate,
+    {
+      adminPrompt: getLocalizedReportWorkspaceText(dailyConfig, locale).adminPrompt,
+      collectionWindowLabel: dailyConfig.collectionWindowLabel,
+      sourceProcessingNotes: dailyConfig.sourceProcessingNotes,
+      telegramTemplate:
+        getLocalizedReportWorkspaceText(dailyConfig, locale).telegramTemplate,
+    },
+    dailyResources
+      .filter((resource) => resource.enabled)
+      .map((resource) => ({
+        notes: resource.notes,
+        role: resource.role,
+        title: resource.title,
+        type: resource.type,
+        url: resource.url,
+      })),
+    telegramDigest,
   );
   const fallback = buildDeterministicAiMarketBrief(
     history,
@@ -359,7 +389,13 @@ export async function sendAiBriefTelegramSummary(
     return { skippedReason: "brief_not_found", status: "skipped" };
   }
 
-  const text = buildAiBriefTelegramSummaryText(brief, locale);
+  const config = await getReportWorkspaceConfig("daily");
+  const localized = getLocalizedReportWorkspaceText(config, locale);
+  const text = buildAiBriefTelegramSummaryText(
+    brief,
+    locale,
+    localized.telegramTemplate,
+  );
   const response = await fetch(
     `https://api.telegram.org/bot${botToken}/sendMessage`,
     {
@@ -389,6 +425,30 @@ function buildBriefInput(
   locale: Locale,
   activeRespondentCount: number,
   tradeDate: string,
+  editorialContext?: {
+    adminPrompt: string;
+    collectionWindowLabel: string;
+    sourceProcessingNotes: string;
+    telegramTemplate: string;
+  },
+  sourceReferences?: Array<{
+    notes: string;
+    role: string;
+    title: string;
+    type: string;
+    url: string;
+  }>,
+  telegramDigest?: {
+    channels: Array<{
+      channelHandle: string;
+      peerId: string | null;
+      postCount: number;
+      posts: Array<{ postUrl: string; publishedAt: string; text: string }>;
+    }>;
+    endAt: string;
+    postCount: number;
+    startAt: string;
+  },
 ) {
   const latestRows = commodities
     .map((commodity) => {
@@ -424,10 +484,28 @@ function buildBriefInput(
     })
     .filter((row): row is NonNullable<typeof row> => Boolean(row));
   const input = {
+    editorialContext: editorialContext ?? null,
     generatedFromDate: tradeDate,
     locale,
     positions: latestRows,
     respondentCoverage: activeRespondentCount,
+    sourceReferences: (sourceReferences ?? []).slice(0, 12),
+    telegramDigest:
+      telegramDigest == null
+        ? null
+        : {
+            endAt: telegramDigest.endAt,
+            postCount: telegramDigest.postCount,
+            startAt: telegramDigest.startAt,
+            channels: telegramDigest.channels
+              .filter((channel) => channel.postCount > 0)
+              .map((channel) => ({
+                channelHandle: channel.channelHandle,
+                peerId: channel.peerId,
+                postCount: channel.postCount,
+                posts: channel.posts.slice(-12),
+              })),
+          },
     requiredSections: [
       "Today's Market Signal",
       "Key Movers",
@@ -1255,6 +1333,7 @@ function formatTelegramDate(date: string, locale: Locale) {
 export function buildAiBriefTelegramSummaryText(
   brief: PublicAiMarketBrief,
   locale: Locale,
+  template?: string,
 ) {
   const signal = brief.blocks[0];
   const movers = brief.blocks[1];
@@ -1265,8 +1344,9 @@ export function buildAiBriefTelegramSummaryText(
       ? mapConfidenceLabel(brief.confidence, locale)
       : `Data confidence: ${mapConfidenceLabel(brief.confidence, locale)}`;
 
-  if (locale === "uk") {
-    return [
+  const defaultText =
+    locale === "uk"
+      ? [
       "<b>🌾 AI Market Brief · SPIKE SPOT INDEX</b>",
       `<b>📅 ${escapeHtml(formatTelegramDate(brief.tradeDate, locale))}</b>`,
       "",
@@ -1284,10 +1364,8 @@ export function buildAiBriefTelegramSummaryText(
       "",
       `<i>${escapeHtml(confidence)}</i>`,
       "<i>AI-assisted brief based on published SPIKE SPOT INDEX data. Not a trading recommendation.</i>",
-    ].join("\n");
-  }
-
-  return [
+    ].join("\n")
+      : [
     "<b>🌾 AI Market Brief · SPIKE SPOT INDEX</b>",
     `<b>📅 ${escapeHtml(formatTelegramDate(brief.tradeDate, locale))}</b>`,
     "",
@@ -1306,6 +1384,18 @@ export function buildAiBriefTelegramSummaryText(
     `<i>${escapeHtml(confidence)}</i>`,
     "<i>AI-assisted brief based on published SPIKE SPOT INDEX data. Not a trading recommendation.</i>",
   ].join("\n");
+
+  if (!template || !template.includes("{{")) {
+    return defaultText;
+  }
+
+  return renderReportTelegramTemplate(template, {
+    ai_summary: defaultText,
+    index_summary:
+      locale === "uk"
+        ? "Індексний вступ підставляється з блоку публікації."
+        : "The index intro is injected by the publication block.",
+  }).trim();
 }
 
 function getFallbackCopy(locale: Locale) {

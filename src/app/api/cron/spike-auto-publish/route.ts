@@ -6,6 +6,7 @@ import {
   isKyivAutoPublishHour,
 } from "@/lib/auto-publish";
 import { importMn7rMonitorRespondentPrices } from "@/lib/mn7r-monitor-import";
+import { syncTelegramWorkspaceResources } from "@/lib/telegram-source-collector";
 
 export const dynamic = "force-dynamic";
 
@@ -47,11 +48,14 @@ export async function GET(request: Request) {
     }
   }
 
+  const sourceSync = await syncTelegramWorkspaceResources("daily");
+
   const result = await autoPublishSpikeDailyIndices(date, { replaceExisting });
 
   return NextResponse.json({
     ...result,
     monitorImport,
     monitorImportError,
+    sourceSync,
   });
 }
