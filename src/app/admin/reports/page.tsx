@@ -45,6 +45,13 @@ import {
   sendWeeklyReportTelegramNow,
   type WeeklyReportRecord,
 } from "@/lib/weekly-ai-report";
+import {
+  getWeeklyEditorialPostRowByReportId,
+  publishWeeklyEditorialPostByReportId,
+  unpublishWeeklyEditorialPostByReportId,
+  upsertWeeklyEditorialPostFromSnapshot,
+  type WeeklyEditorialPostRow,
+} from "@/lib/weekly-editorial-post-storage";
 
 type ReportsWorkspacePageProps = {
   searchParams: Promise<{
@@ -64,6 +71,8 @@ const noticeMap: Record<string, string> = {
   notes_saved: "Weekly editor inputs saved.",
   post_filters_reset: "Digest filters reset for this window.",
   published: "Weekly report published.",
+  article_published: "Market-intelligence article published.",
+  article_unpublished: "Market-intelligence article moved back to draft.",
   report_ready: "Weekly report loaded.",
   resource_added: "Resource added.",
   post_filter_updated: "Collected post filter updated.",
@@ -108,6 +117,9 @@ export default async function ReportsWorkspacePage({
       activeWeeklyReport?.id ?? null,
     ),
   ]);
+  const editorialPost = activeWeeklyReport
+    ? await getWeeklyEditorialPostRowByReportId(activeWeeklyReport.id)
+    : null;
   const weeklyReadiness = activeWeeklyReport
     ? assessWeeklyReportPublicReadiness(activeWeeklyReport)
     : null;
@@ -242,6 +254,46 @@ export default async function ReportsWorkspacePage({
     await publishWeeklyReport(reportId, currentUser.userId);
     const nextReport = await getWeeklyReportById(reportId);
     redirect(`/admin/reports?reportId=${reportId}&week=${nextReport?.weekEndDate ?? getDefaultWeekEnd()}&lang=${nextReport?.language ?? selectedLanguage}&notice=published`);
+  }
+
+  async function publishEditorialArticleAction(formData: FormData) {
+    "use server";
+
+    const reportId = String(formData.get("reportId") ?? "");
+    const report = await getWeeklyReportById(reportId);
+    if (report?.content?.blogDraft) {
+      await upsertWeeklyEditorialPostFromSnapshot({
+        coverImageAlt:
+          report.adminEditedContent?.coverImageAlt?.trim() ||
+          report.content.blogDraft.coverAlt,
+        coverImageUrl: report.adminEditedContent?.coverImageUrl?.trim() || null,
+        intro: report.content.blogDraft.intro,
+        language: report.language,
+        relatedReportId: report.id,
+        relatedReportSlug: report.slug,
+        relatedReportTitle: report.title,
+        sections: report.content.blogDraft.sections,
+        seoDescription: report.content.blogDraft.seoDescription,
+        slug: report.content.blogDraft.slug,
+        subtitle: report.content.blogDraft.subtitle,
+        title: report.content.blogDraft.title,
+        weekEndDate: report.weekEndDate,
+      }, {
+        preserveStatus: true,
+      });
+      await publishWeeklyEditorialPostByReportId(reportId);
+    }
+    const nextReport = await getWeeklyReportById(reportId);
+    redirect(`/admin/reports?reportId=${reportId}&week=${nextReport?.weekEndDate ?? getDefaultWeekEnd()}&lang=${nextReport?.language ?? selectedLanguage}&notice=article_published`);
+  }
+
+  async function unpublishEditorialArticleAction(formData: FormData) {
+    "use server";
+
+    const reportId = String(formData.get("reportId") ?? "");
+    await unpublishWeeklyEditorialPostByReportId(reportId);
+    const nextReport = await getWeeklyReportById(reportId);
+    redirect(`/admin/reports?reportId=${reportId}&week=${nextReport?.weekEndDate ?? getDefaultWeekEnd()}&lang=${nextReport?.language ?? selectedLanguage}&notice=article_unpublished`);
   }
 
   async function scheduleTelegramAction(formData: FormData) {
@@ -530,14 +582,17 @@ export default async function ReportsWorkspacePage({
               <WeeklyWorkflowCard
               activeReport={activeWeeklyReport}
               approveAction={approveAction}
+              editorialPost={editorialPost}
               generateCoverAction={generateCoverAction}
               generateAction={generateAction}
               publishAction={publishAction}
+              publishEditorialArticleAction={publishEditorialArticleAction}
               publicReadiness={weeklyReadiness}
               rebuildManifestAction={rebuildManifestAction}
               saveNotesAction={saveNotesAction}
               scheduleTelegramAction={scheduleTelegramAction}
               sendTelegramNowAction={sendTelegramNowAction}
+              unpublishEditorialArticleAction={unpublishEditorialArticleAction}
               />
             </>
           ) : null}
@@ -1149,26 +1204,37 @@ function TelegramDigestPreview({
 function WeeklyWorkflowCard({
   activeReport,
   approveAction,
+  editorialPost,
   generateCoverAction,
   generateAction,
   publishAction,
+  publishEditorialArticleAction,
   publicReadiness,
   rebuildManifestAction,
   saveNotesAction,
   scheduleTelegramAction,
   sendTelegramNowAction,
+  unpublishEditorialArticleAction,
 }: {
   activeReport: WeeklyReportRecord;
   approveAction: (formData: FormData) => Promise<void>;
+  editorialPost: WeeklyEditorialPostRow | null;
   generateCoverAction: (formData: FormData) => Promise<void>;
   generateAction: (formData: FormData) => Promise<void>;
   publishAction: (formData: FormData) => Promise<void>;
+  publishEditorialArticleAction: (formData: FormData) => Promise<void>;
   publicReadiness: ReturnType<typeof assessWeeklyReportPublicReadiness> | null;
   rebuildManifestAction: (formData: FormData) => Promise<void>;
   saveNotesAction: (formData: FormData) => Promise<void>;
   scheduleTelegramAction: (formData: FormData) => Promise<void>;
   sendTelegramNowAction: (formData: FormData) => Promise<void>;
+  unpublishEditorialArticleAction: (formData: FormData) => Promise<void>;
 }) {
+  const editorialStatus =
+    editorialPost?.status === "published" ? "published" : "draft";
+  const canPublishEditorialArticle =
+    activeReport.status === "published" && Boolean(activeReport.content?.blogDraft);
+
   return (
     <div className="grid gap-4 rounded-[1.2rem] border border-white/10 bg-black/30 p-4">
       <div className="flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.12em]">
@@ -1184,6 +1250,15 @@ function WeeklyWorkflowCard({
         <span className="rounded-full border border-white/12 px-3 py-1 text-white/72">
           version {activeReport.version}
         </span>
+        <span
+          className={`rounded-full border px-3 py-1 ${
+            editorialStatus === "published"
+              ? "border-uga-green/40 text-uga-green"
+              : "border-amber-400/30 text-amber-100"
+          }`}
+        >
+          article {editorialStatus}
+        </span>
       </div>
 
       <div className="flex flex-wrap gap-3">
@@ -1192,7 +1267,18 @@ function WeeklyWorkflowCard({
           { action: generateAction, label: "Generate weekly draft" },
           { action: generateCoverAction, label: "Generate cover asset", disabled: !activeReport.content?.blogDraft },
           { action: approveAction, label: "Approve" },
-          { action: publishAction, label: "Publish website", disabled: !publicReadiness?.canPublish },
+          { action: publishAction, label: "Publish weekly report", disabled: !publicReadiness?.canPublish },
+          {
+            action:
+              editorialStatus === "published"
+                ? unpublishEditorialArticleAction
+                : publishEditorialArticleAction,
+            label:
+              editorialStatus === "published"
+                ? "Unpublish market-intelligence article"
+                : "Publish market-intelligence article",
+            disabled: !canPublishEditorialArticle,
+          },
           { action: scheduleTelegramAction, label: "Schedule Telegram", disabled: !publicReadiness?.canScheduleTelegram },
           { action: sendTelegramNowAction, label: "Send Telegram now", disabled: !publicReadiness?.canSendTelegram },
         ].map((item) => (
@@ -1261,7 +1347,13 @@ function WeeklyWorkflowCard({
 
       <div className="grid gap-4 lg:grid-cols-2">
         <MetadataBox activeReport={activeReport} />
-        {publicReadiness ? <ReadinessBox readiness={publicReadiness} /> : null}
+        <div className="grid gap-4">
+          {publicReadiness ? <ReadinessBox readiness={publicReadiness} /> : null}
+          <EditorialPublishBox
+            activeReport={activeReport}
+            editorialPost={editorialPost}
+          />
+        </div>
       </div>
     </div>
   );
@@ -1310,6 +1402,44 @@ function ReadinessBox({
           {readiness.warnings.join(" ")}
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function EditorialPublishBox({
+  activeReport,
+  editorialPost,
+}: {
+  activeReport: WeeklyReportRecord;
+  editorialPost: WeeklyEditorialPostRow | null;
+}) {
+  const status = editorialPost?.status === "published" ? "published" : "draft";
+  const publicUrl =
+    editorialPost?.status === "published"
+      ? `/${activeReport.language === "uk" ? "uk" : "en"}/market-intelligence/${editorialPost.slug}`
+      : null;
+
+  return (
+    <div className="rounded-[1rem] border border-white/10 p-4">
+      <h3 className="text-base font-semibold text-white">Market-intelligence article</h3>
+      <div className="mt-3 grid gap-2 text-sm text-white/68">
+        <p><span className="font-semibold text-white">Status:</span> {status}</p>
+        <p><span className="font-semibold text-white">Slug:</span> {editorialPost?.slug ?? activeReport.content?.blogDraft?.slug ?? "n/a"}</p>
+        <p><span className="font-semibold text-white">Published at:</span> {editorialPost?.publishedAt?.toISOString() ?? "n/a"}</p>
+        <p><span className="font-semibold text-white">Source:</span> {activeReport.content?.blogDraft ? "weekly blogDraft available" : "blogDraft missing"}</p>
+        {publicUrl ? (
+          <p>
+            <span className="font-semibold text-white">Public URL:</span>{" "}
+            <a
+              className="text-uga-green underline-offset-2 hover:underline"
+              href={publicUrl}
+              target="_blank"
+            >
+              {publicUrl}
+            </a>
+          </p>
+        ) : null}
+      </div>
     </div>
   );
 }

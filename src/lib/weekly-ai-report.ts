@@ -1236,10 +1236,6 @@ export async function publishWeeklyReport(
         publishedReport.adminEditedContent?.coverImageUrl?.trim() || null,
       intro: publishedReport.content.blogDraft.intro,
       language: publishedReport.language,
-      publishedAt:
-        publishedReport.publishedAt ??
-        publishedReport.publicationDate ??
-        new Date().toISOString(),
       relatedReportId: publishedReport.id,
       relatedReportSlug: publishedReport.slug,
       relatedReportTitle: publishedReport.title,
@@ -1249,6 +1245,8 @@ export async function publishWeeklyReport(
       subtitle: publishedReport.content.blogDraft.subtitle,
       title: publishedReport.content.blogDraft.title,
       weekEndDate: publishedReport.weekEndDate,
+    }, {
+      preserveStatus: true,
     });
   }
   revalidateWeeklyReportViews();

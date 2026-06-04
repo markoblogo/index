@@ -28,16 +28,20 @@ export type WeeklyEditorialPost = {
   seoDescription: string;
   seoTitle: string;
   slug: string;
+  status: "draft" | "published";
   subtitle: string;
   title: string;
   weekEndDate: string;
 };
 
 export async function listPublishedWeeklyEditorialPosts(locale?: Locale) {
-  let rows = await listWeeklyEditorialPostRows(locale);
+  let rows = await listWeeklyEditorialPostRows(locale, { onlyPublished: true });
   if (rows.length === 0) {
-    await backfillWeeklyEditorialPostsFromPublishedReports(locale);
-    rows = await listWeeklyEditorialPostRows(locale);
+    const existingRows = await listWeeklyEditorialPostRows(locale);
+    if (existingRows.length === 0) {
+      await backfillWeeklyEditorialPostsFromPublishedReports(locale);
+    }
+    rows = await listWeeklyEditorialPostRows(locale, { onlyPublished: true });
   }
 
   return rows
@@ -49,10 +53,17 @@ export async function getPublishedWeeklyEditorialPostBySlug(
   slug: string,
   locale?: Locale,
 ) {
-  let row = await getWeeklyEditorialPostRowBySlug(slug, locale);
+  let row = await getWeeklyEditorialPostRowBySlug(slug, locale, {
+    onlyPublished: true,
+  });
   if (!row) {
-    await backfillWeeklyEditorialPostsFromPublishedReports(locale);
-    row = await getWeeklyEditorialPostRowBySlug(slug, locale);
+    const existingRows = await listWeeklyEditorialPostRows(locale);
+    if (existingRows.length === 0) {
+      await backfillWeeklyEditorialPostsFromPublishedReports(locale);
+    }
+    row = await getWeeklyEditorialPostRowBySlug(slug, locale, {
+      onlyPublished: true,
+    });
   }
 
   return row ? mapWeeklyEditorialPostRow(row) : null;
@@ -101,6 +112,7 @@ function mapWeeklyReportToEditorialPost(report: WeeklyReportRecord): WeeklyEdito
     seoDescription: blogDraft.seoDescription,
     seoTitle: blogDraft.title,
     slug: blogDraft.slug,
+    status: "published",
     subtitle: blogDraft.subtitle,
     title: blogDraft.title,
     weekEndDate: report.weekEndDate,
@@ -118,13 +130,16 @@ function mapWeeklyEditorialPostRow(row: WeeklyEditorialPostRow): WeeklyEditorial
     excerpt: row.intro,
     intro: row.intro,
     language: locale,
-    publishedAt: row.publishedAt.toISOString().slice(0, 10),
+    publishedAt:
+      row.publishedAt?.toISOString().slice(0, 10) ??
+      row.weekEndDate.toISOString().slice(0, 10),
     relatedReportSlug: row.relatedReportSlug,
     relatedReportTitle: row.relatedReportTitle,
     sections: parseSections(row.sectionsJson),
     seoDescription: row.seoDescription,
     seoTitle: row.title,
     slug: row.slug,
+    status: row.status === "published" ? "published" : "draft",
     subtitle: row.subtitle,
     title: row.title,
     weekEndDate: row.weekEndDate.toISOString().slice(0, 10),
@@ -138,7 +153,13 @@ async function backfillWeeklyEditorialPostsFromPublishedReports(locale?: Locale)
     .filter((report) => (locale ? report.language === locale : true));
 
   for (const report of eligibleReports) {
-    await upsertWeeklyEditorialPostFromSnapshot(buildSnapshotFromReport(report));
+    await upsertWeeklyEditorialPostFromSnapshot(buildSnapshotFromReport(report), {
+      publishedAt:
+        report.publishedAt ??
+        report.publicationDate ??
+        `${report.weekEndDate}T00:00:00.000Z`,
+      status: "published",
+    });
   }
 }
 
@@ -154,10 +175,6 @@ function buildSnapshotFromReport(report: WeeklyReportRecord) {
     coverImageUrl: report.adminEditedContent?.coverImageUrl?.trim() || null,
     intro: blogDraft.intro,
     language: report.language,
-    publishedAt:
-      report.publishedAt ??
-      report.publicationDate ??
-      `${report.weekEndDate}T00:00:00.000Z`,
     relatedReportId: report.id,
     relatedReportSlug: report.slug,
     relatedReportTitle: report.title,
