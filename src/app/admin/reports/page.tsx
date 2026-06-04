@@ -5,6 +5,7 @@ import {
   buildAiBriefTelegramSummaryText,
   getAiMarketBriefAdminStatus,
 } from "@/lib/ai-market-brief";
+import { hasDatabaseUrl } from "@/lib/db";
 import { requireDemoRole } from "@/lib/demo-auth";
 import {
   addReportWorkspaceResource,
@@ -103,6 +104,13 @@ export default async function ReportsWorkspacePage({
   const weeklyReadiness = activeWeeklyReport
     ? assessWeeklyReportPublicReadiness(activeWeeklyReport)
     : null;
+  const hasDatabase = hasDatabaseUrl();
+  const operationalReadiness = buildOperationalReadiness({
+    activeWeeklyReport,
+    dailyResources,
+    hasDatabase,
+    weeklyResources,
+  });
 
   async function saveConfigAction(formData: FormData) {
     "use server";
@@ -277,6 +285,30 @@ export default async function ReportsWorkspacePage({
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               <a
+                className="rounded-full border border-white/15 px-3 py-1 text-sm text-white/70 transition hover:border-uga-green hover:text-uga-green"
+                href="#daily-workspace"
+              >
+                Daily workspace
+              </a>
+              <a
+                className="rounded-full border border-white/15 px-3 py-1 text-sm text-white/70 transition hover:border-uga-green hover:text-uga-green"
+                href="#weekly-workspace"
+              >
+                Weekly workspace
+              </a>
+              <a
+                className="rounded-full border border-white/15 px-3 py-1 text-sm text-white/70 transition hover:border-uga-green hover:text-uga-green"
+                href="#weekly-preview"
+              >
+                Weekly preview
+              </a>
+              <a
+                className="rounded-full border border-white/15 px-3 py-1 text-sm text-white/70 transition hover:border-uga-green hover:text-uga-green"
+                href="#weekly-archive"
+              >
+                Archive
+              </a>
+              <a
                 className={`rounded-full border px-3 py-1 text-sm ${selectedLanguage === "uk" ? "border-uga-green text-uga-green" : "border-white/15 text-white/70"}`}
                 href={`/admin/reports?week=${selectedWeek}&lang=uk`}
               >
@@ -309,7 +341,8 @@ export default async function ReportsWorkspacePage({
               Load week
             </button>
             <button
-              className="rounded-full bg-uga-green px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#82ff4d]"
+              className="rounded-full bg-uga-green px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#82ff4d] disabled:cursor-not-allowed disabled:bg-white/15 disabled:text-white/35"
+              disabled={!operationalReadiness.canRunWeeklyGeneration}
               formAction={autoPrepareAction}
               type="submit"
             >
@@ -325,6 +358,44 @@ export default async function ReportsWorkspacePage({
         ) : null}
       </header>
 
+      <section className="grid gap-4 rounded-[1.5rem] border border-white/12 bg-[#050505] p-5">
+        <div>
+          <h2 className="text-lg font-semibold text-white">Operational readiness</h2>
+          <p className="mt-2 text-sm leading-6 text-white/62">
+            This shows whether the current environment can actually collect sources, generate reports and send Telegram output.
+          </p>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {operationalReadiness.items.map((item) => (
+            <article
+              className="rounded-[1rem] border border-white/10 bg-black/30 p-4"
+              key={item.label}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="text-sm font-semibold text-white">{item.label}</h3>
+                <span
+                  className={`rounded-full px-2 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.12em] ${
+                    item.ok
+                      ? "bg-uga-green/15 text-uga-green"
+                      : "bg-amber-400/15 text-amber-200"
+                  }`}
+                >
+                  {item.ok ? "ready" : "blocked"}
+                </span>
+              </div>
+              <p className="mt-3 text-sm leading-6 text-white/68">{item.detail}</p>
+            </article>
+          ))}
+        </div>
+        {operationalReadiness.warnings.length > 0 ? (
+          <div className="rounded-[1rem] border border-amber-400/30 bg-amber-400/10 p-4 text-sm leading-6 text-amber-100">
+            {operationalReadiness.warnings.map((warning) => (
+              <p key={warning}>{warning}</p>
+            ))}
+          </div>
+        ) : null}
+      </section>
+
       <div className="grid gap-6 xl:grid-cols-2">
         <WorkspaceLane
           addResourceAction={addResourceAction}
@@ -332,6 +403,7 @@ export default async function ReportsWorkspacePage({
           deleteResourceAction={deleteResourceAction}
           resources={dailyResources}
           saveConfigAction={saveConfigAction}
+          sectionId="daily-workspace"
           title="Daily summary workspace"
           toggleResourceAction={toggleResourceAction}
         >
@@ -383,6 +455,7 @@ export default async function ReportsWorkspacePage({
           reportId={activeWeeklyReport?.id ?? null}
           resources={weeklyResources}
           saveConfigAction={saveConfigAction}
+          sectionId="weekly-workspace"
           title="Weekly summary workspace"
           toggleResourceAction={toggleResourceAction}
         >
@@ -412,7 +485,7 @@ export default async function ReportsWorkspacePage({
       </div>
 
       <section className="grid gap-6 xl:grid-cols-[0.55fr_1.45fr]">
-        <div className="rounded-[1.5rem] border border-white/12 bg-[#050505] p-5">
+        <div className="rounded-[1.5rem] border border-white/12 bg-[#050505] p-5" id="weekly-archive">
           <h2 className="text-lg font-semibold text-white">Weekly report archive</h2>
           <div className="mt-4 grid gap-3">
             {reports.length > 0 ? (
@@ -505,7 +578,7 @@ export default async function ReportsWorkspacePage({
 
           {activeWeeklyReport?.content ? (
             <>
-              <section className="rounded-[1.5rem] border border-white/12 bg-[#050505] p-5">
+              <section className="rounded-[1.5rem] border border-white/12 bg-[#050505] p-5" id="weekly-preview">
                 <h2 className="text-lg font-semibold text-white">Weekly website preview</h2>
                 <div className="mt-5 rounded-[1.35rem] border border-white/10 bg-[#050505] p-5">
                   <WeeklyReportView report={activeWeeklyReport} />
@@ -603,6 +676,7 @@ function WorkspaceLane({
   reportId,
   resources,
   saveConfigAction,
+  sectionId,
   title,
   toggleResourceAction,
 }: {
@@ -613,6 +687,7 @@ function WorkspaceLane({
   reportId?: string | null;
   resources: ReportWorkspaceResource[];
   saveConfigAction: (formData: FormData) => Promise<void>;
+  sectionId?: string;
   title: string;
   toggleResourceAction: (formData: FormData) => Promise<void>;
 }) {
@@ -620,7 +695,7 @@ function WorkspaceLane({
   const formatReferences = resources.filter((resource) => resource.role === "format_reference");
 
   return (
-    <section className="grid gap-4 rounded-[1.5rem] border border-white/12 bg-[#050505] p-5">
+    <section className="grid gap-4 rounded-[1.5rem] border border-white/12 bg-[#050505] p-5" id={sectionId}>
       <div>
         <h2 className="text-xl font-semibold text-white">{title}</h2>
         <p className="mt-2 text-sm leading-6 text-white/62">
@@ -1102,6 +1177,129 @@ function buildRedirectUrl(
   }
   search.set("notice", notice);
   return `/admin/reports?${search.toString()}`;
+}
+
+function buildOperationalReadiness({
+  activeWeeklyReport,
+  dailyResources,
+  hasDatabase,
+  weeklyResources,
+}: {
+  activeWeeklyReport: WeeklyReportRecord | null;
+  dailyResources: ReportWorkspaceResource[];
+  hasDatabase: boolean;
+  weeklyResources: ReportWorkspaceResource[];
+}) {
+  const hasOpenAi = Boolean(process.env.OPENAI_API_KEY);
+  const hasDailyTelegramTarget = Boolean(
+    process.env.SPIKE_TELEGRAM_BOT_TOKEN &&
+      (process.env.SPIKE_AI_TELEGRAM_CHAT_ID ||
+        process.env.INDEX_TELEGRAM_SMOKE_CHAT_ID ||
+        process.env.UGA_TELEGRAM_ADMIN_CHAT_ID),
+  );
+  const hasWeeklyTelegramTarget = Boolean(
+    process.env.SPIKE_TELEGRAM_BOT_TOKEN &&
+      (process.env.SPIKE_WEEKLY_REPORT_TELEGRAM_CHAT_ID ||
+        process.env.SPIKE_AI_TELEGRAM_CHAT_ID ||
+        process.env.INDEX_TELEGRAM_SMOKE_CHAT_ID ||
+        process.env.UGA_TELEGRAM_ADMIN_CHAT_ID),
+  );
+  const hasEditorialModel = Boolean(
+    process.env.SPIKE_WEEKLY_EDITORIAL_MODEL ||
+      process.env.SPIKE_WEEKLY_REPORT_MODEL ||
+      process.env.SPIKE_AI_BRIEF_MODEL,
+  );
+  const dailyAnalysisSources = dailyResources.filter(
+    (resource) => resource.role === "analysis_source" && resource.enabled,
+  ).length;
+  const weeklyAnalysisSources = weeklyResources.filter(
+    (resource) => resource.role === "analysis_source" && resource.enabled,
+  ).length;
+
+  const items = [
+    {
+      detail: hasDatabase
+        ? "Database-backed reports, resources and collected Telegram posts can be stored."
+        : "DATABASE_URL is missing, so report creation and persistent source storage are unavailable in this environment.",
+      label: "Database",
+      ok: hasDatabase,
+    },
+    {
+      detail: hasOpenAi
+        ? "AI generation is available for daily and weekly editorial steps."
+        : "OPENAI_API_KEY is missing, so generation falls back to deterministic content instead of the editorial model.",
+      label: "AI generation",
+      ok: hasOpenAi,
+    },
+    {
+      detail:
+        dailyAnalysisSources > 0
+          ? `${dailyAnalysisSources} enabled daily analysis sources configured.`
+          : "No enabled daily analysis sources configured yet.",
+      label: "Daily sources",
+      ok: dailyAnalysisSources > 0,
+    },
+    {
+      detail:
+        weeklyAnalysisSources > 0
+          ? `${weeklyAnalysisSources} enabled weekly analysis sources configured.`
+          : "No enabled weekly analysis sources configured yet.",
+      label: "Weekly sources",
+      ok: weeklyAnalysisSources > 0,
+    },
+    {
+      detail: hasDailyTelegramTarget
+        ? "Daily Telegram delivery target is configured."
+        : "Daily Telegram target is not fully configured yet.",
+      label: "Daily Telegram",
+      ok: hasDailyTelegramTarget,
+    },
+    {
+      detail: hasWeeklyTelegramTarget
+        ? "Weekly Telegram delivery target is configured, including the cover-first weekly pack flow."
+        : "Weekly Telegram target is not fully configured yet.",
+      label: "Weekly Telegram",
+      ok: hasWeeklyTelegramTarget,
+    },
+    {
+      detail: hasEditorialModel
+        ? "A weekly editorial model is configured for the narrative report/blog layer."
+        : "No explicit weekly editorial model is configured.",
+      label: "Weekly editorial model",
+      ok: hasEditorialModel,
+    },
+    {
+      detail: activeWeeklyReport
+        ? `Weekly report context is loaded for ${activeWeeklyReport.weekEndDate} (${activeWeeklyReport.language.toUpperCase()}).`
+        : "No active weekly report is loaded yet.",
+      label: "Weekly report context",
+      ok: Boolean(activeWeeklyReport),
+    },
+  ];
+
+  const warnings: string[] = [];
+
+  if (!hasDatabase) {
+    warnings.push(
+      "Weekly report actions currently show the workflow, but cannot persist reports or collected posts until DATABASE_URL is configured.",
+    );
+  }
+  if (weeklyAnalysisSources === 0) {
+    warnings.push(
+      "Weekly generation should not be trusted until the configured Telegram channels are actually attached as enabled analysis sources.",
+    );
+  }
+  if (!hasWeeklyTelegramTarget) {
+    warnings.push(
+      "Weekly Telegram publish flow is incomplete until the bot token and target chat ID are both configured.",
+    );
+  }
+
+  return {
+    canRunWeeklyGeneration: hasDatabase && weeklyAnalysisSources > 0,
+    items,
+    warnings,
+  };
 }
 
 function formatDigestDate(value: string) {
