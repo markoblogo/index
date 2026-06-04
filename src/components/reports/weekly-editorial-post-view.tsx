@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { WeeklyEditorialPost } from "@/lib/weekly-editorial-posts";
 
@@ -56,10 +57,13 @@ export function WeeklyEditorialPostView({
 
           {post.coverImage ? (
             <div className="relative aspect-[3/1.55] max-h-[36rem] overflow-hidden">
-              <img
+              <Image
                 alt={post.coverImageAlt}
                 className="absolute inset-0 h-full w-full object-cover"
+                fill
+                sizes="100vw"
                 src={post.coverImage}
+                unoptimized
               />
               <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#050505]/62 to-transparent" />
             </div>

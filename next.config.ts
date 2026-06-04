@@ -13,6 +13,12 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
   },
+  images: {
+    remotePatterns: [
+      { hostname: "**", protocol: "https" },
+      { hostname: "**", protocol: "http" },
+    ],
+  },
   async headers() {
     const frameAncestors = allowedEmbedOrigins.includes("'self'")
       ? allowedEmbedOrigins

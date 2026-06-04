@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { WeeklyReportRecord } from "@/lib/weekly-ai-report";
 
 export function WeeklyReportView({ report }: { report: WeeklyReportRecord }) {
@@ -105,11 +106,14 @@ export function WeeklyReportView({ report }: { report: WeeklyReportRecord }) {
 
           <div className="mt-5 grid gap-6">
             {coverImage ? (
-              <div className="overflow-hidden rounded-[1rem] border border-white/10">
-                <img
+              <div className="relative aspect-[3/1.6] overflow-hidden rounded-[1rem] border border-white/10">
+                <Image
                   alt={coverImageAlt}
-                  className="aspect-[3/1.6] w-full object-cover"
+                  className="object-cover"
+                  fill
+                  sizes="(max-width: 1024px) 100vw, 70vw"
                   src={coverImage}
+                  unoptimized
                 />
               </div>
             ) : null}
