@@ -59,7 +59,9 @@ type ReportsWorkspacePageProps = {
   searchParams: Promise<{
     lang?: string;
     notice?: string;
+    preview?: string;
     reportId?: string;
+    view?: string;
     week?: string;
   }>;
 };
@@ -95,6 +97,11 @@ export default async function ReportsWorkspacePage({
   const currentUser = await requireDemoRole("admin");
   const params = await searchParams;
   const selectedLanguage = params.lang === "en" ? "en" : "uk";
+  const selectedView = params.view === "daily" ? "daily" : "weekly";
+  const selectedPreview =
+    params.preview === "telegram" || params.preview === "editorial"
+      ? params.preview
+      : "website";
   const selectedWeek = params.week ?? getDefaultWeekEnd();
   const selectedReport =
     params.reportId && params.reportId.length > 0
@@ -201,7 +208,14 @@ export default async function ReportsWorkspacePage({
     const language =
       String(formData.get("language") ?? "uk") === "en" ? "en" : "uk";
     const nextReport = await ensureWeeklyReport(week, language);
-    redirect(`/admin/reports?reportId=${nextReport?.id ?? ""}&week=${week}&lang=${language}&notice=report_ready`);
+    redirect(buildReportsUrl({
+      lang: language,
+      notice: "report_ready",
+      preview: selectedPreview,
+      reportId: nextReport?.id ?? "",
+      view: "weekly",
+      week,
+    }));
   }
 
   async function rebuildManifestAction(formData: FormData) {
@@ -210,7 +224,14 @@ export default async function ReportsWorkspacePage({
     const reportId = String(formData.get("reportId") ?? "");
     await buildWeeklySourceManifest(reportId);
     const nextReport = await getWeeklyReportById(reportId);
-    redirect(`/admin/reports?reportId=${reportId}&week=${nextReport?.weekEndDate ?? getDefaultWeekEnd()}&lang=${nextReport?.language ?? selectedLanguage}&notice=manifest`);
+    redirect(buildReportsUrl({
+      lang: nextReport?.language ?? selectedLanguage,
+      notice: "manifest",
+      preview: selectedPreview,
+      reportId,
+      view: "weekly",
+      week: nextReport?.weekEndDate ?? getDefaultWeekEnd(),
+    }));
   }
 
   async function saveNotesAction(formData: FormData) {
@@ -227,7 +248,14 @@ export default async function ReportsWorkspacePage({
       structuredDataPack: String(formData.get("structuredDataPack") ?? ""),
     });
     const nextReport = await getWeeklyReportById(reportId);
-    redirect(`/admin/reports?reportId=${reportId}&week=${nextReport?.weekEndDate ?? getDefaultWeekEnd()}&lang=${nextReport?.language ?? selectedLanguage}&notice=notes_saved`);
+    redirect(buildReportsUrl({
+      lang: nextReport?.language ?? selectedLanguage,
+      notice: "notes_saved",
+      preview: selectedPreview,
+      reportId,
+      view: "weekly",
+      week: nextReport?.weekEndDate ?? getDefaultWeekEnd(),
+    }));
   }
 
   async function generateAction(formData: FormData) {
@@ -236,7 +264,14 @@ export default async function ReportsWorkspacePage({
     const reportId = String(formData.get("reportId") ?? "");
     await generateWeeklyReportDraft(reportId, currentUser.userId);
     const nextReport = await getWeeklyReportById(reportId);
-    redirect(`/admin/reports?reportId=${reportId}&week=${nextReport?.weekEndDate ?? getDefaultWeekEnd()}&lang=${nextReport?.language ?? selectedLanguage}&notice=generated`);
+    redirect(buildReportsUrl({
+      lang: nextReport?.language ?? selectedLanguage,
+      notice: "generated",
+      preview: selectedPreview,
+      reportId,
+      view: "weekly",
+      week: nextReport?.weekEndDate ?? getDefaultWeekEnd(),
+    }));
   }
 
   async function generateCoverAction(formData: FormData) {
@@ -245,7 +280,14 @@ export default async function ReportsWorkspacePage({
     const reportId = String(formData.get("reportId") ?? "");
     await generateWeeklyCoverAsset(reportId, currentUser.userId);
     const nextReport = await getWeeklyReportById(reportId);
-    redirect(`/admin/reports?reportId=${reportId}&week=${nextReport?.weekEndDate ?? getDefaultWeekEnd()}&lang=${nextReport?.language ?? selectedLanguage}&notice=cover_generated`);
+    redirect(buildReportsUrl({
+      lang: nextReport?.language ?? selectedLanguage,
+      notice: "cover_generated",
+      preview: selectedPreview,
+      reportId,
+      view: "weekly",
+      week: nextReport?.weekEndDate ?? getDefaultWeekEnd(),
+    }));
   }
 
   async function approveAction(formData: FormData) {
@@ -254,7 +296,14 @@ export default async function ReportsWorkspacePage({
     const reportId = String(formData.get("reportId") ?? "");
     await approveWeeklyReport(reportId, currentUser.userId);
     const nextReport = await getWeeklyReportById(reportId);
-    redirect(`/admin/reports?reportId=${reportId}&week=${nextReport?.weekEndDate ?? getDefaultWeekEnd()}&lang=${nextReport?.language ?? selectedLanguage}&notice=approved`);
+    redirect(buildReportsUrl({
+      lang: nextReport?.language ?? selectedLanguage,
+      notice: "approved",
+      preview: selectedPreview,
+      reportId,
+      view: "weekly",
+      week: nextReport?.weekEndDate ?? getDefaultWeekEnd(),
+    }));
   }
 
   async function publishAction(formData: FormData) {
@@ -263,7 +312,14 @@ export default async function ReportsWorkspacePage({
     const reportId = String(formData.get("reportId") ?? "");
     await publishWeeklyReport(reportId, currentUser.userId);
     const nextReport = await getWeeklyReportById(reportId);
-    redirect(`/admin/reports?reportId=${reportId}&week=${nextReport?.weekEndDate ?? getDefaultWeekEnd()}&lang=${nextReport?.language ?? selectedLanguage}&notice=published`);
+    redirect(buildReportsUrl({
+      lang: nextReport?.language ?? selectedLanguage,
+      notice: "published",
+      preview: selectedPreview,
+      reportId,
+      view: "weekly",
+      week: nextReport?.weekEndDate ?? getDefaultWeekEnd(),
+    }));
   }
 
   async function publishEditorialArticleAction(formData: FormData) {
@@ -278,7 +334,14 @@ export default async function ReportsWorkspacePage({
       await publishWeeklyEditorialPostByReportId(reportId);
     }
     const nextReport = await getWeeklyReportById(reportId);
-    redirect(`/admin/reports?reportId=${reportId}&week=${nextReport?.weekEndDate ?? getDefaultWeekEnd()}&lang=${nextReport?.language ?? selectedLanguage}&notice=article_published`);
+    redirect(buildReportsUrl({
+      lang: nextReport?.language ?? selectedLanguage,
+      notice: "article_published",
+      preview: selectedPreview,
+      reportId,
+      view: "weekly",
+      week: nextReport?.weekEndDate ?? getDefaultWeekEnd(),
+    }));
   }
 
   async function unpublishEditorialArticleAction(formData: FormData) {
@@ -287,7 +350,14 @@ export default async function ReportsWorkspacePage({
     const reportId = String(formData.get("reportId") ?? "");
     await unpublishWeeklyEditorialPostByReportId(reportId);
     const nextReport = await getWeeklyReportById(reportId);
-    redirect(`/admin/reports?reportId=${reportId}&week=${nextReport?.weekEndDate ?? getDefaultWeekEnd()}&lang=${nextReport?.language ?? selectedLanguage}&notice=article_unpublished`);
+    redirect(buildReportsUrl({
+      lang: nextReport?.language ?? selectedLanguage,
+      notice: "article_unpublished",
+      preview: selectedPreview,
+      reportId,
+      view: "weekly",
+      week: nextReport?.weekEndDate ?? getDefaultWeekEnd(),
+    }));
   }
 
   async function syncEditorialArticleAction(formData: FormData) {
@@ -301,7 +371,14 @@ export default async function ReportsWorkspacePage({
       });
     }
     const nextReport = await getWeeklyReportById(reportId);
-    redirect(`/admin/reports?reportId=${reportId}&week=${nextReport?.weekEndDate ?? getDefaultWeekEnd()}&lang=${nextReport?.language ?? selectedLanguage}&notice=article_synced`);
+    redirect(buildReportsUrl({
+      lang: nextReport?.language ?? selectedLanguage,
+      notice: "article_synced",
+      preview: selectedPreview,
+      reportId,
+      view: "weekly",
+      week: nextReport?.weekEndDate ?? getDefaultWeekEnd(),
+    }));
   }
 
   async function republishEditorialArticleAction(formData: FormData) {
@@ -316,7 +393,14 @@ export default async function ReportsWorkspacePage({
       });
     }
     const nextReport = await getWeeklyReportById(reportId);
-    redirect(`/admin/reports?reportId=${reportId}&week=${nextReport?.weekEndDate ?? getDefaultWeekEnd()}&lang=${nextReport?.language ?? selectedLanguage}&notice=article_republished`);
+    redirect(buildReportsUrl({
+      lang: nextReport?.language ?? selectedLanguage,
+      notice: "article_republished",
+      preview: selectedPreview,
+      reportId,
+      view: "weekly",
+      week: nextReport?.weekEndDate ?? getDefaultWeekEnd(),
+    }));
   }
 
   async function scheduleTelegramAction(formData: FormData) {
@@ -325,7 +409,14 @@ export default async function ReportsWorkspacePage({
     const reportId = String(formData.get("reportId") ?? "");
     await scheduleWeeklyReportTelegram(reportId, currentUser.userId);
     const nextReport = await getWeeklyReportById(reportId);
-    redirect(`/admin/reports?reportId=${reportId}&week=${nextReport?.weekEndDate ?? getDefaultWeekEnd()}&lang=${nextReport?.language ?? selectedLanguage}&notice=scheduled`);
+    redirect(buildReportsUrl({
+      lang: nextReport?.language ?? selectedLanguage,
+      notice: "scheduled",
+      preview: selectedPreview,
+      reportId,
+      view: "weekly",
+      week: nextReport?.weekEndDate ?? getDefaultWeekEnd(),
+    }));
   }
 
   async function sendTelegramNowAction(formData: FormData) {
@@ -334,7 +425,14 @@ export default async function ReportsWorkspacePage({
     const reportId = String(formData.get("reportId") ?? "");
     await sendWeeklyReportTelegramNow(reportId, currentUser.userId);
     const nextReport = await getWeeklyReportById(reportId);
-    redirect(`/admin/reports?reportId=${reportId}&week=${nextReport?.weekEndDate ?? getDefaultWeekEnd()}&lang=${nextReport?.language ?? selectedLanguage}&notice=sent`);
+    redirect(buildReportsUrl({
+      lang: nextReport?.language ?? selectedLanguage,
+      notice: "sent",
+      preview: selectedPreview,
+      reportId,
+      view: "weekly",
+      week: nextReport?.weekEndDate ?? getDefaultWeekEnd(),
+    }));
   }
 
   async function autoPrepareAction(formData: FormData) {
@@ -343,7 +441,14 @@ export default async function ReportsWorkspacePage({
     const week = String(formData.get("week") ?? getDefaultWeekEnd());
     await autoPrepareWeeklyReportDraft(week);
     const nextReport = await ensureWeeklyReport(week, selectedLanguage);
-    redirect(`/admin/reports?reportId=${nextReport?.id ?? ""}&week=${week}&lang=${selectedLanguage}&notice=generated`);
+    redirect(buildReportsUrl({
+      lang: selectedLanguage,
+      notice: "generated",
+      preview: selectedPreview,
+      reportId: nextReport?.id ?? "",
+      view: "weekly",
+      week,
+    }));
   }
 
   async function syncSourcesAction(formData: FormData) {
@@ -413,38 +518,58 @@ export default async function ReportsWorkspacePage({
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               <a
-                className="rounded-full border border-white/15 px-3 py-1 text-sm text-white/70 transition hover:border-uga-green hover:text-uga-green"
-                href="#daily-workspace"
+                className={`rounded-full border px-3 py-1 text-sm transition ${
+                  selectedView === "daily"
+                    ? "border-uga-green bg-uga-green/10 text-white"
+                    : "border-white/15 text-white/70 hover:border-uga-green hover:text-uga-green"
+                }`}
+                href={buildReportsUrl({
+                  lang: selectedLanguage,
+                  preview: selectedPreview,
+                  reportId: activeWeeklyReport?.id ?? params.reportId,
+                  view: "daily",
+                  week: selectedWeek,
+                })}
               >
-                Daily workspace
+                Daily operations
               </a>
               <a
-                className="rounded-full border border-white/15 px-3 py-1 text-sm text-white/70 transition hover:border-uga-green hover:text-uga-green"
-                href="#weekly-workspace"
+                className={`rounded-full border px-3 py-1 text-sm transition ${
+                  selectedView === "weekly"
+                    ? "border-uga-green bg-uga-green/10 text-white"
+                    : "border-white/15 text-white/70 hover:border-uga-green hover:text-uga-green"
+                }`}
+                href={buildReportsUrl({
+                  lang: selectedLanguage,
+                  preview: selectedPreview,
+                  reportId: activeWeeklyReport?.id ?? params.reportId,
+                  view: "weekly",
+                  week: selectedWeek,
+                })}
               >
-                Weekly workspace
-              </a>
-              <a
-                className="rounded-full border border-white/15 px-3 py-1 text-sm text-white/70 transition hover:border-uga-green hover:text-uga-green"
-                href="#weekly-preview"
-              >
-                Weekly preview
-              </a>
-              <a
-                className="rounded-full border border-white/15 px-3 py-1 text-sm text-white/70 transition hover:border-uga-green hover:text-uga-green"
-                href="#weekly-archive"
-              >
-                Archive
+                Weekly operations
               </a>
               <a
                 className={`rounded-full border px-3 py-1 text-sm ${selectedLanguage === "uk" ? "border-uga-green text-uga-green" : "border-white/15 text-white/70"}`}
-                href={`/admin/reports?week=${selectedWeek}&lang=uk`}
+                href={buildReportsUrl({
+                  lang: "uk",
+                  preview: selectedPreview,
+                  reportId: activeWeeklyReport?.id ?? params.reportId,
+                  view: selectedView,
+                  week: selectedWeek,
+                })}
               >
                 Weekly UA
               </a>
               <a
                 className={`rounded-full border px-3 py-1 text-sm ${selectedLanguage === "en" ? "border-uga-green text-uga-green" : "border-white/15 text-white/70"}`}
-                href={`/admin/reports?week=${selectedWeek}&lang=en`}
+                href={buildReportsUrl({
+                  lang: "en",
+                  preview: selectedPreview,
+                  reportId: activeWeeklyReport?.id ?? params.reportId,
+                  view: selectedView,
+                  week: selectedWeek,
+                })}
               >
                 Weekly EN
               </a>
@@ -524,7 +649,7 @@ export default async function ReportsWorkspacePage({
         ) : null}
       </section>
 
-      {activeWeeklyReport && weeklySurfaceState ? (
+      {selectedView === "weekly" && activeWeeklyReport && weeklySurfaceState ? (
         <section className="grid gap-4 rounded-[1.5rem] border border-white/12 bg-[#050505] p-5">
           <div>
             <h2 className="text-lg font-semibold text-white">Weekly control center</h2>
@@ -561,8 +686,9 @@ export default async function ReportsWorkspacePage({
         </section>
       ) : null}
 
-      <div className="grid gap-6 xl:grid-cols-2">
-        <WorkspaceLane
+      {selectedView === "daily" ? (
+        <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+          <WorkspaceLane
           addResourceAction={addResourceAction}
           config={dailyConfig}
           deleteResourceAction={deleteResourceAction}
@@ -574,10 +700,10 @@ export default async function ReportsWorkspacePage({
         >
           <div className="grid gap-4 rounded-[1.2rem] border border-white/10 bg-black/30 p-4">
             <p className="text-sm font-semibold uppercase tracking-[0.12em] text-white/45">
-              Daily status
+              Daily operator status
             </p>
             <p className="text-sm text-white/72">
-              Latest trade date: <span className="font-semibold text-white">{todayInputDate()}</span>
+              Active trade date: <span className="font-semibold text-white">{todayInputDate()}</span>
             </p>
             <p className="text-sm text-white/72">
               Stored briefs:{" "}
@@ -600,25 +726,65 @@ export default async function ReportsWorkspacePage({
                   </div>
                 ))
               ) : (
-                <p>No stored daily brief rows for today.</p>
+                <p>No daily brief rows stored for this trade date yet.</p>
               )}
             </div>
           </div>
-              <TelegramDigestPreview
-                digest={dailyDigest}
-                generateAction={null}
-                generationState={null}
-                reportId={null}
-                reportKind="daily"
-                resetWindowFiltersAction={resetWindowFiltersAction}
-                syncSourcesAction={syncSourcesAction}
-                toggleChannelPostsAction={toggleChannelPostsAction}
+          <TelegramDigestPreview
+            digest={dailyDigest}
+            generateAction={null}
+            generationState={null}
+            reportId={null}
+            reportKind="daily"
+            resetWindowFiltersAction={resetWindowFiltersAction}
+            syncSourcesAction={syncSourcesAction}
+            toggleChannelPostsAction={toggleChannelPostsAction}
             toggleCollectedPostAction={toggleCollectedPostAction}
             title="Daily collected Telegram posts"
           />
         </WorkspaceLane>
-
-        <WorkspaceLane
+          <section className="grid gap-6">
+            <section className="rounded-[1.5rem] border border-white/12 bg-[#050505] p-5">
+              <h2 className="text-lg font-semibold text-white">Daily Telegram output template</h2>
+              <p className="mt-2 text-sm leading-6 text-white/62">
+                Editor-facing preview of the combined index + summary post shape.
+              </p>
+              <pre className="mt-4 whitespace-pre-wrap rounded-[1rem] border border-white/10 bg-black/30 p-4 text-xs leading-6 text-white/72">
+                {renderReportTelegramTemplate(getLocalizedReportWorkspaceText(dailyConfig, "uk").telegramTemplate, {
+                  ai_summary: buildAiBriefTelegramSummaryText(
+                    {
+                      blocks: [
+                        { body: "Короткий приклад AI daily summary.", title: "Головний сигнал дня" },
+                        { body: "Сильніші рухи по сої та соняшнику.", title: "Що рухалося найсильніше" },
+                        { body: "Волатильність залишається локальною.", title: "Стійкість / ризик" },
+                        { body: "Слідкуємо за наступним циклом публікації.", title: "На що дивитися далі" },
+                      ],
+                      cardComments: {},
+                      confidence: "normal",
+                      generatedAt: "",
+                      inputDataHash: "preview",
+                      model: "preview",
+                      observability: {
+                        estimatedCostUsd: null,
+                        fallbackReason: null,
+                        promptTokens: null,
+                        status: "preview",
+                        totalTokens: null,
+                      },
+                      tradeDate: todayInputDate(),
+                    },
+                    "uk",
+                  ),
+                  index_summary:
+                    "SPIKE Spot Index: CBOT/physical moves and today's verified positions are inserted here.",
+                })}
+              </pre>
+            </section>
+          </section>
+        </div>
+      ) : (
+        <div className="grid gap-6 xl:grid-cols-2">
+          <WorkspaceLane
           addResourceAction={addResourceAction}
           config={weeklyConfig}
           deleteResourceAction={deleteResourceAction}
@@ -671,11 +837,13 @@ export default async function ReportsWorkspacePage({
             </>
           ) : null}
         </WorkspaceLane>
-      </div>
+        </div>
+      )}
 
+      {selectedView === "weekly" ? (
       <section className="grid gap-6 xl:grid-cols-[0.55fr_1.45fr]">
         <div className="rounded-[1.5rem] border border-white/12 bg-[#050505] p-5" id="weekly-archive">
-          <h2 className="text-lg font-semibold text-white">Weekly report archive</h2>
+          <h2 className="text-lg font-semibold text-white">Weekly runs</h2>
           <div className="mt-4 grid gap-3">
             {reports.length > 0 ? (
               reports.map((item) => (
@@ -690,179 +858,69 @@ export default async function ReportsWorkspacePage({
                 >
                   <p className="font-semibold">{item.title}</p>
                   <p className="mt-1 text-xs uppercase tracking-[0.12em] text-white/45">
-                    {item.weekEndDate} · {item.status} · v{item.version}
+                    {item.weekEndDate} · {humanizeWeeklyStatus(item.status)} · v{item.version}
                   </p>
                 </a>
               ))
             ) : (
-              <p className="text-sm text-white/65">No weekly reports stored yet.</p>
+              <p className="text-sm text-white/65">No weekly runs stored yet.</p>
             )}
           </div>
         </div>
 
         <div className="grid gap-6">
-          <section className="rounded-[1.5rem] border border-white/12 bg-[#050505] p-5">
-            <h2 className="text-lg font-semibold text-white">Daily Telegram template preview</h2>
-            <pre className="mt-4 whitespace-pre-wrap rounded-[1rem] border border-white/10 bg-black/30 p-4 text-xs leading-6 text-white/72">
-              {renderReportTelegramTemplate(getLocalizedReportWorkspaceText(dailyConfig, "uk").telegramTemplate, {
-                ai_summary: buildAiBriefTelegramSummaryText(
-                  {
-                    blocks: [
-                      { body: "Короткий приклад AI daily summary.", title: "Головний сигнал дня" },
-                      { body: "Сильніші рухи по сої та соняшнику.", title: "Що рухалося найсильніше" },
-                      { body: "Волатильність залишається локальною.", title: "Стійкість / ризик" },
-                      { body: "Слідкуємо за наступним циклом публікації.", title: "На що дивитися далі" },
-                    ],
-                    cardComments: {},
-                    confidence: "normal",
-                    generatedAt: "",
-                    inputDataHash: "preview",
-                    model: "preview",
-                    observability: {
-                      estimatedCostUsd: null,
-                      fallbackReason: null,
-                      promptTokens: null,
-                      status: "preview",
-                      totalTokens: null,
-                    },
-                    tradeDate: todayInputDate(),
-                  },
-                  "uk",
-                ),
-                index_summary:
-                  "SPIKE Spot Index: CBOT/physical moves and today's verified positions are inserted here.",
-              })}
-            </pre>
-            <pre className="mt-4 whitespace-pre-wrap rounded-[1rem] border border-white/10 bg-black/30 p-4 text-xs leading-6 text-white/72">
-              {renderReportTelegramTemplate(getLocalizedReportWorkspaceText(dailyConfig, "en").telegramTemplate, {
-                ai_summary: buildAiBriefTelegramSummaryText(
-                  {
-                    blocks: [
-                      { body: "Short AI daily summary example.", title: "Today's Market Signal" },
-                      { body: "Soybean and sunflower show the strongest moves.", title: "Key Movers" },
-                      { body: "Volatility remains localized.", title: "Risk / Stability Read" },
-                      { body: "Watch the next publication cycle.", title: "What to Watch Next" },
-                    ],
-                    cardComments: {},
-                    confidence: "normal",
-                    generatedAt: "",
-                    inputDataHash: "preview",
-                    model: "preview",
-                    observability: {
-                      estimatedCostUsd: null,
-                      fallbackReason: null,
-                      promptTokens: null,
-                      status: "preview",
-                      totalTokens: null,
-                    },
-                    tradeDate: todayInputDate(),
-                  },
-                  "en",
-                ),
-                index_summary:
-                  "SPIKE Spot Index: today's verified benchmark positions are inserted here.",
-              })}
-            </pre>
-          </section>
-
           {activeWeeklyReport?.content ? (
             <>
               <section className="rounded-[1.5rem] border border-white/12 bg-[#050505] p-5" id="weekly-preview">
-                <h2 className="text-lg font-semibold text-white">Weekly website preview</h2>
-                <div className="mt-5 rounded-[1.35rem] border border-white/10 bg-[#050505] p-5">
-                  <WeeklyReportView report={activeWeeklyReport} />
-                </div>
-              </section>
-
-              <section className="rounded-[1.5rem] border border-white/12 bg-[#050505] p-5">
-                <h2 className="text-lg font-semibold text-white">Weekly Telegram preview</h2>
-                {activeWeeklyReport.adminEditedContent?.coverImageUrl ? (
-                  <div className="mt-4 rounded-[1rem] border border-white/10 bg-black/30 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-white/45">
-                      Cover asset
-                    </p>
-                    <img
-                      alt={activeWeeklyReport.adminEditedContent?.coverImageAlt || "Weekly cover asset"}
-                      className="mt-3 aspect-[3/2] w-full rounded-[0.9rem] object-cover"
-                      src={activeWeeklyReport.adminEditedContent.coverImageUrl}
-                    />
-                    <p className="mt-2 break-all text-sm text-uga-green">
-                      {activeWeeklyReport.adminEditedContent.coverImageUrl}
-                    </p>
-                    {activeWeeklyReport.adminEditedContent?.coverAssetId ? (
-                      <p className="mt-2 text-xs uppercase tracking-[0.12em] text-white/45">
-                        Asset ID: {activeWeeklyReport.adminEditedContent.coverAssetId}
-                      </p>
-                    ) : null}
-                    {activeWeeklyReport.adminEditedContent.coverImageCaption ? (
-                      <p className="mt-2 text-sm leading-6 text-white/72">
-                        {activeWeeklyReport.adminEditedContent.coverImageCaption}
-                      </p>
-                    ) : null}
-                  </div>
-                ) : null}
-                <div className="mt-4 grid gap-4 lg:grid-cols-3">
-                  {activeWeeklyReport.content.telegramMessages.map((message, index) => (
-                    <article
-                      className="rounded-[1rem] border border-white/10 bg-black/30 p-4"
-                      key={index}
-                    >
-                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-white/45">
-                        Message {index + 1}
-                      </p>
-                      <pre className="mt-3 whitespace-pre-wrap text-xs leading-6 text-white/72">
-                        {message}
-                      </pre>
-                    </article>
-                  ))}
-                </div>
-              </section>
-
-              <section className="rounded-[1.5rem] border border-white/12 bg-[#050505] p-5">
-                <h2 className="text-lg font-semibold text-white">Weekly blog draft preview</h2>
-                {activeWeeklyReport.content.blogDraft ? (
-                  <article className="mt-4 rounded-[1.2rem] border border-white/10 bg-black/30 p-5">
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-uga-green">
-                      Blog narrative layer
-                    </p>
-                    <h3 className="mt-3 text-2xl font-semibold text-white">
-                      {activeWeeklyReport.content.blogDraft.title}
-                    </h3>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-lg font-semibold text-white">Weekly preview</h2>
                     <p className="mt-2 text-sm leading-6 text-white/62">
-                      {activeWeeklyReport.content.blogDraft.subtitle}
+                      Switch between website, Telegram and editorial views instead of scrolling through all three.
                     </p>
-                    <p className="mt-4 text-sm leading-7 text-white/78">
-                      {activeWeeklyReport.content.blogDraft.intro}
-                    </p>
-                    <div className="mt-5 grid gap-4">
-                      {activeWeeklyReport.content.blogDraft.sections.map((section) => (
-                        <section
-                          className="rounded-[1rem] border border-white/10 bg-black/30 p-4"
-                          key={section.title}
-                        >
-                          <h4 className="text-base font-semibold text-white">{section.title}</h4>
-                          <p className="mt-2 text-sm leading-7 text-white/72">{section.body}</p>
-                        </section>
-                      ))}
-                    </div>
-                    <div className="mt-5 grid gap-3 rounded-[1rem] border border-white/10 bg-black/30 p-4 text-sm text-white/72">
-                      <p><span className="font-semibold text-white">Closing:</span> {activeWeeklyReport.content.blogDraft.closing}</p>
-                      <p><span className="font-semibold text-white">SEO description:</span> {activeWeeklyReport.content.blogDraft.seoDescription}</p>
-                      <p><span className="font-semibold text-white">Slug:</span> {activeWeeklyReport.content.blogDraft.slug}</p>
-                      <p><span className="font-semibold text-white">Cover alt:</span> {activeWeeklyReport.content.blogDraft.coverAlt}</p>
-                      <p><span className="font-semibold text-white">Cover prompt:</span> {activeWeeklyReport.content.blogDraft.coverPrompt}</p>
-                    </div>
-                  </article>
-                ) : (
-                  <div className="mt-4 rounded-[1rem] border border-white/10 bg-black/30 p-4 text-sm text-white/62">
-                    Weekly blog draft will appear after weekly generation.
                   </div>
-                )}
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { key: "website", label: "Website output" },
+                      { key: "telegram", label: "Telegram output" },
+                      { key: "editorial", label: "Editorial layer" },
+                    ].map((item) => (
+                      <a
+                        className={`rounded-full border px-3 py-1 text-sm transition ${
+                          selectedPreview === item.key
+                            ? "border-uga-green bg-uga-green/10 text-white"
+                            : "border-white/15 text-white/70 hover:border-uga-green hover:text-uga-green"
+                        }`}
+                        href={buildReportsUrl({
+                          lang: selectedLanguage,
+                          preview: item.key,
+                          reportId: activeWeeklyReport.id,
+                          view: "weekly",
+                          week: activeWeeklyReport.weekEndDate,
+                        })}
+                        key={item.key}
+                      >
+                        {item.label}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-5 rounded-[1.35rem] border border-white/10 bg-[#050505] p-5">
+                  {selectedPreview === "website" ? (
+                    <WeeklyReportView report={activeWeeklyReport} />
+                  ) : selectedPreview === "telegram" ? (
+                    <WeeklyTelegramPreview report={activeWeeklyReport} />
+                  ) : (
+                    <WeeklyEditorialPreview report={activeWeeklyReport} />
+                  )}
+                </div>
               </section>
             </>
           ) : null}
         </div>
       </section>
+      ) : null}
     </section>
   );
 }
@@ -1421,12 +1479,12 @@ function WeeklyWorkflowCard({
 
       <div className="flex flex-wrap gap-3">
         {[
-          { action: rebuildManifestAction, label: "Rebuild source manifest" },
-          { action: generateAction, label: "Generate weekly draft" },
-          { action: generateCoverAction, label: "Generate cover asset", disabled: !activeReport.content?.blogDraft },
-          { action: approveAction, label: "Approve" },
-          { action: publishAction, label: "Publish weekly report", disabled: !publicReadiness?.canPublish },
-          { action: scheduleTelegramAction, label: "Schedule Telegram", disabled: !publicReadiness?.canScheduleTelegram },
+          { action: rebuildManifestAction, label: "Refresh source pack" },
+          { action: generateAction, label: "Build editor draft" },
+          { action: generateCoverAction, label: "Build cover", disabled: !activeReport.content?.blogDraft },
+          { action: approveAction, label: "Mark ready" },
+          { action: publishAction, label: "Publish to site", disabled: !publicReadiness?.canPublish },
+          { action: scheduleTelegramAction, label: "Queue Telegram", disabled: !publicReadiness?.canScheduleTelegram },
           { action: sendTelegramNowAction, label: "Send Telegram now", disabled: !publicReadiness?.canSendTelegram },
         ].map((item) => (
           <form action={item.action} key={item.label}>
@@ -1541,16 +1599,16 @@ function WeeklyWorkflowCard({
 function MetadataBox({ activeReport }: { activeReport: WeeklyReportRecord }) {
   return (
     <div className="rounded-[1rem] border border-white/10 p-4">
-      <h3 className="text-base font-semibold text-white">Metadata</h3>
+      <h3 className="text-base font-semibold text-white">Run details</h3>
       <div className="mt-3 grid gap-2 text-sm text-white/68">
-        <p><span className="font-semibold text-white">Model:</span> {activeReport.aiModel ?? "not generated"}</p>
-        <p><span className="font-semibold text-white">Generated at:</span> {activeReport.aiGeneratedAt ?? "n/a"}</p>
-        <p><span className="font-semibold text-white">Telegram send at:</span> {activeReport.telegramSendAt ?? "n/a"}</p>
-        <p><span className="font-semibold text-white">Message IDs:</span> {activeReport.telegramMessageIds.length > 0 ? activeReport.telegramMessageIds.join(", ") : "n/a"}</p>
-        <p><span className="font-semibold text-white">Cover asset:</span> {activeReport.adminEditedContent?.coverAssetId ?? "n/a"}</p>
-        <p><span className="font-semibold text-white">Auto-publish hold:</span> {activeReport.adminEditedContent?.holdPublication ? "enabled" : "off"}</p>
-        <p><span className="font-semibold text-white">Missing inputs:</span> {activeReport.missingInputs.length}</p>
-        <p><span className="font-semibold text-white">AI warnings:</span> {activeReport.aiWarnings.length}</p>
+        <p><span className="font-semibold text-white">Draft model:</span> {activeReport.aiModel ?? "not generated yet"}</p>
+        <p><span className="font-semibold text-white">Draft built at:</span> {activeReport.aiGeneratedAt ?? "n/a"}</p>
+        <p><span className="font-semibold text-white">Telegram target time:</span> {activeReport.telegramSendAt ?? "n/a"}</p>
+        <p><span className="font-semibold text-white">Telegram message IDs:</span> {activeReport.telegramMessageIds.length > 0 ? activeReport.telegramMessageIds.join(", ") : "n/a"}</p>
+        <p><span className="font-semibold text-white">Cover asset ID:</span> {activeReport.adminEditedContent?.coverAssetId ?? "n/a"}</p>
+        <p><span className="font-semibold text-white">Auto-publish hold:</span> {activeReport.adminEditedContent?.holdPublication ? "on" : "off"}</p>
+        <p><span className="font-semibold text-white">Missing items:</span> {activeReport.missingInputs.length}</p>
+        <p><span className="font-semibold text-white">Warnings:</span> {activeReport.aiWarnings.length}</p>
       </div>
     </div>
   );
@@ -1565,7 +1623,7 @@ function ReadinessBox({
 }) {
   return (
     <div className="rounded-[1rem] border border-white/10 p-4">
-      <h3 className="text-base font-semibold text-white">Readiness</h3>
+      <h3 className="text-base font-semibold text-white">Publish checks</h3>
       <div className="mt-3 grid gap-2">
         {readiness.checklist.map((item) => (
           <div className="flex items-start gap-3" key={item.label}>
@@ -1707,9 +1765,20 @@ function EditorialPublishBox({
 }
 
 function buildRedirectUrl(
-  params: { lang?: string; reportId?: string; week?: string },
+  params: { lang?: string; preview?: string; reportId?: string; view?: string; week?: string },
   notice: string,
 ) {
+  return buildReportsUrl({ ...params, notice });
+}
+
+function buildReportsUrl(params: {
+  lang?: string;
+  notice?: string;
+  preview?: string;
+  reportId?: string;
+  view?: string;
+  week?: string;
+}) {
   const search = new URLSearchParams();
   if (params.lang) {
     search.set("lang", params.lang);
@@ -1717,11 +1786,108 @@ function buildRedirectUrl(
   if (params.reportId) {
     search.set("reportId", params.reportId);
   }
+  if (params.view) {
+    search.set("view", params.view);
+  }
+  if (params.preview) {
+    search.set("preview", params.preview);
+  }
   if (params.week) {
     search.set("week", params.week);
   }
-  search.set("notice", notice);
+  if (params.notice) {
+    search.set("notice", params.notice);
+  }
   return `/admin/reports?${search.toString()}`;
+}
+
+function WeeklyTelegramPreview({ report }: { report: WeeklyReportRecord }) {
+  return (
+    <div className="grid gap-4">
+      {report.adminEditedContent?.coverImageUrl ? (
+        <div className="rounded-[1rem] border border-white/10 bg-black/30 p-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-white/45">
+            Cover asset
+          </p>
+          <img
+            alt={report.adminEditedContent?.coverImageAlt || "Weekly cover asset"}
+            className="mt-3 aspect-[3/2] w-full rounded-[0.9rem] object-cover"
+            src={report.adminEditedContent.coverImageUrl}
+          />
+          <p className="mt-2 break-all text-sm text-uga-green">
+            {report.adminEditedContent.coverImageUrl}
+          </p>
+          {report.adminEditedContent.coverImageCaption ? (
+            <p className="mt-2 text-sm leading-6 text-white/72">
+              {report.adminEditedContent.coverImageCaption}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+      <div className="grid gap-4 lg:grid-cols-3">
+        {report.content?.telegramMessages.map((message, index) => (
+          <article
+            className="rounded-[1rem] border border-white/10 bg-black/30 p-4"
+            key={index}
+          >
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-white/45">
+              Message {index + 1}
+            </p>
+            <pre className="mt-3 whitespace-pre-wrap text-xs leading-6 text-white/72">
+              {message}
+            </pre>
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function WeeklyEditorialPreview({ report }: { report: WeeklyReportRecord }) {
+  const draft = report.content?.blogDraft;
+
+  if (!draft) {
+    return (
+      <div className="rounded-[1rem] border border-white/10 bg-black/30 p-4 text-sm text-white/62">
+        Editorial layer appears here after the weekly draft is built.
+      </div>
+    );
+  }
+
+  return (
+    <article className="rounded-[1.2rem] border border-white/10 bg-black/30 p-5">
+      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-uga-green">
+        Editorial layer
+      </p>
+      <h3 className="mt-3 text-2xl font-semibold text-white">
+        {draft.title}
+      </h3>
+      <p className="mt-2 text-sm leading-6 text-white/62">
+        {draft.subtitle}
+      </p>
+      <p className="mt-4 text-sm leading-7 text-white/78">
+        {draft.intro}
+      </p>
+      <div className="mt-5 grid gap-4">
+        {draft.sections.map((section) => (
+          <section
+            className="rounded-[1rem] border border-white/10 bg-black/30 p-4"
+            key={section.title}
+          >
+            <h4 className="text-base font-semibold text-white">{section.title}</h4>
+            <p className="mt-2 text-sm leading-7 text-white/72">{section.body}</p>
+          </section>
+        ))}
+      </div>
+      <div className="mt-5 grid gap-3 rounded-[1rem] border border-white/10 bg-black/30 p-4 text-sm text-white/72">
+        <p><span className="font-semibold text-white">Closing:</span> {draft.closing}</p>
+        <p><span className="font-semibold text-white">SEO description:</span> {draft.seoDescription}</p>
+        <p><span className="font-semibold text-white">Slug:</span> {draft.slug}</p>
+        <p><span className="font-semibold text-white">Cover alt:</span> {draft.coverAlt}</p>
+        <p><span className="font-semibold text-white">Cover prompt:</span> {draft.coverPrompt}</p>
+      </div>
+    </article>
+  );
 }
 
 function SurfaceStatusCard({
@@ -1842,6 +2008,29 @@ function shortHash(value: string) {
   }
 
   return hash.toString(16).padStart(8, "0").slice(0, 8);
+}
+
+function humanizeWeeklyStatus(status: WeeklyReportRecord["status"]) {
+  switch (status) {
+    case "draft":
+      return "setup";
+    case "needs_inputs":
+      return "waiting for inputs";
+    case "needs_review":
+      return "editor review";
+    case "approved":
+      return "ready to publish";
+    case "published":
+      return "published on site";
+    case "telegram_scheduled":
+      return "telegram queued";
+    case "telegram_sent":
+      return "telegram sent";
+    case "failed":
+      return "attention needed";
+    default:
+      return status;
+  }
 }
 
 function buildOperationalReadiness({
