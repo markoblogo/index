@@ -2,7 +2,6 @@ import type { MetadataRoute } from "next";
 import { SITE_CONFIG } from "@/lib/constants";
 import { locales } from "@/lib/i18n";
 import { spikeBlogPosts } from "@/lib/blog-posts";
-import { listPublishedWeeklyEditorialPosts } from "@/lib/weekly-editorial-posts";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = SITE_CONFIG.publicSiteUrl.replace(/\/+$/, "");
@@ -16,9 +15,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     {
       url: `${baseUrl}/${locale}/blog`,
     },
-    {
-      url: `${baseUrl}/${locale}/market-intelligence`,
-    },
   ]);
 
   const blogEntries: MetadataRoute.Sitemap =
@@ -31,11 +27,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         )
       : [];
 
-  const editorialPosts = await listPublishedWeeklyEditorialPosts();
-  const editorialEntries: MetadataRoute.Sitemap = editorialPosts.map((post) => ({
-    lastModified: post.publishedAt,
-    url: `${baseUrl}/${post.language}/market-intelligence/${post.slug}`,
-  }));
-
-  return [...staticEntries, ...blogEntries, ...editorialEntries];
+  return [...staticEntries, ...blogEntries];
 }

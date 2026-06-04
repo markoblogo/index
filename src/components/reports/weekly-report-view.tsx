@@ -12,6 +12,12 @@ export function WeeklyReportView({ report }: { report: WeeklyReportRecord }) {
   const executiveSummary = report.content.executiveSummary ?? [];
   const sourceNotes = report.content.sourceNotes ?? [];
   const parts = report.content.parts ?? [];
+  const blogDraft = report.content.blogDraft;
+  const coverImage = report.adminEditedContent?.coverImageUrl?.trim() || null;
+  const coverImageAlt =
+    report.adminEditedContent?.coverImageAlt?.trim() ||
+    blogDraft?.coverAlt ||
+    report.title;
 
   return (
     <div className="grid gap-6">
@@ -75,6 +81,62 @@ export function WeeklyReportView({ report }: { report: WeeklyReportRecord }) {
           </div>
         </section>
       ))}
+
+      {blogDraft ? (
+        <details className="rounded-[1.35rem] border border-white/12 bg-[#0b0b0b] p-6 text-[#f8f8f2]">
+          <summary className="cursor-pointer list-none">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.14em] text-[var(--spike-accent)]">
+                  Editorial layer
+                </p>
+                <h2 className="mt-3 text-2xl font-black uppercase tracking-normal text-white">
+                  {blogDraft.title}
+                </h2>
+                <p className="mt-2 max-w-4xl text-sm leading-6 text-white/64">
+                  {blogDraft.subtitle}
+                </p>
+              </div>
+              <span className="rounded-full border border-white/12 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-white/68">
+                Expand
+              </span>
+            </div>
+          </summary>
+
+          <div className="mt-5 grid gap-6">
+            {coverImage ? (
+              <div className="overflow-hidden rounded-[1rem] border border-white/10">
+                <img
+                  alt={coverImageAlt}
+                  className="aspect-[3/1.6] w-full object-cover"
+                  src={coverImage}
+                />
+              </div>
+            ) : null}
+            <div className="rounded-[1rem] border border-white/10 bg-black/30 p-5">
+              <p className="text-sm leading-7 text-white/78">{blogDraft.intro}</p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              {blogDraft.sections.map((section) => (
+                <article
+                  className="rounded-[1rem] border border-white/10 bg-[#f8f8f2] p-4 text-[#050505]"
+                  key={section.title}
+                >
+                  <h3 className="text-sm font-black uppercase tracking-[0.08em] text-[#050505]">
+                    {section.title}
+                  </h3>
+                  <p className="mt-3 text-sm font-semibold leading-6 text-black/68">
+                    {section.body}
+                  </p>
+                </article>
+              ))}
+            </div>
+            <div className="rounded-[1rem] border border-white/10 bg-black/30 p-4 text-sm leading-6 text-white/64">
+              <p>{blogDraft.closing}</p>
+            </div>
+          </div>
+        </details>
+      ) : null}
 
       <section className="rounded-[1.35rem] border border-white/12 bg-[#0b0b0b] p-6 text-[#f8f8f2]">
         <h2 className="text-xl font-black uppercase tracking-normal text-white">

@@ -73,10 +73,10 @@ const noticeMap: Record<string, string> = {
   notes_saved: "Weekly editor inputs saved.",
   post_filters_reset: "Digest filters reset for this window.",
   published: "Weekly report published.",
-  article_published: "Market-intelligence article published.",
-  article_unpublished: "Market-intelligence article moved back to draft.",
-  article_synced: "Market-intelligence article draft synced.",
-  article_republished: "Published market-intelligence article synced.",
+  article_published: "Editorial layer published.",
+  article_unpublished: "Editorial layer moved back to draft.",
+  article_synced: "Editorial layer draft synced.",
+  article_republished: "Published editorial layer synced.",
   report_ready: "Weekly report loaded.",
   resource_added: "Resource added.",
   post_filter_updated: "Collected post filter updated.",
@@ -553,7 +553,7 @@ export default async function ReportsWorkspacePage({
             />
             <SurfaceStatusCard
               detail={`Editorial ${weeklySurfaceState.editorialStatusLabel} · slug ${weeklySurfaceState.editorialSlug}`}
-              label="Public editorial post"
+              label="Editorial layer entity"
               tone={weeklySurfaceState.editorialMatchesCurrent ? "ok" : "warn"}
               value={weeklySurfaceState.editorialMatchesCurrent ? "current" : "out of sync"}
             />
@@ -1623,6 +1623,7 @@ function EditorialPublishBox({
     editorialPost?.status === "published"
       ? `/${activeReport.language === "uk" ? "uk" : "en"}/market-intelligence/${editorialPost.slug}`
       : null;
+  const weeklyReportUrl = `/${activeReport.language === "uk" ? "uk" : "en"}/analytics/weekly-reports/${activeReport.slug}`;
   const effectiveSlug =
     editorialPost?.slug ||
     activeReport.adminEditedContent?.editorialSlugOverride?.trim() ||
@@ -1637,7 +1638,7 @@ function EditorialPublishBox({
     <div className="rounded-[1rem] border border-white/10 p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 className="text-base font-semibold text-white">Public editorial post</h3>
+          <h3 className="text-base font-semibold text-white">Editorial layer entity</h3>
           <p className="mt-1 text-sm text-white/62">
             Separate persisted public entity for SEO/LLMO article distribution.
           </p>
@@ -1680,7 +1681,8 @@ function EditorialPublishBox({
       <div className="mt-3 grid gap-2 text-sm text-white/68">
         <p><span className="font-semibold text-white">Status:</span> {status === "not_materialized" ? "not materialized" : status}</p>
         <p><span className="font-semibold text-white">Sync state:</span> {editorialSyncState.isCurrent ? "current" : "source changed since last sync"}</p>
-        <p><span className="font-semibold text-white">URL:</span> {publicUrl ?? predictedUrl}</p>
+        <p><span className="font-semibold text-white">Weekly report URL:</span> {weeklyReportUrl}</p>
+        <p><span className="font-semibold text-white">Legacy editorial alias:</span> {publicUrl ?? predictedUrl}</p>
         <p><span className="font-semibold text-white">Slug:</span> {effectiveSlug}</p>
         <p><span className="font-semibold text-white">Slug override:</span> {activeReport.adminEditedContent?.editorialSlugOverride?.trim() || "none"}</p>
         <p><span className="font-semibold text-white">Published at:</span> {editorialPost?.publishedAt?.toISOString() ?? "n/a"}</p>
