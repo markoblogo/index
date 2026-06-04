@@ -153,6 +153,7 @@ export type WeeklyReportRecord = {
     coverImageCaption?: string;
     coverImageUrl?: string;
     coverImageAlt?: string;
+    holdPublication?: boolean;
     manualNotes?: string;
     structuredDataPack?: string;
   } | null;
@@ -511,6 +512,7 @@ export async function saveWeeklyReportAdminInputs(
     coverImageAlt?: string;
     coverImageCaption?: string;
     coverImageUrl?: string;
+    holdPublication?: boolean;
     manualNotes?: string;
     structuredDataPack?: string;
   },
@@ -533,6 +535,8 @@ export async function saveWeeklyReportAdminInputs(
       "",
     coverImageUrl:
       payload.coverImageUrl ?? report.adminEditedContent?.coverImageUrl ?? "",
+    holdPublication:
+      payload.holdPublication ?? report.adminEditedContent?.holdPublication ?? false,
     manualNotes:
       payload.manualNotes ?? report.adminEditedContent?.manualNotes ?? "",
     structuredDataPack:
@@ -552,6 +556,77 @@ export async function saveWeeklyReportAdminInputs(
   );
 
   return getWeeklyReportById(reportId);
+}
+
+export async function autoPublishDueWeeklyReports(weekEndDate?: string) {
+  if (!hasDatabaseUrl()) {
+    return { published: 0, skippedHeld: 0, skippedNotReady: 0, skippedReason: "database_not_configured" };
+  }
+
+  await ensureWeeklyReportStorage();
+  const rows = weekEndDate
+    ? await db.$queryRawUnsafe<WeeklyReportRow[]>(
+        `
+          SELECT *
+          FROM "WeeklyReport"
+          WHERE "tenantId" = $1
+            AND "weekEndDate" = $2::date
+            AND "status" IN ('needs_review', 'approved', 'published', 'telegram_scheduled', 'telegram_sent')
+            AND "telegramSendAt" IS NOT NULL
+            AND "telegramSendAt" <= NOW()
+          ORDER BY "telegramSendAt" ASC
+        `,
+        getActiveIndexConfig().id,
+        weekEndDate,
+      )
+    : await db.$queryRawUnsafe<WeeklyReportRow[]>(
+        `
+          SELECT *
+          FROM "WeeklyReport"
+          WHERE "tenantId" = $1
+            AND "status" IN ('needs_review', 'approved', 'published', 'telegram_scheduled', 'telegram_sent')
+            AND "telegramSendAt" IS NOT NULL
+            AND "telegramSendAt" <= NOW()
+          ORDER BY "telegramSendAt" ASC
+        `,
+        getActiveIndexConfig().id,
+      );
+
+  let published = 0;
+  let skippedHeld = 0;
+  let skippedNotReady = 0;
+
+  for (const row of rows) {
+    if (isWeeklyReportOnHold(parseJsonObject(row.adminEditedContent))) {
+      skippedHeld += 1;
+      continue;
+    }
+
+    const report = mapWeeklyReportRow(row);
+    if (!report.content || report.status === "needs_inputs") {
+      skippedNotReady += 1;
+      continue;
+    }
+
+    if (report.status === "needs_review") {
+      const approved = await approveWeeklyReport(report.id, null);
+      if (!approved) {
+        skippedNotReady += 1;
+        continue;
+      }
+    }
+
+    if (report.status === "needs_review" || report.status === "approved") {
+      const next = await publishWeeklyReport(report.id, null);
+      if (next) {
+        published += 1;
+      } else {
+        skippedNotReady += 1;
+      }
+    }
+  }
+
+  return { published, skippedHeld, skippedNotReady, skippedReason: null };
 }
 
 export async function generateWeeklyCoverAsset(
@@ -1459,8 +1534,13 @@ export async function sendDueWeeklyReports() {
   );
 
   let sent = 0;
+  let skippedHeld = 0;
 
   for (const row of rows) {
+    if (isWeeklyReportOnHold(parseJsonObject(row.adminEditedContent))) {
+      skippedHeld += 1;
+      continue;
+    }
     const result = await sendWeeklyReportTelegramNow(row.id);
 
     if (result.status === "sent") {
@@ -1468,7 +1548,7 @@ export async function sendDueWeeklyReports() {
     }
   }
 
-  return { sent, skippedReason: null };
+  return { sent, skippedHeld, skippedReason: null };
 }
 
 export async function autoPrepareWeeklyReportDraft(
@@ -2219,6 +2299,14 @@ function normalizeWeeklyStatus(status: string): WeeklyReportStatus {
   ).includes(status as WeeklyReportStatus)
     ? (status as WeeklyReportStatus)
     : "draft";
+}
+
+function isWeeklyReportOnHold(
+  value: {
+    holdPublication?: boolean;
+  } | null | undefined,
+) {
+  return value?.holdPublication === true;
 }
 
 function parseJsonObject<T extends object>(value: unknown) {

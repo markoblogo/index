@@ -213,6 +213,7 @@ export default async function ReportsWorkspacePage({
       coverImageAlt: String(formData.get("coverImageAlt") ?? ""),
       coverImageCaption: String(formData.get("coverImageCaption") ?? ""),
       coverImageUrl: String(formData.get("coverImageUrl") ?? ""),
+      holdPublication: String(formData.get("holdPublication") ?? "") === "1",
       manualNotes: String(formData.get("manualNotes") ?? ""),
       structuredDataPack: String(formData.get("structuredDataPack") ?? ""),
     });
@@ -1290,6 +1291,7 @@ function WeeklyWorkflowCard({
     editorialPost?.status === "published" ? "published" : "draft";
   const canPublishEditorialArticle =
     activeReport.status === "published" && Boolean(activeReport.content?.blogDraft);
+  const holdPublication = activeReport.adminEditedContent?.holdPublication === true;
 
   return (
     <div className="grid gap-4 rounded-[1.2rem] border border-white/10 bg-black/30 p-4">
@@ -1314,6 +1316,15 @@ function WeeklyWorkflowCard({
           }`}
         >
           article {editorialStatus}
+        </span>
+        <span
+          className={`rounded-full border px-3 py-1 ${
+            holdPublication
+              ? "border-red-400/40 text-red-200"
+              : "border-white/12 text-white/72"
+          }`}
+        >
+          auto-publish {holdPublication ? "held" : "armed"}
         </span>
       </div>
 
@@ -1370,11 +1381,11 @@ function WeeklyWorkflowCard({
           />
         </label>
         <div className="grid gap-3 md:grid-cols-2">
-          <label className="grid gap-2 text-sm font-semibold text-white/78 md:col-span-2">
-            Weekly cover asset URL
-            <input
-              className="rounded-xl border border-white/12 bg-black px-3 py-2 text-sm text-white"
-              defaultValue={activeReport.adminEditedContent?.coverImageUrl ?? ""}
+        <label className="grid gap-2 text-sm font-semibold text-white/78 md:col-span-2">
+          Weekly cover asset URL
+          <input
+            className="rounded-xl border border-white/12 bg-black px-3 py-2 text-sm text-white"
+            defaultValue={activeReport.adminEditedContent?.coverImageUrl ?? ""}
               name="coverImageUrl"
               placeholder="https://..."
             />
@@ -1391,11 +1402,26 @@ function WeeklyWorkflowCard({
             Weekly cover caption
             <input
               className="rounded-xl border border-white/12 bg-black px-3 py-2 text-sm text-white"
-              defaultValue={activeReport.adminEditedContent?.coverImageCaption ?? ""}
-              name="coverImageCaption"
-            />
-          </label>
-        </div>
+            defaultValue={activeReport.adminEditedContent?.coverImageCaption ?? ""}
+            name="coverImageCaption"
+          />
+        </label>
+        <label className="flex items-start gap-3 rounded-xl border border-red-400/18 bg-red-400/6 px-4 py-3 text-sm text-white/78 md:col-span-2">
+          <input
+            className="mt-1 h-4 w-4"
+            defaultChecked={holdPublication}
+            name="holdPublication"
+            type="checkbox"
+            value="1"
+          />
+          <span>
+            <span className="font-semibold text-white">Hold automatic publication</span>
+            <span className="block text-white/62">
+              Stops deadline fail-safe publication for both website and Telegram until manually released.
+            </span>
+          </span>
+        </label>
+      </div>
         <button className="w-fit rounded-full bg-uga-green px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#82ff4d]" type="submit">
           Save weekly inputs
         </button>
@@ -1404,7 +1430,9 @@ function WeeklyWorkflowCard({
       <div className="grid gap-4 lg:grid-cols-2">
         <MetadataBox activeReport={activeReport} />
         <div className="grid gap-4">
-          {publicReadiness ? <ReadinessBox readiness={publicReadiness} /> : null}
+          {publicReadiness ? (
+            <ReadinessBox activeReport={activeReport} readiness={publicReadiness} />
+          ) : null}
           <EditorialPublishBox
             activeReport={activeReport}
             editorialPost={editorialPost}
@@ -1425,6 +1453,7 @@ function MetadataBox({ activeReport }: { activeReport: WeeklyReportRecord }) {
         <p><span className="font-semibold text-white">Telegram send at:</span> {activeReport.telegramSendAt ?? "n/a"}</p>
         <p><span className="font-semibold text-white">Message IDs:</span> {activeReport.telegramMessageIds.length > 0 ? activeReport.telegramMessageIds.join(", ") : "n/a"}</p>
         <p><span className="font-semibold text-white">Cover asset:</span> {activeReport.adminEditedContent?.coverAssetId ?? "n/a"}</p>
+        <p><span className="font-semibold text-white">Auto-publish hold:</span> {activeReport.adminEditedContent?.holdPublication ? "enabled" : "off"}</p>
         <p><span className="font-semibold text-white">Missing inputs:</span> {activeReport.missingInputs.length}</p>
         <p><span className="font-semibold text-white">AI warnings:</span> {activeReport.aiWarnings.length}</p>
       </div>
@@ -1433,8 +1462,10 @@ function MetadataBox({ activeReport }: { activeReport: WeeklyReportRecord }) {
 }
 
 function ReadinessBox({
+  activeReport,
   readiness,
 }: {
+  activeReport: WeeklyReportRecord;
   readiness: ReturnType<typeof assessWeeklyReportPublicReadiness>;
 }) {
   return (
@@ -1456,6 +1487,11 @@ function ReadinessBox({
       {readiness.warnings.length > 0 ? (
         <div className="mt-4 rounded-[1rem] border border-amber-400/30 bg-amber-400/10 p-3 text-sm text-amber-100">
           {readiness.warnings.join(" ")}
+        </div>
+      ) : null}
+      {activeReport.adminEditedContent?.holdPublication ? (
+        <div className="mt-4 rounded-[1rem] border border-red-400/30 bg-red-400/10 p-3 text-sm text-red-100">
+          Auto-publication is manually held. Cron will not publish this weekly report or send it to Telegram until the hold is removed.
         </div>
       ) : null}
     </div>
@@ -1664,6 +1700,7 @@ function getDefaultWeekEnd() {
 
 function assessWeeklyReportPublicReadiness(report: WeeklyReportRecord) {
   const content = report.content;
+  const holdPublication = report.adminEditedContent?.holdPublication === true;
   const approvedForWebsite = report.status === "approved";
   const approvedForTelegram =
     report.status === "approved" ||
@@ -1691,12 +1728,17 @@ function assessWeeklyReportPublicReadiness(report: WeeklyReportRecord) {
 
   return {
     canPublish:
-      approvedForWebsite && hasThreeParts && hasDisclaimer && hasSourceManifest && hasNoNA && !hasBannedPhrase && !mixedHeader,
+      !holdPublication && approvedForWebsite && hasThreeParts && hasDisclaimer && hasSourceManifest && hasNoNA && !hasBannedPhrase && !mixedHeader,
     canScheduleTelegram:
-      approvedForTelegram && hasThreeParts && hasDisclaimer && hasSourceManifest && hasNoNA && !hasBannedPhrase && !mixedHeader,
+      !holdPublication && approvedForTelegram && hasThreeParts && hasDisclaimer && hasSourceManifest && hasNoNA && !hasBannedPhrase && !mixedHeader,
     canSendTelegram:
-      approvedForTelegram && hasThreeParts && hasDisclaimer && hasSourceManifest && hasNoNA && !hasBannedPhrase && !mixedHeader,
+      !holdPublication && approvedForTelegram && hasThreeParts && hasDisclaimer && hasSourceManifest && hasNoNA && !hasBannedPhrase && !mixedHeader,
     checklist: [
+      {
+        detail: holdPublication ? "Manual hold is enabled. Deadline fail-safe is paused." : "No manual hold. Deadline fail-safe is armed.",
+        label: "Auto-publish hold",
+        ok: !holdPublication,
+      },
       {
         detail: approvedForWebsite ? "Weekly report is approved for website publication." : "Website publication is still blocked by workflow state.",
         label: "Approved for website",
@@ -1739,6 +1781,7 @@ function assessWeeklyReportPublicReadiness(report: WeeklyReportRecord) {
       },
     ],
     warnings: [
+      ...(holdPublication ? ["Automatic publication is manually held."] : []),
       ...(hasBannedPhrase ? ["Banned public phrases detected."] : []),
       ...(hasNoNA ? [] : ["Telegram messages contain n/a."]),
       ...(mixedHeader ? ["Mixed Ukrainian/English headers detected."] : []),
