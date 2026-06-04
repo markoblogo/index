@@ -6,6 +6,7 @@ import { db, hasDatabaseUrl } from "@/lib/db";
 import { createGeneratedMediaAsset } from "@/lib/generated-media-asset";
 import type { Locale } from "@/lib/i18n";
 import { getActiveIndexConfig } from "@/lib/index-platform";
+import { upsertWeeklyEditorialPostFromSnapshot } from "@/lib/weekly-editorial-post-storage";
 import {
   getLocalizedReportWorkspaceText,
   getReportWorkspaceConfig,
@@ -1225,8 +1226,33 @@ export async function publishWeeklyReport(
     entityId: reportId,
     summary: "Weekly report published to website.",
   });
+  const publishedReport = await getWeeklyReportById(reportId);
+  if (publishedReport?.content?.blogDraft) {
+    await upsertWeeklyEditorialPostFromSnapshot({
+      coverImageAlt:
+        publishedReport.adminEditedContent?.coverImageAlt?.trim() ||
+        publishedReport.content.blogDraft.coverAlt,
+      coverImageUrl:
+        publishedReport.adminEditedContent?.coverImageUrl?.trim() || null,
+      intro: publishedReport.content.blogDraft.intro,
+      language: publishedReport.language,
+      publishedAt:
+        publishedReport.publishedAt ??
+        publishedReport.publicationDate ??
+        new Date().toISOString(),
+      relatedReportId: publishedReport.id,
+      relatedReportSlug: publishedReport.slug,
+      relatedReportTitle: publishedReport.title,
+      sections: publishedReport.content.blogDraft.sections,
+      seoDescription: publishedReport.content.blogDraft.seoDescription,
+      slug: publishedReport.content.blogDraft.slug,
+      subtitle: publishedReport.content.blogDraft.subtitle,
+      title: publishedReport.content.blogDraft.title,
+      weekEndDate: publishedReport.weekEndDate,
+    });
+  }
   revalidateWeeklyReportViews();
-  return getWeeklyReportById(reportId);
+  return publishedReport;
 }
 
 export async function scheduleWeeklyReportTelegram(

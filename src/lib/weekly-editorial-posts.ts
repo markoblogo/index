@@ -3,6 +3,12 @@ import "server-only";
 import { SITE_CONFIG } from "@/lib/constants";
 import type { Locale } from "@/lib/i18n";
 import {
+  getWeeklyEditorialPostRowBySlug,
+  listWeeklyEditorialPostRows,
+  upsertWeeklyEditorialPostFromSnapshot,
+  type WeeklyEditorialPostRow,
+} from "@/lib/weekly-editorial-post-storage";
+import {
   getPublishedWeeklyReportBySlug,
   getPublishedWeeklyReports,
   type WeeklyReportRecord,
@@ -28,11 +34,14 @@ export type WeeklyEditorialPost = {
 };
 
 export async function listPublishedWeeklyEditorialPosts(locale?: Locale) {
-  const reports = await getPublishedWeeklyReports();
-  return reports
-    .filter((report) => report.content?.blogDraft)
-    .filter((report) => (locale ? report.language === locale : true))
-    .map(mapWeeklyReportToEditorialPost)
+  let rows = await listWeeklyEditorialPostRows(locale);
+  if (rows.length === 0) {
+    await backfillWeeklyEditorialPostsFromPublishedReports(locale);
+    rows = await listWeeklyEditorialPostRows(locale);
+  }
+
+  return rows
+    .map(mapWeeklyEditorialPostRow)
     .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
 }
 
@@ -40,19 +49,13 @@ export async function getPublishedWeeklyEditorialPostBySlug(
   slug: string,
   locale?: Locale,
 ) {
-  const reports = await getPublishedWeeklyReports();
-  const match = reports.find((report) => {
-    const draftSlug = report.content?.blogDraft?.slug;
-    if (!draftSlug) {
-      return false;
-    }
-    if (draftSlug !== slug) {
-      return false;
-    }
-    return locale ? report.language === locale : true;
-  });
+  let row = await getWeeklyEditorialPostRowBySlug(slug, locale);
+  if (!row) {
+    await backfillWeeklyEditorialPostsFromPublishedReports(locale);
+    row = await getWeeklyEditorialPostRowBySlug(slug, locale);
+  }
 
-  return match ? mapWeeklyReportToEditorialPost(match) : null;
+  return row ? mapWeeklyEditorialPostRow(row) : null;
 }
 
 export async function getPublishedWeeklyEditorialPostByReportSlug(
@@ -102,4 +105,84 @@ function mapWeeklyReportToEditorialPost(report: WeeklyReportRecord): WeeklyEdito
     title: blogDraft.title,
     weekEndDate: report.weekEndDate,
   };
+}
+
+function mapWeeklyEditorialPostRow(row: WeeklyEditorialPostRow): WeeklyEditorialPost {
+  const locale = row.language === "uk" ? "uk" : "en";
+  const baseUrl = SITE_CONFIG.publicSiteUrl.replace(/\/+$/, "");
+
+  return {
+    canonicalUrl: `${baseUrl}/${locale}/market-intelligence/${row.slug}`,
+    coverImage: row.coverImageUrl?.trim() || null,
+    coverImageAlt: row.coverImageAlt?.trim() || row.title,
+    excerpt: row.intro,
+    intro: row.intro,
+    language: locale,
+    publishedAt: row.publishedAt.toISOString().slice(0, 10),
+    relatedReportSlug: row.relatedReportSlug,
+    relatedReportTitle: row.relatedReportTitle,
+    sections: parseSections(row.sectionsJson),
+    seoDescription: row.seoDescription,
+    seoTitle: row.title,
+    slug: row.slug,
+    subtitle: row.subtitle,
+    title: row.title,
+    weekEndDate: row.weekEndDate.toISOString().slice(0, 10),
+  };
+}
+
+async function backfillWeeklyEditorialPostsFromPublishedReports(locale?: Locale) {
+  const reports = await getPublishedWeeklyReports();
+  const eligibleReports = reports
+    .filter((report) => report.content?.blogDraft)
+    .filter((report) => (locale ? report.language === locale : true));
+
+  for (const report of eligibleReports) {
+    await upsertWeeklyEditorialPostFromSnapshot(buildSnapshotFromReport(report));
+  }
+}
+
+function buildSnapshotFromReport(report: WeeklyReportRecord) {
+  const blogDraft = report.content?.blogDraft;
+  if (!blogDraft) {
+    throw new Error("Weekly editorial post requires blogDraft");
+  }
+
+  return {
+    coverImageAlt:
+      report.adminEditedContent?.coverImageAlt?.trim() || blogDraft.coverAlt,
+    coverImageUrl: report.adminEditedContent?.coverImageUrl?.trim() || null,
+    intro: blogDraft.intro,
+    language: report.language,
+    publishedAt:
+      report.publishedAt ??
+      report.publicationDate ??
+      `${report.weekEndDate}T00:00:00.000Z`,
+    relatedReportId: report.id,
+    relatedReportSlug: report.slug,
+    relatedReportTitle: report.title,
+    sections: blogDraft.sections,
+    seoDescription: blogDraft.seoDescription,
+    slug: blogDraft.slug,
+    subtitle: blogDraft.subtitle,
+    title: blogDraft.title,
+    weekEndDate: report.weekEndDate,
+  };
+}
+
+function parseSections(value: unknown) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((entry) => {
+      if (!entry || typeof entry !== "object") {
+        return null;
+      }
+      const body = typeof entry.body === "string" ? entry.body.trim() : "";
+      const title = typeof entry.title === "string" ? entry.title.trim() : "";
+      return body && title ? { body, title } : null;
+    })
+    .filter((entry): entry is { body: string; title: string } => Boolean(entry));
 }
