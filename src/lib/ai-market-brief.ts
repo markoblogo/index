@@ -722,13 +722,15 @@ export function isAiBriefLocaleCompatible(
   brief: PublicAiMarketBrief,
   locale: Locale,
 ) {
-  const text = brief.blocks
-    .map((block) => `${block.title}\n${block.body}`)
-    .join("\n");
-  const hasCyrillic = /[А-Яа-яЁёІіЇїЄєҐґ]/.test(text);
-  const hasLatin = /[A-Za-z]/.test(text);
+  const text = brief.blocks.map((block) => block.body).join("\n");
+  const cyrillicCount = (text.match(/[А-Яа-яЁёІіЇїЄєҐґ]/g) ?? []).length;
+  const latinCount = (text.match(/[A-Za-z]/g) ?? []).length;
 
-  return locale === "uk" ? hasCyrillic : hasLatin;
+  if (locale === "uk") {
+    return cyrillicCount > latinCount;
+  }
+
+  return latinCount >= cyrillicCount;
 }
 
 async function resolvePublishedAiMarketBrief({
@@ -755,6 +757,25 @@ async function resolvePublishedAiMarketBrief({
 
     if (isAiBriefLocaleCompatible(mapped, locale)) {
       return mapped;
+    }
+
+    if (process.env.SPIKE_AI_BRIEF_AUTO_REPAIR !== "0") {
+      await generateAndStoreDailyAiMarketBrief({
+        date: latestDate,
+        force: true,
+        locale,
+        source: "locale_repair",
+      });
+
+      const repaired = await findStoredBrief(locale, latestDate);
+
+      if (repaired) {
+        const repairedMapped = mapStoredBrief(repaired, locale);
+
+        if (isAiBriefLocaleCompatible(repairedMapped, locale)) {
+          return repairedMapped;
+        }
+      }
     }
   }
 

@@ -77,9 +77,19 @@ describe("isAiBriefLocaleCompatible", () => {
       isAiBriefLocaleCompatible(
         {
           ...brief,
-          blocks: brief.blocks.map((block) => ({
-            ...block,
-            body: block.body,
+          blocks: brief.blocks.map((block, index) => ({
+            body: [
+              "Overall downward pressure persists on Ukrainian grain commodities.",
+              "GMO soybean is the strongest positive mover.",
+              "High volatility is concentrated in soybean.",
+              "Watch whether soybean momentum holds.",
+            ][index],
+            title: [
+              "Головний сигнал дня",
+              "Що рухалося найсильніше",
+              "Стійкість / ризик",
+              "На що дивитися далі",
+            ][index],
           })),
         },
         "uk",
