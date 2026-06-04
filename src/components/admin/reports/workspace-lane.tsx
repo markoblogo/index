@@ -10,7 +10,9 @@ export function WorkspaceLane({
   children,
   config,
   deleteResourceAction,
+  formColumns = "single",
   reportId,
+  resourceColumns = "split",
   resources,
   saveConfigAction,
   sectionId,
@@ -21,7 +23,9 @@ export function WorkspaceLane({
   children: ReactNode;
   config: ReportWorkspaceConfig;
   deleteResourceAction: (formData: FormData) => Promise<void>;
+  formColumns?: "double" | "single";
   reportId?: string | null;
+  resourceColumns?: "split" | "stacked";
   resources: ReportWorkspaceResource[];
   saveConfigAction: (formData: FormData) => Promise<void>;
   sectionId?: string;
@@ -30,6 +34,8 @@ export function WorkspaceLane({
 }) {
   const analysisSources = resources.filter((resource) => resource.role === "analysis_source");
   const formatReferences = resources.filter((resource) => resource.role === "format_reference");
+  const doubleForm = formColumns === "double";
+  const splitResources = resourceColumns === "split";
 
   return (
     <section
@@ -61,49 +67,55 @@ export function WorkspaceLane({
           label="Collection window"
           name="collectionWindowLabel"
           value={config.collectionWindowLabel}
+          wide={doubleForm}
         />
         <Area
           label="Source processing notes"
           name="sourceProcessingNotes"
           value={config.sourceProcessingNotes}
+          wide={doubleForm}
         />
-        <Area label="Editor prompt (UA)" name="adminPromptUk" value={config.adminPromptUk} />
-        <Area label="Editor prompt (EN)" name="adminPromptEn" value={config.adminPromptEn} />
-        <Area
-          label="Telegram template (UA)"
-          name="telegramTemplateUk"
-          value={config.telegramTemplateUk}
-        />
-        <Area
-          label="Telegram template (EN)"
-          name="telegramTemplateEn"
-          value={config.telegramTemplateEn}
-        />
-        <label className="flex items-center gap-2 text-sm text-white/78">
-          <input
-            className="h-4 w-4"
-            defaultChecked={config.enabled}
-            name="enabled"
-            type="checkbox"
-            value="1"
+        <div className={doubleForm ? "grid gap-4 xl:grid-cols-2" : "grid gap-4"}>
+          <Area label="Editor prompt (UA)" name="adminPromptUk" value={config.adminPromptUk} />
+          <Area label="Editor prompt (EN)" name="adminPromptEn" value={config.adminPromptEn} />
+          <Area
+            label="Telegram template (UA)"
+            name="telegramTemplateUk"
+            value={config.telegramTemplateUk}
           />
-          Workspace enabled
-        </label>
-        <button
-          className="w-fit rounded-full bg-uga-green px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#82ff4d]"
-          type="submit"
-        >
-          Save settings
-        </button>
+          <Area
+            label="Telegram template (EN)"
+            name="telegramTemplateEn"
+            value={config.telegramTemplateEn}
+          />
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1rem] border border-white/10 bg-black/20 px-4 py-3">
+          <label className="flex items-center gap-2 text-sm text-white/78">
+            <input
+              className="h-4 w-4"
+              defaultChecked={config.enabled}
+              name="enabled"
+              type="checkbox"
+              value="1"
+            />
+            Workspace enabled
+          </label>
+          <button
+            className="w-fit rounded-full bg-uga-green px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#82ff4d]"
+            type="submit"
+          >
+            Save settings
+          </button>
+        </div>
       </form>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className={splitResources ? "grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]" : "grid gap-4"}>
         <ResourceEditor
           addResourceAction={addResourceAction}
           reportId={reportId}
           reportKind={config.reportKind}
         />
-        <div className="grid gap-4">
+        <div className="grid gap-4 xl:grid-cols-2">
           <ResourceList
             deleteResourceAction={deleteResourceAction}
             resources={analysisSources}
@@ -266,13 +278,15 @@ function Area({
   label,
   name,
   value,
+  wide = false,
 }: {
   label: string;
   name: string;
   value: string;
+  wide?: boolean;
 }) {
   return (
-    <label className="grid gap-2 text-sm font-semibold text-white/78">
+    <label className={`grid gap-2 text-sm font-semibold text-white/78 ${wide ? "xl:col-span-2" : ""}`}>
       {label}
       <textarea
         className="min-h-24 rounded-xl border border-white/12 bg-black px-3 py-2 text-sm text-white"

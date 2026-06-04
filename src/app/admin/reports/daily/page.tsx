@@ -196,11 +196,12 @@ export default async function DailyReportsPage({
         warnings={operationalReadiness.warnings}
       />
 
-      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+      <div className="grid gap-6 xl:grid-cols-2">
         <WorkspaceLane
           addResourceAction={addResourceAction}
           config={dailyConfig}
           deleteResourceAction={deleteResourceAction}
+          formColumns="double"
           resources={dailyResources}
           saveConfigAction={saveConfigAction}
           sectionId="daily-workspace"
@@ -295,11 +296,30 @@ export default async function DailyReportsPage({
           </section>
 
           <section className="rounded-[1.5rem] border border-white/12 bg-[#050505] p-5">
-            <h2 className="text-lg font-semibold text-white">Daily workflow defaults</h2>
-            <div className="mt-4 grid gap-3 text-sm leading-6 text-white/68">
-              <p>Review window: {dailyConfig.reviewStartsAt} {dailyConfig.timezone}</p>
-              <p>Auto-publish target: {dailyConfig.publishAt} {dailyConfig.timezone}</p>
-              <p>Weekly workspace remains armed separately with {weeklyConfig.publishAt} publication time.</p>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold text-white">Daily workflow defaults</h2>
+                <p className="mt-2 text-sm leading-6 text-white/62">
+                  Daily remains editor-reviewable before publication, but still publishes on time if nobody intervenes.
+                </p>
+              </div>
+              <span className="rounded-full border border-white/12 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-white/68">
+                fail-safe armed
+              </span>
+            </div>
+            <div className="mt-4 grid gap-3 md:grid-cols-3 text-sm leading-6 text-white/68">
+              <div className="rounded-[1rem] border border-white/10 bg-black/20 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-white/45">Review starts</p>
+                <p className="mt-2 text-base font-semibold text-white">{dailyConfig.reviewStartsAt} {dailyConfig.timezone}</p>
+              </div>
+              <div className="rounded-[1rem] border border-white/10 bg-black/20 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-white/45">Auto-publish</p>
+                <p className="mt-2 text-base font-semibold text-white">{dailyConfig.publishAt} {dailyConfig.timezone}</p>
+              </div>
+              <div className="rounded-[1rem] border border-white/10 bg-black/20 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-white/45">Weekly sibling flow</p>
+                <p className="mt-2 text-base font-semibold text-white">{weeklyConfig.reviewStartsAt} → {weeklyConfig.publishAt}</p>
+              </div>
             </div>
           </section>
         </section>

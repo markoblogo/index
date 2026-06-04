@@ -479,20 +479,22 @@ export default async function WeeklyReportsPage({
         />
       ) : null}
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
+      <div className="grid gap-6">
         <WorkspaceLane
           addResourceAction={addResourceAction}
           config={weeklyConfig}
           deleteResourceAction={deleteResourceAction}
+          formColumns="double"
           reportId={activeWeeklyReport?.id ?? null}
           resources={weeklyResources}
+          resourceColumns="split"
           saveConfigAction={saveConfigAction}
           sectionId="weekly-workspace"
           title="Weekly summary workspace"
           toggleResourceAction={toggleResourceAction}
         >
           {activeWeeklyReport ? (
-            <>
+            <div className="grid gap-4 2xl:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]">
               <TelegramDigestPreview
                 digest={weeklyDigest}
                 generateAction={generateAction}
@@ -530,10 +532,12 @@ export default async function WeeklyReportsPage({
                 syncEditorialArticleAction={syncEditorialArticleAction}
                 unpublishEditorialArticleAction={unpublishEditorialArticleAction}
               />
-            </>
+            </div>
           ) : null}
         </WorkspaceLane>
+      </div>
 
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.12fr)_minmax(0,0.88fr)]">
         <div className="grid gap-6">
           {activeWeeklyReport ? (
             <WeeklyPreviewPanel
@@ -542,20 +546,42 @@ export default async function WeeklyReportsPage({
               report={activeWeeklyReport}
             />
           ) : null}
+          <section className="rounded-[1.5rem] border border-white/12 bg-[#050505] p-5 text-sm leading-6 text-white/68">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold text-white">Publication timing</h2>
+                <p className="mt-2 max-w-3xl text-white/62">
+                  Daily and weekly stay auto-armed by default, but the editor can still intervene during the review window.
+                </p>
+              </div>
+              <span className="rounded-full border border-white/12 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-white/68">
+                deadline fail-safe
+              </span>
+            </div>
+            <div className="mt-4 grid gap-3 lg:grid-cols-3">
+              <div className="rounded-[1rem] border border-white/10 bg-black/20 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-white/45">Daily review</p>
+                <p className="mt-2 text-base font-semibold text-white">{dailyConfig.reviewStartsAt} {dailyConfig.timezone}</p>
+              </div>
+              <div className="rounded-[1rem] border border-white/10 bg-black/20 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-white/45">Daily publish</p>
+                <p className="mt-2 text-base font-semibold text-white">{dailyConfig.publishAt} {dailyConfig.timezone}</p>
+              </div>
+              <div className="rounded-[1rem] border border-white/10 bg-black/20 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-white/45">Weekly publish</p>
+                <p className="mt-2 text-base font-semibold text-white">{weeklyConfig.reviewStartsAt} → {weeklyConfig.publishAt} {weeklyConfig.timezone}</p>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div className="grid gap-6">
           <WeeklyRunsList
             activeReportId={activeWeeklyReport?.id ?? null}
             language={selectedLanguage}
             preview={selectedPreview}
             reports={reports}
           />
-          <section className="rounded-[1.5rem] border border-white/12 bg-[#050505] p-5 text-sm leading-6 text-white/68">
-            <h2 className="text-lg font-semibold text-white">Cross-workspace timing</h2>
-            <div className="mt-4 grid gap-3">
-              <p>Daily review starts at {dailyConfig.reviewStartsAt} and publishes at {dailyConfig.publishAt}.</p>
-              <p>Weekly review starts at {weeklyConfig.reviewStartsAt} and publishes at {weeklyConfig.publishAt}.</p>
-              <p>If hold is off, the fail-safe path still publishes on time even without editor intervention.</p>
-            </div>
-          </section>
         </div>
       </div>
     </section>
