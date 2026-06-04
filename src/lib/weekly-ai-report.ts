@@ -1,8 +1,9 @@
 import "server-only";
 
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { db, hasDatabaseUrl } from "@/lib/db";
+import { createGeneratedMediaAsset } from "@/lib/generated-media-asset";
 import type { Locale } from "@/lib/i18n";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import {
@@ -147,6 +148,7 @@ export type WeeklyReportManifest = {
 
 export type WeeklyReportRecord = {
   adminEditedContent: {
+    coverAssetId?: string;
     coverImageCaption?: string;
     coverImageUrl?: string;
     coverImageAlt?: string;
@@ -504,6 +506,7 @@ export async function ensureWeeklyReport(weekEndDate: string, language = "uk") {
 export async function saveWeeklyReportAdminInputs(
   reportId: string,
   payload: {
+    coverAssetId?: string;
     coverImageAlt?: string;
     coverImageCaption?: string;
     coverImageUrl?: string;
@@ -519,6 +522,8 @@ export async function saveWeeklyReportAdminInputs(
 
   const nextEdited = {
     ...(report.adminEditedContent ?? {}),
+    coverAssetId:
+      payload.coverAssetId ?? report.adminEditedContent?.coverAssetId ?? "",
     coverImageAlt:
       payload.coverImageAlt ?? report.adminEditedContent?.coverImageAlt ?? "",
     coverImageCaption:
@@ -546,6 +551,125 @@ export async function saveWeeklyReportAdminInputs(
   );
 
   return getWeeklyReportById(reportId);
+}
+
+export async function generateWeeklyCoverAsset(
+  reportId: string,
+  actorUserId?: string | null,
+) {
+  const report = await getWeeklyReportById(reportId);
+
+  if (!report || !report.content?.blogDraft || !hasDatabaseUrl()) {
+    return {
+      skippedReason: "report_or_blog_draft_missing",
+      status: "skipped" as const,
+    };
+  }
+
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    return {
+      skippedReason: "openai_api_key_missing",
+      status: "skipped" as const,
+    };
+  }
+
+  const prompt = report.content.blogDraft.coverPrompt.trim();
+  if (!prompt) {
+    return {
+      skippedReason: "cover_prompt_missing",
+      status: "skipped" as const,
+    };
+  }
+
+  const model = process.env.SPIKE_WEEKLY_COVER_MODEL || "gpt-image-1";
+  const quality = process.env.SPIKE_WEEKLY_COVER_QUALITY || "medium";
+  const size = process.env.SPIKE_WEEKLY_COVER_SIZE || "1536x1024";
+  const response = await fetch("https://api.openai.com/v1/images/generations", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      output_format: "png",
+      prompt,
+      quality,
+      size,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    await appendWeeklyAuditLog({
+      action: "weekly_cover_generation_failed",
+      actorUserId,
+      entityId: reportId,
+      summary: `Weekly cover generation failed: ${error}`,
+    });
+    return { error, status: "failed" as const };
+  }
+
+  const payload = (await response.json()) as {
+    data?: Array<{ b64_json?: string }>;
+  };
+  const base64Data = payload.data?.[0]?.b64_json?.trim() ?? "";
+  if (!base64Data) {
+    return {
+      skippedReason: "cover_image_missing_in_response",
+      status: "skipped" as const,
+    };
+  }
+
+  const asset = await createGeneratedMediaAsset({
+    assetKind: "weekly_report_cover",
+    base64Data,
+    contentType: "image/png",
+    fileName: buildWeeklyCoverFileName(report),
+    metadata: {
+      model,
+      promptHash: createHash("sha256").update(prompt).digest("hex"),
+      quality,
+      reportId,
+      size,
+      weekEndDate: report.weekEndDate,
+    },
+    reportId,
+  });
+
+  if (!asset) {
+    return {
+      skippedReason: "asset_persist_failed",
+      status: "skipped" as const,
+    };
+  }
+
+  const coverImageUrl = `${getActiveIndexConfig().publicSiteUrl.replace(/\/$/, "")}/api/weekly-report-cover/${asset.id}`;
+  await saveWeeklyReportAdminInputs(reportId, {
+    coverAssetId: asset.id,
+    coverImageAlt:
+      report.content.blogDraft.coverAlt ||
+      report.adminEditedContent?.coverImageAlt ||
+      "",
+    coverImageCaption:
+      report.content.blogDraft.title ||
+      report.adminEditedContent?.coverImageCaption ||
+      "",
+    coverImageUrl,
+  });
+  await appendWeeklyAuditLog({
+    action: "weekly_cover_generated",
+    actorUserId,
+    entityId: reportId,
+    summary: `Weekly cover asset generated with ${model}.`,
+  });
+
+  return {
+    assetId: asset.id,
+    coverImageUrl,
+    status: "generated" as const,
+  };
 }
 
 export async function buildWeeklySourceManifest(reportId: string) {
@@ -1348,6 +1472,13 @@ export async function autoPrepareWeeklyReportDraft(
       await generateWeeklyReportDraft(report.id, null);
       generatedIds.push(report.id);
     }
+    const refreshedReport = await getWeeklyReportById(report.id);
+    if (
+      refreshedReport?.content?.blogDraft &&
+      !refreshedReport.adminEditedContent?.coverImageUrl
+    ) {
+      await generateWeeklyCoverAsset(report.id, null);
+    }
   }
 
   return {
@@ -1881,6 +2012,11 @@ function buildWeeklyBlogSlug(value: string) {
     .trim()
     .replace(/\s+/g, "-")
     .slice(0, 120);
+}
+
+function buildWeeklyCoverFileName(report: WeeklyReportRecord) {
+  const language = report.language === "en" ? "en" : "uk";
+  return `spike-weekly-cover-${report.weekEndDate}-${language}.png`;
 }
 
 export function buildWeeklyTelegramMessages(

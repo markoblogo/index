@@ -33,6 +33,7 @@ import {
   autoPrepareWeeklyReportDraft,
   buildWeeklySourceManifest,
   ensureWeeklyReport,
+  generateWeeklyCoverAsset,
   generateWeeklyReportDraft,
   getWeeklyReportById,
   listWeeklyReports,
@@ -56,6 +57,7 @@ const noticeMap: Record<string, string> = {
   approved: "Weekly report approved.",
   config_saved: "Report settings saved.",
   generated: "Weekly draft generated.",
+  cover_generated: "Weekly cover asset generated.",
   manifest: "Weekly source manifest rebuilt.",
   notes_saved: "Weekly editor inputs saved.",
   published: "Weekly report published.",
@@ -210,6 +212,15 @@ export default async function ReportsWorkspacePage({
     await generateWeeklyReportDraft(reportId, currentUser.userId);
     const nextReport = await getWeeklyReportById(reportId);
     redirect(`/admin/reports?reportId=${reportId}&week=${nextReport?.weekEndDate ?? getDefaultWeekEnd()}&lang=${nextReport?.language ?? selectedLanguage}&notice=generated`);
+  }
+
+  async function generateCoverAction(formData: FormData) {
+    "use server";
+
+    const reportId = String(formData.get("reportId") ?? "");
+    await generateWeeklyCoverAsset(reportId, currentUser.userId);
+    const nextReport = await getWeeklyReportById(reportId);
+    redirect(`/admin/reports?reportId=${reportId}&week=${nextReport?.weekEndDate ?? getDefaultWeekEnd()}&lang=${nextReport?.language ?? selectedLanguage}&notice=cover_generated`);
   }
 
   async function approveAction(formData: FormData) {
@@ -484,6 +495,7 @@ export default async function ReportsWorkspacePage({
               <WeeklyWorkflowCard
               activeReport={activeWeeklyReport}
               approveAction={approveAction}
+              generateCoverAction={generateCoverAction}
               generateAction={generateAction}
               publishAction={publishAction}
               publicReadiness={weeklyReadiness}
@@ -605,9 +617,19 @@ export default async function ReportsWorkspacePage({
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-white/45">
                       Cover asset
                     </p>
+                    <img
+                      alt={activeWeeklyReport.adminEditedContent?.coverImageAlt || "Weekly cover asset"}
+                      className="mt-3 aspect-[3/2] w-full rounded-[0.9rem] object-cover"
+                      src={activeWeeklyReport.adminEditedContent.coverImageUrl}
+                    />
                     <p className="mt-2 break-all text-sm text-uga-green">
                       {activeWeeklyReport.adminEditedContent.coverImageUrl}
                     </p>
+                    {activeWeeklyReport.adminEditedContent?.coverAssetId ? (
+                      <p className="mt-2 text-xs uppercase tracking-[0.12em] text-white/45">
+                        Asset ID: {activeWeeklyReport.adminEditedContent.coverAssetId}
+                      </p>
+                    ) : null}
                     {activeWeeklyReport.adminEditedContent.coverImageCaption ? (
                       <p className="mt-2 text-sm leading-6 text-white/72">
                         {activeWeeklyReport.adminEditedContent.coverImageCaption}
@@ -1050,6 +1072,7 @@ function TelegramDigestPreview({
 function WeeklyWorkflowCard({
   activeReport,
   approveAction,
+  generateCoverAction,
   generateAction,
   publishAction,
   publicReadiness,
@@ -1060,6 +1083,7 @@ function WeeklyWorkflowCard({
 }: {
   activeReport: WeeklyReportRecord;
   approveAction: (formData: FormData) => Promise<void>;
+  generateCoverAction: (formData: FormData) => Promise<void>;
   generateAction: (formData: FormData) => Promise<void>;
   publishAction: (formData: FormData) => Promise<void>;
   publicReadiness: ReturnType<typeof assessWeeklyReportPublicReadiness> | null;
@@ -1089,6 +1113,7 @@ function WeeklyWorkflowCard({
         {[
           { action: rebuildManifestAction, label: "Rebuild source manifest" },
           { action: generateAction, label: "Generate weekly draft" },
+          { action: generateCoverAction, label: "Generate cover asset", disabled: !activeReport.content?.blogDraft },
           { action: approveAction, label: "Approve" },
           { action: publishAction, label: "Publish website", disabled: !publicReadiness?.canPublish },
           { action: scheduleTelegramAction, label: "Schedule Telegram", disabled: !publicReadiness?.canScheduleTelegram },
@@ -1174,6 +1199,7 @@ function MetadataBox({ activeReport }: { activeReport: WeeklyReportRecord }) {
         <p><span className="font-semibold text-white">Generated at:</span> {activeReport.aiGeneratedAt ?? "n/a"}</p>
         <p><span className="font-semibold text-white">Telegram send at:</span> {activeReport.telegramSendAt ?? "n/a"}</p>
         <p><span className="font-semibold text-white">Message IDs:</span> {activeReport.telegramMessageIds.length > 0 ? activeReport.telegramMessageIds.join(", ") : "n/a"}</p>
+        <p><span className="font-semibold text-white">Cover asset:</span> {activeReport.adminEditedContent?.coverAssetId ?? "n/a"}</p>
         <p><span className="font-semibold text-white">Missing inputs:</span> {activeReport.missingInputs.length}</p>
         <p><span className="font-semibold text-white">AI warnings:</span> {activeReport.aiWarnings.length}</p>
       </div>
