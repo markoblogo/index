@@ -544,13 +544,14 @@ export default async function ReportsWorkspacePage({
               )}
             </div>
           </div>
-          <TelegramDigestPreview
-            digest={dailyDigest}
-            reportId={null}
-            reportKind="daily"
-            resetWindowFiltersAction={resetWindowFiltersAction}
-            syncSourcesAction={syncSourcesAction}
-            toggleChannelPostsAction={toggleChannelPostsAction}
+              <TelegramDigestPreview
+                digest={dailyDigest}
+                generateAction={null}
+                reportId={null}
+                reportKind="daily"
+                resetWindowFiltersAction={resetWindowFiltersAction}
+                syncSourcesAction={syncSourcesAction}
+                toggleChannelPostsAction={toggleChannelPostsAction}
             toggleCollectedPostAction={toggleCollectedPostAction}
             title="Daily collected Telegram posts"
           />
@@ -571,6 +572,7 @@ export default async function ReportsWorkspacePage({
             <>
               <TelegramDigestPreview
                 digest={weeklyDigest}
+                generateAction={generateAction}
                 reportId={activeWeeklyReport.id}
                 reportKind="weekly"
                 resetWindowFiltersAction={resetWindowFiltersAction}
@@ -1029,6 +1031,7 @@ function ResourceList({
 
 function TelegramDigestPreview({
   digest,
+  generateAction,
   reportId,
   reportKind,
   resetWindowFiltersAction,
@@ -1038,6 +1041,7 @@ function TelegramDigestPreview({
   title,
 }: {
   digest: TelegramSourceDigest;
+  generateAction: ((formData: FormData) => Promise<void>) | null;
   reportId: string | null;
   reportKind: ReportKind;
   resetWindowFiltersAction: (formData: FormData) => Promise<void>;
@@ -1046,13 +1050,28 @@ function TelegramDigestPreview({
   toggleCollectedPostAction: (formData: FormData) => Promise<void>;
   title: string;
 }) {
+  const totalIncluded = digest.channels.reduce(
+    (sum, channel) => sum + channel.includedPostCount,
+    0,
+  );
+  const totalExcluded = digest.channels.reduce(
+    (sum, channel) => sum + channel.excludedPostCount,
+    0,
+  );
+  const activeChannels = digest.channels.filter(
+    (channel) => channel.includedPostCount > 0,
+  ).length;
+  const totalChannels = digest.channels.filter(
+    (channel) => channel.posts.length > 0,
+  ).length;
+
   return (
     <section className="grid gap-4 rounded-[1.2rem] border border-white/10 bg-black/30 p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="text-base font-semibold text-white">{title}</h3>
           <p className="mt-1 text-sm leading-6 text-white/62">
-            Window: {formatDigestDate(digest.startAt)} → {formatDigestDate(digest.endAt)} · {digest.postCount} included posts
+            Window: {formatDigestDate(digest.startAt)} → {formatDigestDate(digest.endAt)} · {totalIncluded} included posts
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -1076,6 +1095,43 @@ function TelegramDigestPreview({
               Refresh sync
             </button>
           </form>
+        </div>
+      </div>
+
+      <div className="sticky top-4 z-10 rounded-[1rem] border border-white/12 bg-[#0a0a0a]/95 p-4 backdrop-blur">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.12em]">
+            <span className="rounded-full bg-uga-green/15 px-3 py-1 text-uga-green">
+              {totalIncluded} included
+            </span>
+            <span className="rounded-full bg-amber-400/12 px-3 py-1 text-amber-100">
+              {totalExcluded} excluded
+            </span>
+            <span className="rounded-full border border-white/12 px-3 py-1 text-white/72">
+              {activeChannels}/{totalChannels} channels active
+            </span>
+          </div>
+
+          {generateAction && reportId ? (
+            <form action={generateAction} className="flex items-center gap-3">
+              <input name="reportId" type="hidden" value={reportId} />
+              <div className="text-right text-xs leading-5 text-white/55">
+                <p>Generation uses only currently included posts.</p>
+                <p>Excluded posts stay out of the prompt context.</p>
+              </div>
+              <button
+                className="rounded-full bg-uga-green px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#82ff4d] disabled:cursor-not-allowed disabled:bg-white/15 disabled:text-white/35"
+                disabled={totalIncluded === 0}
+                type="submit"
+              >
+                Generate from current filtered set
+              </button>
+            </form>
+          ) : (
+            <p className="text-xs leading-5 text-white/55">
+              Included/excluded counters reflect the exact set used by the digest layer.
+            </p>
+          )}
         </div>
       </div>
 
