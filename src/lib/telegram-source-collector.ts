@@ -120,6 +120,47 @@ export async function getWeeklyTelegramDigest(
   return getTelegramDigestForWindow("weekly", startAt, endAt, reportId ?? null);
 }
 
+export async function syncTelegramResourcesForWindow(input: {
+  resources: ReportWorkspaceResource[];
+  until?: Date;
+  maxPagesPerChannel?: number;
+}) {
+  if (!hasDatabaseUrl()) {
+    return { channels: 0, posts: 0, skippedReason: "database_not_configured" };
+  }
+
+  await ensureTelegramCollectorStorage();
+  const telegramSources = dedupeTelegramResources(input.resources);
+  let posts = 0;
+
+  for (const source of telegramSources) {
+    const result = await syncTelegramChannel(source, {
+      maxPages: input.maxPagesPerChannel ?? 12,
+      until: input.until,
+    });
+    posts += result.posts;
+  }
+
+  return { channels: telegramSources.length, posts, skippedReason: null };
+}
+
+export async function getTelegramDigestForResourcesWindow(input: {
+  endAt: Date;
+  resources: ReportWorkspaceResource[];
+  startAt: Date;
+  syncUntil?: Date;
+}) {
+  if (input.syncUntil) {
+    await syncTelegramResourcesForWindow({
+      maxPagesPerChannel: 12,
+      resources: input.resources,
+      until: input.syncUntil,
+    });
+  }
+
+  return getTelegramDigestForResources(input.resources, input.startAt, input.endAt);
+}
+
 export async function setTelegramCollectedPostIncluded(
   id: string,
   included: boolean,
@@ -222,6 +263,19 @@ async function getTelegramDigestForWindow(
 
   await ensureTelegramCollectorStorage();
   const resources = await listReportWorkspaceResources({ reportId, reportKind });
+  return getTelegramDigestForResources(resources, startAt, endAt);
+}
+
+async function getTelegramDigestForResources(
+  resources: ReportWorkspaceResource[],
+  startAt: Date,
+  endAt: Date,
+): Promise<TelegramSourceDigest> {
+  if (!hasDatabaseUrl()) {
+    return { channels: [], endAt: endAt.toISOString(), postCount: 0, signature: "empty", startAt: startAt.toISOString() };
+  }
+
+  await ensureTelegramCollectorStorage();
   const telegramSources = dedupeTelegramResources(resources);
   const handles = telegramSources.map((source) => source.handle);
 

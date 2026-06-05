@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireDemoRole } from "@/lib/demo-auth";
 import { getMediaHubConfig, isMediaHubEnabled } from "@/lib/media-hub";
+import { getMediaHubOverviewStats } from "@/lib/media-hub-monitoring";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -14,6 +15,7 @@ export default async function AdminMediaHubPage() {
   }
 
   const mediaHub = getMediaHubConfig();
+  const overview = await getMediaHubOverviewStats();
 
   return (
     <section className="grid gap-6">
@@ -35,30 +37,30 @@ export default async function AdminMediaHubPage() {
       <section className="grid gap-4 xl:grid-cols-4">
         <HubCard
           cta="Open daily"
-          description="Collected posts window, daily summary controls, Telegram post template and fail-safe publication timing."
+          description={`Collected posts window, daily summary controls and live monitoring. ${overview.daily.itemCount} included posts right now.`}
           href="/admin/media-hub/daily"
           label="Live now"
           title="Daily"
         />
         <HubCard
           cta="Open weekly"
-          description="Weekly digest filtering, report workflow, editorial article layer, cover asset and Telegram packaging."
+          description={`Weekly digest filtering, report workflow and editorial layer. ${overview.weekly.itemCount} included posts in the active 7-day window.`}
           href="/admin/media-hub/weekly"
           label="Live now"
           title="Weekly"
         />
         <HubCard
           cta="Open 30 days"
-          description="Rolling 30-day intelligence mode that will absorb the old Last30Days logic and monthly synthesis."
+          description={`Rolling 30-day monitoring pool is now live. ${overview.monthly.itemCount} included posts across the current 30-day window.`}
           href="/admin/media-hub/monthly"
-          label="Migration target"
+          label="Live now"
           title="30 Days"
         />
         <HubCard
           cta="Open sources"
-          description="Future unified registry for Telegram, RSS, websites, files and format references across all windows."
+          description={`Unified registry across day and week windows. ${overview.registryCount} grouped source entries currently configured.`}
           href="/admin/media-hub/sources"
-          label="Migration target"
+          label="Live now"
           title="Sources"
         />
       </section>

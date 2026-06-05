@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { PublicMediaHub } from "@/components/media-hub/public-media-hub";
 import type { Locale } from "@/lib/i18n";
+import { getSpikeMediaHubLiveWindows } from "@/lib/media-hub-monitoring";
 import {
   getMediaHubProfile,
   isMediaHubEnabled,
@@ -27,11 +28,18 @@ export default async function MediaHubPage({
 
   const selectedWindow = normalizeWindow(search.window);
   const profile = getMediaHubProfile(locale, selectedWindow);
+  const liveWindows = await getSpikeMediaHubLiveWindows(locale);
+  const active = liveWindows.find((window) => window.window === selectedWindow) ?? liveWindows[0];
+  const rest = liveWindows.filter((window) => window.window !== active.window);
+  const mergedProfile = {
+    ...profile,
+    windows: [active, ...rest],
+  };
 
   return (
     <PublicMediaHub
       locale={locale}
-      profile={profile}
+      profile={mergedProfile}
       selectedWindow={selectedWindow}
       windowHref={(window) => `/${locale}/media-hub?window=${window}`}
     />
