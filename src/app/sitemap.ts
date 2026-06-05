@@ -12,6 +12,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     {
       url: `${baseUrl}/${locale}/analytics`,
     },
+    ...(SITE_CONFIG.tenantId === "spike-ua"
+      ? [
+          {
+            url: `${baseUrl}/${locale}/media-hub`,
+          },
+        ]
+      : []),
     {
       url: `${baseUrl}/${locale}/blog`,
     },

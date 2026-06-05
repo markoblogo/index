@@ -6,14 +6,19 @@ import { StatusPill } from "@/components/ui/status-pill";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { SITE_CONFIG } from "@/lib/constants";
 import { getDictionary, type Locale } from "@/lib/i18n";
+import { getMediaHubConfig } from "@/lib/media-hub";
 
 export function SiteHeader({ locale }: { locale: Locale }) {
   const dict = getDictionary(locale);
+  const mediaHub = getMediaHubConfig();
   const navItems = [
     { href: `/${locale}`, label: dict.nav.home },
     { href: `/${locale}/about`, label: dict.nav.about },
     { href: `/${locale}/methodology`, label: dict.nav.methodology },
     { href: `/${locale}/analytics`, label: dict.nav.analytics },
+    ...(SITE_CONFIG.tenantId === "spike-ua" && mediaHub.enabled
+      ? [{ href: `/${locale}/media-hub`, label: mediaHub.publicLabel[locale] }]
+      : []),
     { href: `/${locale}/subscription`, label: dict.nav.subscription },
     ...(SITE_CONFIG.tenantId === "spike-ua"
       ? [

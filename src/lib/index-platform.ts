@@ -6,6 +6,25 @@ export const MN7R_MONITOR_RESPONDENT_ID = "MN7R_MONITOR";
 export const SPIKE_ADMIN_FALLBACK_RESPONDENT_ID = "SPIKE_ADMIN_FALLBACK";
 
 export type IndexCommodityGroup = "export" | "processing";
+export type MediaHubWindow = "daily" | "weekly" | "monthly";
+export type MediaHubMarketScope = "ukraine" | "global";
+export type MediaHubSourceLanguage = "uk" | "en";
+
+export type MediaHubLocalePolicy = {
+  locale: Locale;
+  marketScope: MediaHubMarketScope;
+  sourceLanguage: MediaHubSourceLanguage;
+  summaryLanguage: MediaHubSourceLanguage;
+  audienceLabel: string;
+};
+
+export type MediaHubConfig = {
+  enabled: boolean;
+  brandName: string;
+  publicLabel: Record<Locale, string>;
+  windows: MediaHubWindow[];
+  localePolicies: MediaHubLocalePolicy[];
+};
 
 export type IndexCommodityConfig = {
   id: string;
@@ -48,6 +67,7 @@ export type IndexConfig = {
     externalIndicative: boolean;
     memberArea: boolean;
   };
+  mediaHub: MediaHubConfig;
   theme: {
     dataAttribute: string;
   };
@@ -281,6 +301,13 @@ export const INDEX_CONFIGS: Record<IndexTenantId, IndexConfig> = {
     storagePrefix: "uga",
     methodologyPdfPath: "/files/uga-index-methodology.pdf",
     features: { externalIndicative: true, memberArea: true },
+    mediaHub: {
+      enabled: false,
+      brandName: "1D3X Media Hub",
+      publicLabel: { uk: "Media Hub", en: "Media Hub" },
+      windows: [],
+      localePolicies: [],
+    },
     theme: { dataAttribute: "uga" },
     home: {
       subtitle: {
@@ -357,6 +384,28 @@ export const INDEX_CONFIGS: Record<IndexTenantId, IndexConfig> = {
     storagePrefix: "spike-index",
     methodologyPdfPath: "/files/spike-index-methodology.pdf",
     features: { externalIndicative: false, memberArea: true },
+    mediaHub: {
+      enabled: true,
+      brandName: "1D3X Media Hub",
+      publicLabel: { uk: "Media Hub", en: "Media Hub" },
+      windows: ["daily", "weekly", "monthly"],
+      localePolicies: [
+        {
+          locale: "uk",
+          marketScope: "ukraine",
+          sourceLanguage: "uk",
+          summaryLanguage: "uk",
+          audienceLabel: "Ukraine-focused Ukrainian-language editorials and summaries",
+        },
+        {
+          locale: "en",
+          marketScope: "ukraine",
+          sourceLanguage: "en",
+          summaryLanguage: "en",
+          audienceLabel: "Ukraine-focused English-language editorials and summaries",
+        },
+      ],
+    },
     theme: { dataAttribute: "spike" },
     home: {
       subtitle: {

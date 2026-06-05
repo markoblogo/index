@@ -90,7 +90,7 @@ function HomeAiBriefBlock({ locale }: { locale: Locale }) {
         </div>
         <Link
           className="inline-flex justify-center rounded-full border border-white/22 bg-[#f8f8f2] px-4 py-2.5 text-xs font-black uppercase tracking-[0.12em] text-[#050505] transition hover:border-[var(--spike-accent)] hover:bg-[var(--spike-accent)]"
-          href={`/${locale}/analytics`}
+          href={`/${locale}/media-hub`}
         >
           {copy.cta}
         </Link>

@@ -17,7 +17,7 @@ const baseNavByRole = {
     { href: "/admin/daily-inputs", label: "Daily input" },
     { href: "/admin/respondents", label: "Respondents" },
     { href: "/admin/calculate", label: "Publish index" },
-    { href: "/admin/reports", label: "Reports workspace" },
+    { href: "/admin/media-hub", label: "Media Hub" },
     { href: "/admin/embed", label: "Website embed" },
   ],
   respondent: [{ href: "/respondent", label: "Survey form" }],
@@ -48,6 +48,10 @@ export function InternalShell({ children, user }: InternalShellProps) {
 
     return item;
   });
+  const filteredNavItems =
+    user.role === "admin" && !isSpike
+      ? navItems.filter((item) => item.href !== "/admin/media-hub")
+      : navItems;
 
   return (
     <div
@@ -145,7 +149,7 @@ export function InternalShell({ children, user }: InternalShellProps) {
             }
           >
             <div className="min-w-max">
-              <InternalNav isSpike={isSpike} items={navItems} layout="horizontal" />
+              <InternalNav isSpike={isSpike} items={filteredNavItems} layout="horizontal" />
             </div>
           </div>
         </div>
