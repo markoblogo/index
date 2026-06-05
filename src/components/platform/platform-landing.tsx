@@ -126,6 +126,9 @@ export function PlatformLanding() {
             <a className="transition hover:text-white" href="#indices">
               Live indices
             </a>
+            <Link className="transition hover:text-white" href="/media-hub">
+              Media Hub
+            </Link>
             <a className="transition hover:text-white" href="#methodology">
               Methodology
             </a>
@@ -170,6 +173,12 @@ export function PlatformLanding() {
               >
                 View live indices
               </a>
+              <Link
+                className="inline-flex h-12 items-center justify-center border border-white/20 px-6 text-sm font-black uppercase tracking-[0.12em] text-white transition hover:border-[#d6ff58] hover:text-[#d6ff58]"
+                href="/media-hub"
+              >
+                Open media hub
+              </Link>
             </div>
           </div>
 
