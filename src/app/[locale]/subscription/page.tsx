@@ -177,7 +177,7 @@ function RespondentBlock({ locale }: { locale: Locale }) {
             </a>
           </div>
           {isUk ? (
-            <div className="mt-6 max-w-[32rem]">
+            <div className="mt-4 max-w-[34rem]">
               <RespondentOnboardingPreview
                 alt="Схема онбордингу респондента Spike Spot Index"
                 downloadHref="/files/spike-respondent-onboarding-uk.png"

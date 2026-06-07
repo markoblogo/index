@@ -24,69 +24,63 @@ export function RespondentOnboardingPreview({
 
   return (
     <>
-      <div className="rounded-[1.15rem] border border-white/14 bg-[linear-gradient(135deg,rgba(248,248,242,0.08),rgba(248,248,242,0.03))] p-4 sm:p-5">
-        <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_12rem] md:items-end">
+      <div className="rounded-[1rem] border border-white/14 bg-[linear-gradient(135deg,rgba(248,248,242,0.07),rgba(248,248,242,0.025))] p-3">
+        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_9.5rem] sm:items-center">
           <div className="min-w-0">
             <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[var(--spike-accent)]">
               {eyebrow}
             </p>
-            <p className="mt-2 max-w-md text-sm leading-6 text-white/68">
+            <p className="mt-1 max-w-sm text-xs leading-5 text-white/64">
               {hint}
             </p>
-            <div className="mt-4 flex flex-wrap items-center gap-3">
+            <div className="mt-3 flex flex-wrap items-center gap-2">
               <a
-                className="inline-flex min-h-11 items-center rounded-full border border-[var(--spike-accent)] bg-[var(--spike-accent)] px-4 py-2 text-[11px] font-black uppercase tracking-[0.14em] text-[#050505] transition hover:bg-transparent hover:text-[var(--spike-accent)]"
+                className="inline-flex rounded-full border border-[#f8f8f2]/45 bg-[#050505] px-4 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-[#f8f8f2] transition hover:border-[var(--spike-accent)] hover:bg-[var(--spike-accent)] hover:text-[#050505]"
                 download
                 href={downloadHref}
               >
                 {downloadLabel}
               </a>
-              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/55">
+              <button
+                className="inline-flex rounded-full border border-[#f8f8f2]/30 bg-[#050505] px-4 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-[#f8f8f2] transition hover:border-[var(--spike-accent)] hover:bg-[var(--spike-accent)] hover:text-[#050505]"
+                onClick={() => setIsOpen(true)}
+                type="button"
+              >
                 {previewLabel}
-              </span>
+              </button>
             </div>
           </div>
 
           <button
-            className="group relative ml-auto block w-full max-w-[12rem] overflow-hidden rounded-[1rem] border border-[var(--spike-accent)]/80 bg-[#123548] text-left shadow-[0_18px_40px_rgba(0,0,0,0.28)]"
+            className="group relative ml-auto block h-[8.1rem] w-full max-w-[9.5rem] overflow-hidden rounded-[0.8rem] border border-white/14 bg-[#123548] text-left shadow-[0_14px_30px_rgba(0,0,0,0.24)] transition hover:border-[var(--spike-accent)]"
             onClick={() => setIsOpen(true)}
             type="button"
           >
-            <div className="absolute inset-0 bg-gradient-to-t from-[#071017]/88 via-transparent to-transparent" />
+            <div className="absolute inset-0 z-[1] bg-gradient-to-t from-[#071017]/84 via-transparent to-transparent" />
             <Image
               alt={alt}
-              className="aspect-[1/1.18] w-full object-cover object-left-top transition duration-300 group-hover:scale-[1.03]"
+              className="h-full w-full object-cover object-left-top transition duration-300 group-hover:scale-[1.03]"
               height={1024}
               priority={false}
               src={downloadHref}
               width={1536}
             />
-            <div className="absolute inset-x-3 bottom-3 rounded-[0.85rem] border border-white/10 bg-black/72 px-3 py-2">
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--spike-accent)]">
-                Respondent flow
-              </p>
-              <div className="mt-1 flex items-center justify-between gap-3">
-                <p className="text-xs font-semibold text-white/84">
-                  {previewLabel}
-                </p>
-                <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/16 bg-white/8 text-white transition group-hover:border-[var(--spike-accent)] group-hover:text-[var(--spike-accent)]">
-                  <svg
-                    aria-hidden="true"
-                    className="h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      d="M11 4a7 7 0 1 0 0 14a7 7 0 0 0 0-14Zm0 0c1.87 0 3.57.73 4.83 1.93M20 20l-4.2-4.2"
-                      stroke="currentColor"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="1.8"
-                    />
-                  </svg>
-                </span>
-              </div>
-            </div>
+            <span className="absolute bottom-2 right-2 z-[2] inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/18 bg-black/72 text-white transition group-hover:border-[var(--spike-accent)] group-hover:text-[var(--spike-accent)]">
+              <svg
+                aria-hidden="true"
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11 4a7 7 0 1 0 0 14a7 7 0 0 0 0-14Zm0 0c1.87 0 3.57.73 4.83 1.93M20 20l-4.2-4.2"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="1.8"
+                />
+              </svg>
+            </span>
           </button>
         </div>
       </div>
@@ -115,7 +109,7 @@ export function RespondentOnboardingPreview({
               </div>
               <div className="flex items-center gap-2">
                 <a
-                  className="inline-flex rounded-full border border-[var(--spike-accent)] bg-[var(--spike-accent)] px-4 py-2 text-[11px] font-black uppercase tracking-[0.14em] text-[#050505] transition hover:bg-transparent hover:text-[var(--spike-accent)]"
+                  className="inline-flex rounded-full border border-[#f8f8f2]/45 bg-[#050505] px-4 py-2 text-[11px] font-black uppercase tracking-[0.12em] text-[#f8f8f2] transition hover:border-[var(--spike-accent)] hover:bg-[var(--spike-accent)] hover:text-[#050505]"
                   download
                   href={downloadHref}
                 >
