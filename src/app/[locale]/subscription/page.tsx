@@ -1,5 +1,6 @@
 import type { Locale } from "@/lib/i18n";
 import { getActiveIndexConfig } from "@/lib/index-platform";
+import { RespondentOnboardingPreview } from "@/components/subscription/respondent-onboarding-preview";
 
 export default async function SubscriptionPage({
   params,
@@ -123,6 +124,11 @@ function RespondentBlock({ locale }: { locale: Locale }) {
           "Допоможіть формувати benchmark українського аграрного ринку на основі реальних щоденних цін.",
         title: "Стати респондентом Spike Spot Index",
         download: "Завантажити презентацію pdf",
+        onboardingDownload: "Завантажити onboarding PNG",
+        onboardingEyebrow: "Onboarding",
+        onboardingHint:
+          "Коротка схема підключення респондента: від заявки до щоденного цінового фіду.",
+        onboardingZoom: "Збільшити схему",
         watch: "Передивитись презентацію",
         videoTitle: "Spike Spot Index Respondents Presentation",
       }
@@ -132,6 +138,10 @@ function RespondentBlock({ locale }: { locale: Locale }) {
           "A presentation for potential international partners, clients, investors and franchise partners interested in building local benchmark indices.",
         title: "Become a Spike Spot Index partner",
         download: "Download presentation pdf",
+        onboardingDownload: "",
+        onboardingEyebrow: "",
+        onboardingHint: "",
+        onboardingZoom: "",
         watch: "View presentation",
         videoTitle: "Spike Spot Index Global Partner Deck",
       };
@@ -166,6 +176,18 @@ function RespondentBlock({ locale }: { locale: Locale }) {
               {copy.watch}
             </a>
           </div>
+          {isUk ? (
+            <div className="mt-6 max-w-[32rem]">
+              <RespondentOnboardingPreview
+                alt="Схема онбордингу респондента Spike Spot Index"
+                downloadHref="/files/spike-respondent-onboarding-uk.png"
+                downloadLabel={copy.onboardingDownload}
+                eyebrow={copy.onboardingEyebrow}
+                hint={copy.onboardingHint}
+                previewLabel={copy.onboardingZoom}
+              />
+            </div>
+          ) : null}
         </div>
         <div className="overflow-hidden rounded-[1rem] border border-white/16 bg-black/55">
           <iframe
