@@ -25,24 +25,24 @@ export function RespondentOnboardingPreview({
   return (
     <>
       <div className="rounded-[1rem] border border-white/14 bg-[linear-gradient(135deg,rgba(248,248,242,0.07),rgba(248,248,242,0.025))] p-3">
-        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_9.5rem] sm:items-center">
+        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_13rem] sm:items-center">
           <div className="min-w-0">
             <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[var(--spike-accent)]">
               {eyebrow}
             </p>
-            <p className="mt-1 max-w-sm text-xs leading-5 text-white/64">
+            <p className="mt-1 max-w-md text-xs leading-5 text-white/64">
               {hint}
             </p>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
+            <div className="mt-3 flex flex-nowrap items-center gap-2">
               <a
-                className="inline-flex rounded-full border border-[#f8f8f2]/45 bg-[#050505] px-4 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-[#f8f8f2] transition hover:border-[var(--spike-accent)] hover:bg-[var(--spike-accent)] hover:text-[#050505]"
+                className="inline-flex whitespace-nowrap rounded-full border border-[#f8f8f2]/45 bg-[#050505] px-4 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-[#f8f8f2] transition hover:border-[var(--spike-accent)] hover:bg-[var(--spike-accent)] hover:text-[#050505]"
                 download
                 href={downloadHref}
               >
                 {downloadLabel}
               </a>
               <button
-                className="inline-flex rounded-full border border-[#f8f8f2]/30 bg-[#050505] px-4 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-[#f8f8f2] transition hover:border-[var(--spike-accent)] hover:bg-[var(--spike-accent)] hover:text-[#050505]"
+                className="inline-flex whitespace-nowrap rounded-full border border-[#f8f8f2]/30 bg-[#050505] px-4 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-[#f8f8f2] transition hover:border-[var(--spike-accent)] hover:bg-[var(--spike-accent)] hover:text-[#050505]"
                 onClick={() => setIsOpen(true)}
                 type="button"
               >
@@ -52,14 +52,14 @@ export function RespondentOnboardingPreview({
           </div>
 
           <button
-            className="group relative ml-auto block h-[8.1rem] w-full max-w-[9.5rem] overflow-hidden rounded-[0.8rem] border border-white/14 bg-[#123548] text-left shadow-[0_14px_30px_rgba(0,0,0,0.24)] transition hover:border-[var(--spike-accent)]"
+            className="group relative ml-auto block h-[8.5rem] w-full max-w-[13rem] overflow-hidden rounded-[0.8rem] border border-white/14 bg-[#123548] text-left shadow-[0_14px_30px_rgba(0,0,0,0.24)] transition hover:border-[var(--spike-accent)]"
             onClick={() => setIsOpen(true)}
             type="button"
           >
             <div className="absolute inset-0 z-[1] bg-gradient-to-t from-[#071017]/84 via-transparent to-transparent" />
             <Image
               alt={alt}
-              className="h-full w-full object-cover object-left-top transition duration-300 group-hover:scale-[1.03]"
+              className="h-full w-full object-cover object-center transition duration-300 group-hover:scale-[1.03]"
               height={1024}
               priority={false}
               src={downloadHref}

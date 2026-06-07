@@ -123,8 +123,8 @@ function RespondentBlock({ locale }: { locale: Locale }) {
         subtitle:
           "Допоможіть формувати benchmark українського аграрного ринку на основі реальних щоденних цін.",
         title: "Стати респондентом Spike Spot Index",
-        download: "Завантажити презентацію pdf",
-        onboardingDownload: "Завантажити onboarding PNG",
+        download: "Завантажити презентацію",
+        onboardingDownload: "Завантажити onboarding",
         onboardingEyebrow: "Onboarding",
         onboardingHint:
           "Коротка схема підключення респондента: від заявки до щоденного цінового фіду.",
@@ -148,27 +148,27 @@ function RespondentBlock({ locale }: { locale: Locale }) {
 
   return (
     <section className="border-y border-white/10 bg-[#090909]">
-      <div className="mx-auto max-w-[1900px] grid gap-6 px-6 py-10 lg:grid-cols-[1fr_1.2fr] lg:px-8 lg:py-14">
+      <div className="mx-auto grid max-w-[1900px] gap-6 px-6 py-10 lg:grid-cols-[0.94fr_1.16fr] lg:px-8 lg:py-14">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.24em] text-[var(--spike-accent)]">
             {copy.eyebrow}
           </p>
-          <h2 className="mt-4 text-3xl font-black uppercase leading-tight tracking-normal text-white">
+          <h2 className="mt-3 whitespace-nowrap text-[clamp(1.75rem,2.5vw,2.65rem)] font-black uppercase leading-none tracking-normal text-white">
             {copy.title}
           </h2>
-          <p className="mt-4 max-w-2xl text-sm leading-6 text-white/68">
+          <p className="mt-4 max-w-none whitespace-nowrap text-sm leading-6 text-white/68">
             {copy.subtitle}
           </p>
-          <div className="mt-6 flex flex-wrap gap-3">
+          <div className="mt-5 flex flex-nowrap gap-3">
             <a
-              className="inline-flex rounded-full border border-[#f8f8f2]/45 bg-[#050505] px-5 py-2.5 text-sm font-black uppercase tracking-[0.12em] text-[#f8f8f2] transition hover:border-[var(--spike-accent)] hover:bg-[var(--spike-accent)] hover:text-[#050505]"
+              className="inline-flex whitespace-nowrap rounded-full border border-[#f8f8f2]/45 bg-[#050505] px-5 py-2.5 text-sm font-black uppercase tracking-[0.12em] text-[#f8f8f2] transition hover:border-[var(--spike-accent)] hover:bg-[var(--spike-accent)] hover:text-[#050505]"
               download
               href={pdfHref}
             >
               {copy.download}
             </a>
             <a
-              className="inline-flex rounded-full border border-[#f8f8f2]/45 bg-[#050505] px-5 py-2.5 text-sm font-black uppercase tracking-[0.12em] text-[#f8f8f2] transition hover:border-[var(--spike-accent)] hover:bg-[var(--spike-accent)] hover:text-[#050505]"
+              className="inline-flex whitespace-nowrap rounded-full border border-[#f8f8f2]/45 bg-[#050505] px-5 py-2.5 text-sm font-black uppercase tracking-[0.12em] text-[#f8f8f2] transition hover:border-[var(--spike-accent)] hover:bg-[var(--spike-accent)] hover:text-[#050505]"
               href={pdfHref}
               rel="noopener noreferrer"
               target="_blank"
@@ -177,7 +177,7 @@ function RespondentBlock({ locale }: { locale: Locale }) {
             </a>
           </div>
           {isUk ? (
-            <div className="mt-4 max-w-[34rem]">
+            <div className="mt-4 max-w-[42rem]">
               <RespondentOnboardingPreview
                 alt="Схема онбордингу респондента Spike Spot Index"
                 downloadHref="/files/spike-respondent-onboarding-uk.png"
