@@ -247,7 +247,10 @@ const spikeCommodities: IndexCommodityConfig[] = [
     sparkline: [501, 502, 503, 504, 504, 504, 504],
     vatIncluded: true,
     detailMetrics: [
-      { label: { uk: "ПДВ", en: "VAT" }, value: { uk: "включено", en: "included" } },
+      {
+        label: { uk: "Базис", en: "Basis" },
+        value: { uk: "CPT parity Одеса", en: "CPT parity Odesa" },
+      },
       { label: { uk: "Напрям", en: "Flow" }, value: { uk: "переробка", en: "processing" } },
     ],
   },
@@ -266,7 +269,10 @@ const spikeCommodities: IndexCommodityConfig[] = [
     sparkline: [733, 735, 736, 738, 739, 739, 739],
     vatIncluded: true,
     detailMetrics: [
-      { label: { uk: "ПДВ", en: "VAT" }, value: { uk: "включено", en: "included" } },
+      {
+        label: { uk: "Базис", en: "Basis" },
+        value: { uk: "CPT parity Одеса", en: "CPT parity Odesa" },
+      },
       { label: { uk: "Напрям", en: "Flow" }, value: { uk: "переробка", en: "processing" } },
     ],
   },
