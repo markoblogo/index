@@ -20,6 +20,13 @@ export type TelegramSubmissionSummaryItem = {
   price: number;
 };
 
+export type TelegramContactBinding = {
+  chatId: string;
+  contactId: string;
+  locale: "uk" | "en";
+  respondentId: string;
+};
+
 export async function sendRespondentTelegramNotifications({
   reminderLevel,
   respondentId,
@@ -141,6 +148,25 @@ export async function sendRespondentTelegramSubmissionConfirmation({
   return { delivered, skippedReason: null };
 }
 
+export async function createRespondentTelegramSurveyUrl({
+  chatId,
+  contactId,
+  locale,
+  respondentId,
+}: TelegramContactBinding) {
+  return createSurveyUrl({
+    chatId,
+    contactId,
+    companyName: "",
+    locale,
+    respondentId,
+  });
+}
+
+export function getRespondentTelegramBotToken() {
+  return getTelegramBotToken();
+}
+
 export function getKyivReminderLevel(
   now = new Date(),
 ): TelegramReminderLevel | null {
@@ -229,7 +255,9 @@ async function getTelegramRecipients(
     },
     where: {
       active: true,
-      collectionMode: "self_service",
+      collectionMode: {
+        in: ["self_service", "telegram_request"],
+      },
       id: respondentId
         ? respondentId
         : { not: process.env.MN7R_INDEX_RESPONDENT_CODE ?? "MN7R_MONITOR" },
@@ -260,7 +288,9 @@ async function getSmokeRecipients(): Promise<TelegramRecipient[]> {
   const respondent = await db.respondent.findFirst({
     where: {
       active: true,
-      collectionMode: "self_service",
+      collectionMode: {
+        in: ["self_service", "telegram_request"],
+      },
       id: { not: process.env.MN7R_INDEX_RESPONDENT_CODE ?? "MN7R_MONITOR" },
       status: "active",
     },

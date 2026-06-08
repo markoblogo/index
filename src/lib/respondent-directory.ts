@@ -1,8 +1,12 @@
 import { allowMockFallback, db, hasDatabaseUrl } from "@/lib/db";
 import { getActiveIndexConfig, type IndexTenantId } from "@/lib/index-platform";
+import { sendRespondentOnboarding } from "@/lib/respondent-onboarding";
 
 export type RespondentStatus = "active" | "pending";
-export type RespondentCollectionMode = "self_service" | "manual_outreach";
+export type RespondentCollectionMode =
+  | "self_service"
+  | "telegram_request"
+  | "manual_outreach";
 export type RespondentPasswordStatus = "temporary" | "active";
 
 export type RespondentAuthAccount = {
@@ -390,7 +394,7 @@ export async function getRespondentDirectoryData() {
       telegramDelivery: mapTelegramDeliveryStatus({
         delivery: respondent.emailDeliveries[0],
         telegramContactCount: respondent.contacts.filter(
-          (contact) => contact.telegramChatId,
+          (contact) => contact.telegramChatId || contact.telegramUsername,
         ).length,
       }),
     })) satisfies RespondentDirectoryEntry[];
@@ -548,6 +552,20 @@ export async function addRespondentDirectoryEntryData(
   const loginEmail =
     input.contactEmail.trim().toLowerCase() || createDemoRespondentEmail(id);
   const temporaryPassword = generateTemporaryPassword(id);
+  let onboardingContext:
+    | {
+        auth: { loginEmail: string; temporaryPassword: string | null };
+        contact: {
+          email: string | null;
+          id: string;
+          name: string;
+          preferredLocale: "uk" | "en";
+          telegramChatId: string | null;
+          telegramUsername: string | null;
+        };
+        respondent: { id: string; legalName: string };
+      }
+    | undefined;
 
   await db.$transaction(async (tx) => {
     await tx.respondent.upsert({
@@ -569,7 +587,7 @@ export async function addRespondentDirectoryEntryData(
       },
     });
 
-    await tx.respondentContact.create({
+    const contact = await tx.respondentContact.create({
       data: {
         respondentId: id,
         email: input.contactEmail.trim() || null,
@@ -583,7 +601,7 @@ export async function addRespondentDirectoryEntryData(
       },
     });
 
-    await tx.respondentAuthAccount.upsert({
+    const auth = await tx.respondentAuthAccount.upsert({
       where: { respondentId: id },
       update: {
         loginEmail,
@@ -616,7 +634,30 @@ export async function addRespondentDirectoryEntryData(
         role: "respondent",
       },
     });
+
+    onboardingContext = {
+      auth: {
+        loginEmail: auth.loginEmail,
+        temporaryPassword: auth.temporaryPassword,
+      },
+      contact: {
+        email: contact.email,
+        id: contact.id,
+        name: contact.name,
+        preferredLocale: normalizeContactLocale(contact.preferredLocale),
+        telegramChatId: contact.telegramChatId,
+        telegramUsername: contact.telegramUsername,
+      },
+      respondent: {
+        id,
+        legalName: input.companyName.trim(),
+      },
+    };
   });
+
+  if (onboardingContext) {
+    await sendRespondentOnboarding(onboardingContext);
+  }
 }
 
 export async function updateRespondentDirectoryEntryData(
@@ -907,11 +948,14 @@ export function addRespondentDirectoryEntry(input: {
     id,
     status: input.status,
     telegramDelivery: {
-      contactCount: input.telegramChatId ? 1 : 0,
+      contactCount: input.telegramChatId || input.telegramUsername ? 1 : 0,
       error: "",
       providerId: "",
       sentAt: "",
-      status: input.telegramChatId ? "not_sent" : "not_linked",
+      status:
+        input.telegramChatId || input.telegramUsername
+          ? "not_sent"
+          : "not_linked",
       trigger: "",
     },
   });

@@ -35,7 +35,7 @@ const respondents = activeIndex.respondents;
 const contactSeedByRespondentId: Record<
   string,
   {
-    collectionMode: "self_service" | "manual_outreach";
+    collectionMode: "self_service" | "telegram_request" | "manual_outreach";
     email: string;
     name: string;
     phone: string;
@@ -238,6 +238,8 @@ async function main() {
       const collectionMode =
         respondent.collectionMode === "manual_outreach"
           ? "manual_outreach"
+          : respondent.collectionMode === "telegram_request"
+            ? "telegram_request"
           : "self_service";
 
       await prisma.respondent.upsert({

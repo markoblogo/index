@@ -47,6 +47,7 @@ enum RespondentStatus {
 
 enum RespondentCollectionMode {
   self_service
+  telegram_request
   manual_outreach
 }
 

@@ -34,8 +34,10 @@ export default async function AdminRespondentsPage() {
     getActiveRespondentCountData(),
     getRespondentEmailScheduleData(),
   ]);
-  const selfServiceCount = respondents.filter(
-    (respondent) => respondent.collectionMode === "self_service",
+  const digitalCount = respondents.filter(
+    (respondent) =>
+      respondent.collectionMode === "self_service" ||
+      respondent.collectionMode === "telegram_request",
   ).length;
   const isSpike = SITE_CONFIG.tenantId === "spike-ua";
 
@@ -58,7 +60,7 @@ export default async function AdminRespondentsPage() {
           <div className="grid grid-cols-3 border border-black text-sm font-semibold">
             <Metric label="Active" value={activeCount} />
             <Metric label="Directory" value={respondents.length} />
-            <Metric label="Site form" value={selfServiceCount} last />
+            <Metric label="Digital" value={digitalCount} last />
           </div>
         </div>
       </div>
@@ -276,9 +278,10 @@ function TelegramNotificationSettings() {
           </Field>
           <p className="text-xs font-semibold leading-5 text-black/55">
             Template variables: {"{{companyName}}"}, {"{{surveyUrl}}"},{" "}
-            {"{{date}}"}. Contacts must have Telegram chat / peer id configured
-            in the respondent directory. Automatic weekday delivery is handled
-            by the Telegram cron endpoint.
+            {"{{date}}"}. Contacts should have either Telegram username or chat
+            / peer id configured in the respondent directory. Automatic weekday
+            delivery is handled by the Telegram cron endpoint after the contact
+            links the bot with /start.
           </p>
         </div>
       </div>
@@ -337,6 +340,7 @@ function AddRespondentPanel() {
               defaultValue="self_service"
             >
               <option value="self_service">fills site form</option>
+              <option value="telegram_request">request via Telegram</option>
               <option value="manual_outreach">email/call required</option>
             </select>
           </Field>
@@ -430,10 +434,12 @@ function RespondentPanel({ respondent }: { respondent: RespondentDirectoryEntry 
             </StatusPill>
             <StatusPill
               tone={
-                respondent.collectionMode === "self_service" ? "active" : "warning"
+                respondent.collectionMode === "manual_outreach"
+                  ? "warning"
+                  : "active"
               }
             >
-              {respondent.collectionMode === "self_service" ? "site form" : "manual"}
+              {getCollectionModeLabel(respondent.collectionMode)}
             </StatusPill>
           </div>
         </div>
@@ -468,13 +474,14 @@ function RespondentPanel({ respondent }: { respondent: RespondentDirectoryEntry 
                 </Field>
                 <Field label="Collection mode">
                   <select
-                    className="admin-field"
-                    defaultValue={respondent.collectionMode}
-                    name="collectionMode"
-                  >
-                    <option value="self_service">fills site form</option>
-                    <option value="manual_outreach">email/call required</option>
-                  </select>
+                  className="admin-field"
+                  defaultValue={respondent.collectionMode}
+                  name="collectionMode"
+                >
+                  <option value="self_service">fills site form</option>
+                  <option value="telegram_request">request via Telegram</option>
+                  <option value="manual_outreach">email/call required</option>
+                </select>
                 </Field>
               </div>
               <button className="border border-black bg-uga-green px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-white">
@@ -801,7 +808,7 @@ function getTelegramDeliveryTitle(
   delivery: RespondentDirectoryEntry["telegramDelivery"],
 ) {
   if (delivery.status === "not_linked") {
-    return "No active contact has a Telegram chat / peer id.";
+    return "No active contact has a Telegram chat / peer id or Telegram username.";
   }
 
   if (delivery.status === "not_sent") {
@@ -972,7 +979,15 @@ function parseStatus(value: FormDataEntryValue | null): RespondentStatus {
 function parseCollectionMode(
   value: FormDataEntryValue | null,
 ): RespondentCollectionMode {
-  return value === "manual_outreach" ? "manual_outreach" : "self_service";
+  if (value === "manual_outreach") {
+    return "manual_outreach";
+  }
+
+  if (value === "telegram_request") {
+    return "telegram_request";
+  }
+
+  return "self_service";
 }
 
 function parsePasswordStatus(
@@ -996,4 +1011,16 @@ function revalidateRespondentPages() {
   revalidatePath("/en/analytics");
   revalidatePath("/api/public/latest");
   revalidatePath("/api/public/history");
+}
+
+function getCollectionModeLabel(mode: RespondentCollectionMode) {
+  if (mode === "telegram_request") {
+    return "telegram";
+  }
+
+  if (mode === "manual_outreach") {
+    return "manual";
+  }
+
+  return "site form";
 }

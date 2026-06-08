@@ -169,7 +169,9 @@ async function getSpikeAdminRespondentPreviewUser(
     orderBy: { createdAt: "asc" },
     where: {
       active: true,
-      collectionMode: "self_service",
+      collectionMode: {
+        in: ["self_service", "telegram_request"],
+      },
       id: { not: process.env.MN7R_INDEX_RESPONDENT_CODE ?? "MN7R_MONITOR" },
       status: "active",
     },
