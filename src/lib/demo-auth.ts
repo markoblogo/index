@@ -227,7 +227,7 @@ async function findOpenDemoDbUser(role: Exclude<DemoRole, "member">) {
   }
 }
 
-type SessionSourceUser = {
+export type SessionSourceUser = {
   companyName?: string;
   email: string;
   name: string;

@@ -14,6 +14,7 @@ type LoginPageProps = {
     error?: string;
     locale?: string;
     next?: string;
+    reset?: string;
   }>;
 };
 
@@ -139,17 +140,61 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             </p>
           ) : null}
 
-          {isSpike ? (
-            <button
-              className="w-full rounded-full bg-[var(--spike-accent)] px-5 py-3 text-base font-black text-[#050505] transition hover:bg-white"
-              type="submit"
+          {params.reset === "sent" ? (
+            <p
+              className={
+                isSpike
+                  ? "rounded-[0.85rem] border border-[var(--spike-accent)]/60 bg-[var(--spike-accent)]/10 px-3 py-2 text-sm font-semibold text-white"
+                  : "border border-uga-green bg-green-50 px-3 py-2 text-sm font-semibold text-uga-green"
+              }
             >
-              {copy.submit}
-            </button>
+              {copy.resetSent}
+            </p>
+          ) : null}
+
+          {params.reset === "missing" ? (
+            <p
+              className={
+                isSpike
+                  ? "rounded-[0.85rem] border border-[var(--spike-pink)]/60 bg-[var(--spike-pink)]/12 px-3 py-2 text-sm font-semibold text-white"
+                  : "border border-red-700 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700"
+              }
+            >
+              {copy.resetMissing}
+            </p>
+          ) : null}
+
+          {isSpike ? (
+            <div className="grid gap-3">
+              <button
+                className="w-full rounded-full bg-[var(--spike-accent)] px-5 py-3 text-base font-black text-[#050505] transition hover:bg-white"
+                type="submit"
+              >
+                {copy.submit}
+              </button>
+              <button
+                className="w-full rounded-full border border-white/18 px-5 py-3 text-sm font-black text-white transition hover:border-[var(--spike-accent)] hover:text-[var(--spike-accent)]"
+                formAction="/api/request-password-reset"
+                formNoValidate
+                type="submit"
+              >
+                {copy.reset}
+              </button>
+            </div>
           ) : (
-            <Button className="w-full" type="submit">
-              {copy.submit}
-            </Button>
+            <div className="grid gap-3">
+              <Button className="w-full" type="submit">
+                {copy.submit}
+              </Button>
+              <button
+                className="w-full border border-black bg-white px-4 py-3 text-sm font-black uppercase tracking-[0.12em] text-black transition hover:border-uga-green hover:text-uga-green"
+                formAction="/api/request-password-reset"
+                formNoValidate
+                type="submit"
+              >
+                {copy.reset}
+              </button>
+            </div>
           )}
         </form>
 
@@ -211,6 +256,9 @@ type LoginCopy = {
   helper: string;
   password: string;
   respondentCredentials: string;
+  reset: string;
+  resetMissing: string;
+  resetSent: string;
   shortCredentials: string;
   submit: string;
   title: string;
@@ -230,6 +278,9 @@ const ugaLoginCopy: Record<
     error: "Invalid credentials.",
     helper: "Use the preview credentials to open administrator or respondent workflows.",
     password: "Password",
+    reset: "Reset password",
+    resetMissing: "Enter your login email first, then request password reset.",
+    resetSent: "If this login exists in the system, a password reset link has been sent to its email.",
     respondentCredentials: "Respondent: respondent / respondent",
     shortCredentials: "Short aliases: admin/admin or respondent/respondent",
     submit: "Sign in",
@@ -246,6 +297,9 @@ const ugaLoginCopy: Record<
     helper:
       "Використайте облікові дані попереднього доступу для перегляду сценарію адміністратора або респондента.",
     password: "Пароль",
+    reset: "Скинути пароль",
+    resetMissing: "Спочатку введіть свій логін email, потім запросіть скидання пароля.",
+    resetSent: "Якщо цей логін існує в системі, на його email надіслано посилання для скидання пароля.",
     respondentCredentials: "Респондент: respondent / respondent",
     shortCredentials: "Швидкий вхід: admin/admin або respondent/respondent",
     submit: "Увійти",
@@ -266,6 +320,9 @@ const spikeLoginCopy: Record<Locale, LoginCopy> = {
     helper:
       "Administrators sign in with their email and password. Respondent survey access remains in demo mode for now.",
     password: "Password",
+    reset: "Reset password",
+    resetMissing: "Enter your login email first, then request password reset.",
+    resetSent: "If this login exists in the system, a password reset link has been sent to its email.",
     respondentCredentials:
       "Respondents: use your assigned email and current password. First-time access uses the temporary password from onboarding.",
     shortCredentials: "Respondent demo aliases are disabled for Spike.",
@@ -284,6 +341,9 @@ const spikeLoginCopy: Record<Locale, LoginCopy> = {
     helper:
       "Адміністратори входять через email і пароль. Вхід до анкети респондента поки залишається в демо-режимі.",
     password: "Пароль",
+    reset: "Скинути пароль",
+    resetMissing: "Спочатку введіть свій логін email, потім запросіть скидання пароля.",
+    resetSent: "Якщо цей логін існує в системі, на його email надіслано посилання для скидання пароля.",
     respondentCredentials:
       "Респонденти: вхід через призначений email і поточний пароль. Для першого входу використовується тимчасовий пароль з онбордингу.",
     shortCredentials: "Демо-вхід респондента для Spike вимкнено.",

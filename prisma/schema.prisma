@@ -246,6 +246,24 @@ model User {
   @@index([role, active])
 }
 
+model PasswordResetToken {
+  id           String    @id @default(cuid())
+  token        String    @unique
+  email        String
+  role         UserRole
+  locale       String    @default("en")
+  userId       String?
+  respondentId String?
+  expiresAt    DateTime
+  usedAt       DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([email, usedAt])
+  @@index([respondentId, usedAt])
+  @@index([userId, usedAt])
+  @@index([expiresAt])
+}
+
 model PriceSubmission {
   id                String             @id @default(cuid())
   tradeDate         DateTime           @db.Date
