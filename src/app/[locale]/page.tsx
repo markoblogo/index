@@ -24,7 +24,6 @@ export default async function LocaleHome({
   const respondentCount = await getActiveRespondentCountData();
   const updatedAt = new Intl.DateTimeFormat(locale === "uk" ? "uk-UA" : "en-US", {
     dateStyle: "medium",
-    timeStyle: "short",
   }).format(new Date(snapshot.updatedAt));
 
   return (
