@@ -17,6 +17,7 @@
     "deploy:uga": "node scripts/verify-vercel-project.mjs --project uga-index && vercel --prod --yes --scope abvcreative --project uga-index",
     "deploy:spike": "node scripts/verify-vercel-project.mjs --project spike-ua-index && vercel --prod --yes --scope abvcreative --project spike-ua-index",
     "deploy:guard": "node scripts/verify-vercel-project.mjs",
+    "telegram:webhook:respondent": "node scripts/configure-respondent-telegram-webhook.mjs",
     "sync:uga-from-spike": "tsx scripts/sync-uga-from-spike.ts",
     "provision:uga-admin": "node scripts/provision-uga-admin.mjs"
   },
