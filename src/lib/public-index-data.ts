@@ -75,15 +75,17 @@ function getMockPublicIndexSnapshot(): PublicIndexSnapshot {
   const visiblePublishedEntries = [...latestPublished.values()].filter(
     (entry) => entry.date <= visibleDate,
   );
-  const latestVisiblePublishedDate =
-    visiblePublishedEntries
-      .map((entry) => entry.date)
-      .sort()
-      .at(-1) ?? visibleDate;
   const latestVisiblePublished = new Map(
-    visiblePublishedEntries
-      .filter((entry) => entry.date === latestVisiblePublishedDate)
-      .map((entry) => [entry.commodityId, entry] as const),
+    visiblePublishedEntries.reduce(
+      (map, entry) => {
+        const current = map.get(entry.commodityId);
+        if (!current || entry.date > current.date) {
+          map.set(entry.commodityId, entry);
+        }
+        return map;
+      },
+      new Map<string, (typeof visiblePublishedEntries)[number]>(),
+    ),
   );
   const publicCommodities = commodities.map((commodity) => {
     const published = latestVisiblePublished.get(commodity.id);
@@ -124,9 +126,10 @@ function getMockPublicIndexSnapshot(): PublicIndexSnapshot {
       visiblePublishedEntries
         .sort((first, second) => second.publishedAt.localeCompare(first.publishedAt))[0]
         ?.publishedAt ??
-      [...latestPublished.values()].sort((first, second) =>
-        second.publishedAt.localeCompare(first.publishedAt),
-      )[0]?.publishedAt ?? indexUpdatedAt,
+      [...latestPublished.values()]
+        .sort((first, second) => second.publishedAt.localeCompare(first.publishedAt))[0]
+        ?.publishedAt ??
+      indexUpdatedAt,
   };
 }
 
@@ -135,9 +138,9 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
 
   const activeRespondentCount = await getActiveRespondentCountData();
   const today = todayKyivDate();
-  const todayTradeDate = dateToUtcDate(today);
   const visibleTradeDate =
     activeIndex.id === "spike-ua" ? getSpikePublicVisibleTradeDate() : today;
+  const visibleTradeDateAtMidnightUtc = dateToUtcDate(visibleTradeDate);
   const [bases, baskets] = await Promise.all([
     db.deliveryBasis.findMany({
       where: { code: { in: getConfiguredDeliveryBasisCodes(activeIndex) } },
@@ -213,6 +216,7 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
           deliveryBasisId: basis.id,
           basketId: basket.id,
           status: "published",
+          tradeDate: { lte: visibleTradeDateAtMidnightUtc },
         },
         orderBy: { tradeDate: "desc" },
       });
@@ -235,6 +239,7 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
           commodityId: commodity.id,
           deliveryBasisId: basis.id,
           status: "published",
+          tradeDate: { lte: visibleTradeDateAtMidnightUtc },
         },
       });
     }),
@@ -250,21 +255,16 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
         .reverse(),
     ]),
   );
-  const latestPublishedDate =
-    published
-      .filter((index): index is NonNullable<typeof index> => Boolean(index))
-      .map((index) => index.tradeDate.toISOString().slice(0, 10))
-      .filter((date) => date <= visibleTradeDate)
-      .sort()
-      .at(-1) ?? visibleTradeDate;
   const publishedByCommodityId = new Map(
     published
       .filter((index): index is NonNullable<typeof index> => Boolean(index))
-      .filter(
-        (index) => index.tradeDate.toISOString().slice(0, 10) === latestPublishedDate,
-      )
       .map((index) => [index.commodityId, index]),
   );
+  const latestPublishedDate =
+    [...publishedByCommodityId.values()]
+      .map((index) => index.tradeDate.toISOString().slice(0, 10))
+      .sort()
+      .at(-1) ?? visibleTradeDate;
   const [aiCommentsUk, aiCommentsEn] =
     activeIndex.id === "spike-ua"
       ? await Promise.all([
@@ -348,7 +348,6 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
     updatedAt:
       published
         .filter((index): index is NonNullable<typeof index> => Boolean(index))
-        .filter((index) => index.tradeDate.toISOString().slice(0, 10) <= visibleTradeDate)
         .map((index) => index.publishedAt)
         .sort((first, second) => second.getTime() - first.getTime())[0]
         ?.toISOString() ?? indexUpdatedAt,
