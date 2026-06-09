@@ -7,13 +7,25 @@ type TelegramTrigger = "manual" | "scheduled" | "smoke";
 
 export type TelegramReminderLevel = "initial" | "reminder_17" | "final_18";
 
-type TelegramRecipient = {
+export type TelegramRecipient = {
   chatId: string;
   contactId: string;
   companyName: string;
   locale: "uk" | "en";
   respondentId: string;
 };
+
+export async function sendRespondentTelegramInitialRequest(params: {
+  botToken: string;
+  recipient: TelegramRecipient;
+}) {
+  return sendTelegramSurveyMessage({
+    botToken: params.botToken,
+    recipient: params.recipient,
+    reminderLevel: "initial",
+    trigger: "manual",
+  });
+}
 
 export type TelegramSubmissionSummaryItem = {
   commodityId: string;

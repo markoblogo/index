@@ -979,11 +979,20 @@ function parseStatus(value: FormDataEntryValue | null): RespondentStatus {
 function parseCollectionMode(
   value: FormDataEntryValue | null,
 ): RespondentCollectionMode {
-  if (value === "manual_outreach") {
+  const normalized =
+    typeof value === "string"
+      ? value.trim().toLowerCase().replace(/\s+/g, "_")
+      : "";
+
+  if (normalized === "manual_outreach") {
     return "manual_outreach";
   }
 
-  if (value === "telegram_request") {
+  if (
+    normalized === "telegram_request" ||
+    normalized === "request_via_telegram" ||
+    normalized === "telegram"
+  ) {
     return "telegram_request";
   }
 

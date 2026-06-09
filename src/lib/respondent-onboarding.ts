@@ -1,9 +1,11 @@
 import { Prisma } from "@prisma/client";
 import { db, hasDatabaseUrl } from "@/lib/db";
 import { SITE_CONFIG } from "@/lib/constants";
+import { getActiveIndexConfig } from "@/lib/index-platform";
 import {
   createRespondentTelegramSurveyUrl,
   getRespondentTelegramBotToken,
+  sendRespondentTelegramInitialRequest,
 } from "@/lib/respondent-telegram";
 
 type OnboardingContact = {
@@ -41,11 +43,28 @@ export async function sendRespondentOnboarding({
     };
   }
 
+  const onboardingLocale =
+    getActiveIndexConfig().id === "spike-ua" ? "uk" : contact.preferredLocale;
+
   const emailStatus = contact.email
-    ? await sendRespondentOnboardingEmail({ auth, contact, respondent })
+    ? await sendRespondentOnboardingEmail({
+        auth,
+        contact: {
+          ...contact,
+          preferredLocale: onboardingLocale,
+        },
+        respondent,
+      })
     : "no_email";
   const telegramStatus = contact.telegramChatId
-    ? await sendRespondentLinkedTelegramWelcome({ auth, contact, respondent })
+    ? await sendRespondentLinkedTelegramWelcome({
+        auth,
+        contact: {
+          ...contact,
+          preferredLocale: onboardingLocale,
+        },
+        respondent,
+      })
     : "pending_start";
 
   return { emailStatus, telegramStatus };
@@ -114,6 +133,8 @@ export async function handleRespondentTelegramStart(update: unknown) {
     return { ok: true, skippedReason: "manual_outreach_contact" };
   }
 
+  const wasUnlinked = !contact.telegramChatId;
+
   const updatedContact = await db.respondentContact.update({
     where: { id: contact.id },
     data: {
@@ -153,6 +174,19 @@ export async function handleRespondentTelegramStart(update: unknown) {
     token,
     webAppUrl: surveyUrl,
   });
+
+  if (wasUnlinked) {
+    await sendRespondentTelegramInitialRequest({
+      botToken: token,
+      recipient: {
+        chatId,
+        contactId: updatedContact.id,
+        companyName: updatedContact.respondent.legalName,
+        locale: updatedContact.preferredLocale === "en" ? "en" : "uk",
+        respondentId: updatedContact.respondentId,
+      },
+    });
+  }
 
   await db.auditLog.create({
     data: {
