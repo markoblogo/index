@@ -40,6 +40,23 @@ export type RespondentSurveyData = {
   commodities: RespondentSurveyCommodity[];
 };
 
+export type RespondentSurveySubmissionEntry = {
+  commodityId: string;
+  price: number;
+};
+
+export type RespondentSurveySubmitResult = {
+  status: DemoSubmissionStatus;
+  date: string;
+  locale: SurveyLocale;
+  respondentChannel: string;
+  entries: RespondentSurveySubmissionEntry[];
+};
+
+export type SaveRespondentSurveyOptions = {
+  redirectOnSuccess?: boolean;
+};
+
 const activeIndex = getActiveIndexTenant();
 const isSpike = activeIndex.id === "spike-ua";
 
@@ -64,7 +81,14 @@ const labels = {
       "soybean, sunflower $/t, incl. VAT (processing)",
     ],
     publication: "Publication",
+    submitLoading: "Submitting...",
     saveDraft: "Save as draft",
+    submitSuccessTitle: "Thank you. Your data has been successfully accepted.",
+    submitSuccessIntro: "You provided these values:",
+    submitSuccessFooter:
+      "Your data has been saved. Thank you for participating in the daily respondent survey.",
+    submitError:
+      "Could not send data. Please check your internet connection and try again.",
     source: "Source",
     status: "Status",
     statusDraft: "Saved as draft",
@@ -102,7 +126,15 @@ const labels = {
       "соя, соняшник $/т, з ПДВ (переробка)",
     ],
     publication: "Публікація",
+    submitLoading: "Надсилаємо...",
     saveDraft: "Зберегти чернетку",
+    submitSuccessTitle:
+      "Дякуємо. Ваші дані успішно прийняті сервісом.",
+    submitSuccessIntro: "Ви надали такі дані:",
+    submitSuccessFooter:
+      "Дані збережено. Дякуємо за участь у щоденному опитуванні Spike Spot Index.",
+    submitError:
+      "Не вдалося надіслати дані. Будь ласка, перевірте інтернет-зʼєднання і спробуйте ще раз.",
     source: "Джерело",
     status: "Статус",
     statusDraft: "Збережено як чернетку",
@@ -121,6 +153,8 @@ const labels = {
     unit: "Одиниця",
   },
 } as const;
+
+export type RespondentSurveyLabels = ReturnType<typeof getSurveyLabels>;
 
 export function getSurveyLabels(locale: SurveyLocale) {
   return labels[locale];
@@ -160,12 +194,17 @@ export async function getRespondentSurveyData({
   }
 }
 
-export async function saveRespondentSurvey(formData: FormData, user: DemoUser) {
+export async function saveRespondentSurvey(
+  formData: FormData,
+  user: DemoUser,
+  options: SaveRespondentSurveyOptions = {},
+): Promise<RespondentSurveySubmitResult | void> {
   const respondentId = user.respondentId;
   const date = String(formData.get("date") ?? todayInputDate());
   const locale = normalizeSurveyLocale(String(formData.get("locale") ?? "en"));
   const intent =
     formData.get("intent") === "submit" ? "submitted" : "draft";
+  const { redirectOnSuccess = true } = options;
 
   if (!respondentId) {
     redirect(`/respondent?locale=${locale}&error=respondent`);
@@ -191,6 +230,17 @@ export async function saveRespondentSurvey(formData: FormData, user: DemoUser) {
       });
     }
 
+    if (!redirectOnSuccess) {
+      revalidatePath("/admin/daily-inputs");
+      return {
+        date,
+        locale,
+        respondentChannel,
+        entries,
+        status: intent,
+      };
+    }
+
     redirect(`/respondent?locale=${locale}&saved=${intent}${respondentChannel === "telegram" ? "&channel=telegram&inTelegram=1" : ""}`);
   }
 
@@ -208,7 +258,18 @@ export async function saveRespondentSurvey(formData: FormData, user: DemoUser) {
       console.error("Respondent submission saved, but auto-publish failed.", error);
     });
   }
+
   revalidatePath("/admin/daily-inputs");
+  if (!redirectOnSuccess) {
+    return {
+      date,
+      locale,
+      respondentChannel,
+      entries,
+      status: intent,
+    };
+  }
+
   redirect(
     `/respondent?locale=${locale}&saved=${intent}${respondentChannel === "telegram" ? "&channel=telegram&inTelegram=1" : ""}`,
   );

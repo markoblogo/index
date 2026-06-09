@@ -1,11 +1,11 @@
 import Link from "next/link";
+import { RespondentSurveyForm } from "@/components/respondent/survey-form";
 import { requireDemoRole } from "@/lib/demo-auth";
 import { todayInputDate } from "@/lib/admin-daily-inputs";
 import {
   getRespondentSurveyData,
   getSurveyLabels,
   normalizeSurveyLocale,
-  saveRespondentSurvey,
   type RespondentSurveyData,
 } from "@/lib/respondent-survey";
 
@@ -48,13 +48,6 @@ export default async function RespondentPage({
       : data.status === "draft"
         ? labels.statusDraft
         : labels.statusEmpty;
-
-  async function save(formData: FormData) {
-    "use server";
-
-    const currentUser = await requireDemoRole("respondent");
-    await saveRespondentSurvey(formData, currentUser);
-  }
 
   return (
     <section className="mx-auto grid max-w-3xl gap-5">
@@ -131,67 +124,13 @@ export default async function RespondentPage({
       </div>
 
       {showSubmittedConfirmation ? null : (
-        <form action={save} className="border border-black bg-white p-5">
-          <input name="date" type="hidden" value={data.date} />
-          <input name="locale" type="hidden" value={locale} />
-          {isTelegramFlow ? (
-            <input name="respondentChannel" type="hidden" value="telegram" />
-          ) : null}
-          <div className="grid gap-4">
-            {data.commodities.map((commodity) => (
-              <label
-                className="grid min-w-0 gap-3 border-b border-black/10 py-4 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_minmax(11rem,14rem)] sm:items-center"
-                key={commodity.id}
-              >
-                <span className="min-w-0">
-                  <span className="block text-base font-semibold text-uga-dark">
-                    {commodity.name}
-                  </span>
-                  <span className="mt-1 block text-xs font-semibold uppercase tracking-[0.14em] text-black/45">
-                    {commodity.code} · {commodity.basisLabel}
-                  </span>
-                </span>
-                <span className="grid min-w-0 gap-1">
-                  <span className="text-xs font-semibold uppercase tracking-[0.14em] text-black/45">
-                    {labels.price}
-                  </span>
-                  <span className="grid gap-0.5 text-[0.68rem] font-semibold leading-4 text-black/50">
-                    {labels.priceHintLines.map((line) => (
-                      <span key={line}>• {line}</span>
-                    ))}
-                  </span>
-                  <input
-                    className="box-border w-full min-w-0 border border-black/20 px-3 py-2.5 text-base font-semibold focus:border-uga-green focus:ring-uga-green"
-                    defaultValue={commodity.price ?? ""}
-                    inputMode="decimal"
-                    name={`price:${commodity.id}`}
-                    placeholder="USD/t"
-                    type="text"
-                  />
-                </span>
-              </label>
-            ))}
-          </div>
-
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
-            <button
-              className="rounded-[3px] border border-black px-5 py-3 text-sm font-semibold text-uga-dark transition hover:border-uga-green hover:text-uga-green"
-              name="intent"
-              type="submit"
-              value="draft"
-            >
-              {labels.saveDraft}
-            </button>
-            <button
-              className="rounded-[3px] bg-uga-green px-5 py-3 text-sm font-semibold text-white transition hover:bg-uga-dark"
-              name="intent"
-              type="submit"
-              value="submit"
-            >
-              {labels.submit}
-            </button>
-          </div>
-        </form>
+        <RespondentSurveyForm
+          data={data}
+          editHref={editHref}
+          isTelegramFlow={isTelegramFlow}
+          labels={labels}
+          locale={locale}
+        />
       )}
 
       {showSubmittedConfirmation ? (
