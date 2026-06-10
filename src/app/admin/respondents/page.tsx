@@ -441,9 +441,11 @@ function RespondentPanel({ respondent }: { respondent: RespondentDirectoryEntry 
             >
               {getCollectionModeLabel(respondent.collectionMode)}
             </StatusPill>
-            <TelegramStatusQuickFacts respondent={respondent} />
           </div>
         </div>
+      </div>
+      <div className="border-t border-black/20 bg-uga-mist/35 px-4 py-2">
+        <TelegramStatusQuickFacts respondent={respondent} />
       </div>
 
       <div className="hidden border-t border-black bg-uga-mist/45 p-4 peer-checked:block">
@@ -587,7 +589,7 @@ function TelegramStatusQuickFacts({
             : telegramDelivery.status;
 
   return (
-    <p className="mt-1 max-w-none text-right text-[0.58rem] font-black uppercase tracking-[0.1em] text-black/65">
+    <p className="overflow-x-auto whitespace-nowrap text-left text-[0.58rem] font-black uppercase tracking-[0.1em] text-black/65">
       Email:{onboardingStatus === "sent" ? " onboard sent" : ` onboarding ${onboardingStatus}`}
       · TG chat: <strong>{telegramActivity.hasActiveTelegramChat ? "yes" : "no"}</strong>
       · /start: <strong>{telegramActivity.hasStartedWithBot ? "yes" : "no"}</strong>
