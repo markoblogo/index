@@ -52,6 +52,14 @@ export type RespondentTelegramDeliveryStatus = {
   trigger: string;
 };
 
+export type RespondentTelegramDeliveryLog = {
+  error: string;
+  providerId: string;
+  sentAt: string;
+  status: "sent" | "failed" | "not_sent";
+  trigger: string;
+};
+
 export type RespondentDirectoryEntry = {
   auth: RespondentAuthAccount;
   collectionMode: RespondentCollectionMode;
@@ -59,6 +67,7 @@ export type RespondentDirectoryEntry = {
   contacts: RespondentContactPerson[];
   id: string;
   status: RespondentStatus;
+  onboardingDelivery: RespondentTelegramDeliveryLog;
   telegramDelivery: RespondentTelegramDeliveryStatus;
   telegramActivity: RespondentTelegramActivity;
 };
@@ -348,13 +357,20 @@ export async function getRespondentDirectoryData() {
         },
         emailDeliveries: {
           orderBy: { sentAt: "desc" },
-          take: 1,
+          take: 12,
           where: {
-            sentAt: {
-              gte: kyivDateBounds.start,
-              lt: kyivDateBounds.end,
-            },
-            trigger: { startsWith: "telegram_" },
+            OR: [
+              {
+                sentAt: {
+                  gte: kyivDateBounds.start,
+                  lt: kyivDateBounds.end,
+                },
+                trigger: { startsWith: "telegram_" },
+              },
+              {
+                trigger: "respondent_onboarding_email",
+              },
+            ],
           },
         },
       },
@@ -455,6 +471,11 @@ export async function getRespondentDirectoryData() {
             (contact) => contact.telegramChatId || contact.telegramUsername,
           ).length,
         }),
+        onboardingDelivery: mapOnboardingDeliveryStatus({
+          delivery: respondent.emailDeliveries.find(
+            (entry) => entry.trigger === "respondent_onboarding_email",
+          ),
+        }),
         telegramActivity: {
           ...defaultTelegramActivity,
           hasActiveTelegramChat,
@@ -476,6 +497,36 @@ export async function getRespondentDirectoryData() {
     console.error("Failed to load respondent directory.", error);
     throw error;
   }
+}
+
+function mapOnboardingDeliveryStatus({
+  delivery,
+}: {
+  delivery?: {
+    error: string | null;
+    providerId: string | null;
+    sentAt: Date;
+    status: string;
+    trigger: string;
+  };
+}): RespondentTelegramDeliveryLog {
+  if (!delivery) {
+    return {
+      error: "",
+      providerId: "",
+      sentAt: "",
+      status: "not_sent",
+      trigger: "",
+    };
+  }
+
+  return {
+    error: delivery.error ?? "",
+    providerId: delivery.providerId ?? "",
+    sentAt: delivery.sentAt.toISOString(),
+    status: delivery.status === "sent" ? "sent" : "failed",
+    trigger: delivery.trigger,
+  };
 }
 
 function mapTelegramDeliveryStatus({
@@ -1016,6 +1067,13 @@ export function addRespondentDirectoryEntry(input: {
     ],
     id,
     status: input.status,
+    onboardingDelivery: {
+      error: "",
+      providerId: "",
+      sentAt: "",
+      status: "not_sent",
+      trigger: "",
+    },
     telegramActivity: {
       ...defaultTelegramActivity,
       hasActiveTelegramChat: Boolean(input.telegramChatId),
@@ -1252,6 +1310,13 @@ function createRespondentSeed(
     ],
     id,
     status,
+    onboardingDelivery: {
+      error: "",
+      providerId: "",
+      sentAt: "",
+      status: "not_sent",
+      trigger: "",
+    },
     telegramDelivery: {
       contactCount: 0,
       error: "",
@@ -1273,6 +1338,7 @@ function cloneRespondent(
     ...respondent,
     auth: { ...respondent.auth },
     contacts: respondent.contacts.map((contact) => ({ ...contact })),
+    onboardingDelivery: { ...respondent.onboardingDelivery },
     telegramDelivery: { ...respondent.telegramDelivery },
     telegramActivity: { ...respondent.telegramActivity },
   };

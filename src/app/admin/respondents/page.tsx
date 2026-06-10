@@ -441,6 +441,7 @@ function RespondentPanel({ respondent }: { respondent: RespondentDirectoryEntry 
             >
               {getCollectionModeLabel(respondent.collectionMode)}
             </StatusPill>
+            <TelegramStatusQuickFacts respondent={respondent} />
           </div>
         </div>
       </div>
@@ -561,12 +562,53 @@ function TelegramDeliveryPill({
   );
 }
 
+function TelegramStatusQuickFacts({
+  respondent,
+}: {
+  respondent: RespondentDirectoryEntry;
+}) {
+  const { auth, telegramDelivery, telegramActivity, onboardingDelivery } =
+    respondent;
+  const onboardingStatus =
+    onboardingDelivery.status === "sent"
+      ? "sent"
+      : onboardingDelivery.status === "failed"
+        ? "failed"
+        : "not sent";
+  const surveyStatus =
+    telegramDelivery.status === "not_linked"
+      ? "not linked"
+      : telegramDelivery.status === "sent"
+        ? "sent"
+        : telegramDelivery.status === "failed"
+          ? "failed"
+          : telegramDelivery.status === "not_sent"
+            ? "not sent"
+            : telegramDelivery.status;
+
+  return (
+    <p className="mt-1 max-w-none text-right text-[0.58rem] font-black uppercase tracking-[0.1em] text-black/65">
+      Email:{onboardingStatus === "sent" ? " onboard sent" : ` onboarding ${onboardingStatus}`}
+      · TG chat: <strong>{telegramActivity.hasActiveTelegramChat ? "yes" : "no"}</strong>
+      · /start: <strong>{telegramActivity.hasStartedWithBot ? "yes" : "no"}</strong>
+      · Today sub: <strong>{telegramActivity.hasSubmissionToday ? "yes" : "no"}</strong>
+      · Password:{" "}
+      <strong>
+        {auth.passwordSetupStatus === "active"
+          ? "set"
+          : "temporary"}
+      </strong>
+      · TG request: <strong>{surveyStatus}</strong>
+    </p>
+  );
+}
+
 function TelegramActivityPanel({
   respondent,
 }: {
   respondent: RespondentDirectoryEntry;
 }) {
-  const { auth, telegramDelivery, telegramActivity } = respondent;
+  const { auth, onboardingDelivery, telegramDelivery, telegramActivity } = respondent;
   const passwordStatus =
     auth.passwordSetupStatus === "active"
       ? auth.passwordSetAt
@@ -574,6 +616,14 @@ function TelegramActivityPanel({
         : "set"
       : "temporary";
   const deliveryError = telegramDelivery.error?.trim();
+  const onboardingError = onboardingDelivery.error?.trim();
+  const hasOnboardingEmail = onboardingDelivery.status === "sent";
+  const onboardingLabel =
+    onboardingDelivery.status === "not_sent"
+      ? "not sent"
+      : onboardingDelivery.status === "failed"
+        ? "failed"
+        : "sent";
 
   return (
     <section className="border border-black/20 bg-white p-4">
@@ -599,9 +649,26 @@ function TelegramActivityPanel({
         <p>
           Password status: <strong>{passwordStatus}</strong>
         </p>
+        <p>
+          Onboarding email: <strong>{onboardingLabel}</strong>
+          {onboardingDelivery.sentAt
+            ? ` · ${formatDateForAdmin(onboardingDelivery.sentAt)}`
+            : ""}
+        </p>
         {deliveryError ? (
           <p>
             Last Telegram error: <strong>{deliveryError}</strong>
+          </p>
+        ) : null}
+        {onboardingError ? (
+          <p>
+            Last onboarding email error: <strong>{onboardingError}</strong>
+          </p>
+        ) : null}
+        {hasOnboardingEmail ? (
+          <p className="text-xs text-black/70">
+            Onboarding trigger: {onboardingDelivery.trigger || "n/a"} · Provider:{" "}
+            {onboardingDelivery.providerId || "n/a"}
           </p>
         ) : null}
       </div>
