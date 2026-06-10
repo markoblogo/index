@@ -496,6 +496,8 @@ function RespondentPanel({ respondent }: { respondent: RespondentDirectoryEntry 
             </form>
           </section>
 
+          <TelegramActivityPanel respondent={respondent} />
+
           <section className="border border-black/20 bg-white p-4">
             <p className="mb-3 text-[0.68rem] font-black uppercase tracking-[0.16em] text-black/45">
               Contact people
@@ -556,6 +558,54 @@ function TelegramDeliveryPill({
     <StatusPill tone="warning" title={title}>
       TG not sent
     </StatusPill>
+  );
+}
+
+function TelegramActivityPanel({
+  respondent,
+}: {
+  respondent: RespondentDirectoryEntry;
+}) {
+  const { auth, telegramDelivery, telegramActivity } = respondent;
+  const passwordStatus =
+    auth.passwordSetupStatus === "active"
+      ? auth.passwordSetAt
+        ? `set ${formatDateForAdmin(auth.passwordSetAt)}`
+        : "set"
+      : "temporary";
+  const deliveryError = telegramDelivery.error?.trim();
+
+  return (
+    <section className="border border-black/20 bg-white p-4">
+      <p className="mb-3 text-[0.68rem] font-black uppercase tracking-[0.16em] text-black/45">
+        Telegram activity
+      </p>
+      <div className="grid gap-2 text-sm text-black/85">
+        <p>
+          Telegram chat linked: <strong>{telegramActivity.hasActiveTelegramChat ? "yes" : "no"}</strong>
+        </p>
+        <p>
+          /start done: <strong>{telegramActivity.hasStartedWithBot ? "yes" : "no"}</strong>
+          {telegramActivity.lastBotStartAt
+            ? ` · ${formatDateForAdmin(telegramActivity.lastBotStartAt)}`
+            : ""}
+        </p>
+        <p>
+          Today submission: <strong>{telegramActivity.hasSubmissionToday ? "yes" : "no"}</strong>
+          {telegramActivity.lastSubmissionAt
+            ? ` · ${formatDateForAdmin(telegramActivity.lastSubmissionAt)}`
+            : ""}
+        </p>
+        <p>
+          Password status: <strong>{passwordStatus}</strong>
+        </p>
+        {deliveryError ? (
+          <p>
+            Last Telegram error: <strong>{deliveryError}</strong>
+          </p>
+        ) : null}
+      </div>
+    </section>
   );
 }
 
@@ -1009,6 +1059,14 @@ function formatAuthDate(value: string) {
   return new Intl.DateTimeFormat("en-GB", {
     dateStyle: "medium",
     timeStyle: "short",
+  }).format(new Date(value));
+}
+
+function formatDateForAdmin(value: string) {
+  return new Intl.DateTimeFormat("en-GB", {
+    dateStyle: "short",
+    timeStyle: "short",
+    timeZone: "Europe/Kyiv",
   }).format(new Date(value));
 }
 

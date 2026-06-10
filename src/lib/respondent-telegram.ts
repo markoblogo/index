@@ -220,7 +220,6 @@ async function filterScheduledRecipients(
       where: {
         respondentId: { in: respondentIds },
         source: "respondent",
-        status: "submitted",
         tradeDate,
       },
     }),
@@ -334,6 +333,31 @@ async function sendTelegramSurveyMessage({
   reminderLevel: TelegramReminderLevel;
   trigger: TelegramTrigger;
 }) {
+  if (!isLikelyValidChatId(recipient.chatId)) {
+    await db.respondentEmailDelivery.create({
+      data: {
+        contactId: recipient.contactId,
+        email: `telegram:${recipient.chatId}`,
+        error:
+          "Invalid Telegram chat id format. Set chat id as numeric via /start in bot.",
+        providerId: null,
+        respondentId: recipient.respondentId,
+        status: "failed",
+        subject: `Telegram ${reminderLevel}`,
+        trigger: `telegram_${trigger}_${reminderLevel}`,
+      },
+    });
+
+    return {
+      chatId: recipient.chatId,
+      error:
+        "Invalid Telegram chat id format. Set chat id as numeric via /start in bot.",
+      providerId: undefined,
+      respondentId: recipient.respondentId,
+      status: "failed",
+    };
+  }
+
   const surveyUrl = await createSurveyUrl(recipient);
   const response = await fetch(
     `https://api.telegram.org/bot${botToken}/sendMessage`,
@@ -504,6 +528,10 @@ async function createSurveyUrl(recipient: TelegramRecipient) {
   return absoluteUrl(
     `/respondent/access/${token}?locale=${recipient.locale}&channel=telegram&inTelegram=1`,
   );
+}
+
+function isLikelyValidChatId(value: string) {
+  return /^-?\d+$/.test(value);
 }
 
 function getTelegramText(

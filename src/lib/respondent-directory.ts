@@ -14,6 +14,21 @@ export type RespondentAuthAccount = {
   loginEmail: string;
   passwordSetupStatus: RespondentPasswordStatus;
   temporaryPassword: string;
+  passwordSetAt?: string;
+};
+
+export type RespondentTelegramActivity = {
+  hasActiveTelegramChat: boolean;
+  hasStartedWithBot: boolean;
+  hasSubmissionToday: boolean;
+  lastBotStartAt?: string;
+  lastSubmissionAt?: string;
+};
+
+const defaultTelegramActivity: RespondentTelegramActivity = {
+  hasActiveTelegramChat: false,
+  hasStartedWithBot: false,
+  hasSubmissionToday: false,
 };
 
 export type RespondentContactPerson = {
@@ -45,6 +60,7 @@ export type RespondentDirectoryEntry = {
   id: string;
   status: RespondentStatus;
   telegramDelivery: RespondentTelegramDeliveryStatus;
+  telegramActivity: RespondentTelegramActivity;
 };
 
 export type RespondentContact = {
@@ -322,6 +338,7 @@ export async function getRespondentDirectoryData() {
 
   try {
     const kyivDateBounds = getKyivDateBounds();
+    const tradeDate = new Date(kyivDateBounds.start);
     const respondents = await db.respondent.findMany({
       include: {
         authAccount: true,
@@ -345,59 +362,111 @@ export async function getRespondentDirectoryData() {
       where: { NOT: { status: "disabled" } },
     });
 
-    return respondents.map((respondent) => ({
-      auth: {
-        lastGeneratedAt:
-          respondent.authAccount?.lastGeneratedAt?.toISOString() ??
-          respondent.createdAt.toISOString(),
-        loginEmail:
-          respondent.authAccount?.loginEmail ??
-          createDemoRespondentEmail(respondent.id),
-        passwordSetupStatus:
-          respondent.authAccount?.passwordSetupStatus === "active"
-            ? "active"
-            : "temporary",
-        temporaryPassword:
-          respondent.authAccount?.temporaryPassword ?? "respondent",
-      },
-      collectionMode: respondent.collectionMode,
-      companyName: respondent.legalName,
-      contacts:
-        respondent.contacts.length > 0
-          ? respondent.contacts.map((contact) => ({
-              email: contact.email ?? "",
-              id: contact.id,
-              name: contact.name,
-              preferredLocale:
-                contact.preferredLocale === "en" ? "en" : "uk",
-              phone: contact.phone ?? "",
-              primary: contact.primary,
-              role: contact.role,
-              telegramChatId: contact.telegramChatId ?? "",
-              telegramUsername: contact.telegramUsername ?? "",
-            }))
-          : [
-              {
-                email: respondent.authAccount?.loginEmail ?? "",
-                id: `${respondent.id}-primary`,
-                name: respondent.displayName,
-                preferredLocale: "uk",
-                phone: "",
-                primary: true,
-                role: "Primary contact",
-                telegramChatId: "",
-                telegramUsername: "",
-              },
-            ],
-      id: respondent.id,
-      status: respondent.status === "pending" ? "pending" : "active",
-      telegramDelivery: mapTelegramDeliveryStatus({
-        delivery: respondent.emailDeliveries[0],
-        telegramContactCount: respondent.contacts.filter(
-          (contact) => contact.telegramChatId || contact.telegramUsername,
-        ).length,
+    const respondentIds = respondents.map((respondent) => respondent.id);
+    const [submissionsToday, botStartEvents] = await Promise.all([
+      db.priceSubmission.findMany({
+        where: {
+          respondentId: { in: respondentIds },
+          source: "respondent",
+          tradeDate,
+        },
+        orderBy: { updatedAt: "desc" },
+        select: {
+          respondentId: true,
+          submittedAt: true,
+          updatedAt: true,
+        },
       }),
-    })) satisfies RespondentDirectoryEntry[];
+      db.respondentEmailDelivery.findMany({
+        where: {
+          respondentId: { in: respondentIds },
+          trigger: "telegram_bot_start",
+        },
+        orderBy: { sentAt: "desc" },
+      }),
+    ]);
+
+    const latestSubmissionByRespondent = new Map(
+      submissionsToday.map((submission) => [submission.respondentId, submission]),
+    );
+    const botStartByRespondent = new Map(
+      botStartEvents
+        .filter((event) => Boolean(event.sentAt))
+        .map((event) => [event.respondentId, event]),
+    );
+
+    return respondents.map((respondent) => {
+      const hasActiveTelegramChat = respondent.contacts.some(
+        (contact) => contact.telegramChatId,
+      );
+      const latestSubmission = latestSubmissionByRespondent.get(respondent.id);
+      const latestBotStart = botStartByRespondent.get(respondent.id);
+
+      return {
+        auth: {
+          lastGeneratedAt:
+            respondent.authAccount?.lastGeneratedAt?.toISOString() ??
+            respondent.createdAt.toISOString(),
+          loginEmail:
+            respondent.authAccount?.loginEmail ??
+            createDemoRespondentEmail(respondent.id),
+          passwordSetupStatus:
+            respondent.authAccount?.passwordSetupStatus === "active"
+              ? "active"
+              : "temporary",
+          passwordSetAt: respondent.authAccount?.passwordSetAt?.toISOString(),
+          temporaryPassword:
+            respondent.authAccount?.temporaryPassword ?? "respondent",
+        },
+        collectionMode: respondent.collectionMode,
+        companyName: respondent.legalName,
+        contacts:
+          respondent.contacts.length > 0
+            ? respondent.contacts.map((contact) => ({
+                email: contact.email ?? "",
+                id: contact.id,
+                name: contact.name,
+                preferredLocale:
+                  contact.preferredLocale === "en" ? "en" : "uk",
+                phone: contact.phone ?? "",
+                primary: contact.primary,
+                role: contact.role,
+                telegramChatId: contact.telegramChatId ?? "",
+                telegramUsername: contact.telegramUsername ?? "",
+              }))
+            : [
+                {
+                  email: respondent.authAccount?.loginEmail ?? "",
+                  id: `${respondent.id}-primary`,
+                  name: respondent.displayName,
+                  preferredLocale: "uk",
+                  phone: "",
+                  primary: true,
+                  role: "Primary contact",
+                  telegramChatId: "",
+                  telegramUsername: "",
+                },
+              ],
+        id: respondent.id,
+        status: respondent.status === "pending" ? "pending" : "active",
+        telegramDelivery: mapTelegramDeliveryStatus({
+          delivery: respondent.emailDeliveries[0],
+          telegramContactCount: respondent.contacts.filter(
+            (contact) => contact.telegramChatId || contact.telegramUsername,
+          ).length,
+        }),
+        telegramActivity: {
+          ...defaultTelegramActivity,
+          hasActiveTelegramChat,
+          hasStartedWithBot: Boolean(latestBotStart),
+          hasSubmissionToday: Boolean(latestSubmission),
+          lastBotStartAt: latestBotStart?.sentAt.toISOString(),
+          lastSubmissionAt:
+            latestSubmission?.submittedAt?.toISOString() ??
+            latestSubmission?.updatedAt.toISOString(),
+        },
+      };
+    }) satisfies RespondentDirectoryEntry[];
   } catch (error) {
     if (allowMockFallback()) {
       console.warn("Falling back to mock respondent directory.", error);
@@ -947,6 +1016,10 @@ export function addRespondentDirectoryEntry(input: {
     ],
     id,
     status: input.status,
+    telegramActivity: {
+      ...defaultTelegramActivity,
+      hasActiveTelegramChat: Boolean(input.telegramChatId),
+    },
     telegramDelivery: {
       contactCount: input.telegramChatId || input.telegramUsername ? 1 : 0,
       error: "",
@@ -1159,6 +1232,7 @@ function createRespondentSeed(
       lastGeneratedAt: "2026-05-20T10:00:00.000Z",
       loginEmail: email,
       passwordSetupStatus: "temporary",
+      passwordSetAt: undefined,
       temporaryPassword: "respondent",
     },
     collectionMode,
@@ -1186,6 +1260,9 @@ function createRespondentSeed(
       status: "not_linked",
       trigger: "",
     },
+    telegramActivity: {
+      ...defaultTelegramActivity,
+    },
   };
 }
 
@@ -1197,6 +1274,7 @@ function cloneRespondent(
     auth: { ...respondent.auth },
     contacts: respondent.contacts.map((contact) => ({ ...contact })),
     telegramDelivery: { ...respondent.telegramDelivery },
+    telegramActivity: { ...respondent.telegramActivity },
   };
 }
 

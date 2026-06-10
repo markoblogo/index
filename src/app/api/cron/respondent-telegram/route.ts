@@ -16,11 +16,13 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
   const requestedLevel = parseReminderLevel(url.searchParams.get("level"));
-  const trigger =
-    url.searchParams.get("smoke") === "1"
-      ? "smoke"
+  const explicitTrigger = url.searchParams.get("trigger");
+  const trigger = url.searchParams.get("smoke") === "1"
+    ? "smoke"
+    : explicitTrigger === "manual"
+      ? "manual"
       : requestedLevel
-        ? "manual"
+        ? "scheduled"
         : "scheduled";
   const result = await sendRespondentTelegramNotifications({
     reminderLevel: requestedLevel,
