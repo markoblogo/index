@@ -1,5 +1,4 @@
 import { allowMockFallback, db, hasDatabaseUrl } from "@/lib/db";
-import { SITE_CONFIG } from "@/lib/constants";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import {
   commodities,
@@ -48,19 +47,12 @@ const demoDates = [
   "2026-05-08",
 ];
 
-const mockCommodityIdByCode: Record<string, CommodityId> = {
-  CORN: "corn",
-  CORN_FCA_CHOP: "corn-fca-chop",
-  "CORN FCA CHOP": "corn-fca-chop",
-  WHT_115: "wheat-115",
-  "WHT 11.5": "wheat-115",
-  FEED_WHT: "feed-wheat",
-  "FEED WHT": "feed-wheat",
-  GMO_SOY: "gmo-soybean",
-  "GMO SOY": "gmo-soybean",
-  SUNFLOWER: "sunflower",
-  SUN: "sunflower",
-};
+const mockCommodityIdByCode: Record<string, CommodityId> = Object.fromEntries(
+  activeIndex.commodities.flatMap((commodity) => [
+    [commodity.dbCode, commodity.id],
+    [commodity.code, commodity.id],
+  ]),
+) as Record<string, CommodityId>;
 
 export async function getPublicLatestData() {
   if (!hasDatabaseUrl()) {
@@ -134,6 +126,10 @@ function getMockHistoryData(): PublicHistoryItem[] {
     weeklySeries[commodity.id].map((value, index, values) => {
       const previousValue = values[index - 1] ?? value;
       const changeAbs = roundOne(value - previousValue);
+      const basisConfig = getDeliveryBasisConfigForCommodityCode(
+        commodity.code,
+        activeIndex,
+      );
 
       return {
         commodityId: commodity.id,
@@ -141,7 +137,7 @@ function getMockHistoryData(): PublicHistoryItem[] {
         commodityNameUk: commodity.name.uk,
         commodityNameEn: commodity.name.en,
         date: demoDates[index],
-        basis: SITE_CONFIG.defaultDeliveryBasis,
+        basis: basisConfig.name,
         valueUsdPerMt: value,
         changeAbs,
         changePct:

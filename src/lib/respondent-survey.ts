@@ -12,6 +12,7 @@ import {
 import { commodities, respondents } from "@/lib/mock-data";
 import { todayInputDate } from "@/lib/admin-daily-inputs";
 import { autoPublishSpikeDailyIndices } from "@/lib/auto-publish";
+import { getCommodityCategory } from "@/lib/index-platform";
 import { syncIndexPositionDirectory } from "@/lib/position-directory-sync";
 import { sendRespondentTelegramSubmissionConfirmation } from "@/lib/respondent-telegram";
 import {
@@ -24,6 +25,7 @@ export type SurveyLocale = "uk" | "en";
 
 export type RespondentSurveyCommodity = {
   basisLabel: string;
+  category: string;
   id: string;
   code: string;
   name: string;
@@ -71,14 +73,14 @@ const labels = {
     lockedSubmitted: `Submitted values are locked and already transferred to ${isSpike ? "Spike Brokers" : "UGA"}.`,
     intro:
       isSpike
-        ? "Submit today's CPT Odesa / CPT parity Odesa / FCA Chop spot price indicatives for your company. Individual submissions are used for index calculation and are not published publicly."
+        ? "Submit today's SPIKE spot price indicatives by category: All Seasons, Processors and Seasonal Export. Individual submissions are used for index calculation and are not published publicly."
         : "Submit today’s CPT UA Black Sea price indicatives for your company. Individual submissions are used for index calculation and are not published publicly.",
     notPublished: "Not published",
     price: "Price",
     priceHintLines: [
-      "corn, wheat $/t, excl. VAT (export)",
-      "Corn FCA Chop $/t, excl. VAT (export)",
-      "soybean, sunflower $/t, incl. VAT (processing)",
+      "All Seasons and Seasonal Export: USD/t, excl. VAT",
+      "Processors: USD/t, incl. VAT",
+      "Use the exact basis shown under each position",
     ],
     publication: "Publication",
     submitLoading: "Submitting...",
@@ -116,14 +118,14 @@ const labels = {
     lockedSubmitted: `Подані значення зафіксовані та вже передані ${isSpike ? "Spike Brokers" : "в УЗА"}.`,
     intro:
       isSpike
-        ? "Подайте сьогоднішні спотові цінові індикативи CPT Одеса / CPT parity Одеса / FCA Чоп від вашої компанії. Індивідуальні значення використовуються для розрахунку індексу і не публікуються відкрито."
+        ? "Подайте сьогоднішні спотові цінові індикативи SPIKE за категоріями All Seasons, Processors та Seasonal Export. Індивідуальні значення використовуються для розрахунку індексу і не публікуються відкрито."
         : "Подайте сьогоднішні цінові індикативи CPT UA Black Sea від вашої компанії. Індивідуальні значення використовуються для розрахунку індексу і не публікуються відкрито.",
     notPublished: "Не опубліковано",
     price: "Ціна",
     priceHintLines: [
-      "кукурудза, пшениця $/т, без ПДВ (експорт)",
-      "кукурудза FCA Чоп $/т, без ПДВ (експорт)",
-      "соя, соняшник $/т, з ПДВ (переробка)",
+      "All Seasons та Seasonal Export: USD/т, без ПДВ",
+      "Processors: USD/т, з ПДВ",
+      "Орієнтуйтеся на точний базис під кожною позицією",
     ],
     publication: "Публікація",
     submitLoading: "Надсилаємо...",
@@ -335,6 +337,9 @@ function getMockRespondentSurveyData({
         commodity.code,
         activeIndex,
       ).name,
+      category: getCommodityCategory(
+        activeIndex.commodities.find((item) => item.id === commodity.id) ?? {},
+      ),
       id: commodity.id,
       code: commodity.code,
       name:
@@ -408,6 +413,9 @@ async function getDatabaseRespondentSurveyData({
           commodity.code,
           activeIndex,
         ).name,
+        category: getCommodityCategory(
+          activeIndex.commodities.find((item) => item.dbCode === commodity.code) ?? {},
+        ),
         id: commodity.id,
         code: commodity.code,
         name:

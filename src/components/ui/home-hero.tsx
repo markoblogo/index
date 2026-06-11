@@ -1,13 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo, useState } from "react";
 import { CurrencyToggle, CurrencyValue } from "@/components/ui/currency-toggle";
 import { useCurrentDisplayCurrency } from "@/components/ui/currency-toggle";
 import { IndexSparkline } from "@/components/ui/index-sparkline";
 import { SITE_CONFIG } from "@/lib/constants";
 import type { FxRates } from "@/lib/fx-rates";
 import type { Locale } from "@/lib/i18n";
-import { getActiveIndexConfig } from "@/lib/index-platform";
+import {
+  getActiveIndexConfig,
+  getSpikeCommodityCategories,
+  type SpikeCommodityCategory,
+} from "@/lib/index-platform";
 import type { Commodity } from "@/lib/mock-data";
 
 type HomeHeroProps = {
@@ -160,11 +165,23 @@ function SpikeHomeHero({
   updatedAt,
 }: HomeHeroProps) {
   const activeIndex = getActiveIndexConfig();
+  const [selectedCategory, setSelectedCategory] =
+    useState<SpikeCommodityCategory>("all-seasons");
   const copy = getHeroCopy(locale);
+  const categories = getSpikeCommodityCategories(locale);
   const facts = [
     { label: "index", value: "live" },
     ...activeIndex.home.facts[locale],
   ];
+  const filteredCommodities = useMemo(
+    () =>
+      commodities.filter(
+        (commodity) => (commodity.category ?? "all-seasons") === selectedCategory,
+      ),
+    [commodities, selectedCategory],
+  );
+  const categoryDescription =
+    categories.find((category) => category.id === selectedCategory)?.description ?? "";
 
   return (
     <section className="max-w-full overflow-x-hidden text-white [background:var(--spike-hero-bg)]">
@@ -194,8 +211,8 @@ function SpikeHomeHero({
             <div>
               <p className="text-xs font-black uppercase tracking-[0.28em] text-white/60">
                 {locale === "uk"
-                  ? "CPT Одеса / CPT parity Одеса / FCA Чоп"
-                  : "CPT Odesa / CPT parity Odesa / FCA Chop"}
+                  ? "All Seasons / Processors / Seasonal Export"
+                  : "All Seasons / Processors / Seasonal Export"}
               </p>
               <p className="mt-1 text-sm font-semibold leading-5 text-white/65">
                 {activeIndex.home.officialNotice[locale]}
@@ -233,8 +250,34 @@ function SpikeHomeHero({
             </div>
           </div>
 
+          <div className="mb-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start">
+            <div className="flex flex-wrap gap-2">
+              {categories.map((category) => {
+                const active = category.id === selectedCategory;
+
+                return (
+                  <button
+                    className={`rounded-full border px-4 py-2 text-xs font-black uppercase tracking-[0.14em] transition ${
+                      active
+                        ? "border-[var(--spike-accent)] bg-[var(--spike-accent)] text-black"
+                        : "border-white/18 bg-black/18 text-white/72 hover:border-white/38 hover:text-white"
+                    }`}
+                    key={category.id}
+                    onClick={() => setSelectedCategory(category.id)}
+                    type="button"
+                  >
+                    {category.label}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-sm font-semibold leading-5 text-white/58 lg:text-right">
+              {categoryDescription}
+            </p>
+          </div>
+
           <div className="group flex min-h-[34rem] gap-3 overflow-x-auto pb-2 pt-1 [scrollbar-width:none] sm:gap-4 lg:min-h-[36rem] xl:overflow-visible">
-            {commodities.map((commodity) => (
+            {filteredCommodities.map((commodity) => (
               <SpikeCommodityCard
                 commodity={commodity}
                 fxRates={fxRates}
@@ -363,7 +406,11 @@ function SpikeCommodityCard({
           <p
             className={`text-[0.68rem] font-black uppercase tracking-[0.24em] ${tone.label}`}
           >
-            {commodity.group === "processing" ? "Processing" : "Export"}
+            {commodity.category === "processors"
+              ? "Processors"
+              : commodity.category === "seasonal-export"
+                ? "Seasonal Export"
+                : "All Seasons"}
           </p>
           <span
             className={`rounded-full bg-white/10 px-2 py-1 text-[0.66rem] font-black ${tone.chip}`}

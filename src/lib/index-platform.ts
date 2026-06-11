@@ -6,6 +6,10 @@ export const MN7R_MONITOR_RESPONDENT_ID = "MN7R_MONITOR";
 export const SPIKE_ADMIN_FALLBACK_RESPONDENT_ID = "SPIKE_ADMIN_FALLBACK";
 
 export type IndexCommodityGroup = "export" | "processing";
+export type SpikeCommodityCategory =
+  | "all-seasons"
+  | "processors"
+  | "seasonal-export";
 export type MediaHubWindow = "daily" | "weekly" | "monthly";
 export type MediaHubMarketScope = "ukraine" | "global";
 export type MediaHubSourceLanguage = "uk" | "en";
@@ -35,6 +39,7 @@ export type IndexCommodityConfig = {
   name: Record<Locale, string>;
   shortName: Record<Locale, string>;
   group: IndexCommodityGroup;
+  category?: SpikeCommodityCategory;
   sortOrder: number;
   basePrice: number;
   absoluteChange: number;
@@ -167,6 +172,7 @@ const spikeCommodities: IndexCommodityConfig[] = [
     name: { uk: "Кукурудза", en: "Corn" },
     shortName: { uk: "Кукурудза", en: "Corn" },
     group: "export",
+    category: "all-seasons",
     sortOrder: 1,
     basePrice: 229,
     absoluteChange: 0,
@@ -185,6 +191,7 @@ const spikeCommodities: IndexCommodityConfig[] = [
     name: { uk: "Пшениця 11.5pro", en: "Wheat 11.5% protein" },
     shortName: { uk: "Пшениця", en: "Wheat" },
     group: "export",
+    category: "all-seasons",
     sortOrder: 2,
     basePrice: 222,
     absoluteChange: 0,
@@ -203,6 +210,7 @@ const spikeCommodities: IndexCommodityConfig[] = [
     name: { uk: "Пшениця фураж", en: "Feed wheat" },
     shortName: { uk: "Фураж", en: "Feed" },
     group: "export",
+    category: "all-seasons",
     sortOrder: 3,
     basePrice: 219,
     absoluteChange: 1,
@@ -222,6 +230,7 @@ const spikeCommodities: IndexCommodityConfig[] = [
     name: { uk: "Кукурудза FCA Чоп", en: "Corn FCA Chop" },
     shortName: { uk: "Кукурудза Чоп", en: "Corn Chop" },
     group: "export",
+    category: "all-seasons",
     sortOrder: 4,
     basePrice: 216,
     absoluteChange: 0,
@@ -240,6 +249,7 @@ const spikeCommodities: IndexCommodityConfig[] = [
     name: { uk: "Соя ГМО", en: "GMO soybean" },
     shortName: { uk: "Соя", en: "Soy" },
     group: "processing",
+    category: "processors",
     sortOrder: 5,
     basePrice: 504,
     absoluteChange: 0,
@@ -262,6 +272,7 @@ const spikeCommodities: IndexCommodityConfig[] = [
     name: { uk: "Соняшник", en: "Sunflower seed" },
     shortName: { uk: "Соняшник", en: "Sunflower" },
     group: "processing",
+    category: "processors",
     sortOrder: 6,
     basePrice: 739,
     absoluteChange: 0,
@@ -274,6 +285,146 @@ const spikeCommodities: IndexCommodityConfig[] = [
         value: { uk: "CPT parity Одеса", en: "CPT parity Odesa" },
       },
       { label: { uk: "Напрям", en: "Flow" }, value: { uk: "переробка", en: "processing" } },
+    ],
+  },
+  {
+    id: "rapeseed-processing",
+    code: "RAPESEED NON-GMO",
+    dbCode: "RAPESEED_NON_GMO_PROCESSING",
+    marker: "R",
+    name: { uk: "Ріпак не ГМО", en: "Rapeseed non-GMO" },
+    shortName: { uk: "Ріпак", en: "Rapeseed" },
+    group: "processing",
+    category: "processors",
+    sortOrder: 7,
+    basePrice: 522,
+    absoluteChange: 0,
+    percentChange: 0,
+    sparkline: [519, 520, 521, 521, 522, 522, 522],
+    vatIncluded: true,
+    detailMetrics: [
+      {
+        label: { uk: "Базис", en: "Basis" },
+        value: { uk: "CPT parity Одеса", en: "CPT parity Odesa" },
+      },
+      { label: { uk: "Напрям", en: "Flow" }, value: { uk: "переробка", en: "processing" } },
+    ],
+  },
+  {
+    id: "gmo-soybean-export",
+    code: "GMO SOY CPT",
+    dbCode: "GMO_SOY_EXPORT",
+    marker: "S",
+    name: { uk: "Соя ГМО CPT Port", en: "GMO soybean CPT Port" },
+    shortName: { uk: "Соя ГМО CPT", en: "GMO soy CPT" },
+    group: "export",
+    category: "seasonal-export",
+    sortOrder: 8,
+    basePrice: 472,
+    absoluteChange: 0,
+    percentChange: 0,
+    sparkline: [468, 469, 470, 471, 472, 472, 472],
+    detailMetrics: [
+      { label: { uk: "Базис", en: "Basis" }, value: { uk: "CPT Port", en: "CPT Port" } },
+      { label: { uk: "Напрям", en: "Flow" }, value: { uk: "експорт", en: "export" } },
+    ],
+  },
+  {
+    id: "gmo-soybean-fca-chop",
+    code: "GMO SOY FCA CHOP",
+    dbCode: "GMO_SOY_FCA_CHOP",
+    deliveryBasisCode: "FCA_CHOP_EXPORT",
+    marker: "S",
+    name: { uk: "Соя ГМО FCA Чоп", en: "GMO soybean FCA Chop" },
+    shortName: { uk: "Соя ГМО Чоп", en: "GMO soy Chop" },
+    group: "export",
+    category: "seasonal-export",
+    sortOrder: 9,
+    basePrice: 466,
+    absoluteChange: 0,
+    percentChange: 0,
+    sparkline: [462, 463, 464, 465, 466, 466, 466],
+    detailMetrics: [
+      { label: { uk: "Базис", en: "Basis" }, value: { uk: "FCA Чоп", en: "FCA Chop" } },
+      { label: { uk: "Напрям", en: "Flow" }, value: { uk: "експорт", en: "export" } },
+    ],
+  },
+  {
+    id: "non-gmo-soybean-export",
+    code: "SOY NON-GMO CPT",
+    dbCode: "SOYBEAN_NON_GMO_EXPORT",
+    marker: "SN",
+    name: { uk: "Соя не ГМО CPT Port", en: "Soybean non-GMO CPT Port" },
+    shortName: { uk: "Соя не ГМО CPT", en: "Non-GMO soy CPT" },
+    group: "export",
+    category: "seasonal-export",
+    sortOrder: 10,
+    basePrice: 488,
+    absoluteChange: 0,
+    percentChange: 0,
+    sparkline: [484, 485, 486, 487, 488, 488, 488],
+    detailMetrics: [
+      { label: { uk: "Базис", en: "Basis" }, value: { uk: "CPT Port", en: "CPT Port" } },
+      { label: { uk: "Напрям", en: "Flow" }, value: { uk: "експорт", en: "export" } },
+    ],
+  },
+  {
+    id: "non-gmo-soybean-fca-chop",
+    code: "SOY NON-GMO FCA CHOP",
+    dbCode: "SOYBEAN_NON_GMO_FCA_CHOP",
+    deliveryBasisCode: "FCA_CHOP_EXPORT",
+    marker: "SN",
+    name: { uk: "Соя не ГМО FCA Чоп", en: "Soybean non-GMO FCA Chop" },
+    shortName: { uk: "Соя не ГМО Чоп", en: "Non-GMO soy Chop" },
+    group: "export",
+    category: "seasonal-export",
+    sortOrder: 11,
+    basePrice: 481,
+    absoluteChange: 0,
+    percentChange: 0,
+    sparkline: [477, 478, 479, 480, 481, 481, 481],
+    detailMetrics: [
+      { label: { uk: "Базис", en: "Basis" }, value: { uk: "FCA Чоп", en: "FCA Chop" } },
+      { label: { uk: "Напрям", en: "Flow" }, value: { uk: "експорт", en: "export" } },
+    ],
+  },
+  {
+    id: "rapeseed-export",
+    code: "RAPESEED NON-GMO CPT",
+    dbCode: "RAPESEED_NON_GMO_EXPORT",
+    marker: "R",
+    name: { uk: "Ріпак не ГМО CPT Port", en: "Rapeseed non-GMO CPT Port" },
+    shortName: { uk: "Ріпак CPT", en: "Rapeseed CPT" },
+    group: "export",
+    category: "seasonal-export",
+    sortOrder: 12,
+    basePrice: 501,
+    absoluteChange: 0,
+    percentChange: 0,
+    sparkline: [497, 498, 499, 500, 501, 501, 501],
+    detailMetrics: [
+      { label: { uk: "Базис", en: "Basis" }, value: { uk: "CPT Port", en: "CPT Port" } },
+      { label: { uk: "Напрям", en: "Flow" }, value: { uk: "експорт", en: "export" } },
+    ],
+  },
+  {
+    id: "rapeseed-fca-chop",
+    code: "RAPESEED NON-GMO FCA CHOP",
+    dbCode: "RAPESEED_NON_GMO_FCA_CHOP",
+    deliveryBasisCode: "FCA_CHOP_EXPORT",
+    marker: "R",
+    name: { uk: "Ріпак не ГМО FCA Чоп", en: "Rapeseed non-GMO FCA Chop" },
+    shortName: { uk: "Ріпак Чоп", en: "Rapeseed Chop" },
+    group: "export",
+    category: "seasonal-export",
+    sortOrder: 13,
+    basePrice: 494,
+    absoluteChange: 0,
+    percentChange: 0,
+    sparkline: [490, 491, 492, 493, 494, 494, 494],
+    detailMetrics: [
+      { label: { uk: "Базис", en: "Basis" }, value: { uk: "FCA Чоп", en: "FCA Chop" } },
+      { label: { uk: "Напрям", en: "Flow" }, value: { uk: "експорт", en: "export" } },
     ],
   },
 ];
@@ -433,19 +584,19 @@ export const INDEX_CONFIGS: Record<IndexTenantId, IndexConfig> = {
       boardKicker: { uk: "Market update", en: "Market update" },
       facts: {
         uk: [
-          { value: "6", label: "позицій" },
+          { value: "13", label: "позицій" },
           { value: "3", label: "базиси" },
-          { value: "spot", label: "ринок" },
+          { value: "3", label: "категорії" },
         ],
         en: [
-          { value: "6", label: "positions" },
+          { value: "13", label: "positions" },
           { value: "3", label: "bases" },
-          { value: "spot", label: "market" },
+          { value: "3", label: "categories" },
         ],
       },
       officialNotice: {
-        uk: "Офіційні значення публікуються у USD/т. Для сої ГМО та соняшнику ціна включає ПДВ.",
-        en: "Official values are published in USD/t. GMO soybean and sunflower include VAT.",
+        uk: "Офіційні значення публікуються у USD/т. Для внутрішніх переробних індексів ціна включає ПДВ.",
+        en: "Official values are published in USD/t. Internal processing indices are shown VAT-included.",
       },
       footerDemo: { uk: "Платформа:", en: "Platform for" },
       partnersLine: {
@@ -511,4 +662,39 @@ export function getActiveTenantId(): IndexTenantId {
     process.env.INDEX_TENANT ?? process.env.NEXT_PUBLIC_INDEX_TENANT ?? "uga-ua";
 
   return requested === "spike-ua" ? "spike-ua" : "uga-ua";
+}
+
+export function getSpikeCommodityCategories(locale: Locale) {
+  return [
+    {
+      id: "all-seasons" as const,
+      label: locale === "uk" ? "All Seasons" : "All Seasons",
+      description:
+        locale === "uk"
+          ? "Базові індекси, що публікуються протягом усього року."
+          : "Core indices published throughout the year.",
+    },
+    {
+      id: "processors" as const,
+      label: locale === "uk" ? "Processors" : "Processors",
+      description:
+        locale === "uk"
+          ? "Внутрішній ринок переробки з цінами USD/t incl. VAT."
+          : "Domestic processing market with USD/t VAT-included values.",
+    },
+    {
+      id: "seasonal-export" as const,
+      label: locale === "uk" ? "Seasonal Export" : "Seasonal Export",
+      description:
+        locale === "uk"
+          ? "Сезонні експортні позиції сої та ріпаку."
+          : "Seasonal export positions for soybeans and rapeseed.",
+    },
+  ];
+}
+
+export function getCommodityCategory(
+  commodity: Pick<IndexCommodityConfig, "category">,
+) {
+  return commodity.category ?? "all-seasons";
 }

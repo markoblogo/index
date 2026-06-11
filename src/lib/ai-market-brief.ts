@@ -1471,13 +1471,8 @@ function buildDailyIndexTelegramSection(
 }
 
 function commoditySort(commodityId: string) {
-  return commodities.find((item) => item.id === commodityId)?.group === "processing"
-    ? (commodities.find((item) => item.id === commodityId)?.name.uk === "Соя ГМО" ? 10 : 11)
-    : commodities.find((item) => item.id === commodityId)?.code === "CORN FCA CHOP"
-      ? 4
-      : commodities.find((item) => item.id === commodityId)?.group === "export"
-        ? (commodities.find((item) => item.id === commodityId)?.code === "CORN" ? 1 : commodities.find((item) => item.id === commodityId)?.code === "WHT 11.5" ? 2 : 3)
-        : 99;
+  const index = commodities.findIndex((item) => item.id === commodityId);
+  return index === -1 ? 99 : index + 1;
 }
 
 function formatDailyDelta(value: number | null) {

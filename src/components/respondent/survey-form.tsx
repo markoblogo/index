@@ -19,6 +19,7 @@ type RespondentSurveyFormProps = {
 type SubmissionStatus = "idle" | "submitting" | "success" | "draftSaved" | "error";
 
 type SavedItem = {
+  category: string;
   commodityId: string;
   commodityName: string;
   price: number;
@@ -61,6 +62,7 @@ export function RespondentSurveyForm({
         }
 
         return {
+          category: commodity.category,
           commodityId: commodity.id,
           commodityName: commodity.name,
           price,
@@ -169,38 +171,46 @@ export function RespondentSurveyForm({
       ) : null}
       <div className="grid gap-4">
         {data.commodities.map((commodity) => (
-          <label
-            className="grid min-w-0 gap-3 border-b border-black/10 py-4 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_minmax(11rem,14rem)] sm:items-center"
-            key={commodity.id}
-          >
-            <span className="min-w-0">
-              <span className="block text-base font-semibold text-uga-dark">
-                {commodity.name}
+          <div key={commodity.id}>
+            {data.commodities.findIndex((item) => item.id === commodity.id) === 0 ||
+            data.commodities[data.commodities.findIndex((item) => item.id === commodity.id) - 1]
+              ?.category !== commodity.category ? (
+              <div className="mb-3 mt-2 border-b border-black pb-2">
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-uga-green">
+                  {formatCategoryLabel(commodity.category, locale)}
+                </p>
+              </div>
+            ) : null}
+            <label className="grid min-w-0 gap-3 border-b border-black/10 py-4 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_minmax(11rem,14rem)] sm:items-center">
+              <span className="min-w-0">
+                <span className="block text-base font-semibold text-uga-dark">
+                  {commodity.name}
+                </span>
+                <span className="mt-1 block text-xs font-semibold uppercase tracking-[0.14em] text-black/45">
+                  {commodity.code} · {commodity.basisLabel}
+                </span>
               </span>
-              <span className="mt-1 block text-xs font-semibold uppercase tracking-[0.14em] text-black/45">
-                {commodity.code} · {commodity.basisLabel}
+              <span className="grid min-w-0 gap-1">
+                <span className="text-xs font-semibold uppercase tracking-[0.14em] text-black/45">
+                  {labels.price}
+                </span>
+                <span className="grid gap-0.5 text-[0.68rem] font-semibold leading-4 text-black/50">
+                  {labels.priceHintLines.map((line) => (
+                    <span key={line}>• {line}</span>
+                  ))}
+                </span>
+                <input
+                  className="box-border w-full min-w-0 border border-black/20 px-3 py-2.5 text-base font-semibold focus:border-uga-green focus:ring-uga-green"
+                  defaultValue={commodity.price ?? ""}
+                  inputMode="decimal"
+                  name={`price:${commodity.id}`}
+                  placeholder="USD/t"
+                  type="text"
+                  required={false}
+                />
               </span>
-            </span>
-            <span className="grid min-w-0 gap-1">
-              <span className="text-xs font-semibold uppercase tracking-[0.14em] text-black/45">
-                {labels.price}
-              </span>
-              <span className="grid gap-0.5 text-[0.68rem] font-semibold leading-4 text-black/50">
-                {labels.priceHintLines.map((line) => (
-                  <span key={line}>• {line}</span>
-                ))}
-              </span>
-              <input
-                className="box-border w-full min-w-0 border border-black/20 px-3 py-2.5 text-base font-semibold focus:border-uga-green focus:ring-uga-green"
-                defaultValue={commodity.price ?? ""}
-                inputMode="decimal"
-                name={`price:${commodity.id}`}
-                placeholder="USD/t"
-                type="text"
-                required={false}
-              />
-            </span>
-          </label>
+            </label>
+          </div>
         ))}
       </div>
 
@@ -244,6 +254,18 @@ export function RespondentSurveyForm({
       ) : null}
     </form>
   );
+}
+
+function formatCategoryLabel(category: string, locale: SurveyLocale) {
+  if (category === "processors") {
+    return locale === "uk" ? "Processors" : "Processors";
+  }
+
+  if (category === "seasonal-export") {
+    return locale === "uk" ? "Seasonal Export" : "Seasonal Export";
+  }
+
+  return locale === "uk" ? "All Seasons" : "All Seasons";
 }
 
 function CloseButton() {

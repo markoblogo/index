@@ -112,9 +112,47 @@ const SPIKE_MN7R_TARGETS: Mn7rTarget[] = [
     basisKeywords: ["parity", "паритет", "odesa", "одеса"],
   },
   {
+    indexCode: "GMO_SOY_EXPORT",
+    commodityKeywords: ["soy", "soybean", "соя", "gmo"],
+    basisKeywords: ["cpt", "port", "odesa", "одеса"],
+    excludeKeywords: ["parity", "паритет", "chop", "чоп"],
+  },
+  {
+    indexCode: "GMO_SOY_FCA_CHOP",
+    commodityKeywords: ["soy", "soybean", "соя", "gmo"],
+    basisKeywords: ["fca", "chop", "чоп"],
+  },
+  {
+    indexCode: "SOYBEAN_NON_GMO_EXPORT",
+    commodityKeywords: ["soy", "soybean", "соя", "non gmo", "не гмо"],
+    basisKeywords: ["cpt", "port", "odesa", "одеса"],
+    excludeKeywords: ["parity", "паритет", "chop", "чоп"],
+  },
+  {
+    indexCode: "SOYBEAN_NON_GMO_FCA_CHOP",
+    commodityKeywords: ["soy", "soybean", "соя", "non gmo", "не гмо"],
+    basisKeywords: ["fca", "chop", "чоп"],
+  },
+  {
     indexCode: "SUNFLOWER",
     commodityKeywords: ["sunflower", "соняш"],
     basisKeywords: ["parity", "паритет", "odesa", "одеса"],
+  },
+  {
+    indexCode: "RAPESEED_NON_GMO_PROCESSING",
+    commodityKeywords: ["rapeseed", "canola", "ріпак", "non gmo", "не гмо"],
+    basisKeywords: ["parity", "паритет", "odesa", "одеса"],
+  },
+  {
+    indexCode: "RAPESEED_NON_GMO_EXPORT",
+    commodityKeywords: ["rapeseed", "canola", "ріпак", "non gmo", "не гмо"],
+    basisKeywords: ["cpt", "port", "odesa", "одеса"],
+    excludeKeywords: ["parity", "паритет", "chop", "чоп"],
+  },
+  {
+    indexCode: "RAPESEED_NON_GMO_FCA_CHOP",
+    commodityKeywords: ["rapeseed", "canola", "ріпак", "non gmo", "не гмо"],
+    basisKeywords: ["fca", "chop", "чоп"],
   },
 ];
 

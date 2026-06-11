@@ -5,6 +5,7 @@ import { SITE_CONFIG } from "@/lib/constants";
 import { allowMockFallback, db, hasDatabaseUrl } from "@/lib/db";
 import type { DemoUser } from "@/lib/demo-auth";
 import { getDemoSubmission, setDemoSubmission } from "@/lib/demo-submission-store";
+import { getCommodityCategory } from "@/lib/index-platform";
 import { commodities, respondents, type CommodityId } from "@/lib/mock-data";
 import {
   canManuallyUnlockPublicationDate,
@@ -41,6 +42,7 @@ export type DailyInputCell = {
 
 export type DailyInputCommodity = {
   basisLabel: string;
+  category: string;
   id: string;
   code: string;
   name: string;
@@ -65,14 +67,9 @@ export type DailyInputData = {
 };
 
 const WARNING_THRESHOLD = 0.02;
-const commodityCodeByMockId: Record<CommodityId, string> = {
-  corn: "CORN",
-  "corn-fca-chop": "CORN_FCA_CHOP",
-  "wheat-115": "WHT_115",
-  "feed-wheat": "FEED_WHT",
-  "gmo-soybean": "GMO_SOY",
-  sunflower: "SUNFLOWER",
-};
+const commodityCodeByMockId: Record<CommodityId, string> = Object.fromEntries(
+  getActiveIndexTenant().commodities.map((commodity) => [commodity.id, commodity.dbCode]),
+) as Record<CommodityId, string>;
 
 export function todayInputDate() {
   return todayKyivDate();
@@ -293,6 +290,9 @@ async function getDatabaseDailyInputData(date: string): Promise<DailyInputData> 
         commodity.code,
         activeIndex,
       ).name,
+      category: getCommodityCategory(
+        activeIndex.commodities.find((item) => item.dbCode === commodity.code) ?? {},
+      ),
       id: commodity.id,
       code: commodity.code,
       name: commodity.nameUk,
@@ -391,6 +391,9 @@ function getMockDailyInputData(date: string): DailyInputData {
         commodity.code,
         getActiveIndexTenant(),
       ).name,
+      category: getCommodityCategory(
+        getActiveIndexTenant().commodities.find((item) => item.id === commodity.id) ?? {},
+      ),
       id: commodity.id,
       code: commodity.code,
       name: commodity.name.uk,

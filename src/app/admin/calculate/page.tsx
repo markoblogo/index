@@ -14,6 +14,7 @@ import {
 } from "@/lib/ai-market-brief";
 import { SITE_CONFIG } from "@/lib/constants";
 import type { IndexCalculationStatus } from "@/lib/index-calculation";
+import { getActiveIndexConfig, getCommodityCategory } from "@/lib/index-platform";
 
 type CalculatePageProps = {
   searchParams: Promise<{
@@ -366,6 +367,9 @@ function CalculationRow({
   commodity: AdminCalculationCommodity;
   showBenchmark: boolean;
 }) {
+  const category = getCommodityCategory(
+    getActiveIndexConfig().commodities.find((item) => item.dbCode === commodity.code) ?? {},
+  );
   const canBlend =
     showBenchmark &&
     commodity.status === "publishable" &&
@@ -383,6 +387,9 @@ function CalculationRow({
             </p>
             <span className="admin-dark-pill rounded-full bg-black px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-white">
               {commodity.code}
+            </span>
+            <span className="rounded-full border border-black/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-black/55">
+              {formatCategoryBadge(category)}
             </span>
             <span
               className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] ring-1 ${statusClasses[commodity.status]}`}
@@ -495,4 +502,16 @@ function Metric({
 
 function formatUsd(value: number | null) {
   return value === null ? "n/a" : `$${value.toFixed(1)} USD/t`;
+}
+
+function formatCategoryBadge(category: string) {
+  if (category === "processors") {
+    return "Processors";
+  }
+
+  if (category === "seasonal-export") {
+    return "Seasonal Export";
+  }
+
+  return "All Seasons";
 }

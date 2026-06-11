@@ -251,8 +251,36 @@ function getAdditionalAliases(commodity: IndexCommodityConfig) {
     return ["GMO_SOYBEAN", "SOY_GMO", "SOYEX", "SOYPR"];
   }
 
+  if (commodity.dbCode === "GMO_SOY_EXPORT") {
+    return ["GMO_SOY_CPT", "GMO_SOY_EXPORT_CPT", "SOY_GMO_CPT"];
+  }
+
+  if (commodity.dbCode === "GMO_SOY_FCA_CHOP") {
+    return ["GMO_SOY_CHOP", "GMO_SOY_FCA", "SOY_GMO_FCA_CHOP"];
+  }
+
+  if (commodity.dbCode === "SOYBEAN_NON_GMO_EXPORT") {
+    return ["NON_GMO_SOY", "SOYBEAN_NON_GMO", "SOY_NGMO_CPT", "NON_GMO_SOY_CPT"];
+  }
+
+  if (commodity.dbCode === "SOYBEAN_NON_GMO_FCA_CHOP") {
+    return ["NON_GMO_SOY_CHOP", "NON_GMO_SOY_FCA", "SOYBEAN_NON_GMO_FCA_CHOP"];
+  }
+
   if (commodity.dbCode === "SUNFLOWER") {
     return ["SUN", "SUNEX", "SUNFLOWER_SEED", "SUNPR"];
+  }
+
+  if (commodity.dbCode === "RAPESEED_NON_GMO_PROCESSING") {
+    return ["RAPESEED", "RAPESEED_NON_GMO", "RAPESEED_PROCESSING", "RAP_PROCESSING"];
+  }
+
+  if (commodity.dbCode === "RAPESEED_NON_GMO_EXPORT") {
+    return ["RAPESEED_EXPORT", "RAPESEED_CPT", "RAPEX"];
+  }
+
+  if (commodity.dbCode === "RAPESEED_NON_GMO_FCA_CHOP") {
+    return ["RAPESEED_CHOP", "RAPESEED_FCA", "RAP_FCA_CHOP"];
   }
 
   if (commodity.dbCode === "CORN") {

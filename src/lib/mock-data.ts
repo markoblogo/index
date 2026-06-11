@@ -1,5 +1,9 @@
 import type { Locale } from "@/lib/i18n";
-import { getActiveIndexConfig } from "@/lib/index-platform";
+import {
+  getActiveIndexConfig,
+  getCommodityCategory,
+  type SpikeCommodityCategory,
+} from "@/lib/index-platform";
 import { getActiveRespondentCount } from "@/lib/respondent-directory";
 import { getDeliveryBasisConfigForCommodityId } from "@/lib/tenant-basis";
 
@@ -18,6 +22,7 @@ export type Commodity = {
   percentChange: number;
   sparkline: number[];
   group?: "export" | "processing";
+  category?: SpikeCommodityCategory;
   vatIncluded?: boolean;
   detailMetrics?: Array<{
     label: Record<Locale, string>;
@@ -65,6 +70,7 @@ export const commodities: Commodity[] = activeIndex.commodities.map(
     percentChange: commodity.percentChange,
     sparkline: commodity.sparkline,
     group: commodity.group,
+    category: getCommodityCategory(commodity),
     vatIncluded: commodity.vatIncluded,
     detailMetrics: commodity.detailMetrics,
   }),

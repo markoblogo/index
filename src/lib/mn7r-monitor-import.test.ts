@@ -353,7 +353,7 @@ describe("importMn7rMonitorRespondentPrices", () => {
       },
     });
 
-    expect(result).toEqual({ date: "2026-06-11", imported: 1, skipped: 6 });
+    expect(result).toEqual({ date: "2026-06-11", imported: 1, skipped: 13 });
     expect(calls[0]).toMatchObject({
       currency: "USD",
       indexCode: "CORN",

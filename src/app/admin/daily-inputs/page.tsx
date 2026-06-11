@@ -160,6 +160,9 @@ export default async function DailyInputsPage({
                       className="border-l border-white/10 px-3 py-4 align-bottom text-xs font-semibold uppercase tracking-[0.12em] text-white/70"
                       key={commodity.id}
                     >
+                      <span className="mb-2 block text-[0.58rem] uppercase tracking-[0.18em] text-uga-lime">
+                        {formatCategoryBadge(commodity.category)}
+                      </span>
                       <span className="line-clamp-3 text-sm font-semibold normal-case tracking-normal text-white">
                         {commodity.name}
                       </span>
@@ -230,6 +233,18 @@ export default async function DailyInputsPage({
       </form>
     </section>
   );
+}
+
+function formatCategoryBadge(category: string) {
+  if (category === "processors") {
+    return "Processors";
+  }
+
+  if (category === "seasonal-export") {
+    return "Seasonal Export";
+  }
+
+  return "All Seasons";
 }
 
 function MatrixCell({
