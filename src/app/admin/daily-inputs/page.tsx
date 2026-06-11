@@ -150,7 +150,7 @@ export default async function DailyInputsPage({
         <div className="overflow-hidden border border-black bg-white">
           <div className="overflow-x-auto lg:overflow-x-visible">
             <table className="w-full table-fixed border-collapse text-left">
-              <thead className="bg-uga-dark text-white">
+              <thead className="sticky top-0 z-20 bg-uga-dark text-white shadow-[0_10px_24px_rgba(0,0,0,0.22)]">
                 <tr>
                   <th className="w-[20%] bg-uga-dark px-4 py-4 text-xs font-semibold uppercase tracking-[0.16em] text-white/70">
                     Respondent
