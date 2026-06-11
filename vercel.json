@@ -18,11 +18,19 @@
     },
     {
       "path": "/api/cron/mn7r-monitor-prices",
-      "schedule": "0 14 * * *"
+      "schedule": "0 14 * * 1-5"
+    },
+    {
+      "path": "/api/cron/mn7r-monitor-prices",
+      "schedule": "0 15 * * 1-5"
     },
     {
       "path": "/api/cron/spike-auto-publish",
-      "schedule": "0 16 * * *"
+      "schedule": "0 16 * * 1-5"
+    },
+    {
+      "path": "/api/cron/spike-auto-publish",
+      "schedule": "0 17 * * 1-5"
     },
     {
       "path": "/api/cron/uga-spike-demo-sync",

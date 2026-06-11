@@ -177,14 +177,18 @@ Current `vercel.json` cron schedule:
 [
   { "path": "/api/cron/respondent-emails", "schedule": "30 14 * * 1-5" },
   { "path": "/api/cron/respondent-telegram", "schedule": "0 13 * * 1-5" },
-  { "path": "/api/cron/mn7r-monitor-prices", "schedule": "0 14 * * *" },
-  { "path": "/api/cron/spike-auto-publish", "schedule": "0 16 * * *" },
+  { "path": "/api/cron/mn7r-monitor-prices", "schedule": "0 14 * * 1-5" },
+  { "path": "/api/cron/mn7r-monitor-prices", "schedule": "0 15 * * 1-5" },
+  { "path": "/api/cron/spike-auto-publish", "schedule": "0 16 * * 1-5" },
+  { "path": "/api/cron/spike-auto-publish", "schedule": "0 17 * * 1-5" },
   { "path": "/api/cron/uga-spike-demo-sync", "schedule": "30 16 * * 1-5" }
 ]
 ```
 
 Times are UTC in Vercel. The application code applies Kyiv-time business rules
-where needed.
+where needed, so MN7R import and Spike auto-publish are intentionally scheduled
+in both DST-adjacent UTC slots and then filtered again by Kyiv local hour in the
+route logic.
 
 UGA Spike fallback status:
 
