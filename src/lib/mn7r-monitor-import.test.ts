@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   formatDateKyiv,
   importMn7rMonitorRespondentPrices,
+  isKyivMn7rImportHour,
   type Mn7rPayload,
 } from "@/lib/mn7r-monitor-import";
 import type { RespondentPriceInput } from "@/lib/respondent-prices";
@@ -14,6 +15,7 @@ afterEach(() => {
 
 describe("importMn7rMonitorRespondentPrices", () => {
   it("updates the same MN7R Monitor respondent price instead of creating a duplicate", async () => {
+    process.env.INDEX_TENANT = "spike-ua";
     process.env.MN7R_API_URL = "http://monitor.test";
     process.env.MN7R_INDEX_EXPORT_TOKEN = "token";
     process.env.MN7R_INDEX_RESPONDENT_CODE = "MN7R_MONITOR";
@@ -53,7 +55,7 @@ describe("importMn7rMonitorRespondentPrices", () => {
       fetchImpl,
       upsertRespondentPriceImpl: upsert,
     });
-    payload.positions[0].monitorPrice = 234.25;
+    payload.positions![0].monitorPrice = 234.25;
     await importMn7rMonitorRespondentPrices("2026-05-25", {
       fetchImpl,
       upsertRespondentPriceImpl: upsert,
@@ -66,6 +68,7 @@ describe("importMn7rMonitorRespondentPrices", () => {
   });
 
   it("skips null and no_data monitor prices", async () => {
+    process.env.INDEX_TENANT = "spike-ua";
     process.env.MN7R_API_URL = "http://monitor.test";
     process.env.MN7R_INDEX_EXPORT_TOKEN = "token";
 
@@ -127,6 +130,7 @@ describe("importMn7rMonitorRespondentPrices", () => {
   });
 
   it("converts non-USD monitor prices to USD before saving", async () => {
+    process.env.INDEX_TENANT = "spike-ua";
     process.env.MN7R_API_URL = "http://monitor.test";
     process.env.MN7R_INDEX_EXPORT_TOKEN = "token";
 
@@ -200,6 +204,7 @@ describe("importMn7rMonitorRespondentPrices", () => {
   });
 
   it("skips unsupported MN7R positions without failing the import", async () => {
+    process.env.INDEX_TENANT = "spike-ua";
     process.env.MN7R_API_URL = "http://monitor.test";
     process.env.MN7R_INDEX_EXPORT_TOKEN = "token";
 
@@ -242,6 +247,7 @@ describe("importMn7rMonitorRespondentPrices", () => {
   });
 
   it("imports Corn FCA Chop as a separate monitor position", async () => {
+    process.env.INDEX_TENANT = "spike-ua";
     process.env.MN7R_API_URL = "http://monitor.test";
     process.env.MN7R_INDEX_EXPORT_TOKEN = "token";
 
@@ -287,6 +293,76 @@ describe("importMn7rMonitorRespondentPrices", () => {
       respondentCode: "MN7R_MONITOR",
     });
   });
+
+  it("aggregates raw Monitor records by commodity, basis and 10-day overlap within the 30-day window", async () => {
+    process.env.INDEX_TENANT = "spike-ua";
+    process.env.MN7R_API_URL = "http://monitor.test";
+    process.env.MN7R_INDEX_EXPORT_TOKEN = "token";
+
+    const payload: Mn7rPayload = {
+      source: "MN7R_MONITOR",
+      respondentCode: "MN7R_MONITOR",
+      asOfDate: "2026-06-11",
+      generatedAt: "2026-06-11T14:00:00.000Z",
+      timezone: "Europe/Kyiv",
+      methodologyVersion: "mn7r-monitor-index-v2",
+      records: [
+        {
+          commodity: "Corn",
+          basis: "CPT Odesa export",
+          deliveryStart: "2026-06-15",
+          deliveryEnd: "2026-07-10",
+          monitorPrice: 220,
+          currency: "USD",
+          quality: "ok",
+        },
+        {
+          commodity: "Maize",
+          basis: "CPT Odesa export",
+          deliveryStart: "2026-06-20",
+          deliveryEnd: "2026-07-05",
+          monitorPrice: 224,
+          currency: "USD",
+          quality: "thin",
+        },
+        {
+          commodity: "Corn",
+          basis: "CPT Odesa export",
+          deliveryStart: "2026-07-09",
+          deliveryEnd: "2026-07-12",
+          monitorPrice: 230,
+          currency: "USD",
+          quality: "ok",
+        },
+      ],
+    };
+    const calls: RespondentPriceInput[] = [];
+    const cleared: string[] = [];
+
+    const result = await importMn7rMonitorRespondentPrices("2026-06-11", {
+      clearRespondentPriceImpl: async (input) => {
+        cleared.push(`${input.indexCode}:${input.reason}`);
+      },
+      fetchImpl: async () =>
+        new Response(JSON.stringify(payload), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      upsertRespondentPriceImpl: async (input) => {
+        calls.push(input);
+      },
+    });
+
+    expect(result).toEqual({ date: "2026-06-11", imported: 1, skipped: 6 });
+    expect(calls[0]).toMatchObject({
+      currency: "USD",
+      indexCode: "CORN",
+      price: 222,
+      respondentCode: "MN7R_MONITOR",
+    });
+    expect(cleared).toContain("WHT_115:mn7r_no_matching_records");
+    expect(cleared).toContain("SUNFLOWER:mn7r_no_matching_records");
+  });
 });
 
 describe("formatDateKyiv", () => {
@@ -294,5 +370,10 @@ describe("formatDateKyiv", () => {
     expect(formatDateKyiv(new Date("2026-05-25T21:30:00.000Z"))).toBe(
       "2026-05-26",
     );
+  });
+
+  it("detects the 17:00 Europe/Kyiv import window", () => {
+    expect(isKyivMn7rImportHour(new Date("2026-06-11T14:00:00.000Z"))).toBe(true);
+    expect(isKyivMn7rImportHour(new Date("2026-06-11T13:00:00.000Z"))).toBe(false);
   });
 });

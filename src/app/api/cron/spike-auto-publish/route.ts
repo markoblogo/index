@@ -32,7 +32,7 @@ export async function GET(request: Request) {
   }
 
   const date = url.searchParams.get("date") ?? formatDateKyiv();
-  const shouldImportMonitor = url.searchParams.get("import") !== "0";
+  const shouldImportMonitor = url.searchParams.get("import") === "1";
   const replaceExisting = url.searchParams.get("replace") === "1";
   let monitorImport:
     | Awaited<ReturnType<typeof importMn7rMonitorRespondentPrices>>

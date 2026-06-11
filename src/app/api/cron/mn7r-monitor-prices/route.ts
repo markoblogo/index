@@ -3,6 +3,7 @@ import { isCronRequestAuthorized } from "@/lib/cron-auth";
 import {
   formatDateKyiv,
   importMn7rMonitorRespondentPrices,
+  isKyivMn7rImportHour,
 } from "@/lib/mn7r-monitor-import";
 
 export const dynamic = "force-dynamic";
@@ -18,6 +19,17 @@ export async function GET(request: Request) {
   }
 
   const url = new URL(request.url);
+  const force = url.searchParams.get("force") === "1";
+
+  if (!force && !isKyivMn7rImportHour()) {
+    return NextResponse.json({
+      date: formatDateKyiv(),
+      imported: 0,
+      skipped: 0,
+      skippedReason: "outside_kyiv_17_import_window",
+    });
+  }
+
   const date = url.searchParams.get("date") ?? formatDateKyiv();
   const result = await importMn7rMonitorRespondentPrices(date);
 
