@@ -12,6 +12,7 @@ type DailyInputsPageProps = {
   searchParams: Promise<{
     date?: string;
     saved?: string;
+    view?: string;
   }>;
 };
 
@@ -24,10 +25,41 @@ export default async function DailyInputsPage({
   await requireDemoRole("admin");
   const params = await searchParams;
   const date = params.date ?? todayInputDate();
+  const viewMode = params.view === "detailed" ? "detailed" : "compact";
+  const isCompactView = viewMode === "compact";
   const data = await getDailyInputData(date);
   const isSpike = SITE_CONFIG.tenantId === "spike-ua";
   const respondentKindLabel = isSpike ? "partner" : "respondent";
   const showSpikeComparison = !isSpike;
+  const commodityGroups = [
+    {
+      key: "all-seasons",
+      label: "All Seasons",
+      description: "Core indices shown by default on the public site.",
+      commodities: data.commodities.filter(
+        (commodity) => commodity.category === "all-seasons",
+      ),
+      defaultOpen: true,
+    },
+    {
+      key: "processors",
+      label: "Processors",
+      description: "Domestic processing-market positions with VAT-inclusive logic.",
+      commodities: data.commodities.filter(
+        (commodity) => commodity.category === "processors",
+      ),
+      defaultOpen: true,
+    },
+    {
+      key: "seasonal-export",
+      label: "Seasonal Export",
+      description: "Seasonal export positions that expand the matrix during active trade periods.",
+      commodities: data.commodities.filter(
+        (commodity) => commodity.category === "seasonal-export",
+      ),
+      defaultOpen: false,
+    },
+  ].filter((group) => group.commodities.length > 0);
   const cellByKey = new Map(
     data.cells.map((cell) => [
       `${cell.commodityId}:${cell.respondentId}`,
@@ -90,6 +122,7 @@ export default async function DailyInputsPage({
               {data.canUnlockPublication ? (
                 <form action={unlockPublication}>
                   <input name="date" type="hidden" value={date} />
+                  <input name="view" type="hidden" value={viewMode} />
                   <input name="returnTo" type="hidden" value="/admin/daily-inputs" />
                   <button
                     className="rounded-full border border-uga-lime bg-transparent px-3 py-1 text-uga-lime transition hover:bg-uga-lime hover:text-black"
@@ -106,12 +139,13 @@ export default async function DailyInputsPage({
             <label className="grid gap-2 text-sm font-semibold text-uga-dark">
               Trade date
               <input
-              className="border border-black px-3 py-2 text-base"
+                className="border border-black px-3 py-2 text-base"
                 defaultValue={date}
                 name="date"
                 type="date"
               />
             </label>
+            <input name="view" type="hidden" value={viewMode} />
             <button
               className="border border-black px-4 py-2 text-sm font-semibold text-uga-dark transition hover:border-uga-green hover:text-uga-green"
               type="submit"
@@ -147,74 +181,144 @@ export default async function DailyInputsPage({
 
       <form action={save} className="grid gap-5">
         <input name="date" type="hidden" value={date} />
-        <div className="overflow-hidden border border-black bg-white">
-          <div className="overflow-x-auto lg:overflow-x-visible">
-            <table className="w-full table-fixed border-collapse text-left">
-              <thead className="sticky top-0 z-20 bg-uga-dark text-white shadow-[0_10px_24px_rgba(0,0,0,0.22)]">
-                <tr>
-                  <th className="w-[20%] bg-uga-dark px-4 py-4 text-xs font-semibold uppercase tracking-[0.16em] text-white/70">
-                    Respondent
-                  </th>
-                  {data.commodities.map((commodity) => (
-                    <th
-                      className="border-l border-white/10 px-3 py-4 align-bottom text-xs font-semibold uppercase tracking-[0.12em] text-white/70"
-                      key={commodity.id}
-                    >
-                      <span className="mb-2 block text-[0.58rem] uppercase tracking-[0.18em] text-uga-lime">
-                        {formatCategoryBadge(commodity.category)}
-                      </span>
-                      <span className="line-clamp-3 text-sm font-semibold normal-case tracking-normal text-white">
-                        {commodity.name}
-                      </span>
-                      <span className="mt-1 block text-[0.65rem] uppercase tracking-[0.14em] text-white/50">
-                        {commodity.code}
-                      </span>
-                      <span className="mt-1 block text-[0.62rem] normal-case tracking-normal text-white/42">
-                        {commodity.basisLabel}
-                      </span>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {data.respondents.map((respondent) => (
-                  <tr className="border-t border-black/10" key={respondent.id}>
-                    <th className="bg-white px-4 py-4 align-top">
-                      <p className="text-base font-semibold text-uga-dark">
-                        {respondent.name}
-                      </p>
-                      <p className="mt-1 text-xs font-semibold uppercase tracking-[0.14em] text-black/45">
-                        {respondentKindLabel}
-                      </p>
-                    </th>
-                    {data.commodities.map((commodity) => {
-                      const cell = cellByKey.get(
-                        `${commodity.id}:${respondent.id}`,
-                      );
-
-                      if (!cell) {
-                        return (
-                          <td
-                            className="border-l border-black/10 px-3 py-3"
-                            key={commodity.id}
-                          />
-                        );
-                      }
-
-                      return (
-                        <MatrixCell
-                          cell={cell}
-                          key={commodity.id}
-                          locked={data.lockedForEditing}
-                          showSpikeComparison={showSpikeComparison}
-                        />
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <input name="view" type="hidden" value={viewMode} />
+        <div className="grid gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap gap-2">
+              {commodityGroups.map((group) => (
+                <a
+                  className="rounded-full border border-black/15 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-black/65 transition hover:border-uga-green hover:text-uga-green"
+                  href={`#${group.key}`}
+                  key={group.key}
+                >
+                  {group.label} · {group.commodities.length}
+                </a>
+              ))}
+            </div>
+            <div className="inline-flex overflow-hidden rounded-full border border-black/15 bg-white p-1 text-[0.68rem] font-semibold uppercase tracking-[0.14em]">
+              <a
+                className={
+                  isCompactView
+                    ? "rounded-full bg-uga-green px-3 py-1.5 text-white"
+                    : "rounded-full px-3 py-1.5 text-black/55 transition hover:text-uga-green"
+                }
+                href={`/admin/daily-inputs?date=${encodeURIComponent(date)}&view=compact`}
+              >
+                Compact
+              </a>
+              <a
+                className={
+                  !isCompactView
+                    ? "rounded-full bg-uga-dark px-3 py-1.5 text-white"
+                    : "rounded-full px-3 py-1.5 text-black/55 transition hover:text-uga-green"
+                }
+                href={`/admin/daily-inputs?date=${encodeURIComponent(date)}&view=detailed`}
+              >
+                Detailed
+              </a>
+            </div>
           </div>
+
+          <div className="rounded-[1.25rem] border border-black/10 bg-black/[0.03] px-4 py-3 text-sm text-black/60">
+            {isCompactView
+              ? "Compact view trims badge density and keeps actions in a quieter footer row."
+              : "Detailed view keeps every status signal visible for audits and manual review."}
+          </div>
+
+          {commodityGroups.map((group) => (
+            <details
+              className="overflow-hidden border border-black bg-white"
+              id={group.key}
+              key={group.key}
+              open={group.defaultOpen}
+            >
+              <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-3 border-b border-black/10 px-4 py-4 marker:hidden">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-full bg-uga-mist px-3 py-1 text-[0.68rem] font-bold uppercase tracking-[0.16em] text-uga-green">
+                      {group.label}
+                    </span>
+                    <span className="text-xs font-semibold uppercase tracking-[0.12em] text-black/45">
+                      {group.commodities.length} fields
+                    </span>
+                  </div>
+                  <p className="mt-2 text-sm text-black/60">{group.description}</p>
+                </div>
+                <span className="rounded-full border border-black/15 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-black/55">
+                  Open / collapse
+                </span>
+              </summary>
+
+              <div className="overflow-x-auto">
+                <table className="min-w-full border-collapse text-left">
+                  <thead className="sticky top-0 z-20 bg-uga-dark text-white shadow-[0_10px_24px_rgba(0,0,0,0.22)]">
+                    <tr>
+                      <th className="sticky left-0 z-30 min-w-[17rem] border-r border-white/10 bg-uga-dark px-4 py-4 text-xs font-semibold uppercase tracking-[0.16em] text-white/70">
+                        Respondent
+                      </th>
+                      {group.commodities.map((commodity) => (
+                        <th
+                          className={`${isCompactView ? "min-w-[13rem]" : "min-w-[15rem]"} border-l border-white/10 px-3 py-4 align-bottom text-xs font-semibold uppercase tracking-[0.12em] text-white/70`}
+                          key={commodity.id}
+                        >
+                          <span className="mb-2 block text-[0.58rem] uppercase tracking-[0.18em] text-uga-lime">
+                            {formatCategoryBadge(commodity.category)}
+                          </span>
+                          <span className="block text-sm font-semibold normal-case tracking-normal text-white">
+                            {commodity.name}
+                          </span>
+                          <span className="mt-1 block text-[0.65rem] uppercase tracking-[0.14em] text-white/50">
+                            {commodity.code}
+                          </span>
+                          <span className="mt-1 block text-[0.72rem] normal-case tracking-normal text-white/42">
+                            {commodity.basisLabel}
+                          </span>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.respondents.map((respondent) => (
+                      <tr className="border-t border-black/10" key={respondent.id}>
+                        <th className="sticky left-0 z-10 min-w-[17rem] border-r border-black/10 bg-white px-4 py-4 align-top">
+                          <p className="text-base font-semibold text-uga-dark">
+                            {respondent.name}
+                          </p>
+                          <p className="mt-1 text-xs font-semibold uppercase tracking-[0.14em] text-black/45">
+                            {respondentKindLabel}
+                          </p>
+                        </th>
+                        {group.commodities.map((commodity) => {
+                          const cell = cellByKey.get(
+                            `${commodity.id}:${respondent.id}`,
+                          );
+
+                          if (!cell) {
+                            return (
+                              <td
+                                className={`${isCompactView ? "min-w-[13rem]" : "min-w-[15rem]"} border-l border-black/10 px-3 py-3`}
+                                key={commodity.id}
+                              />
+                            );
+                          }
+
+                          return (
+                            <MatrixCell
+                              cell={cell}
+                              compact={isCompactView}
+                              key={commodity.id}
+                              locked={data.lockedForEditing}
+                              showSpikeComparison={showSpikeComparison}
+                            />
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </details>
+          ))}
         </div>
 
         <div className="flex flex-col gap-3 border border-black bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -249,10 +353,12 @@ function formatCategoryBadge(category: string) {
 
 function MatrixCell({
   cell,
+  compact,
   locked,
   showSpikeComparison,
 }: {
   cell: DailyInputCell;
+  compact: boolean;
   locked: boolean;
   showSpikeComparison: boolean;
 }) {
@@ -260,17 +366,17 @@ function MatrixCell({
     <td
       className={
         cell.warning && showSpikeComparison
-          ? "admin-warning-cell border-l border-black/10 bg-red-50 px-3 py-3 align-top"
-          : "border-l border-black/10 px-3 py-3 align-top"
+          ? `${compact ? "min-w-[13rem]" : "min-w-[15rem]"} admin-warning-cell border-l border-black/10 bg-red-50 px-2.5 py-2.5 align-top`
+          : `${compact ? "min-w-[13rem]" : "min-w-[15rem]"} border-l border-black/10 px-2.5 py-2.5 align-top`
       }
     >
-      <div className="grid gap-2">
+      <div className={`${compact ? "grid gap-1.5" : "grid gap-2"}`}>
         <input
           aria-label={`${cell.commodityId} ${cell.respondentId} price`}
           className={
             cell.warning && showSpikeComparison
-              ? "w-full border border-red-300 bg-white px-3 py-2 text-sm font-semibold text-uga-dark focus:border-red-500 focus:ring-red-500"
-              : "w-full border border-black/20 bg-white px-3 py-2 text-sm font-semibold text-uga-dark focus:border-uga-green focus:ring-uga-green"
+              ? `${compact ? "px-2.5 py-1.5 text-[0.95rem]" : "px-3 py-2 text-sm"} w-full border border-red-300 bg-white font-semibold text-uga-dark focus:border-red-500 focus:ring-red-500`
+              : `${compact ? "px-2.5 py-1.5 text-[0.95rem]" : "px-3 py-2 text-sm"} w-full border border-black/20 bg-white font-semibold text-uga-dark focus:border-uga-green focus:ring-uga-green`
           }
           defaultValue={cell.price ?? ""}
           disabled={locked}
@@ -291,7 +397,7 @@ function MatrixCell({
           type="hidden"
           value={cell.status}
         />
-        {showSpikeComparison && cell.spikeIndicative !== null ? (
+        {!compact && showSpikeComparison && cell.spikeIndicative !== null ? (
           <dl className="grid gap-1 text-xs text-black/55">
             <div className="flex justify-between gap-2">
               <dt>Benchmark</dt>
@@ -301,18 +407,20 @@ function MatrixCell({
             </div>
           </dl>
         ) : null}
-        <div className="flex flex-wrap gap-1.5 border-t border-black/10 pt-2">
+        <div className={`${compact ? "gap-1 pt-1.5" : "gap-1.5 pt-2"} flex flex-wrap border-t border-black/10`}>
           <SourceBadge active={cell.enteredByRespondent} label="Link" />
           <SourceBadge
             active={cell.enteredByAdmin && !cell.adminChanged}
             label="Admin"
           />
           <SourceBadge active={cell.adminChanged} label="Changed" />
-          {cell.status === "missing" ? <SourceBadge active={false} label="Missing" /> : null}
+          {!compact && cell.status === "missing" ? (
+            <SourceBadge active={false} label="Missing" />
+          ) : null}
           {cell.excluded ? <SourceBadge active label="Excluded" tone="warning" /> : null}
         </div>
-        <div className="grid gap-2">
-          <label className="flex items-center gap-2 text-[0.68rem] font-semibold uppercase tracking-[0.1em] text-black/55">
+        <div className="rounded-[0.9rem] border border-black/8 bg-black/[0.03] px-2.5 py-2">
+          <label className="flex items-center gap-2 text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-black/50">
             <input
               className="h-4 w-4 border-black text-uga-green focus:ring-uga-green"
               defaultChecked={cell.excluded}
@@ -349,7 +457,7 @@ function SourceBadge({
 
   return (
     <span
-      className={`inline-flex rounded-full border px-2 py-1 text-[0.62rem] font-black uppercase tracking-[0.1em] ${
+      className={`inline-flex rounded-full border px-2 py-[0.28rem] text-[0.58rem] font-black uppercase tracking-[0.12em] ${
         active ? activeClass : "border-black/15 bg-white text-black/35"
       }`}
     >
