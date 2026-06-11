@@ -786,12 +786,13 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
         title: "SPIKE SPOT INDEX",
         description:
           "SPIKE SPOT INDEX - спотовий бенчмарк цін для українського аграрного ринку.",
-        boardTitle: "SPIKE SPOT INDEX / Спотові ціни",
+      boardTitle: "SPIKE SPOT INDEX / Спотові ціни",
       boardDescription:
-        "Ринковий бенчмарк у USD/т для CPT Одеса, CPT parity Одеса та FCA Чоп, що публікується після щоденної перевірки даних партнерів.",
+        "Ринковий бенчмарк у USD/т, поділений на All Seasons, Processors та Seasonal Export, що публікується після щоденної перевірки даних партнерів.",
         heroSubtitle:
           "Спотовий бенчмарк цін для українського аграрного ринку.",
-      heroMeta: "CPT Одеса · FCA Чоп · spot · USD/т · публікація після EOD-перевірки",
+      heroMeta:
+        "All Seasons · Processors · Seasonal Export · USD/т · щоденна публікація",
         heroAttribution:
           "Публікується Spike Brokers. Дані: партнери ринку. Технологія: Cropto/MN7R.",
         heroAttributionShort: "Spike Brokers · партнери ринку · Cropto/MN7R",
@@ -810,13 +811,13 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
           "SPIKE SPOT INDEX - це окрема індексна платформа ",
         descriptionLinkText: "Spike Brokers",
       descriptionAfterLink:
-        " для щоденної публікації агрегованих спотових цін за ключовими експортними, прикордонними та переробними позиціями України. Індекс створений, щоб дати ринку прозорий і порівнюваний орієнтир для CPT Одеса, CPT parity Одеса та FCA Чоп.",
+        " для щоденної публікації агрегованих спотових цін у категоріях All Seasons, Processors та Seasonal Export. Індекс створений, щоб дати ринку прозорий і порівнюваний орієнтир для позицій CPT Port, FCA Чоп та CPT parity Одеса.",
         ugaHref: "https://spike.broker/",
         whyTitle: "Операційний ціновий орієнтир для угод, логістики та переробки",
         whyBody: [
           "Український аграрний ринок щодня реагує на попит експортерів, переробників, логістику, портову інфраструктуру, валюту, фрахт і якісні параметри продукції. Для роботи з такими потоками учасникам потрібен спільний орієнтир, прив'язаний до реальних торгових базисів.",
           "SPIKE SPOT INDEX агрегує ринкові оцінки партнерів Spike Brokers і перетворює їх на зіставні значення для публікації. Індекс не розкриває індивідуальні подання компаній, а показує очищений агрегований результат.",
-        "Платформа охоплює експортні позиції CPT Одеса, прикордонну позицію FCA Чоп та переробні позиції CPT parity Одеса. Для сої ГМО та соняшнику публічні значення відображаються з ПДВ, відповідно до логіки ринку переробки.",
+        "Платформа поділена на All Seasons, Processors та Seasonal Export. Для переробних позицій публічні значення відображаються з ПДВ, а експортні та прикордонні позиції подаються відповідно до ринкової практики без ПДВ.",
         ],
         whyFeatures: [
           {
@@ -869,20 +870,22 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
         title: "Як розраховується SPIKE SPOT INDEX",
         description:
           "SPIKE SPOT INDEX використовує повторюваний щоденний процес, який перетворює цінові оцінки партнерів-респондентів на перевірені та репрезентативні значення індексу для кожної позиції, базису та дати розрахунку.",
-        coreTitle: "Від EOD-оцінок партнерів до опублікованого спотового бенчмарку",
+        coreTitle: "Від оцінок партнерів і Monitor до опублікованого спотового бенчмарку",
         coreNarrative: [
           "Індекс розраховується на основі щоденних цінових оцінок, які надає визначена група партнерів-респондентів Spike Brokers. Кожне подане значення має відображати справедливий ринковий рівень на кінець торгового дня для відповідної культури та базису.",
-        "Публічна структура поділена на All Seasons, Processors та Seasonal Export. Поточні публічні базиси: CPT Port для базових і сезонних експортних позицій, FCA Чоп для прикордонних позицій та CPT parity Одеса для позицій переробки. Ціни збираються для кожної позиції та дати розрахунку, після чого проходять валідацію. Система визначає медіану вибірки, а значення, що відхиляються від медіани більш ніж на +/-2%, виключаються як потенційні викиди.",
-          "Після очищення вибірки значення індексу розраховується як середнє арифметичне валідних цін. Корзина може бути опублікована лише тоді, коли після фільтрації залишається щонайменше 5 валідних цін респондентів. Окремого зовнішнього індикативу Spike Brokers у цьому інстансі немає, оскільки Spike Brokers є видавцем індексу.",
-          "До публікації значення можуть перевірятися, уточнюватися та мати декілька версій. Після публікації фінальне значення фіксується. Система зберігає зміни, перерахунки та події публікації в журналі аудиту.",
+          "MN7R Monitor підключений як окремий автоматизований респондент. Щоденно о 17:00 за Києвом система імпортує актуальні цінові індикатори Monitor і матчить їх за товаром, базисом поставки та перетином періоду поставки. Запис з Monitor враховується лише тоді, коли його період поставки перекриває поточне 30-денне вікно щонайменше на 10 днів.",
+          "Якщо для однієї позиції SPIKE є декілька відповідних індикаторів Monitor, система розраховує їх середнє арифметичне і використовує його як цінову відповідь респондента Monitor. Публічна структура поділена на All Seasons, Processors та Seasonal Export. Для базових і сезонних експортних позицій використовуються CPT Port або FCA Чоп, а для переробки — CPT parity Одеса.",
+          "Ціни проходять валідацію відносно медіани вибірки. Значення, що відхиляються від медіани більш ніж на +/-2%, виключаються як потенційні викиди. Після очищення вибірки індекс розраховується як середнє арифметичне валідних цін. Корзина може бути опублікована лише тоді, коли після фільтрації залишається щонайменше 5 валідних значень респондентів.",
+          "До публікації значення можуть перевірятися, уточнюватися та мати декілька версій. Після публікації фінальне значення фіксується. Система зберігає зміни, перерахунки та події публікації в журналі аудиту. У публічній частині методології вказуються типи респондентів, але не назви окремих компаній.",
         ],
         facts: [
         { value: "CPT Port", label: "Базис для базових і сезонних експортних позицій" },
         { value: "FCA Chop", label: "Базис для прикордонної позиції" },
         { value: "CPT parity", label: "Базис для позицій переробки" },
         { value: "3", label: "Категорії індексів" },
+          { value: "17:00", label: "Час імпорту Monitor (Київ)" },
+          { value: "10д / 30д", label: "Мінімальний перетин вікна поставки" },
           { value: "5+", label: "Мінімум валідних респондентів" },
-          { value: "EOD", label: "Оцінка ціни на кінець торгового дня" },
           { value: "+/-2%", label: "Фільтр викидів відносно медіани" },
           { value: "Фіксація", label: "Фінальне значення після публікації" },
         ],
@@ -897,13 +900,23 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
           {
             question: "Хто надає дані?",
             answer:
-              "Дані збираються від визначеного пулу партнерів-респондентів Spike Brokers. Індивідуальні значення окремих компаній не розкриваються у публічних матеріалах.",
+              "Дані збираються від визначеного пулу партнерів-респондентів Spike Brokers, а також від MN7R Monitor як окремого автоматизованого респондента. Індивідуальні значення окремих компаній не розкриваються у публічних матеріалах.",
+          },
+          {
+            question: "Як Monitor використовується в розрахунку?",
+            answer:
+              "Щоденно о 17:00 за Києвом платформа імпортує актуальні індикатори Monitor. Матчинг відбувається за товаром, базисом поставки та перетином періоду поставки не менше ніж на 10 днів у межах активного 30-денного вікна. Якщо на одну позицію SPIKE припадає кілька індикаторів Monitor, їх середнє арифметичне стає значенням респондента Monitor.",
           },
           ...base.methodology.faq.slice(2, 3),
           {
             question: "Що відбувається, якщо даних недостатньо?",
             answer:
               "Якщо після фільтрації залишається менше ніж 5 валідних цін респондентів, корзина не може бути опублікована як офіційне значення індексу.",
+          },
+          {
+            question: "Чи розкриваються у методології назви респондентів?",
+            answer:
+              "Ні. У публічній методології описуються типи учасників — брокери, трейдери, експортери та переробники — але не назви конкретних компаній.",
           },
           ...base.methodology.faq.slice(4),
         ],
@@ -940,12 +953,13 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
       title: "SPIKE SPOT INDEX",
       description:
         "SPIKE SPOT INDEX is a spot price benchmark for the Ukrainian agricultural market.",
-      boardTitle: "SPIKE SPOT INDEX / Spot Pricing",
-    boardDescription:
-      "USD/t market benchmark for CPT Odesa, CPT parity Odesa and FCA Chop, published after daily partner-data review.",
+    boardTitle: "SPIKE SPOT INDEX / Spot Pricing",
+      boardDescription:
+        "USD/t market benchmark grouped into All Seasons, Processors and Seasonal Export, published after daily partner-data review.",
       heroSubtitle:
         "Spot price benchmark for the Ukrainian agricultural market.",
-    heroMeta: "CPT Odesa · FCA Chop · spot · USD/t · published after EOD review",
+      heroMeta:
+        "All Seasons · Processors · Seasonal Export · USD/t · daily publication",
       heroAttribution:
         "Published by Spike Brokers. Data: market partners. Technology: Cropto/MN7R.",
       heroAttributionShort: "Spike Brokers · market partners · Cropto/MN7R",
@@ -963,13 +977,13 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
         "SPIKE SPOT INDEX is a dedicated index platform by ",
       descriptionLinkText: "Spike Brokers",
     descriptionAfterLink:
-      " for publishing daily aggregated spot prices across selected Ukrainian export, border and processing positions. The index gives the market a transparent and comparable reference for CPT Odesa, CPT parity Odesa and FCA Chop levels.",
+      " for publishing daily aggregated spot prices across All Seasons, Processors and Seasonal Export positions. The index gives the market a transparent and comparable reference for CPT Port, FCA Chop and CPT parity Odesa levels.",
       ugaHref: "https://spike.broker/en/",
       whyTitle: "An operational price reference for trade, logistics and processing",
       whyBody: [
         "Ukraine's agricultural market reacts daily to exporter and processor demand, logistics, port infrastructure, currency, freight and product quality. Market participants need a shared reference linked to executable trading bases.",
         "SPIKE SPOT INDEX aggregates market assessments from Spike Brokers partners and turns them into comparable public values. The index does not disclose individual company submissions; it shows a cleaned aggregated result.",
-      "The platform covers CPT Odesa export positions, the FCA Chop border position and CPT parity Odesa processing positions. GMO soybean and sunflower seed public values are shown VAT-included, reflecting processing-market convention.",
+      "The platform is structured into All Seasons, Processors and Seasonal Export. Processing positions are shown VAT-included, while export and border positions are displayed VAT-excluded according to market convention.",
       ],
       whyFeatures: [
         {
@@ -1021,21 +1035,23 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
       ...base.methodology,
       title: "How SPIKE SPOT INDEX is calculated",
       description:
-        "SPIKE SPOT INDEX uses a repeatable daily process that turns respondent-partner price assessments into verified and representative index values for each position, basis and calculation date.",
-      coreTitle: "From partner EOD assessments to a published spot benchmark",
+        "SPIKE SPOT INDEX uses a repeatable daily process that turns respondent-partner and Monitor assessments into verified and representative index values for each position, basis and calculation date.",
+      coreTitle: "From partner and Monitor assessments to a published spot benchmark",
       coreNarrative: [
         "The index is calculated from daily price assessments submitted by a defined group of Spike Brokers respondent partners. Each submitted value should reflect a fair end-of-day market level for the relevant commodity and basis.",
-      "The public structure is split into All Seasons, Processors and Seasonal Export. Current public bases are CPT Port for core and seasonal export positions, FCA Chop for border positions and CPT parity Odesa for processing positions. Prices are collected for each position and calculation date, then validated. The system identifies the median value in the respondent sample and excludes prices deviating by more than +/-2% from the median as potential outliers.",
-        "The index value is calculated as the arithmetic average of the cleaned respondent sample. A basket is publishable only when at least 5 valid respondent prices remain after filtering. This tenant does not use a separate Spike Brokers external indicative because Spike Brokers is the index publisher.",
-        "Before publication, values can be reviewed, corrected and versioned. After publication, the final value is locked. The system records changes, recalculations and publication events in an audit log.",
+        "MN7R Monitor is connected as a separate automated respondent. Every weekday at 17:00 Kyiv, SPIKE imports current Monitor price indicators and matches them by commodity, delivery basis and delivery-period overlap. A Monitor record is eligible only when its delivery period overlaps the current 30-day window by at least 10 days.",
+        "If several Monitor indicators match one SPIKE position, the system calculates their arithmetic average and stores it as the Monitor respondent value for that position. The public structure is split into All Seasons, Processors and Seasonal Export. Core and seasonal export positions use CPT Port or FCA Chop bases, while processing positions use CPT parity Odesa.",
+        "Prices are validated by sample median. Values deviating from the median by more than +/-2% are excluded as potential outliers. The final index value is the arithmetic average of the cleaned sample. A basket is publishable only when at least 5 valid respondent prices remain after filtering.",
+        "Before publication, values can be reviewed, corrected and versioned. After publication, the final value is locked. The system records changes, recalculations and publication events in an audit log. Public methodology identifies respondent types, but not company names.",
       ],
       facts: [
       { value: "CPT Port", label: "Core and seasonal export basis" },
       { value: "FCA Chop", label: "Border-position basis" },
       { value: "CPT parity", label: "Processing-position basis" },
         { value: "3", label: "Index categories" },
+        { value: "17:00", label: "Monitor import time (Kyiv)" },
+        { value: "10d / 30d", label: "Minimum delivery-window overlap" },
         { value: "5+", label: "Minimum valid respondents" },
-        { value: "EOD", label: "End-of-day price assessment" },
         { value: "+/-2%", label: "Median-based outlier filter" },
         { value: "Locked", label: "Final value after publication" },
       ],
@@ -1050,13 +1066,23 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
         {
           question: "Who provides data?",
           answer:
-            "Data are collected from a defined pool of Spike Brokers respondent partners. Individual company submissions are not disclosed in public outputs.",
+            "Data are collected from a defined pool of Spike Brokers respondent partners and from MN7R Monitor as a separate automated respondent. Individual company submissions are not disclosed in public outputs.",
+        },
+        {
+          question: "How is MN7R Monitor used in the calculation?",
+          answer:
+            "Each weekday at 17:00 Kyiv the platform imports current Monitor indicators. Matching is based on commodity, delivery basis and delivery-period overlap of at least 10 days inside the active 30-day window. If several indicators match one SPIKE position, their arithmetic average becomes the Monitor respondent value.",
         },
         ...base.methodology.faq.slice(2, 3),
         {
           question: "What happens if there is insufficient data?",
           answer:
             "If fewer than 5 valid respondent prices remain after filtering, the basket is not publishable as an official index value.",
+        },
+        {
+          question: "Are respondent companies published in the methodology?",
+          answer:
+            "No. The public methodology describes respondent types such as brokers, traders, exporters and processors, but does not disclose the names of individual companies.",
         },
         ...base.methodology.faq.slice(4),
       ],

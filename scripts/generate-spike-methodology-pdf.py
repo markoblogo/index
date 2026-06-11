@@ -172,18 +172,19 @@ UK_SECTIONS = [
         ],
     ),
     (
-        "2. Позиції, базиси та одиниці",
+        "2. Джерела даних і Monitor",
         [
-            "Поточний публічний набір включає експортні позиції на базисі CPT Одеса, прикордонну позицію кукурудзи на базисі FCA Чоп та переробні позиції на базисі CPT parity Одеса.",
-            "Офіційна валюта публікації - USD/т. Значення в UAH/т та EUR/т можуть відображатися як перерахунок за довідковим валютним курсом.",
+            "До складу респондентів SPIKE Spot Commodity Index Ukraine входять партнерські брокерські, торгові, експортні та переробні компанії, а також платформа Monitor як окреме автоматизоване джерело ринкових даних.",
+            "Щоденно о 17:00 за Києвом система автоматично імпортує актуальні цінові індикатори з Monitor. Матчинг виконується за товаром, базисом поставки та перетином періоду поставки не менше ніж на 10 днів у межах поточного 30-денного вікна.",
+            "Якщо для однієї позиції SPIKE знайдено кілька відповідних індикаторів Monitor, система розраховує їх середнє арифметичне і використовує його як цінову відповідь респондента Monitor.",
         ],
     ),
     (
-        "3. Джерела даних",
+        "3. Категорії індексів і базиси",
         [
-            "Дані подають партнери-респонденти SPIKE SPOT INDEX. Респонденти-партнери є активними учасниками та лідерами у торгівлі відповідною культурою протягом щонайменше останніх 6 місяців.",
-            "Подання може здійснюватися через кабінет респондента, Telegram WebApp, адміністративний модуль або інтеграцію MN7R Monitor, яка працює як окремий автоматизований респондент.",
-            "Індивідуальні значення респондентів не розкриваються у публічних матеріалах. У відкритому доступі відображаються лише агреговані значення індексу.",
+            "All Seasons є базовою категорією, що показується користувачу за замовчуванням. До неї входять: кукурудза CPT Port, кукурудза FCA Чоп, пшениця 11,5% CPT Port та пшениця фуражна CPT Port. Ці індекси розраховуються і публікуються протягом усього року.",
+            "Processors охоплює внутрішній ринок переробки. До категорії входять соняшник, соя ГМО та ріпак не ГМО. Ці значення публікуються у USD/т з урахуванням ПДВ.",
+            "Seasonal Export охоплює сезонні експортні позиції: соя ГМО CPT Port / FCA Чоп, соя не ГМО CPT Port / FCA Чоп, ріпак не ГМО CPT Port / FCA Чоп. Ці індекси відображають експортний ринок відповідних культур і можуть розраховуватися лише в періоди активної торгівлі.",
         ],
     ),
     (
@@ -206,7 +207,7 @@ UK_SECTIONS = [
         [
             "До публікації значення можуть перевірятися, уточнюватися та перераховуватися. Після публікації фінальне значення фіксується для історії.",
             "Система зберігає журнал аудиту: хто створив або змінив значення, коли це відбулося, які дані були до та після зміни.",
-            "SPIKE SPOT INDEX є інформаційним та аналітичним бенчмарком. Він не є інвестиційною порадою, публічною офертою або рекомендацією купувати чи продавати товар.",
+            "У публічній частині методології розкриваються лише типи респондентів: брокери, трейдери, експортери та переробники. Назви конкретних компаній не публікуються.",
         ],
     ),
 ]
@@ -220,18 +221,19 @@ EN_SECTIONS = [
         ],
     ),
     (
-        "2. Positions, bases and units",
+        "2. Data sources and Monitor",
         [
-            "The current public set covers export positions on CPT Odesa basis, the border corn position on FCA Chop basis and processing positions on CPT parity Odesa basis.",
-            "The official publication currency is USD/t. UAH/t and EUR/t values may be displayed as reference conversions using the applicable FX rate.",
+            "The respondent base includes Spike Brokers partner companies and Monitor as a separate automated market-data source.",
+            "Every weekday at 17:00 Kyiv, the platform imports current Monitor price indicators. Matching is based on commodity, delivery basis and delivery-period overlap of at least 10 days inside the active 30-day window.",
+            "If more than one Monitor indicator matches a single SPIKE position, the platform calculates their arithmetic average and stores it as the Monitor respondent value.",
         ],
     ),
     (
-        "3. Data sources",
+        "3. Index categories and bases",
         [
-            "Data are submitted by SPIKE SPOT INDEX respondent partners. Respondent partners are active market participants and leaders in trading the relevant commodity for at least the previous 6 months.",
-            "Submissions may come through the respondent account, Telegram WebApp, administrator module or MN7R Monitor integration, which is treated as a separate automated respondent.",
-            "Individual respondent values are not disclosed in public materials. Public outputs display aggregated index values only.",
+            "All Seasons is the default public category. It includes corn CPT Port, corn FCA Chop, wheat 11.5% CPT Port and feed wheat CPT Port. These indices are calculated and published throughout the year.",
+            "Processors covers the domestic processing market. It includes sunflower seed, GMO soybean and non-GMO rapeseed. These values are published in USD/t VAT-included.",
+            "Seasonal Export covers seasonal export positions: GMO soybean CPT Port / FCA Chop, non-GMO soybean CPT Port / FCA Chop and non-GMO rapeseed CPT Port / FCA Chop. These indices are calculated only when the respective export market is actively traded.",
         ],
     ),
     (
@@ -254,7 +256,7 @@ EN_SECTIONS = [
         [
             "Before publication, values may be reviewed, corrected and recalculated. After publication, the final value is locked for historical reference.",
             "The system keeps an audit log: who created or changed a value, when it happened, and what data existed before and after the change.",
-            "SPIKE SPOT INDEX is an informational and analytical benchmark. It is not investment advice, a public offer or a recommendation to buy or sell any commodity.",
+            "The public methodology discloses respondent types only - brokers, traders, exporters and processors - without publishing individual company names.",
         ],
     ),
 ]
@@ -263,17 +265,17 @@ EN_SECTIONS = [
 UK_META = [
     ("Видавець", "Spike Brokers"),
     ("Назва індексу", "SPIKE SPOT INDEX"),
-    ("Базиси", "CPT Одеса - експорт; FCA Чоп - прикордонна кукурудза; CPT parity Одеса - переробка"),
+    ("Базиси", "CPT Port - базові і сезонні експортні позиції; FCA Чоп - прикордонні позиції; CPT parity Одеса - переробка"),
     ("Офіційна одиниця", "USD/т"),
-    ("Версія", "v1.0, травень 2026"),
+    ("Версія", "v1.1, червень 2026"),
 ]
 
 EN_META = [
     ("Publisher", "Spike Brokers"),
     ("Index name", "SPIKE SPOT INDEX"),
-    ("Bases", "CPT Odesa - export; FCA Chop - border corn; CPT parity Odesa - processing"),
+    ("Bases", "CPT Port - core and seasonal export; FCA Chop - border positions; CPT parity Odesa - processing"),
     ("Official unit", "USD/t"),
-    ("Version", "v1.0, May 2026"),
+    ("Version", "v1.1, June 2026"),
 ]
 
 
