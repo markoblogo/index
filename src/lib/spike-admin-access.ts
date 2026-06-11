@@ -40,7 +40,7 @@ export const SPIKE_ADMIN_USERS: SpikeAdminUser[] = [
   {
     email: "vz@spike.broker",
     initials: "VZ",
-    name: "VZ",
+    name: "Victoria Zhylka",
   },
 ];
 

@@ -365,7 +365,7 @@ async function main() {
           },
           {
             email: "vz@spike.broker",
-            name: "VZ - VZ",
+            name: "VZ - Victoria Zhylka",
           },
         ]
       : [
