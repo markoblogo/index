@@ -8,6 +8,7 @@ describe("spike admin access", () => {
   it("allows only configured Spike admin emails", () => {
     expect(isSpikeAdminEmail("a.biletskiy@gmail.com")).toBe(true);
     expect(isSpikeAdminEmail("AN@SPIKE.BROKER")).toBe(true);
+    expect(isSpikeAdminEmail("vz@spike.broker")).toBe(true);
     expect(isSpikeAdminEmail("admin@spike-ua.demo")).toBe(false);
   });
 

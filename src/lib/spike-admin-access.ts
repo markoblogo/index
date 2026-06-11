@@ -37,6 +37,11 @@ export const SPIKE_ADMIN_USERS: SpikeAdminUser[] = [
     initials: "OS",
     name: "Oleksandr Solovey",
   },
+  {
+    email: "vz@spike.broker",
+    initials: "VZ",
+    name: "VZ",
+  },
 ];
 
 const SPIKE_ADMIN_EMAILS = new Set(

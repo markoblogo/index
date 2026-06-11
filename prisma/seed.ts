@@ -363,6 +363,10 @@ async function main() {
             email: "os@spike.broker",
             name: "OS - Oleksandr Solovey",
           },
+          {
+            email: "vz@spike.broker",
+            name: "VZ - VZ",
+          },
         ]
       : [
           {
