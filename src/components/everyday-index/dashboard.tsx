@@ -71,7 +71,7 @@ export function EverydayIndexDashboard({
               </span>
             </div>
             <div className="rounded-[1.25rem] border border-black/10 bg-white/70 px-4 py-3">
-              Update policy: <span className="font-black text-[#17120d]">{data.updatePolicy}</span>
+              Preview status: <span className="font-black text-[#17120d]">{data.updatePolicy}</span>
             </div>
           </div>
         </div>

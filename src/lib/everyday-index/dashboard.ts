@@ -14,6 +14,9 @@ import type {
   RankingBlock,
 } from "@/lib/everyday-index/types";
 
+const EVERYDAY_PREVIEW_STATUS =
+  `Manual preview publish. Intended policy: ${EVERYDAY_UPDATE_POLICY}`;
+
 export async function getEverydayIndexDashboard(args: {
   country?: string | null;
   geoCountry?: string | null;
@@ -68,8 +71,9 @@ export async function getEverydayIndexDashboard(args: {
           "The US reference must use New York, NY. Because the current Big Mac structured dataset does not provide a New York-specific US reference row, cross-country burger index values versus USA are intentionally withheld in this first slice.",
       },
       {
-        title: "Update policy",
-        body: EVERYDAY_UPDATE_POLICY,
+        title: "Planned publication policy",
+        body:
+          `The current preview is updated by manual import and verification runs. Intended steady-state policy: ${EVERYDAY_UPDATE_POLICY}`,
       },
       {
         title: "Confidence and publishing",
@@ -77,7 +81,7 @@ export async function getEverydayIndexDashboard(args: {
           "Low-confidence extractions, currency mismatches, product-lock mismatches and suspicious price jumps are rejected or quarantined. The previous published value remains in place when new data does not clear validation.",
       },
     ],
-    updatePolicy: EVERYDAY_UPDATE_POLICY,
+    updatePolicy: EVERYDAY_PREVIEW_STATUS,
     generatedAt: new Date().toISOString(),
   };
 }

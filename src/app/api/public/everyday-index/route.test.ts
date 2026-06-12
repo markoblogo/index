@@ -55,7 +55,7 @@ describe("GET /api/public/everyday-index", () => {
       rankings: [],
       methodology: [],
       updatePolicy:
-        "Checked daily. Published weekly or when verified source data changes.",
+        "Manual preview publish. Intended policy: Checked daily. Published weekly or when verified source data changes.",
       generatedAt: "2026-06-12T00:00:00.000Z",
     });
     getEverydayArchitectureSummaryMock.mockReturnValue({
