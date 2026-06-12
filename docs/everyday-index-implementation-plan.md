@@ -250,6 +250,19 @@ This uses:
 
 - `scripts/import-everyday-big-mac.ts`
 
+Current protected operator entrypoint:
+
+- `POST /api/internal/everyday-index/import-burger`
+
+This route:
+
+- accepts `POST` only
+- requires `Authorization: Bearer <EVERYDAY_INDEX_INGEST_SECRET>`
+- triggers only the existing burger import/publish service
+- does not accept manual price values
+- does not trigger Latte, iPhone, workdays, or overlays
+- does not publish USA/New York reference values
+
 No public ingestion endpoint and no cron entry were added in this pass.
 
 ### What gets persisted
@@ -659,6 +672,7 @@ Required for preview deployment:
 - `NEXT_PUBLIC_INDEX_TENANT=day`
 - `NEXT_PUBLIC_SITE_URL=https://day.1d3x.com`
 - `DATABASE_URL=...`
+- `EVERYDAY_INDEX_INGEST_SECRET=...`
 
 Environment variables that remain irrelevant for this preview pass:
 
@@ -693,6 +707,59 @@ node scripts/verify-vercel-project.mjs --project <day-vercel-project>
 
 No `deploy:day` script was added in this iteration because the actual Vercel project name is not yet part of the repo contract.
 
+### Protected operator import endpoint
+
+Current internal route:
+
+- `POST /api/internal/everyday-index/import-burger`
+
+Required header:
+
+```http
+Authorization: Bearer <EVERYDAY_INDEX_INGEST_SECRET>
+```
+
+Example trigger:
+
+```bash
+curl -X POST https://day.1d3x.com/api/internal/everyday-index/import-burger \
+  -H "Authorization: Bearer $EVERYDAY_INDEX_INGEST_SECRET"
+```
+
+Expected use:
+
+- trusted operator trigger against the deployed Everyday environment
+- server-side execution with Vercel-provided `DATABASE_URL`
+- burger-only import and publish of the existing Economist dataset flow
+
+Not supported by this route:
+
+- manual price submission
+- Latte ingestion
+- iPhone ingestion
+- iPhone workdays ingestion
+- WTI, Brent, or Gold overlays
+- cron scheduling
+
+Difference between current operator choices:
+
+- `npm run everyday:import:burger`
+  - runs locally or from an operator shell where `DATABASE_URL` is already available
+  - still the safest fallback when Vercel runtime limits or transient network issues are a concern
+- `POST /api/internal/everyday-index/import-burger`
+  - runs inside the deployed Everyday environment
+  - avoids exposing `DATABASE_URL` on the operator machine
+  - still requires a trusted bearer secret
+- future cron
+  - not implemented yet
+  - should only be added after burger operator flow is stable and operationally verified
+
+Runtime caveat:
+
+- the burger import fetches one remote CSV, parses it, writes snapshots/observations/published rows, and revalidates the Everyday page and API
+- this is reasonably small for a protected on-demand serverless run, but it still depends on remote dataset latency and database latency
+- if preview operations show serverless timeout risk, keep the route available as a convenience trigger but prefer `npm run everyday:import:burger` as the production fallback until a more durable automation path is introduced
+
 ### Preview verification checklist
 
 Verify the public API:
@@ -707,6 +774,13 @@ Confirm in the JSON response:
 - `data.cards` keeps latte and iPhone as `unsupported`
 - `data.chartSeries` keeps `iphone_workdays`, `wti_oil`, `brent_oil`, and `gold` as `unsupported`
 - `data.updatePolicy` says the preview is manual and does not imply automation is live
+
+Verify the operator endpoint:
+
+- missing `EVERYDAY_INDEX_INGEST_SECRET` fails closed
+- wrong bearer token returns `401`
+- valid bearer token returns burger-only counts and a run status
+- response does not mention Latte, iPhone, overlays, or New York retail reference availability
 
 Verify the dashboard at `https://day.1d3x.com/`:
 
@@ -757,9 +831,10 @@ This preview is not yet ready for a broader public launch because:
 
 1. tenant selection is still env-driven rather than host-aware
 2. burger import is still a manual runbook step
+   - the protected operator endpoint exists, but cron still does not
 3. the US/New York burger reference is still missing
 4. latte, iPhone, iPhone workdays, Brent, WTI, and Gold are still unsupported
-5. no Everyday cron or protected automation path exists yet
+5. no Everyday cron or queued automation path exists yet
 
 ## Phased Checklist From Here
 
