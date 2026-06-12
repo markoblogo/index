@@ -4,6 +4,8 @@ import {
   SAFE_NEAREST_COUNTRY_BY_ISO2,
 } from "@/lib/everyday-index/config";
 import { getEverydaySourceRegistry } from "@/lib/everyday-index/adapters";
+import { getPersistedBurgerDataset } from "@/lib/everyday-index/burger-publish";
+import { db, hasDatabaseUrl } from "@/lib/db";
 import type {
   ChartSeries,
   ConsumerCountry,
@@ -124,6 +126,12 @@ export function rebaseSeriesTo100(values: Array<{ date: string; value: number }>
 }
 
 async function buildBurgerCard(selectedCountry: ConsumerCountry) {
+  const persisted = await getPersistedBurgerCard(selectedCountry);
+
+  if (persisted) {
+    return persisted;
+  }
+
   if (selectedCountry.iso2 === "US") {
     return {
       key: "burger" as const,
@@ -137,7 +145,7 @@ async function buildBurgerCard(selectedCountry: ConsumerCountry) {
       statusLabel: "Needs NYC-specific source",
       confidenceLabel: "No publishable reference",
       note:
-        "The Economist structured dataset does not provide a New York, NY-specific retail reference row, so USA/New York burger comparisons remain intentionally unavailable in the scaffold.",
+        "No persisted Burger/Big Mac value is available for the United States. A New York, NY-specific retail reference is still required before any USA/New York comparison can be published.",
       sparkline: [],
       realData: false,
     };
@@ -146,17 +154,19 @@ async function buildBurgerCard(selectedCountry: ConsumerCountry) {
   return buildUnavailableCard(
     "burger",
     "Burger Index",
-    "The Economist Big Mac adapter is scaffolded, but this initial dashboard slice does not publish persisted burger values yet.",
+    "No persisted verified burger value is currently available for this country.",
   );
 }
 
 async function buildChartSeries(selectedCountry: ConsumerCountry): Promise<ChartSeries[]> {
+  const burgerHistory = await getPersistedBurgerHistory(selectedCountry.iso3);
+
   return [
     {
       key: "burger",
       label: "Burger Index",
-      status: "unavailable",
-      values: [],
+      status: burgerHistory.length > 1 ? "verified" : "unavailable",
+      values: rebaseSeriesTo100(burgerHistory),
     },
     {
       key: "latte",
@@ -198,8 +208,31 @@ async function buildChartSeries(selectedCountry: ConsumerCountry): Promise<Chart
 }
 
 async function buildRankings(): Promise<RankingBlock[]> {
+  const rankingRows = await getPersistedBurgerRankingRows();
+  const mostExpensive = rankingRows[0];
+  const leastExpensive = rankingRows[rankingRows.length - 1];
+
   return [
-    buildUnavailableRanking("burger", "Burger", "Burger rankings stay withheld until persisted verified burger publications are available."),
+    {
+      key: "burger",
+      title: "Burger",
+      available: Boolean(mostExpensive && leastExpensive),
+      mostExpensive: mostExpensive
+        ? {
+            country: mostExpensive.country,
+            valueLabel: formatMoney(mostExpensive.usdPrice, "USD"),
+            note: `Published date ${formatDate(mostExpensive.date)}`,
+          }
+        : undefined,
+      leastExpensive: leastExpensive
+        ? {
+            country: leastExpensive.country,
+            valueLabel: formatMoney(leastExpensive.usdPrice, "USD"),
+            note: `Published date ${formatDate(leastExpensive.date)}`,
+          }
+        : undefined,
+      note: "Ranked by persisted verified USD-equivalent Burger/Big Mac values from the latest published burger date.",
+    },
     buildUnavailableRanking("latte", "Latte", "Official public latte source automation is not live yet."),
     buildUnavailableRanking("iphone_price", "iPhone price", "Retail iPhone source automation is scaffolded but not publishing yet."),
     {
@@ -252,9 +285,167 @@ function normalizeCountryCode(value: string | null | undefined) {
   return normalized && normalized.length === 2 ? normalized : null;
 }
 
+function formatMoney(value: number, currency: string) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: currency === "JPY" ? 0 : 2,
+  }).format(value);
+}
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    dateStyle: "medium",
+  }).format(new Date(value));
+}
+
 export function getEverydayArchitectureSummary() {
   return {
     countries: CONSUMER_COUNTRIES.length,
     sourceRegistry: getEverydaySourceRegistry(),
   };
+}
+
+async function getPersistedBurgerCard(selectedCountry: ConsumerCountry) {
+  if (!hasDatabaseUrl()) {
+    return null;
+  }
+
+  const dataset = await getPersistedBurgerDataset();
+
+  if (!dataset) {
+    return null;
+  }
+
+  const row = await db.consumerPublishedValue.findFirst({
+    where: {
+      country: { iso3: selectedCountry.iso3 },
+      indexDefinitionId: dataset.definitionId,
+      publishedDate: dataset.latestPublishedDate,
+      sourceStatus: "verified",
+    },
+    include: {
+      country: true,
+      observation: true,
+    },
+  });
+
+  if (!row || !row.localPrice) {
+    return null;
+  }
+
+  const sourceDefinedUsdRaw = readSourceDefinedUsdRaw(
+    row.metadataJson,
+    row.observation?.metadataJson ?? null,
+  );
+  const history = await getPersistedBurgerHistory(selectedCountry.iso3);
+
+  return {
+    key: "burger" as const,
+    title: "Burger Index",
+    localPriceLabel: formatMoney(row.localPrice.toNumber(), row.country.currency),
+    usdPriceLabel: row.usdPrice ? formatMoney(row.usdPrice.toNumber(), "USD") : "Unavailable",
+    indexVsUsLabel: "Pending New York reference",
+    sourceComparisonLabel:
+      typeof sourceDefinedUsdRaw === "number"
+        ? `${formatPercent(sourceDefinedUsdRaw)} vs source-defined US dataset row`
+        : "Unavailable",
+    lastVerifiedLabel: formatDate(row.publishedDate.toISOString()),
+    status: "verified" as const,
+    statusLabel: "Published value",
+    confidenceLabel: "High confidence",
+    note:
+      "Persisted verified Burger/Big Mac publication from The Economist structured dataset. Source-defined US dataset comparisons do not represent the requested New York, NY retail reference.",
+    sparkline: history.map((point) => point.value),
+    realData: true,
+  };
+}
+
+async function getPersistedBurgerHistory(countryIso3: string) {
+  if (!hasDatabaseUrl()) {
+    return [];
+  }
+
+  const dataset = await getPersistedBurgerDataset();
+
+  if (!dataset) {
+    return [];
+  }
+
+  const rows = await db.consumerPublishedValue.findMany({
+    where: {
+      country: { iso3: countryIso3 },
+      indexDefinitionId: dataset.definitionId,
+      sourceStatus: "verified",
+    },
+    include: {
+      country: true,
+    },
+    orderBy: { publishedDate: "desc" },
+    take: 8,
+  });
+
+  return rows
+    .reverse()
+    .filter((row) => row.localPrice)
+    .map((row) => ({
+      date: row.publishedDate.toISOString().slice(0, 10),
+      value: row.localPrice!.toNumber(),
+    }));
+}
+
+async function getPersistedBurgerRankingRows() {
+  if (!hasDatabaseUrl()) {
+    return [];
+  }
+
+  const dataset = await getPersistedBurgerDataset();
+
+  if (!dataset) {
+    return [];
+  }
+
+  const rows = await db.consumerPublishedValue.findMany({
+    where: {
+      indexDefinitionId: dataset.definitionId,
+      publishedDate: dataset.latestPublishedDate,
+      sourceStatus: "verified",
+    },
+    include: {
+      country: true,
+    },
+  });
+
+  return rows
+    .filter((row) => row.usdPrice && row.country.iso2 !== "US")
+    .map((row) => ({
+      country: row.country.name,
+      date: row.publishedDate.toISOString(),
+      usdPrice: row.usdPrice!.toNumber(),
+    }))
+    .sort((left, right) => right.usdPrice - left.usdPrice);
+}
+
+function readSourceDefinedUsdRaw(...values: Array<unknown>) {
+  for (const value of values) {
+    if (!value || typeof value !== "object") {
+      continue;
+    }
+
+    const candidate = (value as Record<string, unknown>).sourceDefinedUsdRaw ??
+      (value as Record<string, unknown>).source_defined_usd_raw;
+
+    if (typeof candidate === "number") {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+function formatPercent(value: number) {
+  return new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: 1,
+    style: "percent",
+  }).format(value);
 }
