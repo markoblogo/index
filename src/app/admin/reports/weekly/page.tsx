@@ -409,7 +409,6 @@ export default async function WeeklyReportsPage({
       republishEditorialArticleAction={republishEditorialArticleAction}
       reports={reports}
       resetWindowFiltersAction={resetWindowFiltersAction}
-      reportId={activeWeeklyReport?.id ?? params.reportId}
       selectedLanguage={selectedLanguage}
       selectedPreview={selectedPreview}
       selectedWeek={selectedWeek}
