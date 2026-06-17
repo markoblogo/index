@@ -1,6 +1,6 @@
-import Link from "next/link";
 import Image from "next/image";
 import { HeaderNavLink } from "@/components/layout/header-nav-link";
+import { HeaderSmartLink } from "@/components/layout/header-smart-link";
 import { LocaleSwitcher } from "@/components/ui/locale-switcher";
 import { StatusPill } from "@/components/ui/status-pill";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -42,12 +42,13 @@ export function SiteHeader({ locale }: { locale: Locale }) {
           isSpike ? "max-w-[1900px] px-4 sm:px-6 lg:px-8" : "max-w-7xl px-4 lg:px-6"
         }`}
       >
-        <Link
+        <HeaderSmartLink
           className="flex h-full min-w-0 items-center gap-3 leading-none [--brand-logo-y:2px] [--brand-title-y:0px]"
           href={`/${locale}`}
+          prefetchOnMount
         >
           <HeaderBrand locale={locale} />
-        </Link>
+        </HeaderSmartLink>
         <div className="ml-auto flex min-w-0 items-center gap-3 lg:gap-5">
           <div className="hidden min-w-0 items-center gap-3 md:flex lg:gap-4">
             {!isSpike ? <StatusPill>{dict.home.liveStatus}</StatusPill> : null}
@@ -63,7 +64,7 @@ export function SiteHeader({ locale }: { locale: Locale }) {
           <div className="flex shrink-0 items-center gap-2">
             <LocaleSwitcher locale={locale} />
             {!isSpike ? <ThemeToggle /> : null}
-            <Link
+            <HeaderSmartLink
               className={`hidden rounded-[3px] px-4 py-2 text-sm font-semibold text-white transition sm:inline-flex ${
                 isSpike
                   ? "bg-[#050505] hover:bg-[#111111]"
@@ -72,7 +73,7 @@ export function SiteHeader({ locale }: { locale: Locale }) {
               href="/login"
             >
               {dict.nav.login}
-            </Link>
+            </HeaderSmartLink>
           </div>
         </div>
       </nav>

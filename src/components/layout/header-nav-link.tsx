@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { HeaderSmartLink } from "@/components/layout/header-smart-link";
 
 type HeaderNavLinkProps = {
   href: string;
@@ -24,12 +24,13 @@ export function HeaderNavLink({ href, isSpike, label }: HeaderNavLinkProps) {
     : "text-black after:scale-x-100 after:bg-uga-lime";
 
   return (
-    <Link
+    <HeaderSmartLink
       aria-current={isActive ? "page" : undefined}
       className={`${baseClass} ${isActive ? activeClass : inactiveClass}`}
       href={href}
+      prefetchOnMount={isHome}
     >
       {label}
-    </Link>
+    </HeaderSmartLink>
   );
 }
