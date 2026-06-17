@@ -72,6 +72,12 @@ const faqs = [
   },
 ] as const;
 
+const handbookResource = {
+  cover: "https://spike.1d3x.com/files/spot-market-handbook-cover-en.jpg",
+  pdf: "https://spike.1d3x.com/files/spot-market-handbook-en.pdf",
+  epub: "https://spike.1d3x.com/files/spot-market-handbook-en.epub",
+} as const;
+
 const jsonLd = {
   "@context": "https://schema.org",
   "@graph": [
@@ -389,6 +395,91 @@ export function PlatformLanding() {
           </div>
           <div className="border border-white/12 bg-white/[0.045] p-4 sm:p-5">
             <ContactForm />
+          </div>
+        </div>
+      </section>
+
+      <section className="border-b border-white/10 bg-[#08130e]">
+        <div className="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:py-20">
+          <div className="grid gap-8 lg:grid-cols-[0.78fr_1.22fr] lg:items-start">
+            <div className="max-w-xl">
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#9fffa8]">
+                Recommended reading
+              </p>
+              <h2 className="mt-4 text-4xl font-black leading-tight text-white sm:text-5xl">
+                Spot-Market Handbook
+              </h2>
+              <p className="mt-4 text-lg leading-8 text-white/68">
+                A practical guide to how physical agricultural markets actually
+                work: basis, logistics, liquidity, respondent models, benchmark
+                construction and the infrastructure behind trusted commodity
+                indices.
+              </p>
+            </div>
+
+            <article className="grid gap-5 border border-white/12 bg-[#f3f6ec] p-5 text-[#07100c] sm:p-6 lg:grid-cols-[13rem_1fr]">
+              <div className="border border-[#07100c]/10 bg-white/55 p-3">
+                <Image
+                  alt="Spot Market Handbook English cover"
+                  className="h-auto w-full object-contain"
+                  height={960}
+                  src={handbookResource.cover}
+                  unoptimized
+                  width={640}
+                />
+              </div>
+
+              <div className="flex flex-col justify-between">
+                <div>
+                  <p className="text-sm font-black uppercase tracking-[0.12em] text-[#6f806f]">
+                    Guide to physical commodity markets
+                  </p>
+                  <h3 className="mt-3 text-2xl font-black leading-tight">
+                    Global English edition for traders, brokers, analysts and
+                    market operators
+                  </h3>
+                  <p className="mt-4 max-w-3xl text-base leading-7 text-[#07100c]/72">
+                    This edition expands beyond Ukraine into the broader logic
+                    of spot commodity markets: how fragmented quotes become
+                    benchmarks, how local trading structure shapes price
+                    reality, and how index products evolve into market
+                    intelligence infrastructure.
+                  </p>
+
+                  <div className="mt-5 grid gap-2 text-xs font-black uppercase tracking-[0.1em] text-[#07100c]/58 sm:grid-cols-2">
+                    <p>Version: Global edition v1.0</p>
+                    <p>Date: June 17, 2026</p>
+                    <p>Language: English</p>
+                    <p>Formats: PDF / EPUB</p>
+                  </div>
+                </div>
+
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <a
+                    className="inline-flex items-center justify-center border border-[#d6ff58] bg-[#d6ff58] px-5 py-3 text-xs font-black uppercase tracking-[0.12em] text-[#07100c] transition hover:bg-white"
+                    download
+                    href={handbookResource.pdf}
+                  >
+                    Download PDF
+                  </a>
+                  <a
+                    className="inline-flex items-center justify-center border border-[#07100c]/16 px-5 py-3 text-xs font-black uppercase tracking-[0.12em] text-[#07100c] transition hover:border-[#07100c] hover:bg-white"
+                    href={handbookResource.pdf}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    Open PDF
+                  </a>
+                  <a
+                    className="inline-flex items-center justify-center border border-[#07100c]/16 px-5 py-3 text-xs font-black uppercase tracking-[0.12em] text-[#07100c] transition hover:border-[#07100c] hover:bg-white"
+                    download
+                    href={handbookResource.epub}
+                  >
+                    Download EPUB
+                  </a>
+                </div>
+              </div>
+            </article>
           </div>
         </div>
       </section>
