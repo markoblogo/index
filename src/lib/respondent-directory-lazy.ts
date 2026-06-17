@@ -7,28 +7,28 @@ async function loadRespondentDirectoryModule() {
 }
 
 export async function getActiveRespondentCount() {
-  const module = await loadRespondentDirectoryModule();
-  return module.getActiveRespondentCount();
+  const loadedModule = await loadRespondentDirectoryModule();
+  return loadedModule.getActiveRespondentCount();
 }
 
 export async function getActiveRespondentCountData() {
-  const module = await loadRespondentDirectoryModule();
-  return module.getActiveRespondentCountData();
+  const loadedModule = await loadRespondentDirectoryModule();
+  return loadedModule.getActiveRespondentCountData();
 }
 
 export async function getRespondentDirectory() {
-  const module = await loadRespondentDirectoryModule();
-  return module.getRespondentDirectory();
+  const loadedModule = await loadRespondentDirectoryModule();
+  return loadedModule.getRespondentDirectory();
 }
 
 export async function getRespondentDirectoryData() {
-  const module = await loadRespondentDirectoryModule();
-  return module.getRespondentDirectoryData();
+  const loadedModule = await loadRespondentDirectoryModule();
+  return loadedModule.getRespondentDirectoryData();
 }
 
 export async function getRespondentEmailScheduleData() {
-  const module = await loadRespondentDirectoryModule();
-  return module.getRespondentEmailScheduleData();
+  const loadedModule = await loadRespondentDirectoryModule();
+  return loadedModule.getRespondentEmailScheduleData();
 }
 
 export async function regenerateRespondentTemporaryPasswordData(
@@ -36,15 +36,15 @@ export async function regenerateRespondentTemporaryPasswordData(
     RespondentDirectoryModule["regenerateRespondentTemporaryPasswordData"]
   >
 ) {
-  const module = await loadRespondentDirectoryModule();
-  return module.regenerateRespondentTemporaryPasswordData(...args);
+  const loadedModule = await loadRespondentDirectoryModule();
+  return loadedModule.regenerateRespondentTemporaryPasswordData(...args);
 }
 
 export async function addRespondentContactData(
   ...args: Parameters<RespondentDirectoryModule["addRespondentContactData"]>
 ) {
-  const module = await loadRespondentDirectoryModule();
-  return module.addRespondentContactData(...args);
+  const loadedModule = await loadRespondentDirectoryModule();
+  return loadedModule.addRespondentContactData(...args);
 }
 
 export async function addRespondentDirectoryEntryData(
@@ -52,15 +52,15 @@ export async function addRespondentDirectoryEntryData(
     RespondentDirectoryModule["addRespondentDirectoryEntryData"]
   >
 ) {
-  const module = await loadRespondentDirectoryModule();
-  return module.addRespondentDirectoryEntryData(...args);
+  const loadedModule = await loadRespondentDirectoryModule();
+  return loadedModule.addRespondentDirectoryEntryData(...args);
 }
 
 export async function deleteRespondentContactData(
   ...args: Parameters<RespondentDirectoryModule["deleteRespondentContactData"]>
 ) {
-  const module = await loadRespondentDirectoryModule();
-  return module.deleteRespondentContactData(...args);
+  const loadedModule = await loadRespondentDirectoryModule();
+  return loadedModule.deleteRespondentContactData(...args);
 }
 
 export async function deleteRespondentDirectoryEntryData(
@@ -68,8 +68,8 @@ export async function deleteRespondentDirectoryEntryData(
     RespondentDirectoryModule["deleteRespondentDirectoryEntryData"]
   >
 ) {
-  const module = await loadRespondentDirectoryModule();
-  return module.deleteRespondentDirectoryEntryData(...args);
+  const loadedModule = await loadRespondentDirectoryModule();
+  return loadedModule.deleteRespondentDirectoryEntryData(...args);
 }
 
 export async function updateRespondentEmailScheduleData(
@@ -77,15 +77,15 @@ export async function updateRespondentEmailScheduleData(
     RespondentDirectoryModule["updateRespondentEmailScheduleData"]
   >
 ) {
-  const module = await loadRespondentDirectoryModule();
-  return module.updateRespondentEmailScheduleData(...args);
+  const loadedModule = await loadRespondentDirectoryModule();
+  return loadedModule.updateRespondentEmailScheduleData(...args);
 }
 
 export async function updateRespondentContactData(
   ...args: Parameters<RespondentDirectoryModule["updateRespondentContactData"]>
 ) {
-  const module = await loadRespondentDirectoryModule();
-  return module.updateRespondentContactData(...args);
+  const loadedModule = await loadRespondentDirectoryModule();
+  return loadedModule.updateRespondentContactData(...args);
 }
 
 export async function updateRespondentAuthAccountData(
@@ -93,8 +93,8 @@ export async function updateRespondentAuthAccountData(
     RespondentDirectoryModule["updateRespondentAuthAccountData"]
   >
 ) {
-  const module = await loadRespondentDirectoryModule();
-  return module.updateRespondentAuthAccountData(...args);
+  const loadedModule = await loadRespondentDirectoryModule();
+  return loadedModule.updateRespondentAuthAccountData(...args);
 }
 
 export async function updateRespondentDirectoryEntryData(
@@ -102,6 +102,6 @@ export async function updateRespondentDirectoryEntryData(
     RespondentDirectoryModule["updateRespondentDirectoryEntryData"]
   >
 ) {
-  const module = await loadRespondentDirectoryModule();
-  return module.updateRespondentDirectoryEntryData(...args);
+  const loadedModule = await loadRespondentDirectoryModule();
+  return loadedModule.updateRespondentDirectoryEntryData(...args);
 }

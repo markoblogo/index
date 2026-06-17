@@ -18,18 +18,18 @@ export async function generateAndStoreDailyAiMarketBriefs(options: {
   force?: boolean;
   source?: string;
 }) {
-  const module = await loadAiMarketBriefAdminModule();
-  return module.generateAndStoreDailyAiMarketBriefs(options);
+  const loadedModule = await loadAiMarketBriefAdminModule();
+  return loadedModule.generateAndStoreDailyAiMarketBriefs(options);
 }
 
 export async function getAiMarketBriefAdminStatus(date: string) {
-  const module = await loadAiMarketBriefAdminModule();
-  return module.getAiMarketBriefAdminStatus(date);
+  const loadedModule = await loadAiMarketBriefAdminModule();
+  return loadedModule.getAiMarketBriefAdminStatus(date);
 }
 
 export async function getLatestAiCardComments(locale: Locale) {
-  const module = await loadAiMarketBriefPublicModule();
-  return module.getLatestAiCardComments(locale);
+  const loadedModule = await loadAiMarketBriefPublicModule();
+  return loadedModule.getLatestAiCardComments(locale);
 }
 
 export async function getPublishedAiMarketBrief({
@@ -41,8 +41,8 @@ export async function getPublishedAiMarketBrief({
   history: AiAnalyticsPoint[];
   locale: Locale;
 }) {
-  const module = await loadAiMarketBriefPublicModule();
-  return module.getPublishedAiMarketBrief({
+  const loadedModule = await loadAiMarketBriefPublicModule();
+  return loadedModule.getPublishedAiMarketBrief({
     activeRespondentCount,
     history,
     locale,
@@ -50,8 +50,8 @@ export async function getPublishedAiMarketBrief({
 }
 
 export async function sendAiBriefTelegramSummary(date: string, locale: Locale) {
-  const module = await loadAiMarketBriefAdminModule();
-  return module.sendAiBriefTelegramSummary(date, locale);
+  const loadedModule = await loadAiMarketBriefAdminModule();
+  return loadedModule.sendAiBriefTelegramSummary(date, locale);
 }
 
 export async function buildAiBriefTelegramSummaryText(
@@ -67,19 +67,24 @@ export async function buildAiBriefTelegramSummaryText(
     valueUsdPerMt: number | null;
   }>,
 ) {
-  const module = await loadAiMarketBriefAdminModule();
-  return module.buildAiBriefTelegramSummaryText(brief, locale, template, latestData);
+  const loadedModule = await loadAiMarketBriefAdminModule();
+  return loadedModule.buildAiBriefTelegramSummaryText(
+    brief,
+    locale,
+    template,
+    latestData,
+  );
 }
 
 export async function isAiBriefLocaleCompatible(
   brief: PublicAiMarketBrief,
   locale: Locale,
 ) {
-  const module = await loadAiMarketBriefPublicModule();
-  return module.isAiBriefLocaleCompatible(brief, locale);
+  const loadedModule = await loadAiMarketBriefPublicModule();
+  return loadedModule.isAiBriefLocaleCompatible(brief, locale);
 }
 
 export async function mapConfidenceLabel(confidence: string, locale: Locale): Promise<string> {
-  const module = await loadAiMarketBriefPublicModule();
-  return module.mapConfidenceLabel(confidence, locale);
+  const loadedModule = await loadAiMarketBriefPublicModule();
+  return loadedModule.mapConfidenceLabel(confidence, locale);
 }

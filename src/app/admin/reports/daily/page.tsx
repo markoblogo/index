@@ -58,10 +58,9 @@ export default async function DailyReportsPage({
   const params = await searchParams;
   const selectedLanguage = normalizeAdminLocale(params.lang);
 
-  const [dailyConfig, weeklyConfig, dailyStatus, dailyResources, dailyDigest, weeklyReports] =
+  const [dailyConfig, dailyStatus, dailyResources, dailyDigest, weeklyReports] =
     await Promise.all([
       getReportWorkspaceConfig("daily"),
-      getReportWorkspaceConfig("weekly"),
       getAiMarketBriefAdminStatus(todayInputDate()),
       listReportWorkspaceResources({ reportKind: "daily" }),
       getDailyTelegramDigest(todayInputDate()),
