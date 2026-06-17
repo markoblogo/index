@@ -63,25 +63,10 @@ export async function sendAiBriefTelegramSummary(date: string, locale: Locale) {
 }
 
 export async function buildAiBriefTelegramSummaryText(
-  brief: PublicAiMarketBrief,
-  locale: Locale,
-  template?: string,
-  latestData?: Array<{
-    basis: string;
-    changeAbs: number | null;
-    commodityId: string;
-    commodityNameEn: string;
-    commodityNameUk: string;
-    valueUsdPerMt: number | null;
-  }>,
+  ...args: Parameters<AiMarketBriefAdminModule["buildAiBriefTelegramSummaryText"]>
 ) {
   const loadedModule = await loadAiMarketBriefAdminModule();
-  return loadedModule.buildAiBriefTelegramSummaryText(
-    brief,
-    locale,
-    template,
-    latestData,
-  );
+  return loadedModule.buildAiBriefTelegramSummaryText(...args);
 }
 
 export async function isAiBriefLocaleCompatible(
