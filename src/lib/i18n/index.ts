@@ -1,3 +1,5 @@
+import { getTenantAssetUrl } from "@/lib/tenant-assets";
+
 export const locales = ["uk", "en"] as const;
 export type Locale = (typeof locales)[number];
 
@@ -281,15 +283,15 @@ const dictionaries: Record<Locale, Dictionary> = {
         title: "Посібник із спотовим ринком України",
         description:
           "Узагальнений гід для практичної роботи з інструментами спотової ціноутворення: як формуються сигнали ринку, які дані важливі для торгівлі та як правильно їх інтерпретувати.",
-        cover: "/files/spot-market-handbook-cover-ua.png",
+        cover: getTenantAssetUrl("spike.handbook.cover.ua"),
         coverAlt: "Обкладинка книги Spot-Market Handbook UA",
         cardTitle: "Spot-Market Handbook",
         cardDescription:
           "Розширене пояснення методики оцінки спотових цін та практичні матеріали для щоденної аналітики.",
         pdfLabel: "PDF",
         epubLabel: "EPUB",
-        pdfHref: "/files/spot-market-handbook-ua.pdf",
-        epubHref: "/files/spot-market-handbook-ua.epub",
+        pdfHref: getTenantAssetUrl("spike.handbook.ua.pdf"),
+        epubHref: getTenantAssetUrl("spike.handbook.ua.epub"),
         pdfDownload: "Завантажити PDF",
         pdfOpen: "Відкрити PDF",
         epubDownload: "Завантажити EPUB",
@@ -570,7 +572,7 @@ const dictionaries: Record<Locale, Dictionary> = {
         title: "Guide to the Spot Market in Ukraine",
         description:
           "A practical handbook covering the key mechanics of commodity spot-market pricing in Ukraine: daily level formation, quality filtering, and how benchmark data is used in trading workflows.",
-        cover: "/files/spot-market-handbook-cover-ua.png",
+        cover: getTenantAssetUrl("spike.handbook.cover.ua"),
         coverAlt: "Spot-Market Handbook cover",
         cardTitle: "Spot-Market Handbook",
         cardDescription:
@@ -592,8 +594,8 @@ const dictionaries: Record<Locale, Dictionary> = {
         ],
         pdfLabel: "PDF",
         epubLabel: "EPUB",
-        pdfHref: "/files/spot-market-handbook-ua.pdf",
-        epubHref: "/files/spot-market-handbook-ua.epub",
+        pdfHref: getTenantAssetUrl("spike.handbook.ua.pdf"),
+        epubHref: getTenantAssetUrl("spike.handbook.ua.epub"),
         pdfDownload: "Download PDF",
         pdfOpen: "Open PDF",
         epubDownload: "Download EPUB",
@@ -1017,7 +1019,7 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
         ...base.about.resources,
         description:
           "A global handbook for readers who want to understand how physical agricultural commodity markets actually work beyond futures screens, headlines, and one-off broker quotes.",
-        cover: "/files/spot-market-handbook-cover-en.jpg",
+        cover: getTenantAssetUrl("spike.handbook.cover.en"),
         coverAlt: "Spot Market Handbook English cover",
         cardDescription:
           "The English edition expands the scope from Ukraine to global physical markets: logistics, basis, liquidity, respondent-based indices, spot benchmarks, market intelligence, and how fragmented market signals become usable infrastructure.",
@@ -1037,8 +1039,8 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
           "how respondent models, median filters, and benchmarks turn noisy quotes into shared references",
           "how spot indices evolve into APIs, market intelligence, and future data infrastructure",
         ],
-        pdfHref: "/files/spot-market-handbook-en.pdf",
-        epubHref: "/files/spot-market-handbook-en.epub",
+        pdfHref: getTenantAssetUrl("spike.handbook.en.pdf"),
+        epubHref: getTenantAssetUrl("spike.handbook.en.epub"),
       },
     },
     methodology: {

@@ -1,5 +1,6 @@
 import { getDictionary, type Locale } from "@/lib/i18n";
 import { SITE_CONFIG } from "@/lib/constants";
+import { getTenantAssetUrl } from "@/lib/tenant-assets";
 
 export default async function MethodologyPage({
   params,
@@ -189,8 +190,8 @@ function SpikeMethodologyPage({
   const faqItems = [...dict.methodology.faq, aiFaq];
   const methodologyPdfPath =
     locale === "uk"
-      ? "/files/spike-index-methodology-uk.pdf"
-      : "/files/spike-index-methodology-en.pdf";
+      ? getTenantAssetUrl("spike.methodology.uk.pdf")
+      : getTenantAssetUrl("spike.methodology.en.pdf");
 
   return (
     <main className="spike-static-page overflow-hidden bg-[#050505] text-[#f8f8f2]">

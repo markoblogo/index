@@ -2,6 +2,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { ContactForm } from "@/components/platform/contact-form";
 import { AutoplayYoutubeEmbed } from "@/components/platform/autoplay-youtube-embed";
+import {
+  getTenantAssetAbsoluteUrl,
+  getTenantAssetUrl,
+} from "@/lib/tenant-assets";
 
 const liveIndices = [
   {
@@ -73,9 +77,12 @@ const faqs = [
 ] as const;
 
 const handbookResource = {
-  cover: "https://spike.1d3x.com/files/spot-market-handbook-cover-en.jpg",
-  pdf: "https://spike.1d3x.com/files/spot-market-handbook-en.pdf",
-  epub: "https://spike.1d3x.com/files/spot-market-handbook-en.epub",
+  cover: getTenantAssetAbsoluteUrl(
+    "spike.handbook.cover.en",
+    "https://spike.1d3x.com",
+  ),
+  pdf: getTenantAssetAbsoluteUrl("spike.handbook.en.pdf", "https://spike.1d3x.com"),
+  epub: getTenantAssetAbsoluteUrl("spike.handbook.en.epub", "https://spike.1d3x.com"),
 } as const;
 
 const jsonLd = {
@@ -115,7 +122,7 @@ const jsonLd = {
 };
 
 export function PlatformLanding() {
-  const partnerDeck = "/files/1D3X_Local_Commodity_Index_Partner_Program.pdf";
+  const partnerDeck = getTenantAssetUrl("1d3x.partnerDeck.pdf");
 
   return (
     <main className="min-h-screen bg-[#07100c] text-white">

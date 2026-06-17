@@ -6,6 +6,7 @@ import {
   MN7R_MONITOR_RESPONDENT_ID,
   SPIKE_ADMIN_FALLBACK_RESPONDENT_ID,
 } from "@/lib/index-platform";
+import { getTenantAssetUrl } from "@/lib/tenant-assets";
 import { respondents } from "@/lib/mock-data";
 
 const MN7R_RESPONDENT_ID = MN7R_MONITOR_RESPONDENT_ID;
@@ -25,6 +26,7 @@ const respondentLinks = new Map([
   ["new-world-grain-ukraine", "https://www.soufflet.com/"],
   ["nibulon", "http://www.nibulon.com/?t=1509267760"],
 ]);
+const ugaMarketIntelligencePdfUrl = getTenantAssetUrl("uga.marketIntelligence.pdf");
 
 export default async function AboutPage({
   params,
@@ -200,7 +202,7 @@ function UgaEnglishPresentation() {
           <a
             className="inline-flex items-center justify-center border border-black bg-uga-dark px-4 py-3 text-xs font-black uppercase tracking-[0.12em] text-white transition hover:bg-uga-green"
             download
-            href="/files/uga-index-market-intelligence.pdf"
+            href={ugaMarketIntelligencePdfUrl}
           >
             Download PDF presentation
           </a>
@@ -240,9 +242,9 @@ function SpikeAboutPage({
     "inline-flex rounded-full border border-[#f8f8f2]/45 bg-[#050505] px-5 py-2.5 text-sm font-black text-[#f8f8f2] no-underline transition hover:border-[var(--spike-accent)] hover:bg-[var(--spike-accent)] hover:text-[#050505] hover:shadow-[0_0_0_1px_var(--spike-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--spike-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#050505]";
   const showResourcesSection = true;
   const resourcePdfHref =
-    dict.about.resources.pdfHref ?? "/files/spot-market-handbook-ua.pdf";
+    dict.about.resources.pdfHref ?? getTenantAssetUrl("spike.handbook.ua.pdf");
   const resourceEpubHref =
-    dict.about.resources.epubHref ?? "/files/spot-market-handbook-ua.epub";
+    dict.about.resources.epubHref ?? getTenantAssetUrl("spike.handbook.ua.epub");
 
   return (
     <main className="spike-static-page overflow-hidden bg-[#050505] text-[#f8f8f2]">

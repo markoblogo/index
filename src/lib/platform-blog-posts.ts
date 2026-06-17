@@ -1,4 +1,5 @@
 import { spikeBlogPosts } from "@/lib/blog-posts";
+import { getTenantAssetAbsoluteUrl } from "@/lib/tenant-assets";
 
 export type PlatformBlogPost = {
   body: string[];
@@ -54,6 +55,14 @@ const spikeAiPost = spikeBlogPosts.find(
     post.slug ===
     "teaching-grain-markets-to-think-ai-supercharges-spike-spot-index",
 )!;
+const spikeHandbookUaPdfUrl = getTenantAssetAbsoluteUrl(
+  "spike.handbook.ua.pdf",
+  "https://spike.1d3x.com",
+);
+const spikeHandbookUaEpubUrl = getTenantAssetAbsoluteUrl(
+  "spike.handbook.ua.epub",
+  "https://spike.1d3x.com",
+);
 
 const spikeAiRepostContent: PlatformBlogContentBlock[] = [
   {
@@ -153,8 +162,8 @@ export const platformBlogPosts: PlatformBlogPost[] = [
       "Це не академічний підручник.",
       "Це практичний гід про локальні базиси, FOB/CPT, ліквідність, респондентські моделі, спотові індекси, basis risk та майбутню роль індексної інфраструктури в аграрній торгівлі.",
       "Завантажити книгу:",
-      "PDF: https://spike.1d3x.com/files/spot-market-handbook-ua.pdf",
-      "EPUB: https://spike.1d3x.com/files/spot-market-handbook-ua.epub",
+      `PDF: ${spikeHandbookUaPdfUrl}`,
+      `EPUB: ${spikeHandbookUaEpubUrl}`,
       "English edition coming soon",
       "The current version is published in Ukrainian because the first audience for this handbook is the Ukrainian agricultural market itself.",
       "An English-language edition is planned next.",
@@ -189,11 +198,11 @@ export const platformBlogPosts: PlatformBlogPost[] = [
         kind: "downloadButtons",
         links: [
           {
-            href: "https://spike.1d3x.com/files/spot-market-handbook-ua.pdf",
+            href: spikeHandbookUaPdfUrl,
             label: "Download PDF",
           },
           {
-            href: "https://spike.1d3x.com/files/spot-market-handbook-ua.epub",
+            href: spikeHandbookUaEpubUrl,
             label: "Download EPUB",
           },
         ],
@@ -274,11 +283,11 @@ export const platformBlogPosts: PlatformBlogPost[] = [
         kind: "downloadButtons",
         links: [
           {
-            href: "https://spike.1d3x.com/files/spot-market-handbook-ua.pdf",
+            href: spikeHandbookUaPdfUrl,
             label: "Download PDF",
           },
           {
-            href: "https://spike.1d3x.com/files/spot-market-handbook-ua.epub",
+            href: spikeHandbookUaEpubUrl,
             label: "Download EPUB",
           },
         ],

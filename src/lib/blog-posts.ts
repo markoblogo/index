@@ -1,4 +1,5 @@
 import type { Locale } from "@/lib/i18n";
+import { getTenantAssetAbsoluteUrl } from "@/lib/tenant-assets";
 
 export type BlogPost = {
   body: string[];
@@ -15,6 +16,15 @@ export type BlogPost = {
 };
 
 export type BlogPostLanguage = "en" | "uk";
+
+const spikeHandbookUaPdfUrl = getTenantAssetAbsoluteUrl(
+  "spike.handbook.ua.pdf",
+  "https://spike.1d3x.com",
+);
+const spikeHandbookUaEpubUrl = getTenantAssetAbsoluteUrl(
+  "spike.handbook.ua.epub",
+  "https://spike.1d3x.com",
+);
 
 export const spikeBlogPosts: BlogPost[] = [
   {
@@ -124,8 +134,8 @@ export const spikeBlogPosts: BlogPost[] = [
       "Spot Market Handbook: практичний гід по українському фізичному аграрному ринку",
       "Це практичний гід українською мовою про те, як насправді формується ціна на фізичному аграрному ринку України: від локальних котирувань і базисів поставки до спотових індексів, логістики, ліквідності та майбутньої індексної торгівлі.",
       "Книгу можна завантажити у двох форматах:",
-      "PDF: https://spike.1d3x.com/files/spot-market-handbook-ua.pdf",
-      "EPUB: https://spike.1d3x.com/files/spot-market-handbook-ua.epub",
+      `PDF: ${spikeHandbookUaPdfUrl}`,
+      `EPUB: ${spikeHandbookUaEpubUrl}`,
       "Чому ця книга важлива",
       "Український аграрний ринок не працює як проста біржова таблиця.",
       "Одна й та сама культура може мати різну ціну залежно від базису поставки, маршруту, порту, логістичних витрат, доступу до ліквідності, валюти, ризику виконання та поточного попиту з боку експортерів або переробників.",
@@ -163,8 +173,8 @@ export const spikeBlogPosts: BlogPost[] = [
       "Вони не прибирають ризик.",
       "Вони роблять його видимим.",
       "Завантажити книгу:",
-      "PDF: https://spike.1d3x.com/files/spot-market-handbook-ua.pdf",
-      "EPUB: https://spike.1d3x.com/files/spot-market-handbook-ua.epub",
+      `PDF: ${spikeHandbookUaPdfUrl}`,
+      `EPUB: ${spikeHandbookUaEpubUrl}`,
     ],
     coverImage:
       "/blog/spot-market-handbook-practical-guide-ukrainian-physical-agri-market.png",

@@ -456,7 +456,7 @@ export const INDEX_CONFIGS: Record<IndexTenantId, IndexConfig> = {
     unit: "t",
     localeCookie: "uga_locale",
     storagePrefix: "uga",
-    methodologyPdfPath: "/files/uga-index-methodology.pdf",
+    methodologyPdfPath: getTenantAssetUrl("uga.methodology.pdf"),
     features: { externalIndicative: true, memberArea: true },
     mediaHub: {
       enabled: false,
@@ -539,7 +539,7 @@ export const INDEX_CONFIGS: Record<IndexTenantId, IndexConfig> = {
     unit: "t",
     localeCookie: "spike_index_locale",
     storagePrefix: "spike-index",
-    methodologyPdfPath: "/files/spike-index-methodology.pdf",
+    methodologyPdfPath: getTenantAssetUrl("spike.methodology.pdf"),
     features: { externalIndicative: false, memberArea: true },
     mediaHub: {
       enabled: true,
@@ -698,3 +698,4 @@ export function getCommodityCategory(
 ) {
   return commodity.category ?? "all-seasons";
 }
+import { getTenantAssetUrl } from "@/lib/tenant-assets";

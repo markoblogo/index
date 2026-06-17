@@ -1,5 +1,6 @@
 import type { Locale } from "@/lib/i18n";
 import { getActiveIndexConfig } from "@/lib/index-platform";
+import { getTenantAssetUrl } from "@/lib/tenant-assets";
 import { RespondentOnboardingPreview } from "@/components/subscription/respondent-onboarding-preview";
 
 export default async function SubscriptionPage({
@@ -113,8 +114,9 @@ function AiSubscriptionBlock({ locale }: { locale: Locale }) {
 function RespondentBlock({ locale }: { locale: Locale }) {
   const isUk = locale === "uk";
   const pdfHref = isUk
-    ? "/files/spike-spot-index-respondents-presentation.pdf"
-    : "/files/spike-spot-index-global-partner-deck-2026.pdf";
+    ? getTenantAssetUrl("spike.respondentsDeck.uk.pdf")
+    : getTenantAssetUrl("spike.partnerDeck.en.pdf");
+  const onboardingDownloadHref = getTenantAssetUrl("spike.onboarding.uk.png");
   const videoId = isUk ? "scZm2uFZdPQ" : "T_SHKLwRZRA";
   const youtubeSrc = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}&controls=0&playsinline=1&rel=0&modestbranding=1&iv_load_policy=3&fs=0&disablekb=1`;
   const copy = isUk
@@ -180,7 +182,7 @@ function RespondentBlock({ locale }: { locale: Locale }) {
             <div className="mt-4 max-w-[42rem]">
               <RespondentOnboardingPreview
                 alt="Схема онбордингу респондента Spike Spot Index"
-                downloadHref="/files/spike-respondent-onboarding-uk.png"
+                downloadHref={onboardingDownloadHref}
                 downloadLabel={copy.onboardingDownload}
                 eyebrow={copy.onboardingEyebrow}
                 hint={copy.onboardingHint}
