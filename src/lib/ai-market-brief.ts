@@ -1,6 +1,11 @@
 import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { allowMockFallback, db, hasDatabaseUrl } from "@/lib/db";
+import {
+  getLatestAiCardComments as getLatestAiCardCommentsPublic,
+  getPublishedAiMarketBrief as getPublishedAiMarketBriefPublic,
+} from "@/lib/ai-market-brief-public";
+import type { AiAnalyticsPoint, PublicAiMarketBrief, StoredBriefOutput, StoredCardComment } from "@/lib/ai-market-brief-types";
 import type { Locale } from "@/lib/i18n";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import { commodities, type CommodityId } from "@/lib/mock-data";
@@ -14,37 +19,6 @@ import {
 import { getActiveRespondentCountData } from "@/lib/respondent-directory-lazy";
 import { getDailyTelegramDigest } from "@/lib/telegram-source-collector";
 
-export type AiAnalyticsPoint = {
-  date: string;
-  commodityId: CommodityId;
-  value: number;
-  dayChange: number;
-  percentChange: number;
-  respondents: number;
-};
-
-export type PublicAiMarketBrief = {
-  blocks: Array<{ body: string; title: string }>;
-  cardComments: Record<string, string>;
-  confidence: string;
-  generatedAt: string;
-  inputDataHash: string;
-  model: string;
-  tradeDate: string;
-  observability: {
-    estimatedCostUsd: number | null;
-    fallbackReason: string | null;
-    promptTokens: number | null;
-    status: string;
-    totalTokens: number | null;
-  };
-};
-
-type StoredBriefOutput = {
-  blocks?: Array<{ body?: string; title?: string }>;
-  confidence?: string;
-};
-
 type GeneratedBriefJson = {
   cardComments?: StoredCardComment[];
   dataConfidence?: string;
@@ -52,11 +26,6 @@ type GeneratedBriefJson = {
   marketSignal?: string;
   riskRead?: string;
   watchNext?: string[] | string;
-};
-
-type StoredCardComment = {
-  code?: string;
-  comment?: string;
 };
 
 type GenerateOptions = {
@@ -80,56 +49,15 @@ export async function getPublishedAiMarketBrief({
   history: AiAnalyticsPoint[];
   locale: Locale;
 }): Promise<PublicAiMarketBrief | null> {
-  const activeIndex = getActiveIndexConfig();
-
-  if (activeIndex.id !== "spike-ua") {
-    return null;
-  }
-
-  if (hasDatabaseUrl()) {
-    const resolved = await resolvePublishedAiMarketBrief({
-      activeRespondentCount,
-      history,
-      locale,
-    });
-
-    if (resolved) {
-      return resolved;
-    }
-
-    if (!allowMockFallback()) {
-      return null;
-    }
-  }
-
-  return buildDeterministicAiMarketBrief(
-    history,
-    locale,
-    activeRespondentCount,
-    {
-      fallbackReason: "demo_or_missing_saved_brief",
-    },
-  );
-}
-
-export async function getLatestAiCardComments(locale: Locale) {
-  if (getActiveIndexConfig().id !== "spike-ua" || !hasDatabaseUrl()) {
-    return {};
-  }
-
-  const history = await getRealAnalyticsHistory();
-  const activeRespondentCount = await getActiveRespondentCountData();
-  const brief = await resolvePublishedAiMarketBrief({
+  return getPublishedAiMarketBriefPublic({
     activeRespondentCount,
     history,
     locale,
   });
+}
 
-  if (!brief) {
-    return {};
-  }
-
-  return brief.cardComments;
+export async function getLatestAiCardComments(locale: Locale) {
+  return getLatestAiCardCommentsPublic(locale);
 }
 
 export async function getAiMarketBriefAdminStatus(date: string) {
