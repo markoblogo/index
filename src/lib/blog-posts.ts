@@ -106,7 +106,7 @@ export const spikeBlogPosts: BlogPost[] = [
       "For a market as dynamic and strategically important as Ukraine’s grain sector, this is becoming increasingly necessary.",
     ],
     coverImage:
-      "/blog/teaching-grain-markets-to-think-ai-supercharges-spike-spot-index.png",
+      "/blog/teaching-grain-markets-to-think-ai-supercharges-spike-spot-index.webp",
     excerpt:
       "AI can strengthen the SPIKE Spot Index by adding structure, anomaly detection, explanation and scenario analysis around a transparent daily benchmark.",
     language: "en",
@@ -177,7 +177,7 @@ export const spikeBlogPosts: BlogPost[] = [
       `EPUB: ${spikeHandbookUaEpubUrl}`,
     ],
     coverImage:
-      "/blog/spot-market-handbook-practical-guide-ukrainian-physical-agri-market.png",
+      "/blog/spot-market-handbook-practical-guide-ukrainian-physical-agri-market.webp",
     excerpt:
       "Практичний гід українською про те, як формується ціна на фізичному аграрному ринку України та чому спотові індекси стають важливими.",
     language: "uk",
@@ -227,7 +227,7 @@ export const spikeBlogPosts: BlogPost[] = [
       "Саме тому медіана, фільтр викидів і мінімальна кількість респондентів роблять спотовий індекс сильнішим. Вони не дозволяють індексу “впасти у слабких руках” однієї випадкової ціни, але залишають його достатньо чутливим до реального ринкового руху.",
       "У нормальному ринку дані мають не просто існувати. Вони мають бути структуровані, перевірені і зрозумілі. Саме це і є головна функція щоденного спотового індексу.",
     ],
-    coverImage: "/blog/median-vs-average-spot-indices.png",
+    coverImage: "/blog/median-vs-average-spot-indices.webp",
     excerpt:
       "На хаотичному ринку одна “дивна” ціна може зламати картину. Медіанна фільтрація допомагає відділити ринковий сигнал від шуму.",
     language: "uk",
@@ -260,7 +260,7 @@ export const spikeBlogPosts: BlogPost[] = [
       "Публічний індекс має ще одну важливу функцію: він може бути корисним як нейтральна референтна база у контрактах, переговорах, спорах, арбітражі або внутрішньому ризик-менеджменті. Коли сторони використовують один і той самий прозорий індикатор, їм простіше пояснювати логіку ціноутворення.",
       "У воєнний час ринок не стає менш ринковим. Він стає складнішим. І саме тому якісні щоденні спот-дані стають не додатковою зручністю, а частиною робочої інфраструктури торгівлі.",
     ],
-    coverImage: "/blog/why-traders-pay-for-spot-data-during-war.png",
+    coverImage: "/blog/why-traders-pay-for-spot-data-during-war.webp",
     excerpt:
       "У період високої невизначеності daily spot index стає не прогнозом, а робочою референтною точкою для ринку.",
     language: "uk",
@@ -290,7 +290,7 @@ export const spikeBlogPosts: BlogPost[] = [
       "The purpose is not to replace negotiation or individual market judgment. Instead, the index gives producers, traders, processors, analysts and institutions a common benchmark for reading the market.",
       "A transparent daily index can help reduce information gaps, improve price discovery and make market discussion more disciplined. For a market as important and dynamic as Ukraine's, this kind of reference is becoming increasingly necessary.",
     ],
-    coverImage: "/blog/why-ukraine-needs-daily-spot-commodity-index.png",
+    coverImage: "/blog/why-ukraine-needs-daily-spot-commodity-index.webp",
     excerpt:
       "A daily spot index helps market participants read Ukrainian grain and oilseed price levels with more structure, transparency and consistency.",
     language: "en",
@@ -318,7 +318,7 @@ export const spikeBlogPosts: BlogPost[] = [
       "The SPIKE SPOT INDEX is built to support this kind of daily market reading. It provides a compact view of current values while leaving space for deeper analytics, historical comparison and future data products.",
       "As with any market data, index values should be used as information, not as a trading instruction. The strongest use case is as a disciplined reference point for analysis, discussion and decision-making.",
     ],
-    coverImage: "/blog/how-spot-indices-help-read-daily-grain-market-movement.png",
+    coverImage: "/blog/how-spot-indices-help-read-daily-grain-market-movement.webp",
     excerpt:
       "Spot indices do not predict the market. They help organize daily price information into a clearer benchmark.",
     language: "en",

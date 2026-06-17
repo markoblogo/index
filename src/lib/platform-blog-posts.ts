@@ -106,7 +106,7 @@ export const platformBlogPosts: PlatformBlogPost[] = [
       "The 1d3x platform connects proven index methodology and publishing technology with local market leaders. We are already active with UGA and SPIKE and preparing additional local products with the same repeatable model.",
       "We will share partner updates, implementation notes and practical market context from new jurisdictions as we enter new launches.",
     ],
-    coverImage: "/brand/operational-model.png",
+    coverImage: "/brand/operational-model.webp",
     excerpt:
       "We launched the 1d3x blog to publish updates on local commodity index launches, methodology and partner projects.",
     publishedAt: "2026-05-30",
@@ -275,7 +275,7 @@ export const platformBlogPosts: PlatformBlogPost[] = [
       },
       {
         kind: "imageTextPanel",
-        image: "/blog/spot-market-handbook-book-cover.png",
+        image: "/blog/spot-market-handbook-book-cover.webp",
         imageAlt: "Spot Market Handbook cover",
         text: "Книга Spot Market Handbook: How Ukrainian Agricultural Prices Actually Work вже доступна українською мовою на сайті Spike Spot Index.\n\nМи рекомендуємо її трейдерам, брокерам, експортерам, переробникам, агровиробникам, аналітикам та всім україномовним учасникам ринку, які хочуть краще зрозуміти, як насправді формуються ціни на фізичному аграрному ринку України.\n\nЦе не академічний підручник.\n\nЦе практичний гід про локальні базиси, FOB/CPT, ліквідність, респондентські моделі, спотові індекси, basis risk та майбутню роль індексної інфраструктури в аграрній торгівлі.",
       },
@@ -318,7 +318,7 @@ export const platformBlogPosts: PlatformBlogPost[] = [
         text: "Read it, download it, share it with your team, and use it as a practical introduction to how spot indices can make commodity markets more structured, transparent and readable.",
       },
     ],
-    coverImage: "/blog/spot-market-handbook-cover-hero.png",
+    coverImage: "/blog/spot-market-handbook-cover-hero.webp",
     excerpt:
       "A practical free handbook on how Ukrainian agricultural prices are formed and why spot indices are needed for readable, transparent physical market trading.",
     publishedAt: "2026-05-31",

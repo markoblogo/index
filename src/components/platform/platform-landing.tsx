@@ -206,7 +206,7 @@ export function PlatformLanding() {
                 height={1024}
                 priority
                 sizes="(min-width: 1024px) 46vw, 100vw"
-                src="/brand/operational-model.png"
+                src="/brand/operational-model.webp"
                 width={1536}
               />
             </div>
@@ -348,7 +348,7 @@ export function PlatformLanding() {
                 className="h-auto w-full"
                 height={1024}
                 sizes="(min-width: 1024px) 52vw, 100vw"
-                src="/brand/repeatable-playbook.png"
+                src="/brand/repeatable-playbook.webp"
                 width={1536}
               />
             </div>
