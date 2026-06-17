@@ -84,44 +84,19 @@ export default async function DailyReportsPage({
     hasDatabase: hasDatabaseUrl(),
     weeklyResources,
   });
+  const previewSummaryText = [
+    "📌 Головний сигнал дня: Короткий приклад AI daily summary.",
+    "🌻 Що рухалося найсильніше: Сильніші рухи по сої та соняшнику.",
+    "⚖️ Стійкість / ризик: Волатильність залишається локальною.",
+    "👀 На що дивитися далі: Слідкуємо за наступним циклом публікації.",
+  ].join("\n\n");
   const dailyTemplatePreview = renderReportTelegramTemplate(
     getLocalizedReportWorkspaceText(dailyConfig, selectedLanguage).telegramTemplate,
     {
-      blocks: [
-        {
-          body: "Короткий приклад AI daily summary.",
-          title: "Головний сигнал дня",
-        },
-        {
-          body: "Сильніші рухи по сої та соняшнику.",
-          title: "Що рухалося найсильніше",
-        },
-        {
-          body: "Волатильність залишається локальною.",
-          title: "Стійкість / ризик",
-        },
-        {
-          body: "Слідкуємо за наступним циклом публікації.",
-          title: "На що дивитися далі",
-        },
-      ],
+      ai_summary: previewSummaryText,
       index_summary:
         "SPIKE Spot Index: CBOT/physical moves and today's verified positions are inserted here.",
-      cardComments: {},
-      confidence: "normal",
-      generatedAt: "",
-      inputDataHash: "preview",
-      model: "preview",
-      observability: {
-        estimatedCostUsd: null,
-        fallbackReason: null,
-        promptTokens: null,
-        status: "preview",
-        totalTokens: null,
-      },
-      tradeDate: activeTradeDate,
     },
-    selectedLanguage,
   );
 
   async function saveConfigAction(formData: FormData) {
