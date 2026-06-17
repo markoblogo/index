@@ -84,6 +84,8 @@ type Dictionary = {
       description: string;
       cover: string;
       coverAlt: string;
+      pdfHref?: string;
+      epubHref?: string;
       cardTitle: string;
       cardDescription: string;
       releaseLabel?: string;
