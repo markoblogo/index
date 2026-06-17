@@ -28,7 +28,6 @@ const RespondentsDirectoryAsync = dynamic(
       (module) => module.RespondentsDirectory,
     ),
   {
-    ssr: false,
     loading: () => (
       <div className="rounded border border-black bg-white p-4 text-sm text-black/65">
         Loading respondents directory...
@@ -43,7 +42,6 @@ const SurveyNotificationSettingsAsync = dynamic(
       "@/components/admin/respondents/respondents-notification-settings"
     ).then((module) => module.SurveyNotificationSettings),
   {
-    ssr: false,
     loading: () => (
       <div className="rounded border border-black bg-white p-4 text-sm text-black/65">
         Loading survey notification settings...
@@ -58,7 +56,6 @@ const TelegramNotificationSettingsAsync = dynamic(
       "@/components/admin/respondents/respondents-telegram-settings"
     ).then((module) => module.TelegramNotificationSettings),
   {
-    ssr: false,
     loading: () => (
       <div className="rounded border border-black bg-white p-4 text-sm text-black/65">
         Loading Telegram settings...

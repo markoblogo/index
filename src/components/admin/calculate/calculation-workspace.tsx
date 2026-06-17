@@ -124,7 +124,7 @@ export function CalculationWorkspace({
           </form>
         </div>
 
-        {notice ? <Notice message={notice} />}
+        {notice ? <Notice message={notice} /> : null}
         {data.lockedForPublication ? (
           <div className="mt-5 border border-black bg-uga-mist px-4 py-3 text-sm font-semibold text-black/70">
             {data.lockReason}

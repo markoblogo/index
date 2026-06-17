@@ -11,7 +11,6 @@ const EmbedChartContentAsync = dynamic(
       (module) => module.EmbedChartContent,
     ),
   {
-    ssr: false,
     loading: () => (
       <div className="rounded-2xl border border-black/10 bg-white p-4 shadow-sm">
         <p className="text-xs font-black uppercase tracking-[0.16em] text-black/40">

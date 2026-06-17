@@ -49,7 +49,6 @@ import {
 const WeeklyReportsWorkspaceAsync = dynamic(
   () => import("@/components/admin/reports/weekly-reports-workspace").then((module) => module.WeeklyReportsWorkspace),
   {
-    ssr: false,
     loading: () => (
       <div className="rounded-[1.2rem] border border-white/12 bg-[#0d0d0d] p-5 text-sm text-white/60">
         Loading weekly report workspace...

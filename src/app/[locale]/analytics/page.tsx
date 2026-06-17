@@ -24,7 +24,6 @@ const AnalyticsTrendChartAsync = dynamic(
       (module) => module.AnalyticsTrendChart,
     ),
   {
-    ssr: false,
     loading: () => (
       <div className="grid h-72 place-items-center rounded border border-black bg-white p-4 text-xs font-black uppercase tracking-[0.12em] text-black/40">
         Loading chart...
@@ -39,7 +38,6 @@ const CurrencyValueAsync = dynamic(
       (module) => module.CurrencyValue,
     ),
   {
-    ssr: false,
     loading: () => <span className="text-sm text-black/55">—</span>,
   },
 );
@@ -50,7 +48,6 @@ const ScenarioModelPanelAsync = dynamic(
       (module) => module.ScenarioModelPanel,
     ),
   {
-    ssr: false,
     loading: () => (
       <div className="border border-black bg-white p-4">
         <p className="text-xs font-black uppercase tracking-[0.18em] text-black/40">
@@ -67,7 +64,6 @@ const SpreadAnalysisPanelAsync = dynamic(
       (module) => module.SpreadAnalysisPanel,
     ),
   {
-    ssr: false,
     loading: () => (
       <section className="mx-auto max-w-7xl px-6 py-12 lg:px-8 lg:py-14">
         <p className="text-xs font-black uppercase tracking-[0.18em] text-black/40">
@@ -84,7 +80,6 @@ const VolatilityRangePanelAsync = dynamic(
       (module) => module.VolatilityRangePanel,
     ),
   {
-    ssr: false,
     loading: () => (
       <section className="border border-black bg-white p-4">
         <p className="text-xs font-black uppercase tracking-[0.18em] text-black/40">

@@ -12,7 +12,9 @@ import {
   addReportWorkspaceResource,
   deleteReportWorkspaceResource,
   getReportWorkspaceConfig,
+  getLocalizedReportWorkspaceText,
   listReportWorkspaceResources,
+  renderReportTelegramTemplate,
   saveReportWorkspaceConfig,
   setReportWorkspaceResourceEnabled,
   type ReportKind,
@@ -31,7 +33,6 @@ import { buildReportsUrl } from "@/lib/admin-reports";
 const DailyReportsWorkspaceAsync = dynamic(
   () => import("@/components/admin/reports/daily-reports-workspace").then((module) => module.DailyReportsWorkspace),
   {
-    ssr: false,
     loading: () => (
       <div className="rounded-[1.2rem] border border-white/12 bg-[#0d0d0d] p-5 text-sm text-white/60">
         Loading daily report workspace...
@@ -71,6 +72,7 @@ export default async function DailyReportsPage({
       report.language === selectedLanguage &&
       report.weekEndDate === getDefaultWeekEnd(),
   ) ?? weeklyReports[0] ?? null;
+  const activeTradeDate = todayInputDate();
   const weeklyResources = activeWeeklyReport
     ? await listReportWorkspaceResources({
         reportId: activeWeeklyReport.id,
@@ -83,6 +85,45 @@ export default async function DailyReportsPage({
     hasDatabase: hasDatabaseUrl(),
     weeklyResources,
   });
+  const dailyTemplatePreview = renderReportTelegramTemplate(
+    getLocalizedReportWorkspaceText(dailyConfig, selectedLanguage).telegramTemplate,
+    {
+      blocks: [
+        {
+          body: "Короткий приклад AI daily summary.",
+          title: "Головний сигнал дня",
+        },
+        {
+          body: "Сильніші рухи по сої та соняшнику.",
+          title: "Що рухалося найсильніше",
+        },
+        {
+          body: "Волатильність залишається локальною.",
+          title: "Стійкість / ризик",
+        },
+        {
+          body: "Слідкуємо за наступним циклом публікації.",
+          title: "На що дивитися далі",
+        },
+      ],
+      index_summary:
+        "SPIKE Spot Index: CBOT/physical moves and today's verified positions are inserted here.",
+      cardComments: {},
+      confidence: "normal",
+      generatedAt: "",
+      inputDataHash: "preview",
+      model: "preview",
+      observability: {
+        estimatedCostUsd: null,
+        fallbackReason: null,
+        promptTokens: null,
+        status: "preview",
+        totalTokens: null,
+      },
+      tradeDate: activeTradeDate,
+    },
+    selectedLanguage,
+  );
 
   async function saveConfigAction(formData: FormData) {
     "use server";
@@ -193,6 +234,8 @@ export default async function DailyReportsPage({
       dailyDigest={dailyDigest}
       dailyResources={dailyResources}
       dailyStatus={dailyStatus}
+      dailyTemplatePreview={dailyTemplatePreview}
+      activeTradeDate={activeTradeDate}
       notice={params.notice}
       operationalReadiness={operationalReadiness}
       selectedLanguage={selectedLanguage}

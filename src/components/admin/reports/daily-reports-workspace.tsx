@@ -2,8 +2,6 @@
 
 import type { ReportWorkspaceConfig, ReportWorkspaceResource } from "@/lib/report-workspace";
 import { buildOperationalReadiness } from "@/lib/admin-reports";
-import { todayInputDate } from "@/lib/admin-daily-inputs";
-import { getLocalizedReportWorkspaceText, renderReportTelegramTemplate } from "@/lib/report-workspace";
 import type { TelegramSourceDigest } from "@/lib/telegram-source-collector";
 import { ReportsWorkspaceHeader } from "@/components/admin/reports/reports-workspace-header";
 import { OperationalReadinessPanel } from "@/components/admin/reports/operational-readiness-panel";
@@ -23,9 +21,11 @@ type DailyReportsWorkspaceProps = {
   dailyConfig: ReportWorkspaceConfig;
   dailyDigest: TelegramSourceDigest;
   dailyResources: ReportWorkspaceResource[];
+  dailyTemplatePreview: string;
   notice?: string;
   operationalReadiness: Awaited<ReturnType<typeof buildOperationalReadiness>>;
   selectedLanguage: "en" | "uk";
+  activeTradeDate: string;
   weeklyResources: ReportWorkspaceResource[];
   dailyStatus: DailyBriefStatus;
   saveConfigAction: (formData: FormData) => Promise<void>;
@@ -42,9 +42,11 @@ export function DailyReportsWorkspace({
   dailyConfig,
   dailyDigest,
   dailyResources,
+  dailyTemplatePreview,
   notice,
   operationalReadiness,
   selectedLanguage,
+  activeTradeDate,
   weeklyResources,
   dailyStatus,
   saveConfigAction,
@@ -56,46 +58,6 @@ export function DailyReportsWorkspace({
   toggleChannelPostsAction,
   resetWindowFiltersAction,
 }: DailyReportsWorkspaceProps) {
-  const dailyTemplatePreview = renderReportTelegramTemplate(
-    getLocalizedReportWorkspaceText(dailyConfig, selectedLanguage).telegramTemplate,
-    {
-      blocks: [
-        {
-          body: "Короткий приклад AI daily summary.",
-          title: "Головний сигнал дня",
-        },
-        {
-          body: "Сильніші рухи по сої та соняшнику.",
-          title: "Що рухалося найсильніше",
-        },
-        {
-          body: "Волатильність залишається локальною.",
-          title: "Стійкість / ризик",
-        },
-        {
-          body: "Слідкуємо за наступним циклом публікації.",
-          title: "На що дивитися далі",
-        },
-      ],
-      index_summary:
-        "SPIKE Spot Index: CBOT/physical moves and today's verified positions are inserted here.",
-      cardComments: {},
-      confidence: "normal",
-      generatedAt: "",
-      inputDataHash: "preview",
-      model: "preview",
-      observability: {
-        estimatedCostUsd: null,
-        fallbackReason: null,
-        promptTokens: null,
-        status: "preview",
-        totalTokens: null,
-      },
-      tradeDate: todayInputDate(),
-    },
-    selectedLanguage,
-  );
-
   return (
     <section className="grid gap-6">
       <ReportsWorkspaceHeader
@@ -126,7 +88,7 @@ export function DailyReportsWorkspace({
               Daily operator status
             </p>
             <p className="text-sm text-white/72">
-              Active trade date: <span className="font-semibold text-white">{todayInputDate()}</span>
+              Active trade date: <span className="font-semibold text-white">{activeTradeDate}</span>
             </p>
             <p className="text-sm text-white/72">
               Stored briefs:{" "}

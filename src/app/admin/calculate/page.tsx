@@ -21,7 +21,6 @@ const CalculationWorkspaceAsync = dynamic(
       (module) => module.CalculationWorkspace,
     ),
   {
-    ssr: false,
     loading: () => (
       <div className="rounded-[1.5rem] border border-black/10 bg-white p-6 shadow-sm">
         Loading calculation workspace...
@@ -36,7 +35,6 @@ const AiMarketBriefWorkspaceAsync = dynamic(
       (module) => module.AiMarketBriefWorkspace,
     ),
   {
-    ssr: false,
     loading: () => (
       <div className="rounded-[1.5rem] border border-black/10 bg-white p-6 shadow-sm">
         Loading AI Market Brief...
