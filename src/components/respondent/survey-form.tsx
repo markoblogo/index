@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState, type FormEvent } from "react";
 import type {
   RespondentSurveyData,
@@ -105,6 +104,10 @@ export function RespondentSurveyForm({
     }
   }
 
+  function handleEditSubmitted() {
+    window.location.assign(editHref);
+  }
+
   if (submissionStatus === "success") {
     return (
       <section className="border border-black bg-white p-5">
@@ -145,12 +148,13 @@ export function RespondentSurveyForm({
           {labels.submitSuccessFooter}
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-end gap-3">
-          <Link
+          <button
             className="rounded-[3px] border border-black bg-uga-dark px-5 py-3 text-sm font-semibold text-white transition hover:border-uga-green hover:text-uga-green"
-            href={editHref}
+            type="button"
+            onClick={handleEditSubmitted}
           >
             {labels.editSubmitted}
-          </Link>
+          </button>
           {isTelegramFlow ? <CloseButton /> : null}
         </div>
       </section>

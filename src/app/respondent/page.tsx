@@ -40,7 +40,8 @@ export default async function RespondentPage({
   const isSubmitted = data.status === "submitted";
   const isEditingSubmitted = isSubmitted && params.edit === "1";
   const hasSubmitQuery = params.saved === "submitted";
-  const showSubmittedConfirmation = (isSubmitted && !isEditingSubmitted) || hasSubmitQuery;
+  const showSubmittedConfirmation =
+    !isEditingSubmitted && ((isSubmitted && !isEditingSubmitted) || hasSubmitQuery);
   const editHref = `/respondent?locale=${locale}&edit=1${isTelegramFlow ? "&channel=telegram&inTelegram=1" : ""}`;
   const statusLabel =
     data.status === "submitted"
@@ -193,12 +194,12 @@ function SubmittedValues({
         ))}
       </div>
       <div className="mt-5 flex justify-end">
-        <Link
+        <a
           className="rounded-[3px] border border-black bg-uga-dark px-5 py-3 text-sm font-semibold text-white transition hover:border-uga-green hover:text-uga-green"
           href={editHref}
         >
           {editLabel}
-        </Link>
+        </a>
       </div>
     </section>
   );
