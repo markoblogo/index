@@ -15,8 +15,10 @@ export async function getPublishedWeeklyReportBySlug(slug: string) {
 }
 
 export async function getWeeklyTelegramDigest(weekEndDate: string, reportId: string | null) {
-  const loadedModule = await loadWeeklyAiReportModule();
-  return loadedModule.getWeeklyTelegramDigest(weekEndDate, reportId);
+  const { getWeeklyTelegramDigest: getDigest } = await import(
+    "@/lib/telegram-source-collector"
+  );
+  return getDigest(weekEndDate, reportId);
 }
 
 export async function autoPrepareWeeklyReportDraft(week?: string) {
