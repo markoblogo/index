@@ -4,6 +4,14 @@ import type { Locale } from "@/lib/i18n";
 type AiMarketBriefAdminModule = typeof import("@/lib/ai-market-brief");
 type AiMarketBriefPublicModule = typeof import("@/lib/ai-market-brief-public");
 
+export type {
+  AiAnalyticsPoint,
+  AiBriefLocale,
+  PublicAiMarketBrief,
+  StoredBriefOutput,
+  StoredCardComment,
+} from "@/lib/ai-market-brief-types";
+
 async function loadAiMarketBriefAdminModule() {
   return import("@/lib/ai-market-brief") as Promise<AiMarketBriefAdminModule>;
 }
