@@ -5,3 +5,14 @@ coverage
 .cache
 .DS_Store
 public/files/spot-market-handbook-ua.epub
+docs/everyday-index-implementation-plan.md
+prisma/migrations/20260612100000_everyday_index_scaffold
+prisma/migrations/migration_lock.toml
+scripts/import-everyday-big-mac.ts
+scripts/provision-uga-operations.mjs
+src/app/api/internal/everyday-index
+src/app/api/internal/uga-setup
+src/app/api/public/everyday-index
+src/components/everyday-index
+src/lib/everyday-index
+src/lib/uga-operations.ts
