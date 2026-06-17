@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { SITE_CONFIG } from "@/lib/constants";
+import type { PublicAiMarketBrief } from "@/lib/ai-market-brief-types";
 import { allowMockFallback, hasDatabaseUrl } from "@/lib/db";
 import { getFxRates } from "@/lib/fx-rates";
 import type { Locale } from "@/lib/i18n";
@@ -8,6 +9,7 @@ import { getActiveIndexConfig } from "@/lib/index-platform";
 import { commodities, type Commodity, type CommodityId } from "@/lib/mock-data";
 import { getPublicHistoryData } from "@/lib/public-api-data";
 import { getActiveRespondentCountData } from "@/lib/respondent-directory-lazy";
+import type { WeeklyReportRecord } from "@/lib/weekly-ai-report";
 
 type AnalyticsPoint = {
   date: string;
@@ -115,17 +117,17 @@ export default async function AnalyticsPage({
   const tableRows = selectRecentPublishedRows(history, 3);
   const isSpike = getActiveIndexConfig().id === "spike-ua";
   const hasHistory = history.length > 0;
-  let aiBrief = null;
-  let latestWeeklyReport = null;
+  let aiBrief: PublicAiMarketBrief | null = null;
+  let latestWeeklyReport: WeeklyReportRecord | null = null;
   let AnalyticsSpikeSections: ((
     props: {
-      aiBrief: typeof aiBrief;
+      aiBrief: PublicAiMarketBrief | null;
       aiCopy: AnalyticsCopy["aiBrief"];
       locale: Locale;
       weeklyCopy: AnalyticsCopy["weeklyReport"];
-      weeklyReport: typeof latestWeeklyReport;
+      weeklyReport: WeeklyReportRecord | null;
     },
-  ) => unknown) | null = null;
+  ) => ReactNode) | null = null;
 
   if (isSpike) {
     const [
