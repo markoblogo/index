@@ -429,7 +429,7 @@ export function PlatformLanding() {
                 />
               </div>
 
-              <div className="flex flex-col justify-between">
+              <div className="flex flex-col justify-between gap-5">
                 <div>
                   <p className="text-sm font-black uppercase tracking-[0.12em] text-[#6f806f]">
                     Guide to physical commodity markets
@@ -445,25 +445,18 @@ export function PlatformLanding() {
                     reality, and how index products evolve into market
                     intelligence infrastructure.
                   </p>
-
-                  <div className="mt-5 grid gap-2 text-xs font-black uppercase tracking-[0.1em] text-[#07100c]/58 sm:grid-cols-2">
-                    <p>Version: Global edition v1.0</p>
-                    <p>Date: June 17, 2026</p>
-                    <p>Language: English</p>
-                    <p>Formats: PDF / EPUB</p>
-                  </div>
                 </div>
 
-                <div className="mt-6 flex flex-wrap gap-3">
+                <div className="flex flex-wrap gap-3 lg:flex-nowrap">
                   <a
-                    className="inline-flex items-center justify-center border border-[#d6ff58] bg-[#d6ff58] px-5 py-3 text-xs font-black uppercase tracking-[0.12em] text-[#07100c] transition hover:bg-white"
+                    className="inline-flex min-w-[10.25rem] items-center justify-center border border-[#d6ff58] bg-[#d6ff58] px-5 py-3 text-xs font-black uppercase tracking-[0.12em] text-[#07100c] transition hover:bg-white"
                     download
                     href={handbookResource.pdf}
                   >
                     Download PDF
                   </a>
                   <a
-                    className="inline-flex items-center justify-center border border-[#07100c]/16 px-5 py-3 text-xs font-black uppercase tracking-[0.12em] text-[#07100c] transition hover:border-[#07100c] hover:bg-white"
+                    className="inline-flex min-w-[10.25rem] items-center justify-center border border-[#07100c]/16 px-5 py-3 text-xs font-black uppercase tracking-[0.12em] text-[#07100c] transition hover:border-[#07100c] hover:bg-white"
                     href={handbookResource.pdf}
                     rel="noopener noreferrer"
                     target="_blank"
@@ -471,7 +464,7 @@ export function PlatformLanding() {
                     Open PDF
                   </a>
                   <a
-                    className="inline-flex items-center justify-center border border-[#07100c]/16 px-5 py-3 text-xs font-black uppercase tracking-[0.12em] text-[#07100c] transition hover:border-[#07100c] hover:bg-white"
+                    className="inline-flex min-w-[10.25rem] items-center justify-center border border-[#07100c]/16 px-5 py-3 text-xs font-black uppercase tracking-[0.12em] text-[#07100c] transition hover:border-[#07100c] hover:bg-white"
                     download
                     href={handbookResource.epub}
                   >
