@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import dynamic from "next/dynamic";
 import {
   assessWeeklyReportPublicReadiness,
   assessWeeklyWorkflowSurface,
@@ -16,10 +16,52 @@ import { type WeeklyEditorialPostRow } from "@/lib/weekly-editorial-post-storage
 import type { ReportWorkspaceConfig, ReportWorkspaceResource } from "@/lib/report-workspace";
 import { ReportsWorkspaceHeader } from "@/components/admin/reports/reports-workspace-header";
 import { OperationalReadinessPanel } from "@/components/admin/reports/operational-readiness-panel";
-import { TelegramDigestPreview } from "@/components/admin/reports/telegram-digest-preview";
-import { WeeklySurfaceStatusPanel, WeeklyPreviewPanel, WeeklyRunsList } from "@/components/admin/reports/weekly-preview-panel";
 import { WorkspaceLane } from "@/components/admin/reports/workspace-lane";
-import { WeeklyWorkflowCard } from "@/components/admin/reports/weekly-workflow-card";
+
+const WeeklySurfaceOverviewAsync = dynamic(
+  () =>
+    import("@/components/admin/reports/weekly-surface-overview").then(
+      (module) => module.WeeklySurfaceOverview,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="rounded-[1.5rem] border border-white/12 bg-[#050505] p-5 text-sm text-white/60">
+        Loading weekly control center...
+      </div>
+    ),
+  },
+);
+
+const WeeklyDigestWorkspaceAsync = dynamic(
+  () =>
+    import("@/components/admin/reports/weekly-digest-workspace").then(
+      (module) => module.WeeklyDigestWorkspace,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="rounded-[1.2rem] border border-white/10 bg-black/30 p-4 text-sm text-white/60">
+        Loading weekly digest workspace...
+      </div>
+    ),
+  },
+);
+
+const WeeklyPreviewSidebarAsync = dynamic(
+  () =>
+    import("@/components/admin/reports/weekly-preview-sidebar").then(
+      (module) => module.WeeklyPreviewSidebar,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="rounded-[1.5rem] border border-white/12 bg-[#050505] p-5 text-sm text-white/60">
+        Loading weekly preview and archive...
+      </div>
+    ),
+  },
+);
 
 type WeeklyReportsWorkspaceProps = {
   dailyConfig: ReportWorkspaceConfig;
@@ -165,7 +207,7 @@ export function WeeklyReportsWorkspace({
       />
 
       {activeWeeklyReport && weeklySurfaceState ? (
-        <WeeklySurfaceStatusPanel
+        <WeeklySurfaceOverviewAsync
           detailCards={[
             {
               detail: `Window ${formatDigestDate(weeklyDigest.startAt)} → ${formatDigestDate(weeklyDigest.endAt)} · ${weeklyDigest.postCount} included / ${weeklySurfaceState.excludedPosts} excluded`,
@@ -210,105 +252,50 @@ export function WeeklyReportsWorkspace({
           toggleResourceAction={toggleResourceAction}
         >
           {activeWeeklyReport ? (
-            <div className="grid gap-4 2xl:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]">
-              <TelegramDigestPreview
-                digest={weeklyDigest}
-                generateAction={generateAction}
-                generationState={
-                  weeklySurfaceState
-                    ? {
-                        generatedAt: activeWeeklyReport.aiGeneratedAt,
-                        isCurrent: weeklySurfaceState.digestMatchesCurrent,
-                        signature: weeklyDigest.signature,
-                      }
-                    : null
-                }
-                reportId={activeWeeklyReport.id}
-                reportKind="weekly"
-                resetWindowFiltersAction={resetWindowFiltersAction}
-                syncSourcesAction={syncSourcesAction}
-                title="Weekly collected Telegram posts"
-                toggleChannelPostsAction={toggleChannelPostsAction}
-                toggleCollectedPostAction={toggleCollectedPostAction}
-              />
-              <WeeklyWorkflowCard
-                activeReport={activeWeeklyReport}
-                approveAction={approveAction}
-                editorialPost={editorialPost}
-                generateCoverAction={generateCoverAction}
-                generateAction={generateAction}
-                publishAction={publishAction}
-                publishEditorialArticleAction={publishEditorialArticleAction}
-                publicReadiness={weeklyReadiness}
-                republishEditorialArticleAction={republishEditorialArticleAction}
-                rebuildManifestAction={rebuildManifestAction}
-                saveNotesAction={saveNotesAction}
-                scheduleTelegramAction={scheduleTelegramAction}
-                sendTelegramNowAction={sendTelegramNowAction}
-                syncEditorialArticleAction={syncEditorialArticleAction}
-                unpublishEditorialArticleAction={unpublishEditorialArticleAction}
-              />
-            </div>
+            <WeeklyDigestWorkspaceAsync
+              activeReport={activeWeeklyReport}
+              approveAction={approveAction}
+              editorialPost={editorialPost}
+              generateCoverAction={generateCoverAction}
+              generateAction={generateAction}
+              generationState={
+                weeklySurfaceState
+                  ? {
+                      generatedAt: activeWeeklyReport.aiGeneratedAt,
+                      isCurrent: weeklySurfaceState.digestMatchesCurrent,
+                      signature: weeklyDigest.signature,
+                    }
+                  : null
+              }
+              publishAction={publishAction}
+              publishEditorialArticleAction={publishEditorialArticleAction}
+              publicReadiness={weeklyReadiness}
+              republishEditorialArticleAction={republishEditorialArticleAction}
+              rebuildManifestAction={rebuildManifestAction}
+              resetWindowFiltersAction={resetWindowFiltersAction}
+              saveNotesAction={saveNotesAction}
+              scheduleTelegramAction={scheduleTelegramAction}
+              sendTelegramNowAction={sendTelegramNowAction}
+              syncEditorialArticleAction={syncEditorialArticleAction}
+              syncSourcesAction={syncSourcesAction}
+              toggleChannelPostsAction={toggleChannelPostsAction}
+              toggleCollectedPostAction={toggleCollectedPostAction}
+              unpublishEditorialArticleAction={unpublishEditorialArticleAction}
+              weeklyDigest={weeklyDigest}
+            />
           ) : null}
         </WorkspaceLane>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.12fr)_minmax(0,0.88fr)]">
-        <div className="grid gap-6">
-          {activeWeeklyReport ? (
-            <WeeklyPreviewPanel
-              language={selectedLanguage}
-              preview={selectedPreview}
-              report={activeWeeklyReport}
-            />
-          ) : null}
-          <section className="rounded-[1.5rem] border border-white/12 bg-[#050505] p-5 text-sm leading-6 text-white/68">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <h2 className="text-lg font-semibold text-white">Publication timing</h2>
-                <p className="mt-2 max-w-3xl text-white/62">
-                  Daily and weekly stay auto-armed by default, but the editor can still intervene during the review window.
-                </p>
-                {operationalWarningHint ? (
-                  <p className="mt-3 text-xs text-amber-100">{operationalWarningHint}</p>
-                ) : null}
-              </div>
-              <span className="rounded-full border border-white/12 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-white/68">
-                deadline fail-safe
-              </span>
-            </div>
-            <div className="mt-4 grid gap-3 lg:grid-cols-3">
-              <div className="rounded-[1rem] border border-white/10 bg-black/20 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-white/45">Daily review</p>
-                <p className="mt-2 text-base font-semibold text-white">
-                  {dailyConfig.reviewStartsAt} {dailyConfig.timezone}
-                </p>
-              </div>
-              <div className="rounded-[1rem] border border-white/10 bg-black/20 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-white/45">Daily publish</p>
-                <p className="mt-2 text-base font-semibold text-white">
-                  {dailyConfig.publishAt} {dailyConfig.timezone}
-                </p>
-              </div>
-              <div className="rounded-[1rem] border border-white/10 bg-black/20 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-white/45">Weekly publish</p>
-                <p className="mt-2 text-base font-semibold text-white">
-                  {weeklyConfig.reviewStartsAt} → {weeklyConfig.publishAt} {weeklyConfig.timezone}
-                </p>
-              </div>
-            </div>
-          </section>
-        </div>
-
-        <div className="grid gap-6">
-          <WeeklyRunsList
-            activeReportId={activeWeeklyReport?.id ?? null}
-            language={selectedLanguage}
-            preview={selectedPreview}
-            reports={reports}
-          />
-        </div>
-      </div>
+      <WeeklyPreviewSidebarAsync
+        activeReport={activeWeeklyReport}
+        dailyConfig={dailyConfig}
+        language={selectedLanguage}
+        operationalWarningHint={operationalWarningHint}
+        preview={selectedPreview}
+        reports={reports}
+        weeklyConfig={weeklyConfig}
+      />
     </section>
   );
 }
