@@ -201,6 +201,7 @@ export default async function BlogPage({ params, searchParams }: BlogPageProps) 
                           alt={post.title}
                           className="h-full w-full object-cover object-top transition duration-500 group-hover:scale-[1.03]"
                           height={941}
+                          sizes="(min-width: 1536px) 720px, (min-width: 1280px) 560px, 100vw"
                           src={post.coverImage}
                           width={1672}
                         />

@@ -115,6 +115,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               className="absolute inset-0 h-full w-full object-cover object-top"
               height={941}
               priority
+              sizes="(min-width: 1280px) 1152px, 100vw"
               src={post.coverImage}
               width={1672}
             />
