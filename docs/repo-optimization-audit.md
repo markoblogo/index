@@ -89,6 +89,26 @@ Actions:
 - convert large PNG blog/brand assets to optimized WebP/AVIF where possible;
 - keep only essential preview assets in `public/`.
 
+### Pass 2a. Implemented now: tenant-aware deploy payload trimming
+
+Implemented:
+
+- `scripts/deploy-vercel-project.mjs`
+- tenant-aware deploy profiles wired into:
+  - `deploy:1d3x`
+  - `deploy:uga`
+  - `deploy:spike`
+
+Current estimated skipped upload payload by project:
+
+- `1d3x`: ~91.5 MB
+- `uga-index`: ~68.5 MB
+- `spike-ua-index`: ~5.2 MB
+
+This does not yet reduce repository size on disk, but it immediately reduces
+Vercel upload/deploy weight for tenant-specific production deployments without
+changing runtime behavior for the active tenant.
+
 ### Pass 3. Tenant boundary refactor
 
 Goals:
