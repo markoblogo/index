@@ -1,10 +1,6 @@
 import type { ReactNode } from "react";
-import { AnalyticsTrendChart } from "@/components/ui/analytics-trend-chart";
-import { CurrencyValue } from "@/components/ui/currency-toggle";
-import { ScenarioModelPanel } from "@/components/ui/scenario-model-panel";
+import dynamic from "next/dynamic";
 import { WeeklyReportView } from "@/components/reports/weekly-report-view";
-import { SpreadAnalysisPanel } from "@/components/ui/spread-analysis-panel";
-import { VolatilityRangePanel } from "@/components/ui/volatility-range-panel";
 import {
   getPublishedAiMarketBrief,
   type PublicAiMarketBrief,
@@ -27,6 +23,83 @@ type AnalyticsPoint = {
   percentChange: number;
   respondents: number;
 };
+
+const AnalyticsTrendChartAsync = dynamic(
+  () =>
+    import("@/components/ui/analytics-trend-chart").then(
+      (module) => module.AnalyticsTrendChart,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="grid h-72 place-items-center rounded border border-black bg-white p-4 text-xs font-black uppercase tracking-[0.12em] text-black/40">
+        Loading chart...
+      </div>
+    ),
+  },
+);
+
+const CurrencyValueAsync = dynamic(
+  () =>
+    import("@/components/ui/currency-toggle").then(
+      (module) => module.CurrencyValue,
+    ),
+  {
+    ssr: false,
+    loading: () => <span className="text-sm text-black/55">—</span>,
+  },
+);
+
+const ScenarioModelPanelAsync = dynamic(
+  () =>
+    import("@/components/ui/scenario-model-panel").then(
+      (module) => module.ScenarioModelPanel,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="border border-black bg-white p-4">
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-black/40">
+          Loading scenario model...
+        </p>
+      </div>
+    ),
+  },
+);
+
+const SpreadAnalysisPanelAsync = dynamic(
+  () =>
+    import("@/components/ui/spread-analysis-panel").then(
+      (module) => module.SpreadAnalysisPanel,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <section className="mx-auto max-w-7xl px-6 py-12 lg:px-8 lg:py-14">
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-black/40">
+          Loading spread panel...
+        </p>
+      </section>
+    ),
+  },
+);
+
+const VolatilityRangePanelAsync = dynamic(
+  () =>
+    import("@/components/ui/volatility-range-panel").then(
+      (module) => module.VolatilityRangePanel,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <section className="border border-black bg-white p-4">
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-black/40">
+          Loading volatility panel...
+        </p>
+      </section>
+    ),
+  },
+);
 
 const profileByCommodity: Partial<
   Record<CommodityId, { drift: number; volatility: number; phase: number }>
@@ -113,7 +186,7 @@ export default async function AnalyticsPage({
                 description={copy.trendDescription}
                 title={copy.trendTitle}
               >
-                <AnalyticsTrendChart
+                <AnalyticsTrendChartAsync
                   commodities={commodities}
                   history={history}
                   locale={locale}
@@ -129,7 +202,7 @@ export default async function AnalyticsPage({
                 description={copy.volatilityDescription}
                 title={copy.volatilityTitle}
               >
-                <VolatilityRangePanel
+                <VolatilityRangePanelAsync
                   commodities={commodities}
                   history={history}
                   locale={locale}
@@ -138,7 +211,7 @@ export default async function AnalyticsPage({
             </div>
           </section>
 
-          <SpreadAnalysisPanel history={history} locale={locale} />
+          <SpreadAnalysisPanelAsync history={history} locale={locale} />
         </>
       ) : (
         <section className="border-y border-black bg-uga-mist">
@@ -173,7 +246,7 @@ export default async function AnalyticsPage({
           </div>
 
           {hasHistory ? (
-            <ScenarioModelPanel
+            <ScenarioModelPanelAsync
               commodities={commodities}
               history={history}
               locale={locale}
@@ -602,7 +675,7 @@ function PublishedValuesTable({
                           {SITE_CONFIG.defaultDeliveryBasis}
                         </td>
                         <td className="px-4 py-3 font-black text-black">
-                          <CurrencyValue
+                          <CurrencyValueAsync
                             compact
                             fxRates={fxRates}
                             locale={locale}
