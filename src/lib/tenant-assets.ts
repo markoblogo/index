@@ -20,34 +20,40 @@ type TenantAssetEntry = {
   envVar: string;
 };
 
+const ASSET_CDN_BASE = "https://cdn.jsdelivr.net/gh/markoblogo/index@asset-cdn/public/files";
+const RAW_GITHUB_ASSET_BASE =
+  "https://raw.githubusercontent.com/markoblogo/index/asset-cdn/public/files";
+const GITHUB_RELEASE_ASSET_BASE =
+  "https://github.com/markoblogo/index/releases/download/asset-binaries-v1";
+
 const TENANT_ASSET_MANIFEST: Record<TenantAssetKey, TenantAssetEntry> = {
   "1d3x.partnerDeck.pdf": {
     envVar: "ASSET_1D3X_PARTNER_DECK_PDF_URL",
-    fallbackPath: "/files/1D3X_Local_Commodity_Index_Partner_Program.pdf",
+    fallbackPath: `${ASSET_CDN_BASE}/1D3X_Local_Commodity_Index_Partner_Program.pdf`,
   },
   "spike.handbook.cover.en": {
     envVar: "ASSET_SPIKE_HANDBOOK_COVER_EN_URL",
-    fallbackPath: "/files/spot-market-handbook-cover-en.jpg",
+    fallbackPath: `${ASSET_CDN_BASE}/spot-market-handbook-cover-en.jpg`,
   },
   "spike.handbook.cover.ua": {
     envVar: "ASSET_SPIKE_HANDBOOK_COVER_UA_URL",
-    fallbackPath: "/files/spot-market-handbook-cover-ua.png",
+    fallbackPath: `${ASSET_CDN_BASE}/spot-market-handbook-cover-ua.png`,
   },
   "spike.handbook.en.epub": {
     envVar: "ASSET_SPIKE_HANDBOOK_EN_EPUB_URL",
-    fallbackPath: "/files/spot-market-handbook-en.epub",
+    fallbackPath: `${GITHUB_RELEASE_ASSET_BASE}/spot-market-handbook-en.epub`,
   },
   "spike.handbook.en.pdf": {
     envVar: "ASSET_SPIKE_HANDBOOK_EN_PDF_URL",
-    fallbackPath: "/files/spot-market-handbook-en.pdf",
+    fallbackPath: `${ASSET_CDN_BASE}/spot-market-handbook-en.pdf`,
   },
   "spike.handbook.ua.epub": {
     envVar: "ASSET_SPIKE_HANDBOOK_UA_EPUB_URL",
-    fallbackPath: "/files/spot-market-handbook-ua.epub",
+    fallbackPath: `${GITHUB_RELEASE_ASSET_BASE}/spot-market-handbook-ua.epub`,
   },
   "spike.handbook.ua.pdf": {
     envVar: "ASSET_SPIKE_HANDBOOK_UA_PDF_URL",
-    fallbackPath: "/files/spot-market-handbook-ua.pdf",
+    fallbackPath: `${ASSET_CDN_BASE}/spot-market-handbook-ua.pdf`,
   },
   "spike.methodology.en.pdf": {
     envVar: "ASSET_SPIKE_METHODOLOGY_EN_PDF_URL",
@@ -63,19 +69,19 @@ const TENANT_ASSET_MANIFEST: Record<TenantAssetKey, TenantAssetEntry> = {
   },
   "spike.onboarding.uk.png": {
     envVar: "ASSET_SPIKE_ONBOARDING_UK_PNG_URL",
-    fallbackPath: "/files/spike-respondent-onboarding-uk.png",
+    fallbackPath: `${ASSET_CDN_BASE}/spike-respondent-onboarding-uk.png`,
   },
   "spike.partnerDeck.en.pdf": {
     envVar: "ASSET_SPIKE_PARTNER_DECK_EN_PDF_URL",
-    fallbackPath: "/files/spike-spot-index-global-partner-deck-2026.pdf",
+    fallbackPath: `${RAW_GITHUB_ASSET_BASE}/spike-spot-index-global-partner-deck-2026.pdf`,
   },
   "spike.respondentsDeck.uk.pdf": {
     envVar: "ASSET_SPIKE_RESPONDENTS_DECK_UK_PDF_URL",
-    fallbackPath: "/files/spike-spot-index-respondents-presentation.pdf",
+    fallbackPath: `${RAW_GITHUB_ASSET_BASE}/spike-spot-index-respondents-presentation.pdf`,
   },
   "uga.marketIntelligence.pdf": {
     envVar: "ASSET_UGA_MARKET_INTELLIGENCE_PDF_URL",
-    fallbackPath: "/files/uga-index-market-intelligence.pdf",
+    fallbackPath: `${ASSET_CDN_BASE}/uga-index-market-intelligence.pdf`,
   },
   "uga.methodology.pdf": {
     envVar: "ASSET_UGA_METHODOLOGY_PDF_URL",

@@ -109,6 +109,32 @@ This does not yet reduce repository size on disk, but it immediately reduces
 Vercel upload/deploy weight for tenant-specific production deployments without
 changing runtime behavior for the active tenant.
 
+### Pass 2b. Implemented now: externalized heavy tenant media
+
+Implemented:
+
+- external asset manifest fallback layer in `src/lib/tenant-assets.ts`
+- heavy binary asset branch: `asset-cdn`
+- release-backed EPUB delivery: `asset-binaries-v1`
+
+Result:
+
+- the largest SPIKE/UGA/1D3X PDFs and PNGs no longer live in `public/files`
+- handbook EPUBs no longer live in the main deploy payload
+- runtime keeps working through external fallback URLs even before any
+  `ASSET_*_URL` env overrides are set
+
+Current payload result after file removal:
+
+- `public/`: ~20 MB
+- `public/files`: ~272 KB
+
+External delivery strategy now used:
+
+- `raw.githubusercontent.com` for oversized deck PDFs
+- `jsDelivr` for medium public PDFs and PNGs
+- GitHub Release assets for handbook EPUB files
+
 ### Pass 3. Tenant boundary refactor
 
 Goals:
