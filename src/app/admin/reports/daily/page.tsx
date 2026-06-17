@@ -1,8 +1,5 @@
 import { redirect } from "next/navigation";
-import { ReportsWorkspaceHeader } from "@/components/admin/reports/reports-workspace-header";
-import { OperationalReadinessPanel } from "@/components/admin/reports/operational-readiness-panel";
-import { TelegramDigestPreview } from "@/components/admin/reports/telegram-digest-preview";
-import { WorkspaceLane } from "@/components/admin/reports/workspace-lane";
+import dynamic from "next/dynamic";
 import {
   buildAiBriefTelegramSummaryText,
   getAiMarketBriefAdminStatus,
@@ -37,6 +34,66 @@ import {
 import {
   listWeeklyReports,
 } from "@/lib/weekly-ai-report-lazy";
+
+const ReportsWorkspaceHeaderAsync = dynamic(
+  () =>
+    import("@/components/admin/reports/reports-workspace-header").then(
+      (module) => module.ReportsWorkspaceHeader,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="rounded-[1.2rem] border border-white/12 bg-[#0d0d0d] p-5 text-sm text-white/60">
+        Loading reports header...
+      </div>
+    ),
+  },
+);
+
+const OperationalReadinessPanelAsync = dynamic(
+  () =>
+    import("@/components/admin/reports/operational-readiness-panel").then(
+      (module) => module.OperationalReadinessPanel,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="rounded-[1.2rem] border border-white/12 bg-[#0d0d0d] p-5 text-sm text-white/60">
+        Loading operational readiness...
+      </div>
+    ),
+  },
+);
+
+const WorkspaceLaneAsync = dynamic(
+  () =>
+    import("@/components/admin/reports/workspace-lane").then(
+      (module) => module.WorkspaceLane,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="rounded-[1.3rem] border border-white/12 bg-black/20 p-4 text-sm text-white/55">
+        Loading workspace...
+      </div>
+    ),
+  },
+);
+
+const TelegramDigestPreviewAsync = dynamic(
+  () =>
+    import("@/components/admin/reports/telegram-digest-preview").then(
+      (module) => module.TelegramDigestPreview,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="rounded-[1.3rem] border border-white/12 bg-black/20 p-4 text-sm text-white/55">
+        Loading Telegram digest preview...
+      </div>
+    ),
+  },
+);
 
 type DailyReportsPageProps = {
   searchParams: Promise<{
@@ -185,19 +242,19 @@ export default async function DailyReportsPage({
 
   return (
     <section className="grid gap-6">
-      <ReportsWorkspaceHeader
+      <ReportsWorkspaceHeaderAsync
         language={selectedLanguage}
         notice={params.notice}
         section="daily"
       />
 
-      <OperationalReadinessPanel
+      <OperationalReadinessPanelAsync
         items={operationalReadiness.items}
         warnings={operationalReadiness.warnings}
       />
 
       <div className="grid gap-6 xl:grid-cols-2">
-        <WorkspaceLane
+        <WorkspaceLaneAsync
           addResourceAction={addResourceAction}
           config={dailyConfig}
           deleteResourceAction={deleteResourceAction}
@@ -240,7 +297,7 @@ export default async function DailyReportsPage({
               )}
             </div>
           </div>
-          <TelegramDigestPreview
+          <TelegramDigestPreviewAsync
             digest={dailyDigest}
             generateAction={null}
             generationState={null}
@@ -252,7 +309,7 @@ export default async function DailyReportsPage({
             toggleChannelPostsAction={toggleChannelPostsAction}
             toggleCollectedPostAction={toggleCollectedPostAction}
           />
-        </WorkspaceLane>
+        </WorkspaceLaneAsync>
 
         <section className="grid gap-6">
           <section className="rounded-[1.5rem] border border-white/12 bg-[#050505] p-5">

@@ -1,3 +1,5 @@
+"use client";
+
 type IndexSparklineProps = {
   values: number[];
   trend?: "up" | "down" | "flat";

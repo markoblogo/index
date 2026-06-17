@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import type { ReactNode } from "react";
 import type { WeeklyReportRecord } from "@/lib/weekly-ai-report";

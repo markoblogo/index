@@ -1,3 +1,5 @@
+"use client";
+
 import type { ReportKind } from "@/lib/report-workspace";
 import type { TelegramSourceDigest } from "@/lib/telegram-source-collector";
 import { formatDigestDate } from "@/lib/admin-reports";

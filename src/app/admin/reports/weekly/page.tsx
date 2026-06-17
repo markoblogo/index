@@ -1,14 +1,5 @@
 import { redirect } from "next/navigation";
-import { ReportsWorkspaceHeader } from "@/components/admin/reports/reports-workspace-header";
-import { OperationalReadinessPanel } from "@/components/admin/reports/operational-readiness-panel";
-import { TelegramDigestPreview } from "@/components/admin/reports/telegram-digest-preview";
-import {
-  WeeklyPreviewPanel,
-  WeeklyRunsList,
-  WeeklySurfaceStatusPanel,
-} from "@/components/admin/reports/weekly-preview-panel";
-import { WeeklyWorkflowCard } from "@/components/admin/reports/weekly-workflow-card";
-import { WorkspaceLane } from "@/components/admin/reports/workspace-lane";
+import dynamic from "next/dynamic";
 import {
   assessWeeklyReportPublicReadiness,
   assessWeeklyWorkflowSurface,
@@ -57,6 +48,126 @@ import {
   publishWeeklyEditorialPostByReportId,
   unpublishWeeklyEditorialPostByReportId,
 } from "@/lib/weekly-editorial-post-storage";
+
+const ReportsWorkspaceHeaderAsync = dynamic(
+  () =>
+    import("@/components/admin/reports/reports-workspace-header").then(
+      (module) => module.ReportsWorkspaceHeader,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="rounded-[1.2rem] border border-white/12 bg-[#0d0d0d] p-5 text-sm text-white/60">
+        Loading reports header...
+      </div>
+    ),
+  },
+);
+
+const OperationalReadinessPanelAsync = dynamic(
+  () =>
+    import("@/components/admin/reports/operational-readiness-panel").then(
+      (module) => module.OperationalReadinessPanel,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="rounded-[1.2rem] border border-white/12 bg-[#0d0d0d] p-5 text-sm text-white/60">
+        Loading operational readiness...
+      </div>
+    ),
+  },
+);
+
+const TelegramDigestPreviewAsync = dynamic(
+  () =>
+    import("@/components/admin/reports/telegram-digest-preview").then(
+      (module) => module.TelegramDigestPreview,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="rounded-[1.3rem] border border-white/12 bg-black/20 p-4 text-sm text-white/55">
+        Loading Telegram digest preview...
+      </div>
+    ),
+  },
+);
+
+const WeeklyPreviewPanelAsync = dynamic(
+  () =>
+    import("@/components/admin/reports/weekly-preview-panel").then(
+      (module) => module.WeeklyPreviewPanel,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="rounded-[1.3rem] border border-white/12 bg-black/20 p-4 text-sm text-white/55">
+        Loading weekly preview...
+      </div>
+    ),
+  },
+);
+
+const WeeklyRunsListAsync = dynamic(
+  () =>
+    import("@/components/admin/reports/weekly-preview-panel").then(
+      (module) => module.WeeklyRunsList,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="rounded-[1.2rem] border border-white/12 bg-black/20 p-4 text-sm text-white/55">
+        Loading weekly run list...
+      </div>
+    ),
+  },
+);
+
+const WeeklySurfaceStatusPanelAsync = dynamic(
+  () =>
+    import("@/components/admin/reports/weekly-preview-panel").then(
+      (module) => module.WeeklySurfaceStatusPanel,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="rounded-[1.2rem] border border-white/12 bg-black/20 p-4 text-sm text-white/55">
+        Loading control center...
+      </div>
+    ),
+  },
+);
+
+const WeeklyWorkflowCardAsync = dynamic(
+  () =>
+    import("@/components/admin/reports/weekly-workflow-card").then(
+      (module) => module.WeeklyWorkflowCard,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="rounded-[1.3rem] border border-white/12 bg-black/20 p-4 text-sm text-white/55">
+        Loading workflow card...
+      </div>
+    ),
+  },
+);
+
+const WorkspaceLaneAsync = dynamic(
+  () =>
+    import("@/components/admin/reports/workspace-lane").then(
+      (module) => module.WorkspaceLane,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="rounded-[1.3rem] border border-white/12 bg-black/20 p-4 text-sm text-white/55">
+        Loading workspace...
+      </div>
+    ),
+  },
+);
 
 type WeeklyReportsPageProps = {
   searchParams: Promise<{
@@ -433,7 +544,7 @@ export default async function WeeklyReportsPage({
 
   return (
     <section className="grid gap-6">
-      <ReportsWorkspaceHeader
+      <ReportsWorkspaceHeaderAsync
         actions={headerActions}
         language={selectedLanguage}
         notice={params.notice}
@@ -443,13 +554,13 @@ export default async function WeeklyReportsPage({
         week={selectedWeek}
       />
 
-      <OperationalReadinessPanel
+      <OperationalReadinessPanelAsync
         items={operationalReadiness.items}
         warnings={operationalReadiness.warnings}
       />
 
       {activeWeeklyReport && weeklySurfaceState ? (
-        <WeeklySurfaceStatusPanel
+        <WeeklySurfaceStatusPanelAsync
           detailCards={[
             {
               detail: `Window ${formatDigestDate(weeklyDigest.startAt)} → ${formatDigestDate(weeklyDigest.endAt)} · ${weeklyDigest.postCount} included / ${weeklySurfaceState.excludedPosts} excluded`,
@@ -480,7 +591,7 @@ export default async function WeeklyReportsPage({
       ) : null}
 
       <div className="grid gap-6">
-        <WorkspaceLane
+        <WorkspaceLaneAsync
           addResourceAction={addResourceAction}
           config={weeklyConfig}
           deleteResourceAction={deleteResourceAction}
@@ -495,7 +606,7 @@ export default async function WeeklyReportsPage({
         >
           {activeWeeklyReport ? (
             <div className="grid gap-4 2xl:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]">
-              <TelegramDigestPreview
+              <TelegramDigestPreviewAsync
                 digest={weeklyDigest}
                 generateAction={generateAction}
                 generationState={
@@ -515,7 +626,7 @@ export default async function WeeklyReportsPage({
                 toggleChannelPostsAction={toggleChannelPostsAction}
                 toggleCollectedPostAction={toggleCollectedPostAction}
               />
-              <WeeklyWorkflowCard
+              <WeeklyWorkflowCardAsync
                 activeReport={activeWeeklyReport}
                 approveAction={approveAction}
                 editorialPost={editorialPost}
@@ -534,13 +645,13 @@ export default async function WeeklyReportsPage({
               />
             </div>
           ) : null}
-        </WorkspaceLane>
+        </WorkspaceLaneAsync>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.12fr)_minmax(0,0.88fr)]">
         <div className="grid gap-6">
           {activeWeeklyReport ? (
-            <WeeklyPreviewPanel
+            <WeeklyPreviewPanelAsync
               language={selectedLanguage}
               preview={selectedPreview}
               report={activeWeeklyReport}
@@ -576,7 +687,7 @@ export default async function WeeklyReportsPage({
         </div>
 
         <div className="grid gap-6">
-          <WeeklyRunsList
+          <WeeklyRunsListAsync
             activeReportId={activeWeeklyReport?.id ?? null}
             language={selectedLanguage}
             preview={selectedPreview}

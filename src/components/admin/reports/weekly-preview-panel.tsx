@@ -1,3 +1,5 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import { WeeklyReportView } from "@/components/reports/weekly-report-view";
