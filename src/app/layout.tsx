@@ -51,7 +51,7 @@ export const metadata: Metadata = {
           {
             alt: "1d3x",
             height: 736,
-            url: "/brand/1d3x-logo.png",
+            url: "/brand/1d3x-logo.webp",
             width: 2140,
           },
         ],
@@ -66,7 +66,7 @@ export const metadata: Metadata = {
         card: "summary_large_image",
         description:
           "Local commodity index infrastructure built with institutional partners and market leaders.",
-        images: ["/brand/1d3x-logo.png"],
+        images: ["/brand/1d3x-logo.webp"],
         title: "1d3x | Local Commodity Index Infrastructure",
       }
     : undefined,

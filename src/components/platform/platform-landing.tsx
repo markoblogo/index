@@ -93,7 +93,7 @@ const jsonLd = {
       "@id": "https://1d3x.com/#organization",
       name: "1d3x",
       url: "https://1d3x.com",
-      logo: "https://1d3x.com/brand/1d3x-logo.png",
+      logo: "https://1d3x.com/brand/1d3x-logo.webp",
       email: "partnerships@1d3x.com",
       description:
         "Commodity index infrastructure for local agricultural markets, built with institutional partners and market leaders.",
@@ -572,7 +572,7 @@ function PlatformLogo({ className }: { className: string }) {
       className={className}
       height={736}
       priority
-      src="/brand/1d3x-logo-white.png"
+      src="/brand/1d3x-logo-white.webp"
       width={2140}
     />
   );

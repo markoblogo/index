@@ -19,7 +19,7 @@ export function BlogHeader() {
             className="h-5 w-auto sm:h-6"
             height={736}
             priority
-            src="/brand/1d3x-logo-white.png"
+            src="/brand/1d3x-logo-white.webp"
             width={2140}
           />
         </Link>
@@ -59,7 +59,7 @@ export function BlogFooter() {
               alt="1d3x"
               className="h-4 w-auto opacity-60"
               height={736}
-              src="/brand/1d3x-logo-white.png"
+              src="/brand/1d3x-logo-white.webp"
               width={2140}
             />
             <p>Commodity index infrastructure.</p>
