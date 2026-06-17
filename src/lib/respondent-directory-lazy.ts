@@ -1,5 +1,13 @@
 type RespondentDirectoryModule = typeof import("@/lib/respondent-directory");
 
+export type {
+  RespondentCollectionMode,
+  RespondentDirectoryEntry,
+  RespondentEmailScheduleSettings,
+  RespondentPasswordStatus,
+  RespondentStatus,
+} from "@/lib/respondent-directory";
+
 async function loadRespondentDirectoryModule() {
   return import("@/lib/respondent-directory") as Promise<
     RespondentDirectoryModule
