@@ -1,4 +1,4 @@
-import dynamic from "next/dynamic";
+import dynamicImport from "next/dynamic";
 import { redirect } from "next/navigation";
 import {
   buildOperationalReadiness,
@@ -30,7 +30,7 @@ import { getAiMarketBriefAdminStatus } from "@/lib/ai-market-brief-lazy";
 import { listWeeklyReports } from "@/lib/weekly-ai-report-lazy";
 import { buildReportsUrl } from "@/lib/admin-reports";
 
-const DailyReportsWorkspaceAsync = dynamic(
+const DailyReportsWorkspaceAsync = dynamicImport(
   () => import("@/components/admin/reports/daily-reports-workspace").then((module) => module.DailyReportsWorkspace),
   {
     loading: () => (

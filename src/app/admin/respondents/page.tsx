@@ -1,5 +1,5 @@
 import { revalidatePath } from "next/cache";
-import dynamic from "next/dynamic";
+import dynamicImport from "next/dynamic";
 import { SITE_CONFIG } from "@/lib/constants";
 import { requireDemoRole } from "@/lib/demo-auth";
 import {
@@ -22,7 +22,7 @@ import {
 import { sendRespondentSurveyEmails } from "@/lib/respondent-email";
 import { sendRespondentTelegramNotifications } from "@/lib/respondent-telegram";
 
-const RespondentsDirectoryAsync = dynamic(
+const RespondentsDirectoryAsync = dynamicImport(
   () =>
     import("@/components/admin/respondents/respondents-directory").then(
       (module) => module.RespondentsDirectory,
@@ -36,7 +36,7 @@ const RespondentsDirectoryAsync = dynamic(
   },
 );
 
-const SurveyNotificationSettingsAsync = dynamic(
+const SurveyNotificationSettingsAsync = dynamicImport(
   () =>
     import(
       "@/components/admin/respondents/respondents-notification-settings"
@@ -50,7 +50,7 @@ const SurveyNotificationSettingsAsync = dynamic(
   },
 );
 
-const TelegramNotificationSettingsAsync = dynamic(
+const TelegramNotificationSettingsAsync = dynamicImport(
   () =>
     import(
       "@/components/admin/respondents/respondents-telegram-settings"

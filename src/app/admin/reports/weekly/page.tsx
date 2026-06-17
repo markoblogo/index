@@ -1,4 +1,4 @@
-import dynamic from "next/dynamic";
+import dynamicImport from "next/dynamic";
 import { redirect } from "next/navigation";
 import {
   buildOperationalReadiness,
@@ -46,7 +46,7 @@ import {
   unpublishWeeklyEditorialPostByReportId,
 } from "@/lib/weekly-editorial-post-storage";
 
-const WeeklyReportsWorkspaceAsync = dynamic(
+const WeeklyReportsWorkspaceAsync = dynamicImport(
   () => import("@/components/admin/reports/weekly-reports-workspace").then((module) => module.WeeklyReportsWorkspace),
   {
     loading: () => (
