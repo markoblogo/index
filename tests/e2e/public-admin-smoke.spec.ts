@@ -23,6 +23,12 @@ test("admin and respondent preview login routes work", async ({ page }, testInfo
   await page.getByRole("button", { name: /sign in/i }).click();
   await expect(page).toHaveURL(/\/admin\/daily-inputs|\/setup-password/);
 
+  await page.goto("/admin/respondents");
+  await expect(
+    page.getByRole("heading", { name: /Respondent management|Partner respondents/i }),
+  ).toBeVisible();
+  await expect(page.getByText("Digital")).toBeVisible();
+
   await page.goto("/logout");
   await page.goto("/login");
   await page.getByLabel("Email").fill("bunge@uga-index.demo");

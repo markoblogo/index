@@ -1,12 +1,7 @@
-import { redirect } from "next/navigation";
 import dynamic from "next/dynamic";
-import {
-  buildAiBriefTelegramSummaryText,
-  getAiMarketBriefAdminStatus,
-} from "@/lib/ai-market-brief-lazy";
+import { redirect } from "next/navigation";
 import {
   buildOperationalReadiness,
-  buildReportsUrl,
   getDefaultWeekEnd,
   normalizeAdminLocale,
 } from "@/lib/admin-reports";
@@ -16,10 +11,8 @@ import { requireDemoRole } from "@/lib/demo-auth";
 import {
   addReportWorkspaceResource,
   deleteReportWorkspaceResource,
-  getLocalizedReportWorkspaceText,
   getReportWorkspaceConfig,
   listReportWorkspaceResources,
-  renderReportTelegramTemplate,
   saveReportWorkspaceConfig,
   setReportWorkspaceResourceEnabled,
   type ReportKind,
@@ -31,65 +24,17 @@ import {
   setTelegramCollectedPostIncluded,
   syncTelegramWorkspaceResources,
 } from "@/lib/telegram-source-collector";
-import {
-  listWeeklyReports,
-} from "@/lib/weekly-ai-report-lazy";
+import { getAiMarketBriefAdminStatus } from "@/lib/ai-market-brief-lazy";
+import { listWeeklyReports } from "@/lib/weekly-ai-report-lazy";
+import { buildReportsUrl } from "@/lib/admin-reports";
 
-const ReportsWorkspaceHeaderAsync = dynamic(
-  () =>
-    import("@/components/admin/reports/reports-workspace-header").then(
-      (module) => module.ReportsWorkspaceHeader,
-    ),
+const DailyReportsWorkspaceAsync = dynamic(
+  () => import("@/components/admin/reports/daily-reports-workspace").then((module) => module.DailyReportsWorkspace),
   {
     ssr: false,
     loading: () => (
       <div className="rounded-[1.2rem] border border-white/12 bg-[#0d0d0d] p-5 text-sm text-white/60">
-        Loading reports header...
-      </div>
-    ),
-  },
-);
-
-const OperationalReadinessPanelAsync = dynamic(
-  () =>
-    import("@/components/admin/reports/operational-readiness-panel").then(
-      (module) => module.OperationalReadinessPanel,
-    ),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="rounded-[1.2rem] border border-white/12 bg-[#0d0d0d] p-5 text-sm text-white/60">
-        Loading operational readiness...
-      </div>
-    ),
-  },
-);
-
-const WorkspaceLaneAsync = dynamic(
-  () =>
-    import("@/components/admin/reports/workspace-lane").then(
-      (module) => module.WorkspaceLane,
-    ),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="rounded-[1.3rem] border border-white/12 bg-black/20 p-4 text-sm text-white/55">
-        Loading workspace...
-      </div>
-    ),
-  },
-);
-
-const TelegramDigestPreviewAsync = dynamic(
-  () =>
-    import("@/components/admin/reports/telegram-digest-preview").then(
-      (module) => module.TelegramDigestPreview,
-    ),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="rounded-[1.3rem] border border-white/12 bg-black/20 p-4 text-sm text-white/55">
-        Loading Telegram digest preview...
+        Loading daily report workspace...
       </div>
     ),
   },
@@ -122,7 +67,9 @@ export default async function DailyReportsPage({
       listWeeklyReports().catch(() => []),
     ]);
   const activeWeeklyReport = weeklyReports.find(
-    (report) => report.language === selectedLanguage && report.weekEndDate === getDefaultWeekEnd(),
+    (report) =>
+      report.language === selectedLanguage &&
+      report.weekEndDate === getDefaultWeekEnd(),
   ) ?? weeklyReports[0] ?? null;
   const weeklyResources = activeWeeklyReport
     ? await listReportWorkspaceResources({
@@ -241,146 +188,23 @@ export default async function DailyReportsPage({
   }
 
   return (
-    <section className="grid gap-6">
-      <ReportsWorkspaceHeaderAsync
-        language={selectedLanguage}
-        notice={params.notice}
-        section="daily"
-      />
-
-      <OperationalReadinessPanelAsync
-        items={operationalReadiness.items}
-        warnings={operationalReadiness.warnings}
-      />
-
-      <div className="grid gap-6 xl:grid-cols-2">
-        <WorkspaceLaneAsync
-          addResourceAction={addResourceAction}
-          config={dailyConfig}
-          deleteResourceAction={deleteResourceAction}
-          formColumns="double"
-          resources={dailyResources}
-          saveConfigAction={saveConfigAction}
-          sectionId="daily-workspace"
-          title="Daily summary workspace"
-          toggleResourceAction={toggleResourceAction}
-        >
-          <div className="grid gap-4 rounded-[1.2rem] border border-white/10 bg-black/30 p-4">
-            <p className="text-sm font-semibold uppercase tracking-[0.12em] text-white/45">
-              Daily operator status
-            </p>
-            <p className="text-sm text-white/72">
-              Active trade date: <span className="font-semibold text-white">{todayInputDate()}</span>
-            </p>
-            <p className="text-sm text-white/72">
-              Stored briefs:{" "}
-              <span className="font-semibold text-white">
-                {dailyStatus.rows.length > 0 ? dailyStatus.rows.length : 0}
-              </span>
-            </p>
-            <div className="grid gap-2 text-sm text-white/68">
-              {dailyStatus.rows.length > 0 ? (
-                dailyStatus.rows.map((row) => (
-                  <div
-                    className="rounded-[1rem] border border-white/10 bg-black/30 px-4 py-3"
-                    key={row.locale}
-                  >
-                    <span className="font-semibold uppercase text-white">{row.locale}</span>
-                    {" · "}
-                    {row.status}
-                    {" · "}
-                    {row.model}
-                  </div>
-                ))
-              ) : (
-                <p>No daily brief rows stored for this trade date yet.</p>
-              )}
-            </div>
-          </div>
-          <TelegramDigestPreviewAsync
-            digest={dailyDigest}
-            generateAction={null}
-            generationState={null}
-            reportId={null}
-            reportKind="daily"
-            resetWindowFiltersAction={resetWindowFiltersAction}
-            syncSourcesAction={syncSourcesAction}
-            title="Daily collected Telegram posts"
-            toggleChannelPostsAction={toggleChannelPostsAction}
-            toggleCollectedPostAction={toggleCollectedPostAction}
-          />
-        </WorkspaceLaneAsync>
-
-        <section className="grid gap-6">
-          <section className="rounded-[1.5rem] border border-white/12 bg-[#050505] p-5">
-            <h2 className="text-lg font-semibold text-white">Daily Telegram output template</h2>
-            <p className="mt-2 text-sm leading-6 text-white/62">
-              Editor-facing preview of the combined index + summary post shape.
-            </p>
-            <pre className="mt-4 whitespace-pre-wrap rounded-[1rem] border border-white/10 bg-black/30 p-4 text-xs leading-6 text-white/72">
-              {renderReportTelegramTemplate(
-                getLocalizedReportWorkspaceText(dailyConfig, "uk").telegramTemplate,
-                {
-                  ai_summary: buildAiBriefTelegramSummaryText(
-                    {
-                      blocks: [
-                        { body: "Короткий приклад AI daily summary.", title: "Головний сигнал дня" },
-                        { body: "Сильніші рухи по сої та соняшнику.", title: "Що рухалося найсильніше" },
-                        { body: "Волатильність залишається локальною.", title: "Стійкість / ризик" },
-                        { body: "Слідкуємо за наступним циклом публікації.", title: "На що дивитися далі" },
-                      ],
-                      cardComments: {},
-                      confidence: "normal",
-                      generatedAt: "",
-                      inputDataHash: "preview",
-                      model: "preview",
-                      observability: {
-                        estimatedCostUsd: null,
-                        fallbackReason: null,
-                        promptTokens: null,
-                        status: "preview",
-                        totalTokens: null,
-                      },
-                      tradeDate: todayInputDate(),
-                    },
-                    "uk",
-                  ),
-                  index_summary:
-                    "SPIKE Spot Index: CBOT/physical moves and today's verified positions are inserted here.",
-                },
-              )}
-            </pre>
-          </section>
-
-          <section className="rounded-[1.5rem] border border-white/12 bg-[#050505] p-5">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <h2 className="text-lg font-semibold text-white">Daily workflow defaults</h2>
-                <p className="mt-2 text-sm leading-6 text-white/62">
-                  Daily remains editor-reviewable before publication, but still publishes on time if nobody intervenes.
-                </p>
-              </div>
-              <span className="rounded-full border border-white/12 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-white/68">
-                fail-safe armed
-              </span>
-            </div>
-            <div className="mt-4 grid gap-3 md:grid-cols-3 text-sm leading-6 text-white/68">
-              <div className="rounded-[1rem] border border-white/10 bg-black/20 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-white/45">Review starts</p>
-                <p className="mt-2 text-base font-semibold text-white">{dailyConfig.reviewStartsAt} {dailyConfig.timezone}</p>
-              </div>
-              <div className="rounded-[1rem] border border-white/10 bg-black/20 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-white/45">Auto-publish</p>
-                <p className="mt-2 text-base font-semibold text-white">{dailyConfig.publishAt} {dailyConfig.timezone}</p>
-              </div>
-              <div className="rounded-[1rem] border border-white/10 bg-black/20 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-white/45">Weekly sibling flow</p>
-                <p className="mt-2 text-base font-semibold text-white">{weeklyConfig.reviewStartsAt} → {weeklyConfig.publishAt}</p>
-              </div>
-            </div>
-          </section>
-        </section>
-      </div>
-    </section>
+    <DailyReportsWorkspaceAsync
+      dailyConfig={dailyConfig}
+      dailyDigest={dailyDigest}
+      dailyResources={dailyResources}
+      dailyStatus={dailyStatus}
+      notice={params.notice}
+      operationalReadiness={operationalReadiness}
+      selectedLanguage={selectedLanguage}
+      weeklyResources={weeklyResources}
+      addResourceAction={addResourceAction}
+      deleteResourceAction={deleteResourceAction}
+      saveConfigAction={saveConfigAction}
+      syncSourcesAction={syncSourcesAction}
+      toggleChannelPostsAction={toggleChannelPostsAction}
+      toggleCollectedPostAction={toggleCollectedPostAction}
+      toggleResourceAction={toggleResourceAction}
+      resetWindowFiltersAction={resetWindowFiltersAction}
+    />
   );
 }
