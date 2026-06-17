@@ -11,7 +11,7 @@ import { unlockTodayPublishedIndices } from "@/lib/admin-publication-lock";
 import {
   generateAndStoreDailyAiMarketBriefs,
   getAiMarketBriefAdminStatus,
-} from "@/lib/ai-market-brief";
+} from "@/lib/ai-market-brief-lazy";
 import { SITE_CONFIG } from "@/lib/constants";
 import type { IndexCalculationStatus } from "@/lib/index-calculation";
 import { getActiveIndexConfig, getCommodityCategory } from "@/lib/index-platform";

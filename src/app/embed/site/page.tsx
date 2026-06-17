@@ -8,7 +8,7 @@ import { getFxRates } from "@/lib/fx-rates";
 import { getDictionary, type Locale } from "@/lib/i18n";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import { getPublicIndexSnapshot } from "@/lib/public-index-data";
-import { getActiveRespondentCountData } from "@/lib/respondent-directory";
+import { getActiveRespondentCountData } from "@/lib/respondent-directory-lazy";
 
 type EmbedSiteView = "index" | "methodology" | "about" | "analytics";
 

@@ -19,7 +19,7 @@ import {
   type RespondentEmailScheduleSettings,
   type RespondentPasswordStatus,
   type RespondentStatus,
-} from "@/lib/respondent-directory";
+} from "@/lib/respondent-directory-lazy";
 import { sendRespondentSurveyEmails } from "@/lib/respondent-email";
 import { sendRespondentTelegramNotifications } from "@/lib/respondent-telegram";
 import { SITE_CONFIG } from "@/lib/constants";

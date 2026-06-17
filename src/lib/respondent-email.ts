@@ -5,7 +5,7 @@ import {
   getRespondentEmailScheduleData,
   type RespondentDirectoryEntry,
   type RespondentEmailScheduleSettings,
-} from "@/lib/respondent-directory";
+} from "@/lib/respondent-directory-lazy";
 
 type SendTrigger = "manual" | "scheduled";
 

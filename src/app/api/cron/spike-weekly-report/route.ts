@@ -5,7 +5,7 @@ import {
   autoPublishDueWeeklyReports,
   autoPrepareWeeklyReportDraft,
   sendDueWeeklyReports,
-} from "@/lib/weekly-ai-report";
+} from "@/lib/weekly-ai-report-lazy";
 
 export const dynamic = "force-dynamic";
 

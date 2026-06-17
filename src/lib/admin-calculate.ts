@@ -27,7 +27,7 @@ import {
   canManuallyUnlockPublicationDate,
   revalidatePublishedIndexViews,
 } from "@/lib/admin-publication-lock";
-import { generateAndStoreDailyAiMarketBriefs } from "@/lib/ai-market-brief";
+import { generateAndStoreDailyAiMarketBriefs } from "@/lib/ai-market-brief-lazy";
 import { getActiveRespondentCount } from "@/lib/respondent-directory";
 import { syncIndexPositionDirectory } from "@/lib/position-directory-sync";
 import {

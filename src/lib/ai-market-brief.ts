@@ -11,7 +11,7 @@ import {
   listReportWorkspaceResources,
   renderReportTelegramTemplate,
 } from "@/lib/report-workspace";
-import { getActiveRespondentCountData } from "@/lib/respondent-directory";
+import { getActiveRespondentCountData } from "@/lib/respondent-directory-lazy";
 import { getDailyTelegramDigest } from "@/lib/telegram-source-collector";
 
 export type AiAnalyticsPoint = {

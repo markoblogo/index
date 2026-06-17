@@ -2,6 +2,7 @@ import "server-only";
 
 import { SITE_CONFIG } from "@/lib/constants";
 import type { Locale } from "@/lib/i18n";
+import type { WeeklyReportRecord } from "@/lib/weekly-ai-report";
 import {
   getWeeklyEditorialPostRowBySlug,
   listWeeklyEditorialPostRows,
@@ -11,8 +12,7 @@ import {
 import {
   getPublishedWeeklyReportBySlug,
   getPublishedWeeklyReports,
-  type WeeklyReportRecord,
-} from "@/lib/weekly-ai-report";
+} from "@/lib/weekly-ai-report-lazy";
 
 export type WeeklyEditorialPost = {
   canonicalUrl: string;

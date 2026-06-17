@@ -1,5 +1,5 @@
 import { allowMockFallback, db, hasDatabaseUrl } from "@/lib/db";
-import { getLatestAiCardComments } from "@/lib/ai-market-brief";
+import { getLatestAiCardComments } from "@/lib/ai-market-brief-lazy";
 import { getLatestDemoPublishedIndices } from "@/lib/demo-published-index-store";
 import { getDemoSubmission } from "@/lib/demo-submission-store";
 import { getActiveIndexConfig } from "@/lib/index-platform";

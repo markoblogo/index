@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { db, hasDatabaseUrl } from "@/lib/db";
-import { generateAndStoreDailyAiMarketBriefs } from "@/lib/ai-market-brief";
+import { generateAndStoreDailyAiMarketBriefs } from "@/lib/ai-market-brief-lazy";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import { computePublishedChange } from "@/lib/index-publish";
 import { syncIndexPositionDirectory } from "@/lib/position-directory-sync";

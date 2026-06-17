@@ -4,11 +4,11 @@ import {
   getPublishedAiMarketBrief,
   sendAiBriefTelegramSummary,
   type AiAnalyticsPoint,
-} from "@/lib/ai-market-brief";
+} from "@/lib/ai-market-brief-lazy";
 import { isCronRequestAuthorized } from "@/lib/cron-auth";
 import type { Locale } from "@/lib/i18n";
 import { getPublicHistoryData } from "@/lib/public-api-data";
-import { getActiveRespondentCountData } from "@/lib/respondent-directory";
+import { getActiveRespondentCountData } from "@/lib/respondent-directory-lazy";
 
 export const dynamic = "force-dynamic";
 

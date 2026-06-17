@@ -8,16 +8,16 @@ import { VolatilityRangePanel } from "@/components/ui/volatility-range-panel";
 import {
   getPublishedAiMarketBrief,
   type PublicAiMarketBrief,
-} from "@/lib/ai-market-brief";
+} from "@/lib/ai-market-brief-lazy";
 import { SITE_CONFIG } from "@/lib/constants";
 import { allowMockFallback, hasDatabaseUrl } from "@/lib/db";
 import { getFxRates } from "@/lib/fx-rates";
 import type { Locale } from "@/lib/i18n";
 import { getActiveIndexConfig } from "@/lib/index-platform";
-import { getPublishedWeeklyReports } from "@/lib/weekly-ai-report";
+import { getPublishedWeeklyReports } from "@/lib/weekly-ai-report-lazy";
 import { commodities, type Commodity, type CommodityId } from "@/lib/mock-data";
 import { getPublicHistoryData } from "@/lib/public-api-data";
-import { getActiveRespondentCountData } from "@/lib/respondent-directory";
+import { getActiveRespondentCountData } from "@/lib/respondent-directory-lazy";
 
 type AnalyticsPoint = {
   date: string;

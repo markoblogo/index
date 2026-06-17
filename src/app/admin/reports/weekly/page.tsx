@@ -50,7 +50,7 @@ import {
   saveWeeklyReportAdminInputs,
   scheduleWeeklyReportTelegram,
   sendWeeklyReportTelegramNow,
-} from "@/lib/weekly-ai-report";
+} from "@/lib/weekly-ai-report-lazy";
 import { syncWeeklyEditorialPostFromReport } from "@/lib/weekly-editorial-posts";
 import {
   getWeeklyEditorialPostRowByReportId,

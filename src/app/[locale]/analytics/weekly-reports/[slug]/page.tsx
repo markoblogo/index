@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { WeeklyReportView } from "@/components/reports/weekly-report-view";
 import type { Locale } from "@/lib/i18n";
-import { getPublishedWeeklyReportBySlug } from "@/lib/weekly-ai-report";
+import { getPublishedWeeklyReportBySlug } from "@/lib/weekly-ai-report-lazy";
 
 export const revalidate = 3600;
 

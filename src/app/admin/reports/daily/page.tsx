@@ -6,7 +6,7 @@ import { WorkspaceLane } from "@/components/admin/reports/workspace-lane";
 import {
   buildAiBriefTelegramSummaryText,
   getAiMarketBriefAdminStatus,
-} from "@/lib/ai-market-brief";
+} from "@/lib/ai-market-brief-lazy";
 import {
   buildOperationalReadiness,
   buildReportsUrl,
@@ -36,7 +36,7 @@ import {
 } from "@/lib/telegram-source-collector";
 import {
   listWeeklyReports,
-} from "@/lib/weekly-ai-report";
+} from "@/lib/weekly-ai-report-lazy";
 
 type DailyReportsPageProps = {
   searchParams: Promise<{
