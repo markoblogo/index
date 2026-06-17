@@ -1,5 +1,4 @@
 import { allowMockFallback, db, hasDatabaseUrl } from "@/lib/db";
-import { getLatestAiCardComments } from "@/lib/ai-market-brief-lazy";
 import { getLatestDemoPublishedIndices } from "@/lib/demo-published-index-store";
 import { getDemoSubmission } from "@/lib/demo-submission-store";
 import { getActiveIndexConfig } from "@/lib/index-platform";
@@ -267,10 +266,7 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
       .at(-1) ?? visibleTradeDate;
   const [aiCommentsUk, aiCommentsEn] =
     activeIndex.id === "spike-ua"
-      ? await Promise.all([
-          getLatestAiCardComments("uk"),
-          getLatestAiCardComments("en"),
-        ])
+      ? await loadLatestAiComments()
       : [{}, {}];
   const publicCommodities = dbCommodities.map((commodity) => {
     const mockCommodity = mockCommodityByCode.get(commodity.code) ?? commodities[0];
@@ -352,6 +348,14 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
         .sort((first, second) => second.getTime() - first.getTime())[0]
         ?.toISOString() ?? indexUpdatedAt,
   };
+}
+
+async function loadLatestAiComments() {
+  const { getLatestAiCardComments } = await import("@/lib/ai-market-brief-public");
+  return Promise.all([
+    getLatestAiCardComments("uk"),
+    getLatestAiCardComments("en"),
+  ]);
 }
 
 function todayKyivDate() {

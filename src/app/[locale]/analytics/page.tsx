@@ -1,16 +1,10 @@
 import type { ReactNode } from "react";
 import dynamic from "next/dynamic";
-import { WeeklyReportView } from "@/components/reports/weekly-report-view";
-import {
-  getPublishedAiMarketBrief,
-  type PublicAiMarketBrief,
-} from "@/lib/ai-market-brief-lazy";
 import { SITE_CONFIG } from "@/lib/constants";
 import { allowMockFallback, hasDatabaseUrl } from "@/lib/db";
 import { getFxRates } from "@/lib/fx-rates";
 import type { Locale } from "@/lib/i18n";
 import { getActiveIndexConfig } from "@/lib/index-platform";
-import { getPublishedWeeklyReports } from "@/lib/weekly-ai-report-lazy";
 import { commodities, type Commodity, type CommodityId } from "@/lib/mock-data";
 import { getPublicHistoryData } from "@/lib/public-api-data";
 import { getActiveRespondentCountData } from "@/lib/respondent-directory-lazy";
@@ -117,22 +111,46 @@ export default async function AnalyticsPage({
 }) {
   const { locale } = await params;
   const copy = getAnalyticsCopy(locale);
-  const fxRates = await getFxRates();
-  const activeRespondentCount = await getActiveRespondentCountData();
+  const fxRatesPromise = getFxRates();
+  const respondentCountPromise = getActiveRespondentCountData();
+  const activeRespondentCount = await respondentCountPromise;
   const history = await getAnalyticsHistory(activeRespondentCount);
+  const fxRates = await fxRatesPromise;
   const snapshot = buildMarketSnapshot(history, locale, activeRespondentCount);
   const tableRows = selectRecentPublishedRows(history, 3);
   const isSpike = getActiveIndexConfig().id === "spike-ua";
   const hasHistory = history.length > 0;
-  const aiBrief = isSpike
-    ? await getPublishedAiMarketBrief({
-        activeRespondentCount,
-        history,
-        locale,
-      })
-    : null;
-  const weeklyReports = isSpike ? await getPublishedWeeklyReports() : [];
-  const latestWeeklyReport = weeklyReports[0] ?? null;
+  let aiBrief = null;
+  let latestWeeklyReport = null;
+  let AnalyticsSpikeSections: ((
+    props: {
+      aiBrief: typeof aiBrief;
+      aiCopy: AnalyticsCopy["aiBrief"];
+      locale: Locale;
+      weeklyCopy: AnalyticsCopy["weeklyReport"];
+      weeklyReport: typeof latestWeeklyReport;
+    },
+  ) => unknown) | null = null;
+
+  if (isSpike) {
+    const [
+      { getPublishedAiMarketBrief },
+      { getPublishedWeeklyReports },
+      spikeSectionsModule,
+    ] = await Promise.all([
+      import("@/lib/ai-market-brief-public"),
+      import("@/lib/weekly-ai-report-lazy"),
+      import("@/components/reports/analytics-spike-sections"),
+    ]);
+    const weeklyReports = await getPublishedWeeklyReports();
+    aiBrief = await getPublishedAiMarketBrief({
+      activeRespondentCount,
+      history,
+      locale,
+    });
+    latestWeeklyReport = weeklyReports[0] ?? null;
+    AnalyticsSpikeSections = spikeSectionsModule.AnalyticsSpikeSections;
+  }
 
   return (
     <main
@@ -162,19 +180,13 @@ export default async function AnalyticsPage({
         <KpiStrip items={snapshot} />
       </section>
 
-      {aiBrief ? (
-        <AiMarketBriefSection
-          brief={aiBrief}
-          copy={copy.aiBrief}
+      {AnalyticsSpikeSections ? (
+        <AnalyticsSpikeSections
+          aiBrief={aiBrief}
+          aiCopy={copy.aiBrief}
           locale={locale}
-        />
-      ) : null}
-
-      {isSpike ? (
-        <WeeklyReportSection
-          copy={copy.weeklyReport}
-          locale={locale}
-          report={latestWeeklyReport}
+          weeklyCopy={copy.weeklyReport}
+          weeklyReport={latestWeeklyReport}
         />
       ) : null}
 
@@ -342,201 +354,6 @@ function AnalyticsPanel({
       <div className="mt-4">{children}</div>
     </article>
   );
-}
-
-function AiMarketBriefSection({
-  brief,
-  copy,
-  locale,
-}: {
-  brief: PublicAiMarketBrief;
-  copy: AnalyticsCopy["aiBrief"];
-  locale: Locale;
-}) {
-  return (
-    <section className="border-y border-white/10 bg-[#101010]">
-      <div className="mx-auto grid max-w-7xl gap-5 px-6 py-10 lg:grid-cols-[0.76fr_1.24fr] lg:px-8 lg:py-14">
-        <div>
-          <p className="text-xs font-black uppercase tracking-[0.24em] text-[var(--spike-accent)]">
-            {copy.eyebrow}
-          </p>
-          <h2 className="mt-3 text-3xl font-black uppercase leading-none tracking-normal text-white">
-            {copy.title}
-          </h2>
-          <p className="mt-4 text-sm leading-6 text-white/64">
-            {copy.description}
-          </p>
-          <div className="mt-5 flex flex-wrap gap-2 text-[0.68rem] font-black uppercase tracking-[0.12em]">
-            <span className="rounded-full bg-[var(--spike-accent)] px-3 py-1 text-[#050505]">
-              {copy.aiAssistedBadge}
-            </span>
-            <span className="rounded-full border border-white/18 px-3 py-1 text-white/58">
-              {copy.generatedLabel}: {brief.generatedAt}
-            </span>
-            <span className="rounded-full border border-white/18 px-3 py-1 text-white/58">
-              {copy.confidenceLabel}:{" "}
-              {mapBriefConfidenceLabel(brief.confidence, locale)}
-            </span>
-            <span className="rounded-full border border-white/18 px-3 py-1 text-white/58">
-              {copy.officialUnchangedBadge}
-            </span>
-          </div>
-        </div>
-        <div className="grid gap-3 md:grid-cols-2">
-          {brief.blocks[0] ? (
-            <article className="rounded-[1rem] border border-[var(--spike-accent)]/60 bg-[#f8f8f2] p-5 text-[#050505] md:col-span-2">
-              <h3 className="text-sm font-black uppercase tracking-[0.08em] text-[#050505]">
-                {brief.blocks[0].title}
-              </h3>
-              <p className="mt-3 text-sm font-semibold leading-6 text-black/68">
-                {brief.blocks[0].body}
-              </p>
-            </article>
-          ) : null}
-          {brief.blocks.slice(1, 3).map((block) => (
-            <article
-              className="rounded-[1rem] border border-white/10 bg-[#f8f8f2] p-4 text-[#050505]"
-              key={block.title}
-            >
-              <h3 className="text-sm font-black uppercase tracking-[0.08em] text-[#050505]">
-                {block.title}
-              </h3>
-              <p className="mt-3 text-sm font-semibold leading-6 text-black/64">
-                {block.body}
-              </p>
-            </article>
-          ))}
-          {brief.blocks[3] ? (
-            <article className="rounded-[1rem] border border-white/10 bg-[#f8f8f2] p-4 text-[#050505] md:col-span-2">
-              <h3 className="text-sm font-black uppercase tracking-[0.08em] text-[#050505]">
-                {brief.blocks[3].title}
-              </h3>
-              <p className="mt-3 text-sm font-semibold leading-6 text-black/64">
-                {brief.blocks[3].body}
-              </p>
-            </article>
-          ) : null}
-          <p className="rounded-[1rem] border border-white/10 bg-black/45 p-4 text-xs font-semibold leading-5 text-white/58 md:col-span-2">
-            {copy.disclaimer}
-          </p>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function WeeklyReportSection({
-  copy,
-  locale,
-  report,
-}: {
-  copy: AnalyticsCopy["weeklyReport"];
-  locale: Locale;
-  report: Awaited<ReturnType<typeof getPublishedWeeklyReports>>[number] | null;
-}) {
-  return (
-    <section className="border-y border-white/10 bg-[#0b0b0b]">
-      <div className="mx-auto max-w-7xl px-6 py-10 lg:px-8 lg:py-14">
-        <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.24em] text-[var(--spike-accent)]">
-              {copy.eyebrow}
-            </p>
-            <h2 className="mt-3 text-3xl font-black uppercase leading-tight tracking-normal text-white">
-              {copy.title}
-            </h2>
-            <p className="mt-4 text-sm leading-6 text-white/64">
-              {copy.description}
-            </p>
-            <div className="mt-5 flex flex-wrap gap-2 text-[0.68rem] font-black uppercase tracking-[0.12em]">
-              {report ? (
-                <>
-                  <span className="rounded-full bg-[var(--spike-accent)] px-3 py-1 text-[#050505]">
-                    AI-assisted
-                  </span>
-                  <span className="rounded-full border border-white/18 px-3 py-1 text-white/58">
-                    {copy.weekEndingLabel}:{" "}
-                    {formatWeeklyBadgeDate(report.weekEndDate, locale) ??
-                      report.weekEndDate}
-                  </span>
-                  <span className="rounded-full border border-white/18 px-3 py-1 text-white/58">
-                    {copy.publicationLabel}:{" "}
-                    {formatWeeklyBadgeDate(report.publishedAt, locale) ??
-                      report.weekEndDate}
-                  </span>
-                  <span className="rounded-full border border-white/18 px-3 py-1 text-white/58">
-                    {copy.confidenceLabel}: {report.dataConfidence}
-                  </span>
-                </>
-              ) : (
-                <span className="rounded-full border border-white/18 px-3 py-1 text-white/58">
-                  {copy.noReportLabel}
-                </span>
-              )}
-            </div>
-            {report?.content?.executiveSummary?.[0] ? (
-              <p className="mt-5 rounded-[1rem] border border-white/10 bg-white/4 p-4 text-sm leading-6 text-white/74">
-                {report.content.executiveSummary[0]}
-              </p>
-            ) : null}
-            <div className="mt-5 flex flex-wrap gap-3">
-              <a
-                className="rounded-full bg-white px-4 py-2 text-sm font-black uppercase tracking-[0.08em] text-black transition hover:bg-[var(--spike-accent)]"
-                href={report ? `/${locale}/analytics/weekly-reports/${report.slug}` : `/${locale}/analytics/weekly-reports`}
-              >
-                {report ? copy.openLatestCta : copy.viewArchiveCta}
-              </a>
-              <a
-                className="rounded-full border border-white/18 px-4 py-2 text-sm font-black uppercase tracking-[0.08em] text-white transition hover:border-[var(--spike-accent)] hover:text-[var(--spike-accent)]"
-                href={`/${locale}/analytics/weekly-reports`}
-              >
-                {copy.allReportsCta}
-              </a>
-            </div>
-          </div>
-
-          <div className="rounded-[1.15rem] border border-white/10 bg-[#050505] p-4">
-            <details className="group">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 marker:hidden">
-                <div>
-                  <p className="text-xs font-black uppercase tracking-[0.14em] text-white/45">
-                    {copy.previewLabel}
-                  </p>
-                  <p className="mt-2 text-lg font-black uppercase tracking-normal text-white">
-                    {copy.previewTitle}
-                  </p>
-                </div>
-                <span className="rounded-full border border-white/14 px-3 py-1 text-xs font-black uppercase text-white/65 transition group-open:bg-white group-open:text-black">
-                  {copy.expandLabel}
-                </span>
-              </summary>
-              <div className="mt-5">
-                {report ? (
-                  <WeeklyReportView report={report} />
-                ) : (
-                  <div className="rounded-[1rem] border border-white/10 bg-white/5 p-4 text-sm leading-6 text-white/64">
-                    {copy.noReportBody}
-                  </div>
-                )}
-              </div>
-            </details>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function formatWeeklyBadgeDate(value: string | null | undefined, locale: Locale) {
-  if (!value) {
-    return null;
-  }
-
-  return new Intl.DateTimeFormat(locale === "uk" ? "uk-UA" : "en-US", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(new Date(value));
 }
 
 function MovementSummary({
@@ -1011,22 +828,6 @@ function standardDeviation(values: number[]) {
 }
 
 type AnalyticsCopy = ReturnType<typeof getAnalyticsCopy>;
-
-function mapBriefConfidenceLabel(confidence: string, locale: Locale) {
-  if (locale === "uk") {
-    return confidence === "limited"
-      ? "обмежена"
-      : confidence === "strong"
-        ? "висока"
-        : "нормальна";
-  }
-
-  return confidence === "limited"
-    ? "limited"
-    : confidence === "strong"
-      ? "strong"
-      : "normal";
-}
 
 function getAnalyticsCopy(locale: Locale) {
   const activeIndex = getActiveIndexConfig();

@@ -1,11 +1,8 @@
 import { connection } from "next/server";
 import Link from "next/link";
 import { HomeHero } from "@/components/ui/home-hero";
-import { getFxRates } from "@/lib/fx-rates";
 import { getDictionary, type Locale } from "@/lib/i18n";
-import { getActiveIndexConfig } from "@/lib/index-platform";
-import { getPublicIndexSnapshot } from "@/lib/public-index-data";
-import { getActiveRespondentCountData } from "@/lib/respondent-directory-lazy";
+import { loadPublicHomePageData } from "@/lib/public-home-loader";
 
 export const dynamic = "force-dynamic";
 
@@ -18,13 +15,8 @@ export default async function LocaleHome({
 
   const { locale } = await params;
   const dict = getDictionary(locale);
-  const activeIndex = getActiveIndexConfig();
-  const snapshot = await getPublicIndexSnapshot();
-  const fxRates = await getFxRates();
-  const respondentCount = await getActiveRespondentCountData();
-  const updatedAt = new Intl.DateTimeFormat(locale === "uk" ? "uk-UA" : "en-US", {
-    dateStyle: "medium",
-  }).format(new Date(snapshot.updatedAt));
+  const { activeIndex, fxRates, respondentCount, snapshot, updatedAt } =
+    await loadPublicHomePageData(locale);
 
   return (
     <>
