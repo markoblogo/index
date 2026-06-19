@@ -147,6 +147,7 @@ function buildPrompt(input: {
     `Period: ${input.periodStartDate} to ${input.periodEndDate}. Report kind: ${input.kind}.`,
     "Return strict JSON only. Shape: {\"title\":\"...\",\"summary\":[\"paragraph or bullet\",\"...\"]}.",
     "Rules: 4-7 summary items. Be factual and concise. Do not mention lack of data as a section. Do not invent prices, deals, forecasts, or causes. Not trading advice.",
+    "Use monitored items as context, but do not output a source list, monitoring-feed list, or raw topic-cluster list. Write the report itself, not the evidence log.",
     isUk
       ? "Ukrainian style: clear business Ukrainian, no Russian, no English section titles unless source names require it."
       : "English style: concise editorial market note, no boilerplate.",

@@ -478,20 +478,6 @@ function buildMediaHubTelegramText(input: {
             ...input.content.summary,
           ],
     ).filter((line) => !isGenericWeakLine(line));
-    const topics = primaryWindow.topTopics
-      .filter((topic) => topic.count > 0)
-      .slice(0, 5);
-    const feed = primaryWindow.feed
-      .filter((item) => item.title.trim() || item.summary.trim())
-      .slice(0, input.kind === "daily" ? 4 : 7);
-
-    lines.push(
-      "",
-      isUk
-        ? `<b>🧠 ${input.kind === "daily" ? "Агрегований звіт дня" : input.kind === "weekly" ? "Агрегований звіт тижня" : "Агрегований звіт місяця"}</b>`
-        : `<b>🧠 ${input.kind === "daily" ? "Aggregated daily report" : input.kind === "weekly" ? "Aggregated weekly report" : "Aggregated monthly report"}</b>`,
-    );
-
     if (localized?.title) {
       lines.push("", `<b>${escapeHtml(localized.title)}</b>`);
     }
@@ -500,27 +486,7 @@ function buildMediaHubTelegramText(input: {
       lines.push(
         "",
         isUk ? "<b>🔎 Головні сигнали</b>" : "<b>🔎 Main signals</b>",
-        ...summary.slice(0, 4).map((line) => `• ${escapeHtml(line)}`),
-      );
-    }
-
-    if (topics.length > 0) {
-      lines.push(
-        "",
-        isUk ? "<b>📌 Активні теми</b>" : "<b>📌 Active themes</b>",
-        ...topics.map((topic) =>
-          `• ${escapeHtml(topic.label)} — ${topic.count}: ${escapeHtml(topic.hint)}`,
-        ),
-      );
-    }
-
-    if (feed.length > 0) {
-      lines.push(
-        "",
-        isUk ? "<b>🗞 Що потрапило в моніторинг</b>" : "<b>🗞 Monitoring feed highlights</b>",
-        ...feed.map((item) =>
-          `• ${escapeHtml(item.title)} (${escapeHtml(item.source)})`,
-        ),
+        ...summary.slice(0, 8).map((line) => `• ${escapeHtml(line)}`),
       );
     }
   }
