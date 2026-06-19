@@ -183,6 +183,7 @@ export async function getSpikeUkraineEnglishRssWindows(
   extraItems: ExtraRssNewsItem[] = [],
 ): Promise<MediaHubWindowSnapshot[]> {
   const items = await getRssMonitorItems({
+    acceptAllFallback: true,
     cacheKey: "spike-en-ukraine",
     extraItems,
     includeLegacy: false,
@@ -204,6 +205,7 @@ export async function getSpikeUkraineEnglishRssWindows(
 }
 
 async function getRssMonitorItems(input: {
+  acceptAllFallback?: boolean;
   cacheKey: string;
   extraItems?: ExtraRssNewsItem[];
   includeLegacy: boolean;
@@ -233,7 +235,14 @@ async function getRssMonitorItems(input: {
     .sort((a, b) => b.relevanceScore - a.relevanceScore || Date.parse(b.publishedAt) - Date.parse(a.publishedAt));
   const highlyRelevant = scoredItems.filter((item) => item.relevanceScore >= 3);
   const fallbackRelevant = scoredItems.filter((item) => item.relevanceScore > 0);
-  const items = highlyRelevant.length >= 24 ? highlyRelevant : fallbackRelevant.slice(0, 240);
+  const items =
+    highlyRelevant.length >= 24
+      ? highlyRelevant
+      : fallbackRelevant.length > 0
+        ? fallbackRelevant.slice(0, 240)
+        : input.acceptAllFallback
+          ? scoredItems.slice(0, 120)
+          : [];
 
   cache.set(input.cacheKey, {
     generatedAt: Date.now(),
