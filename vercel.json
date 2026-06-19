@@ -38,7 +38,7 @@
     },
     {
       "path": "/api/cron/media-hub-monitoring",
-      "schedule": "0 */2 * * *"
+      "schedule": "0 15 * * *"
     },
     {
       "path": "/api/cron/media-hub-publish",
