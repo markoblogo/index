@@ -183,6 +183,7 @@ function buildWindowSnapshot(input: {
   );
   const topTopics = scoreTopics(includedPosts, input.locale).slice(0, 4);
   const activeSources = input.digest.channels.filter((channel) => channel.includedPostCount > 0);
+  const configuredSources = input.resourceRows.filter((resource) => resource.enabled);
   const distribution = buildDistribution(input.resourceRows);
   const pulseCards = topTopics.slice(0, 3).map((topic, index) => ({
     hint: topic.hint,
@@ -215,8 +216,11 @@ function buildWindowSnapshot(input: {
     snapshotCards: [
       {
         label: input.locale === "uk" ? "Джерела" : "Sources",
-        note: input.locale === "uk" ? "active in window" : "active in window",
-        value: String(activeSources.length),
+        note:
+          input.locale === "uk"
+            ? `${activeSources.length} active in window`
+            : `${activeSources.length} active in window`,
+        value: String(configuredSources.length),
       },
       {
         label: input.locale === "uk" ? "Матеріали" : "Items",
@@ -229,7 +233,7 @@ function buildWindowSnapshot(input: {
         value: String(topTopics.length),
       },
     ],
-    sourceCount: activeSources.length,
+    sourceCount: configuredSources.length,
     summaryBody,
     summaryTitle:
       input.window === "day"
@@ -237,17 +241,35 @@ function buildWindowSnapshot(input: {
         : input.window === "week"
           ? "Weekly synthesis"
           : "30-day intelligence brief",
-    topSources: activeSources
-      .map((channel) => ({
-        count: channel.includedPostCount,
-        label: channel.channelTitle || `@${channel.channelHandle}`,
-      }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 4),
+    topSources: buildTopSources(activeSources, configuredSources),
     topTopics,
     topicCount: topTopics.length,
     window: input.window,
   };
+}
+
+function buildTopSources(
+  activeSources: TelegramSourceDigest["channels"],
+  configuredSources: ReportWorkspaceResource[],
+) {
+  const active = activeSources
+    .map((channel) => ({
+      count: channel.includedPostCount,
+      label: channel.channelTitle || `@${channel.channelHandle}`,
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 4);
+
+  if (active.length > 0) {
+    return active;
+  }
+
+  return configuredSources
+    .slice(0, 4)
+    .map((resource) => ({
+      count: 0,
+      label: resource.title,
+    }));
 }
 
 function buildDistribution(resources: ReportWorkspaceResource[]) {

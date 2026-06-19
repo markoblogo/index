@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createHash } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import {
   getMediaHubWindowProgressLabel,
   type MediaHubWindowSnapshot,
@@ -39,6 +40,21 @@ type RssNewsItem = {
   regionTags: string[];
   relevanceScore: number;
   category: FeedSourceCategory;
+};
+
+type LegacyLast30DaysItem = {
+  category?: string;
+  link?: string;
+  publishedAt?: string;
+  published_at?: string;
+  source?: string;
+  source_name?: string;
+  summary?: string;
+  text?: string;
+  title?: string;
+  topicTags?: string[];
+  topics?: string[];
+  url?: string;
 };
 
 type CacheEntry = {
@@ -130,18 +146,21 @@ async function getRssMonitorItems() {
     return cache.items;
   }
 
-  const fetched = await Promise.all(
-    RSS_SOURCES.filter((source) => source.enabled).map(async (source) => {
-      try {
-        const feedItems = await fetchFeed(source);
-        return feedItems.map((item) => toNewsItem(source, item));
-      } catch {
-        return [] as RssNewsItem[];
-      }
-    }),
-  );
+  const [fetched, legacyItems] = await Promise.all([
+    Promise.all(
+      RSS_SOURCES.filter((source) => source.enabled).map(async (source) => {
+        try {
+          const feedItems = await fetchFeed(source);
+          return feedItems.map((item) => toNewsItem(source, item));
+        } catch {
+          return [] as RssNewsItem[];
+        }
+      }),
+    ),
+    getLegacyLast30DaysItems(),
+  ]);
 
-  const scoredItems = dedupeItems(fetched.flat())
+  const scoredItems = dedupeItems([...fetched.flat(), ...legacyItems])
     .sort((a, b) => b.relevanceScore - a.relevanceScore || Date.parse(b.publishedAt) - Date.parse(a.publishedAt));
   const highlyRelevant = scoredItems.filter((item) => item.relevanceScore >= 3);
   const fallbackRelevant = scoredItems.filter((item) => item.relevanceScore > 0);
@@ -153,6 +172,102 @@ async function getRssMonitorItems() {
   };
 
   return items;
+}
+
+async function getLegacyLast30DaysItems(): Promise<RssNewsItem[]> {
+  const payload = await readLegacyLast30DaysPayload();
+  if (!payload) {
+    return [];
+  }
+
+  const payloadRecord = payload as { items?: unknown[]; results?: unknown[] };
+  const rows: unknown[] = Array.isArray(payload)
+    ? payload
+    : Array.isArray(payloadRecord.items)
+      ? payloadRecord.items
+      : Array.isArray(payloadRecord.results)
+        ? payloadRecord.results
+        : [];
+
+  return rows.flatMap((row, index) => {
+    const parsed = row as LegacyLast30DaysItem;
+    const title = (parsed.title || parsed.summary || parsed.text || "").trim();
+    const url = parsed.url || parsed.link || "";
+    if (!title || !url) {
+      return [];
+    }
+
+    const summary = stripHtml(parsed.summary || parsed.text || title);
+    const source = parsed.source_name || parsed.source || "Last30Days";
+    const publishedAtRaw = parsed.publishedAt || parsed.published_at;
+    const publishedAt =
+      publishedAtRaw && Number.isFinite(Date.parse(publishedAtRaw))
+        ? new Date(publishedAtRaw).toISOString()
+        : new Date().toISOString();
+    const category = normalizeLegacyCategory(parsed.category);
+    const scored = scoreNews(title, summary, category);
+    const topicTags = [...new Set([...(parsed.topicTags ?? parsed.topics ?? []), ...scored.topicTags])];
+    const id = createHash("sha1")
+      .update(`last30days|${source}|${normalizeTitle(title)}|${url}|${index}`)
+      .digest("hex")
+      .slice(0, 20);
+
+    return [{
+      category,
+      cropTags: scored.cropTags,
+      id,
+      publishedAt,
+      regionTags: scored.regionTags,
+      relevanceScore: Math.max(scored.relevanceScore, 2),
+      source,
+      summary,
+      title,
+      topicTags,
+      url,
+    }];
+  });
+}
+
+async function readLegacyLast30DaysPayload(): Promise<unknown | null> {
+  const url = process.env.LAST30DAYS_JSON_URL?.trim();
+  if (url) {
+    try {
+      const response = await fetch(url, {
+        headers: { accept: "application/json" },
+        next: { revalidate: 600 },
+      });
+      if (response.ok) {
+        return response.json();
+      }
+    } catch {
+      return null;
+    }
+  }
+
+  const path = process.env.LAST30DAYS_JSON_PATH?.trim();
+  if (!path) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(await readFile(path, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+function normalizeLegacyCategory(value?: string): FeedSourceCategory {
+  const normalized = (value ?? "").toLowerCase();
+  if (normalized.includes("logistic") || normalized.includes("shipping") || normalized.includes("freight")) {
+    return "logistics-shipping";
+  }
+  if (normalized.includes("policy") || normalized.includes("macro")) {
+    return "policy-macro";
+  }
+  if (normalized.includes("grain") || normalized.includes("oilseed") || normalized.includes("commodity")) {
+    return "grain-oilseeds";
+  }
+  return "agro-general";
 }
 
 async function fetchFeed(source: RssSource): Promise<ParsedFeedItem[]> {
@@ -355,7 +470,14 @@ function buildWindow(
   label: string,
 ): MediaHubWindowSnapshot {
   const filtered = items.filter((item) => Date.parse(item.publishedAt) >= sinceMs);
+  const configuredSources = RSS_SOURCES.filter((source) => source.enabled);
+  const configuredSourceCount =
+    configuredSources.length + (process.env.LAST30DAYS_JSON_URL || process.env.LAST30DAYS_JSON_PATH ? 1 : 0);
   const topSources = countBy(filtered, (item) => item.source).slice(0, 4);
+  const visibleTopSources =
+    topSources.length > 0
+      ? topSources
+      : configuredSources.slice(0, 4).map((source) => ({ count: 0, label: source.name }));
   const topTopics = countBy(
     filtered.flatMap((item) => item.topicTags.map((tag) => ({ tag }))),
     (item) => item.tag,
@@ -366,14 +488,19 @@ function buildWindow(
       hint: topicHint(topic),
       label: topicLabel(topic),
     }));
-  const categoryCounts = countBy(filtered, (item) => sourceLabel(item.category)).slice(0, 5);
+  const categoryCounts = (
+    filtered.length > 0
+      ? countBy(filtered, (item) => sourceLabel(item.category))
+      : countBy(configuredSources, (source) => sourceLabel(source.category))
+  ).slice(0, 5);
+  const categoryTotal = categoryCounts.reduce((sum, item) => sum + item.count, 0) || 1;
   const totalSources = new Set(filtered.map((item) => item.source)).size;
 
   return {
     distribution: categoryCounts.map((item) => ({
       color: sourceColor(item.label),
       label: item.label,
-      value: Math.max(1, Math.round((item.count / Math.max(filtered.length, 1)) * 100)),
+      value: Math.max(1, Math.round((item.count / categoryTotal) * 100)),
     })),
     feed: filtered.slice(0, 6).map((item) => ({
       id: item.id,
@@ -397,19 +524,19 @@ function buildWindow(
       value: Math.max(1, Math.min(10, Math.round((item.count / Math.max(filtered.length, 1)) * 40))),
     })),
     snapshotCards: [
-      { label: "Sources", note: "active in window", value: String(totalSources) },
+      { label: "Sources", note: `${totalSources} active in window`, value: String(configuredSourceCount) },
       { label: "Items", note: "accepted after scoring", value: String(filtered.length) },
       { label: "Topics", note: "keyword clusters", value: String(topTopics.length) },
     ],
-    sourceCount: totalSources,
-    summaryBody: buildSummary(filtered, topTopics, topSources, window),
+    sourceCount: configuredSourceCount,
+    summaryBody: buildSummary(filtered, topTopics, visibleTopSources, window),
     summaryTitle:
       window === "day"
         ? "Global commodity monitoring brief"
         : window === "week"
           ? "Weekly global synthesis"
           : "30-day media intelligence layer",
-    topSources,
+    topSources: visibleTopSources,
     topTopics,
     topicCount: topTopics.length,
     window,

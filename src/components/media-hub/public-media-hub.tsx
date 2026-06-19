@@ -19,11 +19,12 @@ export function PublicMediaHub({
   selectedWindow: MediaHubWindowKey;
   windowHref: (window: MediaHubWindowKey) => string;
 }) {
-  const activeWindow = profile.windows[0];
+  const activeWindow =
+    profile.windows.find((window) => window.window === selectedWindow) ?? profile.windows[0];
   const totalDistribution = activeWindow.distribution.reduce((sum, item) => sum + item.value, 0);
   const donutStops = buildDonutStops(activeWindow.distribution, totalDistribution);
   const theme = getMediaHubTheme(profile.id);
-  const cycleCopy = getWindowCycleCopy(locale);
+  const cycleCopy = getWindowCycleCopy(locale, profile.windows);
 
   return (
     <div
@@ -47,20 +48,33 @@ export function PublicMediaHub({
               <div className="mt-8 grid gap-3 md:grid-cols-3">
                 {profile.windows.map((window) => {
                   const active = window.window === selectedWindow;
+                  const progressRatio = parseProgressRatio(window.progressLabel);
+                  const progressTextOnFill = progressRatio >= 0.78;
 
                   return (
                     <Link
-                      className={`rounded-full border px-5 py-4 transition ${
+                      className={`relative overflow-hidden rounded-full border px-5 py-4 transition ${
                         active
-                          ? "border-transparent bg-[var(--media-hub-accent)] text-[var(--media-hub-accent-ink)]"
-                          : "border-white/12 bg-[var(--media-hub-card)] text-white/82 hover:border-white/28 hover:bg-[var(--media-hub-card-hover)]"
+                          ? "border-[color:var(--media-hub-accent)] bg-[var(--media-hub-card-hover)]"
+                          : "border-white/12 bg-[var(--media-hub-card)] hover:border-white/28 hover:bg-[var(--media-hub-card-hover)]"
                       }`}
                       href={windowHref(window.window)}
                       key={window.window}
                     >
-                      <div className="flex items-center justify-between gap-4">
-                        <span className="text-lg font-black">{window.label}</span>
-                        <span className={`text-sm font-semibold ${active ? "text-[var(--media-hub-accent-ink-muted)]" : "text-white/42"}`}>
+                      <span
+                        aria-hidden="true"
+                        className="absolute inset-y-0 left-0 bg-[var(--media-hub-accent)] transition-[width]"
+                        style={{ width: `${Math.round(progressRatio * 100)}%` }}
+                      />
+                      <div className="relative flex items-center justify-between gap-4">
+                        <span className="text-lg font-black text-[var(--media-hub-accent-ink)]">
+                          {window.label}
+                        </span>
+                        <span
+                          className={`text-sm font-semibold ${
+                            progressTextOnFill ? "text-[var(--media-hub-accent-ink-muted)]" : "text-white/62"
+                          }`}
+                        >
                           {window.progressLabel}
                         </span>
                       </div>
@@ -366,19 +380,35 @@ function getMediaHubTheme(profileId: MediaHubSiteProfile["id"]) {
   };
 }
 
-function getWindowCycleCopy(locale: Locale) {
+function parseProgressRatio(label: string) {
+  const match = label.match(/(\d+)\s*\/\s*(\d+)/);
+  if (!match) {
+    return 0;
+  }
+  const current = Number(match[1]);
+  const total = Number(match[2]);
+  if (!Number.isFinite(current) || !Number.isFinite(total) || total <= 0) {
+    return 0;
+  }
+  return Math.max(0, Math.min(1, current / total));
+}
+
+function getWindowCycleCopy(locale: Locale, windows: MediaHubWindowSnapshot[]) {
+  const labelFor = (window: MediaHubWindowKey, fallback: string) =>
+    windows.find((item) => item.window === window)?.progressLabel ?? fallback;
+
   if (locale === "uk") {
     return [
       {
-        title: "Day 1/1.",
+        title: `Day ${labelFor("day", "1/1")}.`,
         body: "Щоденне вікно закривається окремим daily summary.",
       },
       {
-        title: "7 Days 7/7.",
+        title: `7 Days ${labelFor("week", "7/7")}.`,
         body: "Тиждень накопичує дні; у день weekly summary денний звіт не дублюється.",
       },
       {
-        title: "30 Days 30/30.",
+        title: `30 Days ${labelFor("month", "30/30")}.`,
         body: "Місяць збирає weekly summaries і останній неповний тиждень у monthly report.",
       },
     ];
@@ -386,15 +416,15 @@ function getWindowCycleCopy(locale: Locale) {
 
   return [
     {
-      title: "Day 1/1.",
+      title: `Day ${labelFor("day", "1/1")}.`,
       body: "The daily window closes into one daily summary.",
     },
     {
-      title: "7 Days 7/7.",
+      title: `7 Days ${labelFor("week", "7/7")}.`,
       body: "The week fills day by day; weekly summary replaces the daily report on publication day.",
     },
     {
-      title: "30 Days 30/30.",
+      title: `30 Days ${labelFor("month", "30/30")}.`,
       body: "The monthly layer combines weekly summaries plus the last partial week into one monthly report.",
     },
   ];
