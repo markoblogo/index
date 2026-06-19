@@ -27,6 +27,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const date = url.searchParams.get("date") ?? undefined;
   const forceKind = normalizeKind(url.searchParams.get("kind"));
+  const forceTelegram = url.searchParams.get("resend") === "1";
   const forced = Boolean(date || forceKind);
 
   if (!forced) {
@@ -51,6 +52,7 @@ export async function GET(request: Request) {
   const publication = await runDueMediaHubPublication({
     date: plan.date,
     forceKind,
+    forceTelegram,
   });
 
   return NextResponse.json({

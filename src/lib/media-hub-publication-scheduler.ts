@@ -115,6 +115,7 @@ export function getMediaHubPublicationPlan(date = formatKyivDate()): MediaHubPub
 export async function runDueMediaHubPublication(options: {
   date?: string;
   forceKind?: MediaHubPublicationKind;
+  forceTelegram?: boolean;
 } = {}) {
   const plan = getMediaHubPublicationPlan(options.date);
   const kind = options.forceKind && options.forceKind !== "none"
@@ -127,6 +128,7 @@ export async function runDueMediaHubPublication(options: {
       ? { skippedReason: "platform_daily_telegram_not_configured", status: "skipped" as const }
       : await sendMediaHubReportTelegram("daily", plan.date, {
           audience: "spike",
+          force: options.forceTelegram,
           locale: "uk",
         });
 
@@ -144,6 +146,7 @@ export async function runDueMediaHubPublication(options: {
     const report = await publishMediaHubSnapshotReport("weekly", plan.date);
     const telegram = await sendMediaHubReportTelegram("weekly", plan.date, {
       audience: isPlatformSite() ? "platform" : "spike",
+      force: options.forceTelegram,
       locale: isPlatformSite() ? "en" : "uk",
     });
 
@@ -161,6 +164,7 @@ export async function runDueMediaHubPublication(options: {
     const report = await publishMediaHubSnapshotReport("monthly", plan.date);
     const telegram = await sendMediaHubReportTelegram("monthly", plan.date, {
       audience: isPlatformSite() ? "platform" : "spike",
+      force: options.forceTelegram,
       locale: isPlatformSite() ? "en" : "uk",
     });
 
