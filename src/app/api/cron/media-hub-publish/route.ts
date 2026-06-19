@@ -9,12 +9,15 @@ import {
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
+  const secrets = [
+    process.env.SPIKE_MEDIA_HUB_CRON_SECRET,
+    process.env.SPIKE_WEEKLY_REPORT_CRON_SECRET,
+    process.env.CRON_SECRET,
+  ];
+
   if (
-    !isCronRequestAuthorized(request, [
-      process.env.SPIKE_MEDIA_HUB_CRON_SECRET,
-      process.env.SPIKE_WEEKLY_REPORT_CRON_SECRET,
-      process.env.CRON_SECRET,
-    ])
+    !secrets.some((secret) => typeof secret === "string" && secret.length > 0) ||
+    !isCronRequestAuthorized(request, secrets)
   ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
