@@ -89,11 +89,15 @@ export async function syncTelegramWorkspaceResources(
   let posts = 0;
 
   for (const source of telegramSources) {
-    const result = await syncTelegramChannel(source, {
-      maxPages: options.maxPagesPerChannel ?? 12,
-      until: options.until,
-    });
-    posts += result.posts;
+    try {
+      const result = await syncTelegramChannel(source, {
+        maxPages: options.maxPagesPerChannel ?? 12,
+        until: options.until,
+      });
+      posts += result.posts;
+    } catch {
+      continue;
+    }
   }
 
   return { channels: telegramSources.length, posts, skippedReason: null };
@@ -134,11 +138,15 @@ export async function syncTelegramResourcesForWindow(input: {
   let posts = 0;
 
   for (const source of telegramSources) {
-    const result = await syncTelegramChannel(source, {
-      maxPages: input.maxPagesPerChannel ?? 12,
-      until: input.until,
-    });
-    posts += result.posts;
+    try {
+      const result = await syncTelegramChannel(source, {
+        maxPages: input.maxPagesPerChannel ?? 12,
+        until: input.until,
+      });
+      posts += result.posts;
+    } catch {
+      continue;
+    }
   }
 
   return { channels: telegramSources.length, posts, skippedReason: null };
@@ -410,7 +418,10 @@ async function fetchTelegramChannelPage(handle: string, beforePostId?: string | 
 
 function parseTelegramChannelHtml(handle: string, html: string) {
   const posts: ParsedTelegramChannelPost[] = [];
-  const blocks = html.match(/<div class="tgme_widget_message_wrap[\s\S]*?<\/article>\s*<\/div>/g) ?? [];
+  const blocks =
+    html.match(
+      /<div class="tgme_widget_message_wrap[\s\S]*?(?=<div class="tgme_widget_message_wrap|<div class="tgme_widget_message_centered|<script|<\/main>)/g,
+    ) ?? [];
 
   for (const block of blocks) {
     const dataPost = block.match(/data-post="([^"]+)"/)?.[1] ?? "";
@@ -421,7 +432,7 @@ function parseTelegramChannelHtml(handle: string, html: string) {
       decodeHtml(block.match(/tgme_widget_message_author[^>]*>\s*<a[^>]*>([\s\S]*?)<\/a>/)?.[1] ?? handle).trim() ||
       handle;
     const textHtml =
-      block.match(/<div class="tgme_widget_message_text[^"]*"[^>]*>([\s\S]*?)<\/div>\s*(?:<div|<\/article>)/)?.[1] ??
+      block.match(/<div class="tgme_widget_message_text[^"]*"[^>]*>([\s\S]*?)<\/div>\s*(?:<div|<span|<a|<\/article>|<\/div>)/)?.[1] ??
       "";
     const text = normalizeTelegramText(textHtml);
 

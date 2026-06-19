@@ -636,6 +636,16 @@ function buildSpikeDefaultResourceSeeds() {
       peerId: "1021008671",
     },
     {
+      handle: "@Agrosphera",
+      note: "Agricultural business interviews and daily market context source.",
+      peerId: null,
+    },
+    {
+      handle: "@ugtc_trade",
+      note: "UGTC trade and procurement-price signal source; useful for grain price monitoring.",
+      peerId: null,
+    },
+    {
       handle: "@mapfu2022",
       note: "Policy and ministry-level context source. Peer ID: 1714864597.",
       peerId: "1714864597",
@@ -676,9 +686,9 @@ function buildSpikeDefaultResourceSeeds() {
       notes: [
         channel.note,
         `Telegram handle: ${channel.handle}.`,
-        `Peer ID: ${channel.peerId}.`,
+        channel.peerId ? `Peer ID: ${channel.peerId}.` : null,
         "Use post text only; ignore outbound links inside posts unless separately configured.",
-      ].join(" "),
+      ].filter(Boolean).join(" "),
       reportKind,
       role: "analysis_source" as const,
       scope: "permanent" as const,
@@ -691,9 +701,9 @@ function buildSpikeDefaultResourceSeeds() {
       notes: [
         channel.note,
         `Telegram handle: ${channel.handle}.`,
-        `Peer ID: ${channel.peerId}.`,
+        channel.peerId ? `Peer ID: ${channel.peerId}.` : null,
         "Treat as a format and editorial structure reference, not as a factual override.",
-      ].join(" "),
+      ].filter(Boolean).join(" "),
       reportKind,
       role: "format_reference" as const,
       scope: "permanent" as const,
