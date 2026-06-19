@@ -35,7 +35,10 @@ export default async function PlatformMediaHubPage({
     }),
   ]);
   const active = liveWindows.find((window) => window.window === selectedWindow) ?? liveWindows[0];
-  const activeWithPublishedSummary = applyPublishedSummary(active, publishedSummary);
+  const activeWithPublishedSummary = applyPublishedSummary(
+    active,
+    publishedSummary ?? buildLiveFallbackReport(active, selectedWindow),
+  );
   const rest = liveWindows.filter((window) => window.window !== active.window);
   const mergedProfile = {
     ...profile,
@@ -75,4 +78,55 @@ function applyPublishedSummary(
     summaryBody: summary.summaryBody,
     summaryTitle: summary.summaryTitle,
   };
+}
+
+function buildLiveFallbackReport(
+  window: MediaHubWindowSnapshot,
+  selectedWindow: MediaHubWindowKey,
+) {
+  const periodLabel = formatFallbackPeriodLabel(selectedWindow);
+  const title =
+    selectedWindow === "day"
+      ? `Daily report · ${periodLabel}`
+      : selectedWindow === "week"
+        ? `Weekly report · ${periodLabel}`
+        : `Monthly report · ${periodLabel}`;
+
+  return {
+    summaryBody: window.summaryBody,
+    summaryTitle: title,
+  };
+}
+
+function formatFallbackPeriodLabel(window: MediaHubWindowKey) {
+  const now = new Date();
+  const end = new Date(now);
+
+  if (window === "day") {
+    end.setDate(end.getDate() - 1);
+  }
+
+  if (window === "week") {
+    end.setDate(end.getDate() - 1);
+    const start = new Date(end);
+    start.setDate(start.getDate() - 6);
+    return `${formatShortDate(start)} - ${formatShortDate(end)}`;
+  }
+
+  if (window === "month") {
+    const start = new Date(end);
+    start.setDate(start.getDate() - 29);
+    return `${formatShortDate(start)} - ${formatShortDate(end)}`;
+  }
+
+  return formatShortDate(end);
+}
+
+function formatShortDate(date: Date) {
+  return new Intl.DateTimeFormat("en", {
+    day: "2-digit",
+    month: "short",
+    timeZone: "Europe/Paris",
+    year: "numeric",
+  }).format(date);
 }

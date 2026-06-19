@@ -665,11 +665,14 @@ function buildSummary(
     scope === "ukraine"
       ? "English-language Ukraine grain and oilseed market monitoring window"
       : "global commodity monitoring window";
+  const leadItems = items.slice(0, 4).map((item) => item.title).filter(Boolean);
 
   return [
-    `The ${label} ${scopeText} currently holds ${items.length} accepted items.`,
-    `The strongest active themes are ${topicText || "current monitoring context"}, with the densest source contribution coming from ${sourceText || "the active feed mesh"}.`,
-    "This is the keyless layer transferred from the legacy 30days logic: a broad RSS/Atom network that can run immediately without waiting for paid API credentials.",
+    `The ${label} ${scopeText} is led by ${topicText || "the current commodity monitoring context"}, with the densest source contribution coming from ${sourceText || "the active feed mesh"}.`,
+    items.length > 0
+      ? `The accepted feed contains ${items.length} monitored items; the strongest signals are ${leadItems.join("; ") || "clustered around the main topic groups"}.`
+      : "The accepted feed is light, so the report keeps to verified monitoring context rather than inventing market drivers.",
+    "This report is generated from the keyless RSS/Atom monitoring layer while persisted LLM reports are unavailable for this tenant.",
   ];
 }
 
