@@ -4,11 +4,18 @@ import {
   autoPublishSpikeDailyIndices,
   formatDateKyiv,
   isKyivAutoPublishHour,
+  type AutoPublishResult,
 } from "@/lib/auto-publish";
 import { importMn7rMonitorRespondentPrices } from "@/lib/mn7r-monitor-import";
 import { syncTelegramWorkspaceResources } from "@/lib/telegram-source-collector";
 
 export const dynamic = "force-dynamic";
+
+type MonitorImportResult = Awaited<ReturnType<typeof importMn7rMonitorRespondentPrices>>;
+type CronPublishResult = AutoPublishResult & {
+  monitorImport: MonitorImportResult | null;
+  monitorImportError: string | null;
+};
 
 export async function GET(request: Request) {
   if (
@@ -31,31 +38,74 @@ export async function GET(request: Request) {
     });
   }
 
-  const date = url.searchParams.get("date") ?? formatDateKyiv();
+  const requestedDate = url.searchParams.get("date");
+  const date = requestedDate ?? formatDateKyiv();
+  const targetDates = requestedDate
+    ? [requestedDate]
+    : [...new Set([getPreviousBusinessDate(date), date])];
   const shouldImportMonitor = url.searchParams.get("import") === "1";
   const replaceExisting = url.searchParams.get("replace") === "1";
-  let monitorImport:
-    | Awaited<ReturnType<typeof importMn7rMonitorRespondentPrices>>
-    | null = null;
-  let monitorImportError: string | null = null;
-
-  if (shouldImportMonitor) {
-    try {
-      monitorImport = await importMn7rMonitorRespondentPrices(date);
-    } catch (error) {
-      monitorImportError =
-        error instanceof Error ? error.message : "Unknown MN7R import error";
-    }
-  }
 
   const sourceSync = await syncTelegramWorkspaceResources("daily");
+  const results: CronPublishResult[] = [];
 
-  const result = await autoPublishSpikeDailyIndices(date, { replaceExisting });
+  for (const targetDate of targetDates) {
+    let monitorImport:
+      | Awaited<ReturnType<typeof importMn7rMonitorRespondentPrices>>
+      | null = null;
+    let monitorImportError: string | null = null;
+
+    if (shouldImportMonitor) {
+      try {
+        monitorImport = await importMn7rMonitorRespondentPrices(targetDate);
+      } catch (error) {
+        monitorImportError =
+          error instanceof Error ? error.message : "Unknown MN7R import error";
+      }
+    }
+
+    const result = await autoPublishSpikeDailyIndices(targetDate, { replaceExisting });
+    results.push({
+      ...result,
+      monitorImport,
+      monitorImportError,
+    });
+  }
+
+  const primaryResult = results[results.length - 1] ?? {
+    date,
+    published: 0,
+    skippedReason: "no_target_dates",
+  };
+  const published = results.reduce((sum, result) => sum + result.published, 0);
+  const skippedReason = published > 0 ? null : primaryResult.skippedReason;
 
   return NextResponse.json({
-    ...result,
-    monitorImport,
-    monitorImportError,
+    ...primaryResult,
+    published,
+    skippedReason,
+    results,
     sourceSync,
   });
+}
+
+function getPreviousBusinessDate(date: string) {
+  let previous = shiftIsoDate(date, -1);
+
+  while (getIsoWeekday(previous) >= 6) {
+    previous = shiftIsoDate(previous, -1);
+  }
+
+  return previous;
+}
+
+function shiftIsoDate(date: string, days: number) {
+  const utcDate = new Date(`${date}T00:00:00.000Z`);
+  utcDate.setUTCDate(utcDate.getUTCDate() + days);
+  return utcDate.toISOString().slice(0, 10);
+}
+
+function getIsoWeekday(date: string) {
+  const weekday = new Date(`${date}T00:00:00.000Z`).getUTCDay();
+  return weekday === 0 ? 7 : weekday;
 }

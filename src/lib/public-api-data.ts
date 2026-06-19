@@ -16,6 +16,7 @@ import {
   getDeliveryBasketCodeForCommodityCode,
   getDeliveryBasisConfigForCommodityCode,
 } from "@/lib/tenant-basis";
+import { getSpikePublicVisibleTradeDate } from "@/lib/spike-publication-window";
 
 export type PublicLatestItem = {
   commodityId: CommodityId;
@@ -177,14 +178,9 @@ async function getDatabaseLatestData(): Promise<PublicLatestItem[]> {
     throw new Error("Missing configured basis or basket.");
   }
   const activeRespondentCount = await getActiveRespondentCountData();
-  const latestPublished = await db.publishedIndex.findFirst({
-    orderBy: { tradeDate: "desc" },
-    where: {
-      status: "published",
-    },
-  });
-  const fallbackDate =
-    latestPublished?.tradeDate.toISOString().slice(0, 10) ?? todayKyivDate();
+  const visibleTradeDate =
+    activeIndex.id === "spike-ua" ? getSpikePublicVisibleTradeDate() : todayKyivDate();
+  const visibleTradeDateAtMidnightUtc = new Date(`${visibleTradeDate}T00:00:00.000Z`);
 
   const rows = await Promise.all(
     dbCommodities.map(async (commodity) => {
@@ -210,7 +206,7 @@ async function getDatabaseLatestData(): Promise<PublicLatestItem[]> {
           deliveryBasisId: basis.id,
           basketId: basket.id,
           status: "published",
-          ...(latestPublished ? { tradeDate: latestPublished.tradeDate } : {}),
+          tradeDate: { lte: visibleTradeDateAtMidnightUtc },
         },
       });
 
@@ -219,7 +215,7 @@ async function getDatabaseLatestData(): Promise<PublicLatestItem[]> {
         commodityCode: commodity.code,
         commodityNameUk: commodity.nameUk,
         commodityNameEn: commodity.nameEn,
-        date: published?.tradeDate.toISOString().slice(0, 10) ?? fallbackDate,
+        date: published?.tradeDate.toISOString().slice(0, 10) ?? visibleTradeDate,
         basis: basisConfig.name,
         valueUsdPerMt: published?.valueUsdPerMt.toNumber() ?? null,
         changeAbs: published?.changeAbsUsdPerMt?.toNumber() ?? 0,
