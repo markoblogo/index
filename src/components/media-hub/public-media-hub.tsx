@@ -23,7 +23,6 @@ export function PublicMediaHub({
   const activeWindow =
     profile.windows.find((window) => window.window === selectedWindow) ?? profile.windows[0];
   const totalDistribution = activeWindow.distribution.reduce((sum, item) => sum + item.value, 0);
-  const donutStops = buildDonutStops(activeWindow.distribution, totalDistribution);
   const theme = getMediaHubTheme(profile.id);
 
   return (
@@ -32,17 +31,17 @@ export function PublicMediaHub({
       style={theme as CSSProperties}
     >
       <section className="border-b border-white/10 bg-[radial-gradient(circle_at_top_left,var(--media-hub-hero-start)_0%,var(--media-hub-hero-mid)_42%,var(--media-hub-bg)_100%)]">
-        <div className="mx-auto max-w-[1900px] px-5 py-10 sm:px-8 lg:px-10 lg:py-14">
+        <div className="mx-auto max-w-[1900px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
           <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-            <div className="rounded-[2rem] border border-white/10 bg-[var(--media-hub-panel)] p-6 shadow-[0_30px_80px_rgba(0,0,0,0.28)]">
-              <h1 className="max-w-5xl text-[clamp(2.4rem,5vw,4.6rem)] font-black leading-[0.92] tracking-normal">
+            <div className="rounded-[1.7rem] border border-white/10 bg-[var(--media-hub-panel)] p-5 shadow-[0_30px_80px_rgba(0,0,0,0.28)]">
+              <h1 className="max-w-5xl text-[clamp(2.1rem,4.2vw,3.9rem)] font-black leading-[0.92] tracking-normal">
                 {profile.title}
               </h1>
-              <p className="mt-4 max-w-4xl text-lg leading-8 text-white/70">
+              <p className="mt-3 max-w-4xl text-base leading-7 text-white/70">
                 {profile.description}
               </p>
 
-              <div className="mt-8 grid gap-3 md:grid-cols-3">
+              <div className="mt-6 grid gap-3 md:grid-cols-3">
                 {profile.windows.map((window) => {
                   const active = window.window === selectedWindow;
                   const progressRatio = parseProgressRatio(window.progressLabel);
@@ -50,7 +49,7 @@ export function PublicMediaHub({
 
                   return (
                     <Link
-                      className={`relative overflow-hidden rounded-full border px-5 py-4 transition ${
+                      className={`relative overflow-hidden rounded-full border px-4 py-3 transition ${
                         active
                           ? "border-[color:var(--media-hub-accent)] bg-[var(--media-hub-card-hover)]"
                           : "border-white/12 bg-[var(--media-hub-card)] hover:border-white/28 hover:bg-[var(--media-hub-card-hover)]"
@@ -64,7 +63,7 @@ export function PublicMediaHub({
                         style={{ width: `${Math.round(progressRatio * 100)}%` }}
                       />
                       <div className="relative flex items-center justify-between gap-4">
-                        <span className="text-lg font-black text-[var(--media-hub-accent-ink)]">
+                        <span className="text-base font-black text-[var(--media-hub-accent-ink)]">
                           {window.label}
                         </span>
                         <span
@@ -81,54 +80,38 @@ export function PublicMediaHub({
               </div>
             </div>
 
-            <div className="rounded-[2rem] border border-white/10 bg-[var(--media-hub-panel)] p-6 shadow-[0_30px_80px_rgba(0,0,0,0.28)]">
-              <div className="grid gap-5 lg:grid-cols-[0.72fr_1.28fr] lg:items-start">
+            <div className="rounded-[1.7rem] border border-white/10 bg-[var(--media-hub-panel)] p-5 shadow-[0_30px_80px_rgba(0,0,0,0.28)]">
+              <div className="grid gap-4 lg:grid-cols-[0.7fr_1.3fr] lg:items-center">
                 <div>
                   <p className="text-sm font-black uppercase tracking-[0.18em] text-white/48">
                     Distribution
                   </p>
-                  <h2 className="mt-3 text-3xl font-black">{activeWindow.sourceCount} sources</h2>
-                  <p className="mt-3 text-sm leading-6 text-white/64">
+                  <h2 className="mt-2 text-3xl font-black">{activeWindow.sourceCount} sources</h2>
+                  <p className="mt-2 text-sm leading-6 text-white/64">
                     {locale === "uk"
-                      ? "Summary-first зверху, raw monitoring layer знизу. Саме тут має жити сила сотень джерел і тисяч матеріалів."
-                      : "Summary-first above, raw monitoring below. This is where the strength of hundreds of sources and thousands of items has to live."}
+                      ? "Raw monitoring знизу, редакційний summary зверху."
+                      : "Raw monitoring below, editorial summary above."}
                   </p>
-                  <div className="mt-5 grid gap-2">
-                    {activeWindow.topSources.map((source) => (
-                      <div
-                        className="flex min-w-0 items-center justify-between gap-3 rounded-full border border-white/10 bg-[var(--media-hub-card)] px-4 py-2"
-                        key={source.label}
-                      >
-                        <span className="truncate text-sm font-semibold text-white/84">{source.label}</span>
-                        <span className="text-sm font-black text-white/44">{source.count}</span>
-                      </div>
-                    ))}
-                  </div>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-[12rem_1fr] md:items-center">
+                <div className="grid gap-4 md:grid-cols-[9.5rem_1fr] md:items-center">
                   <div className="flex items-center justify-center md:justify-start">
-                    <div
-                      aria-label="Source distribution"
-                      className="relative h-[12rem] w-[12rem] rounded-full border border-white/8"
-                      style={{
-                        background: `conic-gradient(${donutStops})`,
-                      }}
-                    >
-                      <div className="absolute inset-[1.75rem] rounded-full bg-[var(--media-hub-bg)]" />
-                    </div>
+                    <DonutChart distribution={activeWindow.distribution} total={totalDistribution} />
                   </div>
                   <div className="grid min-w-0 gap-2">
                     {activeWindow.distribution.map((slice) => (
                       <div
                         className="flex min-w-0 items-center gap-2 rounded-[0.85rem] border border-white/10 bg-[var(--media-hub-card)] px-3 py-2"
                         key={slice.label}
+                        title={`${slice.label}: ${slice.value}%`}
                       >
                         <span
                           className="h-2.5 w-2.5 shrink-0 rounded-full"
                           style={{ backgroundColor: slice.color }}
                         />
-                        <span className="min-w-0 truncate text-sm font-semibold text-white/82">{slice.label}</span>
+                        <span className="min-w-0 truncate text-sm font-semibold text-white/82">
+                          {slice.label}
+                        </span>
                         <span className="ml-auto shrink-0 text-sm font-black text-white/44">{slice.value}%</span>
                       </div>
                     ))}
@@ -167,7 +150,7 @@ export function PublicMediaHub({
             <p className="text-xs font-black uppercase tracking-[0.18em] text-white/42">
               Desk Snapshot
             </p>
-            <div className="mt-4 grid gap-3">
+            <div className="mt-3 grid gap-2">
               {activeWindow.snapshotCards.map((card) => (
                 <SnapshotCard card={card} key={card.label} />
               ))}
@@ -178,33 +161,33 @@ export function PublicMediaHub({
             <p className="text-xs font-black uppercase tracking-[0.18em] text-white/42">
               Pulse
             </p>
-            <div className="mt-4 grid gap-3">
+            <div className="mt-3 grid gap-2">
               {activeWindow.pulseCards.map((card) => (
                 <PulseCard card={card} key={card.label} />
               ))}
             </div>
           </section>
 
-          <section className="rounded-[2rem] border border-white/10 bg-[var(--media-hub-panel)] p-6">
+          <section className="rounded-[2rem] border border-white/10 bg-[var(--media-hub-panel)] p-5">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-2xl font-black">Topic clusters</h2>
               <span className="text-xs font-black uppercase tracking-[0.16em] text-white/38">
                 {activeWindow.topicCount} clusters
               </span>
             </div>
-            <div className="mt-5 grid gap-3">
+            <div className="mt-3 grid gap-2">
               {activeWindow.topTopics.map((topic) => (
                 <article
-                  className="rounded-[1.2rem] border border-white/10 bg-[var(--media-hub-card)] p-4"
+                  className="rounded-[1rem] border border-white/10 bg-[var(--media-hub-card)] px-3 py-2.5"
                   key={topic.label}
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <h3 className="text-lg font-bold">{topic.label}</h3>
-                    <span className="rounded-full border border-white/10 px-3 py-1 text-xs font-black text-white/48">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <h3 className="min-w-0 truncate text-base font-bold">{topic.label}</h3>
+                    <span className="shrink-0 rounded-full border border-white/10 px-2.5 py-1 text-xs font-black text-white/48">
                       {topic.count}
                     </span>
+                    <p className="min-w-0 truncate text-sm leading-6 text-white/58">{topic.hint}</p>
                   </div>
-                  <p className="mt-2 text-sm leading-6 text-white/64">{topic.hint}</p>
                 </article>
               ))}
             </div>
@@ -221,11 +204,15 @@ export function PublicMediaHub({
 
 function SnapshotCard({ card }: { card: MediaHubSnapshotCard }) {
   return (
-    <article className="rounded-[1.15rem] border border-white/10 bg-[var(--media-hub-card)] p-4">
-      <p className="text-xs font-black uppercase tracking-[0.14em] text-white/38">{card.label}</p>
-      <div className="mt-3 flex items-end justify-between gap-4">
-        <span className="text-2xl font-black text-[var(--media-hub-accent)]">{card.value}</span>
-        <span className="text-sm text-white/46">{card.note}</span>
+    <article className="rounded-[1rem] border border-white/10 bg-[var(--media-hub-card)] px-3 py-2.5">
+      <div className="flex min-w-0 items-center gap-3">
+        <p className="shrink-0 text-xs font-black uppercase tracking-[0.14em] text-white/38">
+          {card.label}
+        </p>
+        <span className="shrink-0 text-lg font-black text-[var(--media-hub-accent)]">
+          {card.value}
+        </span>
+        <span className="min-w-0 truncate text-sm text-white/46">{card.note}</span>
       </div>
     </article>
   );
@@ -242,18 +229,18 @@ function PulseCard({ card }: { card: MediaHubWindowSnapshot["pulseCards"][number
           : "bg-[#b48cff]";
 
   return (
-    <article className="rounded-[1.15rem] border border-white/10 bg-[var(--media-hub-card)] p-4">
-      <div className="flex items-center justify-between gap-3">
-        <h3 className="text-lg font-bold">{card.label}</h3>
-        <span className="text-sm font-black text-white/54">{card.value}</span>
+    <article className="rounded-[1rem] border border-white/10 bg-[var(--media-hub-card)] px-3 py-2.5">
+      <div className="flex min-w-0 items-center gap-3">
+        <h3 className="shrink-0 text-base font-bold">{card.label}</h3>
+        <span className="shrink-0 text-sm font-black text-white/54">{card.value}</span>
+        <p className="min-w-0 truncate text-sm leading-6 text-white/58">{card.hint}</p>
       </div>
-      <div className="mt-3 h-3 rounded-full bg-white/8">
+      <div className="mt-2 h-2 rounded-full bg-white/8">
         <div
-          className={`h-3 rounded-full ${toneClass}`}
+          className={`h-2 rounded-full ${toneClass}`}
           style={{ width: `${Math.max(12, Math.min(100, card.value * 10))}%` }}
         />
       </div>
-      <p className="mt-2 text-sm leading-6 text-white/58">{card.hint}</p>
     </article>
   );
 }
@@ -299,19 +286,133 @@ function parseProgressRatio(label: string) {
   return Math.max(0, Math.min(1, current / total));
 }
 
-function buildDonutStops(
+function DonutChart({
+  distribution,
+  total,
+}: {
   distribution: MediaHubWindowSnapshot["distribution"],
   total: number,
-) {
+}) {
+  const radius = 40;
+  const strokeWidth = 15;
   let cursor = 0;
 
-  return distribution
-    .map((slice) => {
-      const start = cursor;
-      const end = cursor + (slice.value / total) * 100;
-      cursor = end;
+  if (total <= 0) {
+    return (
+      <svg
+        aria-label="Source distribution"
+        className="h-[9.5rem] w-[9.5rem]"
+        role="img"
+        viewBox="0 0 100 100"
+      >
+        <circle
+          className="stroke-white/10"
+          cx="50"
+          cy="50"
+          fill="none"
+          r={radius}
+          strokeWidth={strokeWidth}
+        />
+        <circle cx="50" cy="50" fill="var(--media-hub-bg)" r={radius - strokeWidth} />
+      </svg>
+    );
+  }
 
-      return `${slice.color} ${start}% ${end}%`;
-    })
-    .join(", ");
+  return (
+    <svg
+      aria-label="Source distribution"
+      className="h-[9.5rem] w-[9.5rem]"
+      role="img"
+      viewBox="0 0 100 100"
+    >
+      {distribution.map((slice) => {
+        const start = (cursor / total) * 360;
+        cursor += slice.value;
+        const end = (cursor / total) * 360;
+        const isFullCircle = end - start >= 359.99;
+
+        if (isFullCircle) {
+          return (
+            <circle
+              className="cursor-help transition-opacity hover:opacity-75"
+              cx="50"
+              cy="50"
+              fill="none"
+              key={slice.label}
+              r={radius - strokeWidth / 2}
+              stroke={slice.color}
+              strokeWidth={strokeWidth}
+            >
+              <title>{`${slice.label}: ${slice.value}%`}</title>
+            </circle>
+          );
+        }
+
+        const path = describeDonutArc(50, 50, radius, strokeWidth, start, end);
+
+        return (
+          <path
+            className="cursor-help transition-opacity hover:opacity-75"
+            d={path}
+            fill={slice.color}
+            key={slice.label}
+          >
+            <title>{`${slice.label}: ${slice.value}%`}</title>
+          </path>
+        );
+      })}
+      <circle cx="50" cy="50" fill="var(--media-hub-bg)" r={radius - strokeWidth} />
+    </svg>
+  );
+}
+
+function describeDonutArc(
+  centerX: number,
+  centerY: number,
+  radius: number,
+  strokeWidth: number,
+  startAngle: number,
+  endAngle: number,
+) {
+  const outerStart = polarToCartesian(centerX, centerY, radius, endAngle);
+  const outerEnd = polarToCartesian(centerX, centerY, radius, startAngle);
+  const innerRadius = radius - strokeWidth;
+  const innerStart = polarToCartesian(centerX, centerY, innerRadius, startAngle);
+  const innerEnd = polarToCartesian(centerX, centerY, innerRadius, endAngle);
+  const largeArc = endAngle - startAngle <= 180 ? "0" : "1";
+
+  return [
+    "M",
+    outerStart.x,
+    outerStart.y,
+    "A",
+    radius,
+    radius,
+    0,
+    largeArc,
+    0,
+    outerEnd.x,
+    outerEnd.y,
+    "L",
+    innerStart.x,
+    innerStart.y,
+    "A",
+    innerRadius,
+    innerRadius,
+    0,
+    largeArc,
+    1,
+    innerEnd.x,
+    innerEnd.y,
+    "Z",
+  ].join(" ");
+}
+
+function polarToCartesian(centerX: number, centerY: number, radius: number, angleInDegrees: number) {
+  const angleInRadians = ((angleInDegrees - 90) * Math.PI) / 180;
+
+  return {
+    x: centerX + radius * Math.cos(angleInRadians),
+    y: centerY + radius * Math.sin(angleInRadians),
+  };
 }
