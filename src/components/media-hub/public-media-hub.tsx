@@ -7,6 +7,7 @@ import type {
   MediaHubWindowKey,
   MediaHubWindowSnapshot,
 } from "@/lib/media-hub";
+import { MonitoringFeed } from "./monitoring-feed";
 
 export function PublicMediaHub({
   locale,
@@ -24,7 +25,6 @@ export function PublicMediaHub({
   const totalDistribution = activeWindow.distribution.reduce((sum, item) => sum + item.value, 0);
   const donutStops = buildDonutStops(activeWindow.distribution, totalDistribution);
   const theme = getMediaHubTheme(profile.id);
-  const cycleCopy = getWindowCycleCopy(locale, profile.windows);
 
   return (
     <div
@@ -35,10 +35,7 @@ export function PublicMediaHub({
         <div className="mx-auto max-w-[1900px] px-5 py-10 sm:px-8 lg:px-10 lg:py-14">
           <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
             <div className="rounded-[2rem] border border-white/10 bg-[var(--media-hub-panel)] p-6 shadow-[0_30px_80px_rgba(0,0,0,0.28)]">
-              <p className={`text-sm font-black uppercase tracking-[0.22em] ${profile.accentClassName}`}>
-                {profile.brand}
-              </p>
-              <h1 className="mt-4 max-w-5xl text-[clamp(2.4rem,5vw,4.6rem)] font-black leading-[0.92] tracking-normal">
+              <h1 className="max-w-5xl text-[clamp(2.4rem,5vw,4.6rem)] font-black leading-[0.92] tracking-normal">
                 {profile.title}
               </h1>
               <p className="mt-4 max-w-4xl text-lg leading-8 text-white/70">
@@ -82,20 +79,10 @@ export function PublicMediaHub({
                   );
                 })}
               </div>
-              <div className="mt-5 grid gap-2 rounded-[1.25rem] border border-white/10 bg-[var(--media-hub-card)] px-4 py-4 text-sm leading-6 text-white/64 md:grid-cols-3">
-                {cycleCopy.map((item) => (
-                  <p key={item.title}>
-                    <span className="font-black uppercase tracking-[0.08em] text-white">
-                      {item.title}
-                    </span>{" "}
-                    {item.body}
-                  </p>
-                ))}
-              </div>
             </div>
 
             <div className="rounded-[2rem] border border-white/10 bg-[var(--media-hub-panel)] p-6 shadow-[0_30px_80px_rgba(0,0,0,0.28)]">
-              <div className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
+              <div className="grid gap-5 lg:grid-cols-[0.72fr_1.28fr] lg:items-start">
                 <div>
                   <p className="text-sm font-black uppercase tracking-[0.18em] text-white/48">
                     Distribution
@@ -106,43 +93,43 @@ export function PublicMediaHub({
                       ? "Summary-first зверху, raw monitoring layer знизу. Саме тут має жити сила сотень джерел і тисяч матеріалів."
                       : "Summary-first above, raw monitoring below. This is where the strength of hundreds of sources and thousands of items has to live."}
                   </p>
-                  <div className="mt-5 space-y-3">
+                  <div className="mt-5 grid gap-2">
                     {activeWindow.topSources.map((source) => (
                       <div
-                        className="flex items-center justify-between rounded-full border border-white/10 bg-[var(--media-hub-card)] px-4 py-2.5"
+                        className="flex min-w-0 items-center justify-between gap-3 rounded-full border border-white/10 bg-[var(--media-hub-card)] px-4 py-2"
                         key={source.label}
                       >
-                        <span className="text-sm font-semibold text-white/84">{source.label}</span>
+                        <span className="truncate text-sm font-semibold text-white/84">{source.label}</span>
                         <span className="text-sm font-black text-white/44">{source.count}</span>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div className="grid gap-5">
-                  <div className="flex items-center justify-center">
+                <div className="grid gap-4 md:grid-cols-[12rem_1fr] md:items-center">
+                  <div className="flex items-center justify-center md:justify-start">
                     <div
                       aria-label="Source distribution"
-                      className="relative h-[16rem] w-[16rem] rounded-full border border-white/8"
+                      className="relative h-[12rem] w-[12rem] rounded-full border border-white/8"
                       style={{
                         background: `conic-gradient(${donutStops})`,
                       }}
                     >
-                      <div className="absolute inset-[2.2rem] rounded-full bg-[var(--media-hub-bg)]" />
+                      <div className="absolute inset-[1.75rem] rounded-full bg-[var(--media-hub-bg)]" />
                     </div>
                   </div>
-                  <div className="grid gap-2 sm:grid-cols-2">
+                  <div className="grid min-w-0 gap-2">
                     {activeWindow.distribution.map((slice) => (
                       <div
-                        className="flex items-center gap-3 rounded-[1rem] border border-white/10 bg-[var(--media-hub-card)] px-4 py-3"
+                        className="flex min-w-0 items-center gap-2 rounded-[0.85rem] border border-white/10 bg-[var(--media-hub-card)] px-3 py-2"
                         key={slice.label}
                       >
                         <span
-                          className="h-3 w-3 rounded-full"
+                          className="h-2.5 w-2.5 shrink-0 rounded-full"
                           style={{ backgroundColor: slice.color }}
                         />
-                        <span className="text-sm font-semibold text-white/82">{slice.label}</span>
-                        <span className="ml-auto text-sm font-black text-white/44">{slice.value}%</span>
+                        <span className="min-w-0 truncate text-sm font-semibold text-white/82">{slice.label}</span>
+                        <span className="ml-auto shrink-0 text-sm font-black text-white/44">{slice.value}%</span>
                       </div>
                     ))}
                   </div>
@@ -154,54 +141,50 @@ export function PublicMediaHub({
       </section>
 
       <section className="mx-auto max-w-[1900px] px-5 py-8 sm:px-8 lg:px-10">
-        <div className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
-          <article className="rounded-[2rem] border border-white/10 bg-[var(--media-hub-panel)] p-6">
-            <div className="flex flex-wrap items-center gap-3">
-              <h2 className="text-3xl font-black">{activeWindow.summaryTitle}</h2>
-              <span className="rounded-full border border-white/12 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-white/48">
-                {activeWindow.itemCount} items
-              </span>
-              <span className="rounded-full border border-white/12 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-white/48">
-                {activeWindow.topicCount} topics
-              </span>
-            </div>
-            <div className="mt-6 space-y-5">
-              {activeWindow.summaryBody.map((paragraph) => (
-                <p className="text-lg leading-8 text-white/78" key={paragraph}>
-                  {paragraph}
-                </p>
-              ))}
-            </div>
-          </article>
-
-          <div className="grid gap-6">
-            <section className="rounded-[2rem] border border-white/10 bg-[var(--media-hub-panel)] p-5">
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-white/42">
-                Desk Snapshot
-              </p>
-              <div className="mt-4 grid gap-3">
-                {activeWindow.snapshotCards.map((card) => (
-                  <SnapshotCard card={card} key={card.label} />
-                ))}
-              </div>
-            </section>
-
-            <section className="rounded-[2rem] border border-white/10 bg-[var(--media-hub-panel)] p-5">
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-white/42">
-                Pulse
-              </p>
-              <div className="mt-4 grid gap-3">
-                {activeWindow.pulseCards.map((card) => (
-                  <PulseCard card={card} key={card.label} />
-                ))}
-              </div>
-            </section>
+        <article className="rounded-[2rem] border border-white/10 bg-[var(--media-hub-panel)] p-6">
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-3xl font-black">{activeWindow.summaryTitle}</h2>
+            <span className="rounded-full border border-white/12 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-white/48">
+              {activeWindow.itemCount} items
+            </span>
+            <span className="rounded-full border border-white/12 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-white/48">
+              {activeWindow.topicCount} topics
+            </span>
           </div>
-        </div>
+          <div className="mt-6 max-w-6xl space-y-5">
+            {activeWindow.summaryBody.map((paragraph) => (
+              <p className="text-lg leading-8 text-white/78" key={paragraph}>
+                {paragraph}
+              </p>
+            ))}
+          </div>
+        </article>
       </section>
 
       <section className="mx-auto max-w-[1900px] px-5 pb-8 sm:px-8 lg:px-10">
-        <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+        <div className="grid gap-6 xl:grid-cols-3">
+          <section className="rounded-[2rem] border border-white/10 bg-[var(--media-hub-panel)] p-5">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-white/42">
+              Desk Snapshot
+            </p>
+            <div className="mt-4 grid gap-3">
+              {activeWindow.snapshotCards.map((card) => (
+                <SnapshotCard card={card} key={card.label} />
+              ))}
+            </div>
+          </section>
+
+          <section className="rounded-[2rem] border border-white/10 bg-[var(--media-hub-panel)] p-5">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-white/42">
+              Pulse
+            </p>
+            <div className="mt-4 grid gap-3">
+              {activeWindow.pulseCards.map((card) => (
+                <PulseCard card={card} key={card.label} />
+              ))}
+            </div>
+          </section>
+
           <section className="rounded-[2rem] border border-white/10 bg-[var(--media-hub-panel)] p-6">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-2xl font-black">Topic clusters</h2>
@@ -226,79 +209,11 @@ export function PublicMediaHub({
               ))}
             </div>
           </section>
-
-          <section className="rounded-[2rem] border border-white/10 bg-[var(--media-hub-panel)] p-6">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="text-2xl font-black">Monitoring feed</h2>
-              <span className="text-xs font-black uppercase tracking-[0.16em] text-white/38">
-                live window preview
-              </span>
-            </div>
-            <div className="mt-5 space-y-4">
-              {activeWindow.feed.map((item) => (
-                <article
-                  className={`rounded-[1.2rem] border p-4 ${
-                    item.tone === "elevated"
-                      ? "border-[color:var(--media-hub-accent)] bg-[var(--media-hub-card-hover)]"
-                      : "border-white/10 bg-[var(--media-hub-card)]"
-                  }`}
-                  key={item.id}
-                >
-                  <div className="flex flex-wrap items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-white/42">
-                    <span>{item.sourceType}</span>
-                    <span>•</span>
-                    <span>{item.source}</span>
-                    <span>•</span>
-                    <span>{item.time}</span>
-                  </div>
-                  <h3 className="mt-3 text-lg font-bold leading-7 text-white">{item.title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-white/66">{item.summary}</p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {item.tags.map((tag) => (
-                      <span
-                        className="rounded-full border border-white/10 px-3 py-1 text-xs font-semibold text-white/60"
-                        key={`${item.id}-${tag}`}
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
         </div>
       </section>
 
       <section className="mx-auto max-w-[1900px] px-5 pb-12 sm:px-8 lg:px-10">
-        <article className="rounded-[2rem] border border-white/10 bg-[var(--media-hub-panel)] p-6">
-          <p className={`text-xs font-black uppercase tracking-[0.2em] ${profile.accentClassName}`}>
-            {profile.sourcePolicyTitle}
-          </p>
-          <p className="mt-4 max-w-5xl text-base leading-7 text-white/72">
-            {profile.sourcePolicyBody}
-          </p>
-          {profile.localePolicy ? (
-            <div className="mt-5 grid gap-3 md:grid-cols-4">
-              <PolicyStat
-                label="Market scope"
-                value={profile.localePolicy.marketScope === "ukraine" ? "Ukraine" : "Global"}
-              />
-              <PolicyStat
-                label="Source language"
-                value={profile.localePolicy.sourceLanguage === "uk" ? "Ukrainian" : "English"}
-              />
-              <PolicyStat
-                label="Summary language"
-                value={profile.localePolicy.summaryLanguage === "uk" ? "Ukrainian" : "English"}
-              />
-              <PolicyStat
-                label="Audience"
-                value={profile.localePolicy.audienceLabel}
-              />
-            </div>
-          ) : null}
-        </article>
+        <MonitoringFeed items={activeWindow.feed} />
       </section>
     </div>
   );
@@ -343,15 +258,6 @@ function PulseCard({ card }: { card: MediaHubWindowSnapshot["pulseCards"][number
   );
 }
 
-function PolicyStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-[1rem] border border-white/10 bg-[var(--media-hub-card)] p-4">
-      <p className="text-xs font-black uppercase tracking-[0.14em] text-white/38">{label}</p>
-      <p className="mt-2 text-sm font-semibold leading-6 text-white/82">{value}</p>
-    </div>
-  );
-}
-
 function getMediaHubTheme(profileId: MediaHubSiteProfile["id"]) {
   if (profileId === "1d3x") {
     return {
@@ -391,43 +297,6 @@ function parseProgressRatio(label: string) {
     return 0;
   }
   return Math.max(0, Math.min(1, current / total));
-}
-
-function getWindowCycleCopy(locale: Locale, windows: MediaHubWindowSnapshot[]) {
-  const labelFor = (window: MediaHubWindowKey, fallback: string) =>
-    windows.find((item) => item.window === window)?.progressLabel ?? fallback;
-
-  if (locale === "uk") {
-    return [
-      {
-        title: `Day ${labelFor("day", "1/1")}.`,
-        body: "Щоденне вікно закривається окремим daily summary.",
-      },
-      {
-        title: `7 Days ${labelFor("week", "7/7")}.`,
-        body: "Тиждень накопичує дні; у день weekly summary денний звіт не дублюється.",
-      },
-      {
-        title: `30 Days ${labelFor("month", "30/30")}.`,
-        body: "Місяць збирає weekly summaries і останній неповний тиждень у monthly report.",
-      },
-    ];
-  }
-
-  return [
-    {
-      title: `Day ${labelFor("day", "1/1")}.`,
-      body: "The daily window closes into one daily summary.",
-    },
-    {
-      title: `7 Days ${labelFor("week", "7/7")}.`,
-      body: "The week fills day by day; weekly summary replaces the daily report on publication day.",
-    },
-    {
-      title: `30 Days ${labelFor("month", "30/30")}.`,
-      body: "The monthly layer combines weekly summaries plus the last partial week into one monthly report.",
-    },
-  ];
 }
 
 function buildDonutStops(
