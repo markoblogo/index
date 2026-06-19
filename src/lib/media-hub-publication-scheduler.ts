@@ -396,7 +396,7 @@ async function ensureMediaHubReportStorage() {
 async function getMediaHubReport(
   kind: string,
   periodEndDate: string,
-  tenantId = getActiveIndexConfig().id,
+  tenantId: string = getActiveIndexConfig().id,
 ) {
   const rows = await db.$queryRawUnsafe<MediaHubReportRow[]>(
     `
