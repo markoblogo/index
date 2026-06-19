@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { PublicMediaHub } from "@/components/media-hub/public-media-hub";
+import { PlatformShell } from "@/components/platform/platform-shell";
 import { getMediaHubProfile, type MediaHubWindowKey } from "@/lib/media-hub";
 import { get1d3xRssWindows } from "@/lib/media-hub-rss";
 import { isPlatformSite } from "@/lib/platform-site";
@@ -29,12 +30,14 @@ export default async function PlatformMediaHubPage({
   };
 
   return (
-    <PublicMediaHub
-      locale="en"
-      profile={mergedProfile}
-      selectedWindow={selectedWindow}
-      windowHref={(window) => `/media-hub?window=${window}`}
-    />
+    <PlatformShell>
+      <PublicMediaHub
+        locale="en"
+        profile={mergedProfile}
+        selectedWindow={selectedWindow}
+        windowHref={(window) => `/media-hub?window=${window}`}
+      />
+    </PlatformShell>
   );
 }
 
