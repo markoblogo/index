@@ -299,7 +299,7 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
     if (!publishedIndex || displayFallback) {
       const latest = displayFallback?.value ?? null;
       const previous =
-        publishedIndex?.valueUsdPerMt.toNumber() ?? displayFallback?.previousValue ?? null;
+        displayFallback?.previousValue ?? publishedIndex?.valueUsdPerMt.toNumber() ?? null;
       const change =
         latest === null
           ? { changeAbs: 0, changePct: 0 }
@@ -352,7 +352,7 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
         (item) => item.commodityId === mockCommodity.id,
       )!;
       const previous =
-        publishedIndex?.valueUsdPerMt.toNumber() ?? displayFallback?.previousValue ?? null;
+        displayFallback?.previousValue ?? publishedIndex?.valueUsdPerMt.toNumber() ?? null;
       const change =
         displayFallback?.value === undefined
           ? { changeAbs: 0, changePct: 0 }

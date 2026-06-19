@@ -246,7 +246,7 @@ async function getDatabaseLatestData(): Promise<PublicLatestItem[]> {
       const previous =
         displayFallback === null
           ? null
-          : (published?.valueUsdPerMt.toNumber() ?? displayFallback.previousValue);
+          : (displayFallback.previousValue ?? published?.valueUsdPerMt.toNumber() ?? null);
       const fallbackChange = displayFallback
         ? computeChange(displayFallback.value, previous)
         : null;

@@ -258,6 +258,10 @@ const spikeCommodities: IndexCommodityConfig[] = [
     vatIncluded: true,
     detailMetrics: [
       {
+        label: { uk: "Якість", en: "Quality" },
+        value: { uk: "37 протеїн, ГМО", en: "37 pro, GMO" },
+      },
+      {
         label: { uk: "Базис", en: "Basis" },
         value: { uk: "CPT parity Одеса", en: "CPT parity Odesa" },
       },
@@ -281,6 +285,10 @@ const spikeCommodities: IndexCommodityConfig[] = [
     vatIncluded: true,
     detailMetrics: [
       {
+        label: { uk: "Якість", en: "Quality" },
+        value: { uk: "48% сухої олії", en: "48% dry oil" },
+      },
+      {
         label: { uk: "Базис", en: "Basis" },
         value: { uk: "CPT parity Одеса", en: "CPT parity Odesa" },
       },
@@ -303,6 +311,10 @@ const spikeCommodities: IndexCommodityConfig[] = [
     sparkline: [519, 520, 521, 521, 522, 522, 522],
     vatIncluded: true,
     detailMetrics: [
+      {
+        label: { uk: "Якість", en: "Quality" },
+        value: { uk: "48% сухої олії, не ГМО", en: "48% dry oil, NON-GMO" },
+      },
       {
         label: { uk: "Базис", en: "Basis" },
         value: { uk: "CPT parity Одеса", en: "CPT parity Odesa" },
