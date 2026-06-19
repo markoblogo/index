@@ -292,14 +292,20 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
 
     if (!publishedIndex || displayFallback) {
       const latest = displayFallback?.value ?? null;
+      const previous =
+        publishedIndex?.valueUsdPerMt.toNumber() ?? displayFallback?.previousValue ?? null;
+      const change =
+        latest === null
+          ? { changeAbs: 0, changePct: 0 }
+          : computeChange(latest, previous);
 
       return {
         ...mockCommodity,
         code: commodity.code,
         name: { uk: commodity.nameUk, en: commodity.nameEn },
         latest,
-        absoluteChange: 0,
-        percentChange: 0,
+        absoluteChange: change.changeAbs,
+        percentChange: change.changePct,
         sparkline: buildRealSparkline(history, latest),
         aiComment,
       };
@@ -337,13 +343,19 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
       const quote = latestQuotes.find(
         (item) => item.commodityId === mockCommodity.id,
       )!;
+      const previous =
+        publishedIndex?.valueUsdPerMt.toNumber() ?? displayFallback?.previousValue ?? null;
+      const change =
+        displayFallback?.value === undefined
+          ? { changeAbs: 0, changePct: 0 }
+          : computeChange(displayFallback.value, previous);
       return {
         ...quote,
         basis: basisConfig.name,
         date: displayFallback?.date ?? latestPublishedDate,
         price: displayFallback?.value ?? null,
-        absoluteChange: 0,
-        percentChange: 0,
+        absoluteChange: change.changeAbs,
+        percentChange: change.changePct,
         respondents: displayFallback?.rawCount ?? activeRespondentCount,
       };
     }
@@ -382,6 +394,27 @@ async function loadLatestAiComments() {
     getLatestAiCardComments("uk"),
     getLatestAiCardComments("en"),
   ]);
+}
+
+function computeChange(latest: number, previous: number | null) {
+  if (previous === null || previous === 0) {
+    return { changeAbs: 0, changePct: 0 };
+  }
+
+  const changeAbs = roundOne(latest - previous);
+
+  return {
+    changeAbs,
+    changePct: roundTwo((changeAbs / previous) * 100),
+  };
+}
+
+function roundOne(value: number) {
+  return Math.round(value * 10) / 10;
+}
+
+function roundTwo(value: number) {
+  return Math.round(value * 100) / 100;
 }
 
 function todayKyivDate() {

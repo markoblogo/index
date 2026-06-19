@@ -237,6 +237,13 @@ async function getDatabaseLatestData(): Promise<PublicLatestItem[]> {
           submissionFallback.date > published.tradeDate.toISOString().slice(0, 10))
           ? submissionFallback
           : null;
+      const previous =
+        displayFallback === null
+          ? null
+          : (published?.valueUsdPerMt.toNumber() ?? displayFallback.previousValue);
+      const fallbackChange = displayFallback
+        ? computeChange(displayFallback.value, previous)
+        : null;
 
       return {
         commodityId: mockCommodityIdByCode[commodity.code] ?? "corn",
@@ -250,8 +257,9 @@ async function getDatabaseLatestData(): Promise<PublicLatestItem[]> {
         basis: basisConfig.name,
         valueUsdPerMt:
           displayFallback?.value ?? published?.valueUsdPerMt.toNumber() ?? null,
-        changeAbs: published?.changeAbsUsdPerMt?.toNumber() ?? 0,
-        changePct: published?.changePct?.toNumber() ?? 0,
+        changeAbs:
+          fallbackChange?.changeAbs ?? published?.changeAbsUsdPerMt?.toNumber() ?? 0,
+        changePct: fallbackChange?.changePct ?? published?.changePct?.toNumber() ?? 0,
         respondents: displayFallback?.rawCount ?? activeRespondentCount,
       };
     }),
@@ -336,6 +344,19 @@ function roundOne(value: number) {
 
 function roundTwo(value: number) {
   return Math.round(value * 100) / 100;
+}
+
+function computeChange(latest: number, previous: number | null) {
+  if (previous === null || previous === 0) {
+    return { changeAbs: 0, changePct: 0 };
+  }
+
+  const changeAbs = roundOne(latest - previous);
+
+  return {
+    changeAbs,
+    changePct: roundTwo((changeAbs / previous) * 100),
+  };
 }
 
 function todayKyivDate() {
