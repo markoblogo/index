@@ -105,10 +105,6 @@ export async function generateAndStoreDailyAiMarketBriefs(
   ]);
   const date = results[0]?.date ?? options.date ?? null;
 
-  if (date && options.source === "auto_publish") {
-    await sendAiBriefTelegramSummary(date, "uk");
-  }
-
   return {
     date,
     results,

@@ -5,6 +5,7 @@ import {
   runDueMediaHubPublication,
   type MediaHubPublicationKind,
 } from "@/lib/media-hub-publication-scheduler";
+import { isPlatformSite } from "@/lib/platform-site";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,26 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const date = url.searchParams.get("date") ?? undefined;
   const forceKind = normalizeKind(url.searchParams.get("kind"));
+  const forced = Boolean(date || forceKind);
+
+  if (!forced) {
+    const minute = new Date().getUTCMinutes();
+    if (isPlatformSite() && minute !== 30) {
+      return NextResponse.json({
+        skippedReason: "platform_media_hub_runs_on_half_hour_slot",
+        status: "skipped",
+        triggeredAt: new Date().toISOString(),
+      });
+    }
+    if (!isPlatformSite() && minute === 30) {
+      return NextResponse.json({
+        skippedReason: "spike_media_hub_runs_on_full_hour_slot",
+        status: "skipped",
+        triggeredAt: new Date().toISOString(),
+      });
+    }
+  }
+
   const plan = getMediaHubPublicationPlan(date);
   const publication = await runDueMediaHubPublication({
     date: plan.date,

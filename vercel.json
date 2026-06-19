@@ -46,7 +46,15 @@
     },
     {
       "path": "/api/cron/media-hub-publish",
+      "schedule": "30 12 * * 6"
+    },
+    {
+      "path": "/api/cron/media-hub-publish",
       "schedule": "0 13 * * 6"
+    },
+    {
+      "path": "/api/cron/media-hub-publish",
+      "schedule": "30 13 * * 6"
     }
   ]
 }

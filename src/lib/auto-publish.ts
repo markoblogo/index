@@ -4,6 +4,10 @@ import { db, hasDatabaseUrl } from "@/lib/db";
 import { generateAndStoreDailyAiMarketBriefs } from "@/lib/ai-market-brief-lazy";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import { computePublishedChange } from "@/lib/index-publish";
+import {
+  publishMediaHubSnapshotReport,
+  sendMediaHubReportTelegram,
+} from "@/lib/media-hub-publication-scheduler";
 import { syncIndexPositionDirectory } from "@/lib/position-directory-sync";
 import {
   getConfiguredDeliveryBasisCodes,
@@ -325,6 +329,14 @@ export async function autoPublishSpikeDailyIndices(
           source: "auto_publish",
         })
       : null;
+
+  if (published > 0) {
+    await publishMediaHubSnapshotReport("daily", date);
+    await sendMediaHubReportTelegram("daily", date, {
+      audience: "spike",
+      locale: "uk",
+    });
+  }
 
   return {
     aiBrief,
