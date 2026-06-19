@@ -200,7 +200,11 @@ async function getDatabaseLatestData(): Promise<PublicLatestItem[]> {
   const submissionFallbackByCommodityId = await getLatestSubmissionFallbacks({
     basisByCommodityId,
     commodities: dbCommodities,
-    visibleTradeDate: visibleTradeDateAtMidnightUtc,
+    maxTradeDate: visibleTradeDateAtMidnightUtc,
+  });
+  const latestSubmissionFallbackByCommodityId = await getLatestSubmissionFallbacks({
+    basisByCommodityId,
+    commodities: dbCommodities,
   });
 
   const rows = await Promise.all(
@@ -230,7 +234,9 @@ async function getDatabaseLatestData(): Promise<PublicLatestItem[]> {
           tradeDate: { lte: visibleTradeDateAtMidnightUtc },
         },
       });
-      const submissionFallback = submissionFallbackByCommodityId.get(commodity.id);
+      const submissionFallback =
+        submissionFallbackByCommodityId.get(commodity.id) ??
+        (published ? null : latestSubmissionFallbackByCommodityId.get(commodity.id));
       const displayFallback =
         submissionFallback &&
         (!published ||

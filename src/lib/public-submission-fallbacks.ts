@@ -19,11 +19,11 @@ export type SubmissionFallback = {
 export async function getLatestSubmissionFallbacks({
   basisByCommodityId,
   commodities,
-  visibleTradeDate,
+  maxTradeDate,
 }: {
   basisByCommodityId: Map<string, BasisRef>;
   commodities: CommodityRef[];
-  visibleTradeDate: Date;
+  maxTradeDate?: Date;
 }) {
   const commodityIds = commodities.map((commodity) => commodity.id);
   const basisIds = [...new Set([...basisByCommodityId.values()].map((basis) => basis.id))];
@@ -41,7 +41,7 @@ export async function getLatestSubmissionFallbacks({
       priceUsdPerMt: { gt: 0 },
       source: { in: ["admin", "respondent"] },
       status: { in: ["draft", "submitted", "verified", "published"] },
-      tradeDate: { lte: visibleTradeDate },
+      ...(maxTradeDate ? { tradeDate: { lte: maxTradeDate } } : {}),
     },
   });
   const submissionsByCommodity = new Map<string, typeof submissions>();

@@ -263,7 +263,11 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
   const submissionFallbackByCommodityId = await getLatestSubmissionFallbacks({
     basisByCommodityId,
     commodities: dbCommodities,
-    visibleTradeDate: visibleTradeDateAtMidnightUtc,
+    maxTradeDate: visibleTradeDateAtMidnightUtc,
+  });
+  const latestSubmissionFallbackByCommodityId = await getLatestSubmissionFallbacks({
+    basisByCommodityId,
+    commodities: dbCommodities,
   });
   const latestPublishedDate =
     [...publishedByCommodityId.values()]
@@ -277,7 +281,9 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
   const publicCommodities = dbCommodities.map((commodity) => {
     const mockCommodity = mockCommodityByCode.get(commodity.code) ?? commodities[0];
     const publishedIndex = publishedByCommodityId.get(commodity.id);
-    const submissionFallback = submissionFallbackByCommodityId.get(commodity.id);
+    const submissionFallback =
+      submissionFallbackByCommodityId.get(commodity.id) ??
+      (publishedIndex ? null : latestSubmissionFallbackByCommodityId.get(commodity.id));
     const displayFallback =
       submissionFallback &&
       (!publishedIndex ||
@@ -327,7 +333,9 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
   const publicLatestQuotes = dbCommodities.map((commodity) => {
     const mockCommodity = mockCommodityByCode.get(commodity.code) ?? commodities[0];
     const publishedIndex = publishedByCommodityId.get(commodity.id);
-    const submissionFallback = submissionFallbackByCommodityId.get(commodity.id);
+    const submissionFallback =
+      submissionFallbackByCommodityId.get(commodity.id) ??
+      (publishedIndex ? null : latestSubmissionFallbackByCommodityId.get(commodity.id));
     const displayFallback =
       submissionFallback &&
       (!publishedIndex ||
@@ -381,6 +389,7 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
         .filter((index): index is NonNullable<typeof index> => Boolean(index))
         .map((index) => index.publishedAt),
         ...submissionFallbackByCommodityId.values(),
+        ...latestSubmissionFallbackByCommodityId.values(),
       ]
         .map((item) => item instanceof Date ? item : item.updatedAt)
         .sort((first, second) => second.getTime() - first.getTime())[0]
