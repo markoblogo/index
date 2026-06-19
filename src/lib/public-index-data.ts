@@ -278,21 +278,29 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
     const mockCommodity = mockCommodityByCode.get(commodity.code) ?? commodities[0];
     const publishedIndex = publishedByCommodityId.get(commodity.id);
     const submissionFallback = submissionFallbackByCommodityId.get(commodity.id);
+    const displayFallback =
+      submissionFallback &&
+      (!publishedIndex ||
+        submissionFallback.date > publishedIndex.tradeDate.toISOString().slice(0, 10))
+        ? submissionFallback
+        : null;
     const history = recentPublishedByCommodityId.get(commodity.id) ?? [];
     const aiComment = {
       en: aiCommentsEn[commodity.code] ?? aiCommentsEn[mockCommodity.code] ?? "",
       uk: aiCommentsUk[commodity.code] ?? aiCommentsUk[mockCommodity.code] ?? "",
     };
 
-    if (!publishedIndex) {
+    if (!publishedIndex || displayFallback) {
+      const latest = displayFallback?.value ?? null;
+
       return {
         ...mockCommodity,
         code: commodity.code,
         name: { uk: commodity.nameUk, en: commodity.nameEn },
-        latest: submissionFallback?.value ?? null,
+        latest,
         absoluteChange: 0,
         percentChange: 0,
-        sparkline: buildRealSparkline(history, submissionFallback?.value ?? null),
+        sparkline: buildRealSparkline(history, latest),
         aiComment,
       };
     }
@@ -314,23 +322,29 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
     const mockCommodity = mockCommodityByCode.get(commodity.code) ?? commodities[0];
     const publishedIndex = publishedByCommodityId.get(commodity.id);
     const submissionFallback = submissionFallbackByCommodityId.get(commodity.id);
+    const displayFallback =
+      submissionFallback &&
+      (!publishedIndex ||
+        submissionFallback.date > publishedIndex.tradeDate.toISOString().slice(0, 10))
+        ? submissionFallback
+        : null;
     const basisConfig = getDeliveryBasisConfigForCommodityCode(
       commodity.code,
       activeIndex,
     );
 
-    if (!publishedIndex) {
+    if (!publishedIndex || displayFallback) {
       const quote = latestQuotes.find(
         (item) => item.commodityId === mockCommodity.id,
       )!;
       return {
         ...quote,
         basis: basisConfig.name,
-        date: submissionFallback?.date ?? latestPublishedDate,
-        price: submissionFallback?.value ?? null,
+        date: displayFallback?.date ?? latestPublishedDate,
+        price: displayFallback?.value ?? null,
         absoluteChange: 0,
         percentChange: 0,
-        respondents: submissionFallback?.rawCount ?? activeRespondentCount,
+        respondents: displayFallback?.rawCount ?? activeRespondentCount,
       };
     }
 

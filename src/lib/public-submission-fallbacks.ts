@@ -39,7 +39,7 @@ export async function getLatestSubmissionFallbacks({
       deliveryBasisId: { in: basisIds },
       priceUsdPerMt: { gt: 0 },
       source: { in: ["admin", "respondent"] },
-      status: { in: ["submitted", "verified", "published"] },
+      status: { in: ["draft", "submitted", "verified", "published"] },
       tradeDate: { lte: visibleTradeDate },
     },
   });

@@ -231,6 +231,12 @@ async function getDatabaseLatestData(): Promise<PublicLatestItem[]> {
         },
       });
       const submissionFallback = submissionFallbackByCommodityId.get(commodity.id);
+      const displayFallback =
+        submissionFallback &&
+        (!published ||
+          submissionFallback.date > published.tradeDate.toISOString().slice(0, 10))
+          ? submissionFallback
+          : null;
 
       return {
         commodityId: mockCommodityIdByCode[commodity.code] ?? "corn",
@@ -238,17 +244,15 @@ async function getDatabaseLatestData(): Promise<PublicLatestItem[]> {
         commodityNameUk: commodity.nameUk,
         commodityNameEn: commodity.nameEn,
         date:
+          displayFallback?.date ??
           published?.tradeDate.toISOString().slice(0, 10) ??
-          submissionFallback?.date ??
           visibleTradeDate,
         basis: basisConfig.name,
         valueUsdPerMt:
-          published?.valueUsdPerMt.toNumber() ?? submissionFallback?.value ?? null,
+          displayFallback?.value ?? published?.valueUsdPerMt.toNumber() ?? null,
         changeAbs: published?.changeAbsUsdPerMt?.toNumber() ?? 0,
         changePct: published?.changePct?.toNumber() ?? 0,
-        respondents: published
-          ? activeRespondentCount
-          : (submissionFallback?.rawCount ?? activeRespondentCount),
+        respondents: displayFallback?.rawCount ?? activeRespondentCount,
       };
     }),
   );
