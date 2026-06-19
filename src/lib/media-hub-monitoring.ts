@@ -105,7 +105,7 @@ export async function getSpikeMediaHubLiveWindows(locale: Locale) {
   ]);
   const aiBriefPosts = aiBriefItems.map((item) => toTelegramSyntheticPost(item));
   const [englishDay, englishWeek, englishMonth] =
-    locale === "en" ? await getSpikeUkraineEnglishRssWindows(aiBriefItems) : [];
+    await getSpikeUkraineEnglishRssWindows(aiBriefItems);
 
   const monthlyDigest = await getMonthlyTelegramDigest([...dailyResources, ...weeklyResources]);
 

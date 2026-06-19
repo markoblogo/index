@@ -7,6 +7,7 @@ import type {
   MediaHubWindowKey,
   MediaHubWindowSnapshot,
 } from "@/lib/media-hub";
+import { DistributionChart } from "./distribution-chart";
 import { MonitoringFeed } from "./monitoring-feed";
 
 export function PublicMediaHub({
@@ -45,7 +46,6 @@ export function PublicMediaHub({
                 {profile.windows.map((window) => {
                   const active = window.window === selectedWindow;
                   const progressRatio = parseProgressRatio(window.progressLabel);
-                  const progressTextOnFill = progressRatio >= 0.78;
 
                   return (
                     <Link
@@ -67,9 +67,7 @@ export function PublicMediaHub({
                           {window.label}
                         </span>
                         <span
-                          className={`text-sm font-semibold ${
-                            progressTextOnFill ? "text-[var(--media-hub-accent-ink-muted)]" : "text-white/62"
-                          }`}
+                          className="text-sm font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.55)]"
                         >
                           {window.progressLabel}
                         </span>
@@ -94,29 +92,10 @@ export function PublicMediaHub({
                   </p>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-[9.5rem_1fr] md:items-center">
-                  <div className="flex items-center justify-center md:justify-start">
-                    <DonutChart distribution={activeWindow.distribution} total={totalDistribution} />
-                  </div>
-                  <div className="grid min-w-0 gap-2">
-                    {activeWindow.distribution.map((slice) => (
-                      <div
-                        className="flex min-w-0 items-center gap-2 rounded-[0.85rem] border border-white/10 bg-[var(--media-hub-card)] px-3 py-2"
-                        key={slice.label}
-                        title={`${slice.label}: ${slice.value}%`}
-                      >
-                        <span
-                          className="h-2.5 w-2.5 shrink-0 rounded-full"
-                          style={{ backgroundColor: slice.color }}
-                        />
-                        <span className="min-w-0 truncate text-sm font-semibold text-white/82">
-                          {slice.label}
-                        </span>
-                        <span className="ml-auto shrink-0 text-sm font-black text-white/44">{slice.value}%</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <DistributionChart
+                  distribution={activeWindow.distribution}
+                  total={totalDistribution}
+                />
               </div>
             </div>
           </div>
@@ -284,135 +263,4 @@ function parseProgressRatio(label: string) {
     return 0;
   }
   return Math.max(0, Math.min(1, current / total));
-}
-
-function DonutChart({
-  distribution,
-  total,
-}: {
-  distribution: MediaHubWindowSnapshot["distribution"],
-  total: number,
-}) {
-  const radius = 40;
-  const strokeWidth = 15;
-  let cursor = 0;
-
-  if (total <= 0) {
-    return (
-      <svg
-        aria-label="Source distribution"
-        className="h-[9.5rem] w-[9.5rem]"
-        role="img"
-        viewBox="0 0 100 100"
-      >
-        <circle
-          className="stroke-white/10"
-          cx="50"
-          cy="50"
-          fill="none"
-          r={radius}
-          strokeWidth={strokeWidth}
-        />
-        <circle cx="50" cy="50" fill="var(--media-hub-bg)" r={radius - strokeWidth} />
-      </svg>
-    );
-  }
-
-  return (
-    <svg
-      aria-label="Source distribution"
-      className="h-[9.5rem] w-[9.5rem]"
-      role="img"
-      viewBox="0 0 100 100"
-    >
-      {distribution.map((slice) => {
-        const start = (cursor / total) * 360;
-        cursor += slice.value;
-        const end = (cursor / total) * 360;
-        const isFullCircle = end - start >= 359.99;
-
-        if (isFullCircle) {
-          return (
-            <circle
-              className="cursor-help transition-opacity hover:opacity-75"
-              cx="50"
-              cy="50"
-              fill="none"
-              key={slice.label}
-              r={radius - strokeWidth / 2}
-              stroke={slice.color}
-              strokeWidth={strokeWidth}
-            >
-              <title>{`${slice.label}: ${slice.value}%`}</title>
-            </circle>
-          );
-        }
-
-        const path = describeDonutArc(50, 50, radius, strokeWidth, start, end);
-
-        return (
-          <path
-            className="cursor-help transition-opacity hover:opacity-75"
-            d={path}
-            fill={slice.color}
-            key={slice.label}
-          >
-            <title>{`${slice.label}: ${slice.value}%`}</title>
-          </path>
-        );
-      })}
-      <circle cx="50" cy="50" fill="var(--media-hub-bg)" r={radius - strokeWidth} />
-    </svg>
-  );
-}
-
-function describeDonutArc(
-  centerX: number,
-  centerY: number,
-  radius: number,
-  strokeWidth: number,
-  startAngle: number,
-  endAngle: number,
-) {
-  const outerStart = polarToCartesian(centerX, centerY, radius, endAngle);
-  const outerEnd = polarToCartesian(centerX, centerY, radius, startAngle);
-  const innerRadius = radius - strokeWidth;
-  const innerStart = polarToCartesian(centerX, centerY, innerRadius, startAngle);
-  const innerEnd = polarToCartesian(centerX, centerY, innerRadius, endAngle);
-  const largeArc = endAngle - startAngle <= 180 ? "0" : "1";
-
-  return [
-    "M",
-    outerStart.x,
-    outerStart.y,
-    "A",
-    radius,
-    radius,
-    0,
-    largeArc,
-    0,
-    outerEnd.x,
-    outerEnd.y,
-    "L",
-    innerStart.x,
-    innerStart.y,
-    "A",
-    innerRadius,
-    innerRadius,
-    0,
-    largeArc,
-    1,
-    innerEnd.x,
-    innerEnd.y,
-    "Z",
-  ].join(" ");
-}
-
-function polarToCartesian(centerX: number, centerY: number, radius: number, angleInDegrees: number) {
-  const angleInRadians = ((angleInDegrees - 90) * Math.PI) / 180;
-
-  return {
-    x: centerX + radius * Math.cos(angleInRadians),
-    y: centerY + radius * Math.sin(angleInRadians),
-  };
 }
