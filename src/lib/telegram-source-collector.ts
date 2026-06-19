@@ -103,16 +103,22 @@ export async function syncTelegramWorkspaceResources(
   return { channels: telegramSources.length, posts, skippedReason: null };
 }
 
-export async function getDailyTelegramDigest(date: string) {
+export async function getDailyTelegramDigest(
+  date: string,
+  options: { sync?: boolean } = {},
+) {
   const config = await getReportWorkspaceConfig("daily");
   const [startAt, endAt] = buildDailyWindow(date, config.reviewStartsAt, config.timezone);
-  await syncTelegramWorkspaceResources("daily", { until: endAt });
+  if (options.sync ?? true) {
+    await syncTelegramWorkspaceResources("daily", { until: endAt });
+  }
   return getTelegramDigestForWindow("daily", startAt, endAt);
 }
 
 export async function getWeeklyTelegramDigest(
   weekEndDate: string,
   reportId?: string | null,
+  options: { sync?: boolean } = {},
 ) {
   const config = await getReportWorkspaceConfig("weekly");
   const [startAt, endAt] = buildWeeklyWindow(
@@ -120,7 +126,9 @@ export async function getWeeklyTelegramDigest(
     config.reviewStartsAt,
     config.timezone,
   );
-  await syncTelegramWorkspaceResources("weekly", { reportId, until: endAt });
+  if (options.sync ?? true) {
+    await syncTelegramWorkspaceResources("weekly", { reportId, until: endAt });
+  }
   return getTelegramDigestForWindow("weekly", startAt, endAt, reportId ?? null);
 }
 

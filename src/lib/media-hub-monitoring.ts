@@ -95,19 +95,23 @@ export type MediaHubRegistryRow = {
   windows: Array<"day" | "week">;
 };
 
-export async function getSpikeMediaHubLiveWindows(locale: Locale) {
+export async function getSpikeMediaHubLiveWindows(
+  locale: Locale,
+  options: { syncTelegram?: boolean } = {},
+) {
+  const sync = options.syncTelegram ?? false;
   const [dailyResources, weeklyResources, dailyDigest, weeklyDigest, aiBriefItems] = await Promise.all([
     listReportWorkspaceResources({ reportKind: "daily" }),
     listReportWorkspaceResources({ reportKind: "weekly" }),
-    getDailyTelegramDigest(todayInputDate()),
-    getWeeklyTelegramDigest(getDefaultWeekEnd()),
+    getDailyTelegramDigest(todayInputDate(), { sync }),
+    getWeeklyTelegramDigest(getDefaultWeekEnd(), null, { sync }),
     getAiMarketBriefSourceItems(locale),
   ]);
   const aiBriefPosts = aiBriefItems.map((item) => toTelegramSyntheticPost(item));
   const [englishDay, englishWeek, englishMonth] =
     await getSpikeUkraineEnglishRssWindows(aiBriefItems);
 
-  const monthlyDigest = await getMonthlyTelegramDigest([...dailyResources, ...weeklyResources]);
+  const monthlyDigest = await getMonthlyTelegramDigest([...dailyResources, ...weeklyResources], { sync });
 
   return [
     mergeWindowSnapshots(buildWindowSnapshot({
@@ -269,13 +273,17 @@ function toTelegramSyntheticPost(item: Awaited<ReturnType<typeof getAiMarketBrie
   };
 }
 
-export async function getMonthlyMediaHubDigest() {
+export async function getMonthlyMediaHubDigest(
+  options: { syncTelegram?: boolean } = {},
+) {
   const [dailyResources, weeklyResources] = await Promise.all([
     listReportWorkspaceResources({ reportKind: "daily" }),
     listReportWorkspaceResources({ reportKind: "weekly" }),
   ]);
 
-  return getMonthlyTelegramDigest([...dailyResources, ...weeklyResources]);
+  return getMonthlyTelegramDigest([...dailyResources, ...weeklyResources], {
+    sync: options.syncTelegram ?? false,
+  });
 }
 
 export async function listUnifiedMediaHubRegistry() {
@@ -302,7 +310,10 @@ export async function listUnifiedMediaHubRegistry() {
   });
 }
 
-async function getMonthlyTelegramDigest(resources: ReportWorkspaceResource[]) {
+async function getMonthlyTelegramDigest(
+  resources: ReportWorkspaceResource[],
+  options: { sync?: boolean } = {},
+) {
   const endAt = new Date();
   const startAt = new Date(endAt.getTime() - 30 * 24 * 60 * 60 * 1000);
 
@@ -310,7 +321,7 @@ async function getMonthlyTelegramDigest(resources: ReportWorkspaceResource[]) {
     endAt,
     resources: resources.filter((resource) => resource.enabled),
     startAt,
-    syncUntil: endAt,
+    syncUntil: options.sync ? endAt : undefined,
   });
 }
 

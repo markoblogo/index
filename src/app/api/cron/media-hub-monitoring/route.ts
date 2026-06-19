@@ -41,13 +41,10 @@ export async function GET(request: Request) {
   }
 
   const [dailySync, weeklySync] = await Promise.all([
-    syncTelegramWorkspaceResources("daily"),
-    syncTelegramWorkspaceResources("weekly"),
+    syncTelegramWorkspaceResources("daily", { maxPagesPerChannel: 2 }),
+    syncTelegramWorkspaceResources("weekly", { maxPagesPerChannel: 2 }),
   ]);
-  const [ukWindows, enWindows] = await Promise.all([
-    getSpikeMediaHubLiveWindows("uk"),
-    getSpikeMediaHubLiveWindows("en"),
-  ]);
+  const windows = await getSpikeMediaHubLiveWindows("uk", { syncTelegram: false });
 
   return NextResponse.json({
     mode: "telegram",
@@ -57,10 +54,7 @@ export async function GET(request: Request) {
       daily: dailySync,
       weekly: weeklySync,
     },
-    windows: {
-      en: summarizeWindows(enWindows),
-      uk: summarizeWindows(ukWindows),
-    },
+    windows: summarizeWindows(windows),
   });
 }
 
