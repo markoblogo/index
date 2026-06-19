@@ -395,7 +395,7 @@ function SpikeCommodityCard({
 
   return (
     <article
-      className={`relative grid min-w-[15.5rem] flex-[1_1_0] grid-rows-[7.75rem_11.75rem_4rem_1fr] overflow-hidden rounded-[1.65rem] border border-white/10 bg-[#050505] p-4 text-[#f8f8f2] transition-[flex-grow,transform,border-color] duration-500 ease-out hover:flex-[1.55_1_0] hover:-translate-y-1 sm:min-w-[16.25rem] lg:min-w-0 xl:p-5 ${tone.border}`}
+      className={`relative grid min-w-[15.5rem] flex-[1_1_0] grid-rows-[10.75rem_8.75rem_4rem_1fr] overflow-hidden rounded-[1.65rem] border border-white/10 bg-[#050505] p-4 text-[#f8f8f2] transition-[flex-grow,transform,border-color] duration-500 ease-out hover:flex-[1.55_1_0] hover:-translate-y-1 sm:min-w-[16.25rem] lg:min-w-0 xl:p-5 ${tone.border}`}
     >
       <div
         aria-hidden="true"
