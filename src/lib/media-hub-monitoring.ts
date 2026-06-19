@@ -20,8 +20,8 @@ import {
   getDailyTelegramDigest,
   getTelegramDigestForResourcesWindow,
   getWeeklyTelegramDigest,
-  type TelegramCollectedPost,
   type TelegramSourceDigest,
+  type TelegramCollectedPost,
 } from "@/lib/telegram-source-collector";
 
 type TopicDefinition = {
@@ -96,10 +96,6 @@ export type MediaHubRegistryRow = {
 };
 
 export async function getSpikeMediaHubLiveWindows(locale: Locale) {
-  if (locale === "en") {
-    return getSpikeUkraineEnglishRssWindows(await getAiMarketBriefSourceItems(locale));
-  }
-
   const [dailyResources, weeklyResources, dailyDigest, weeklyDigest, aiBriefItems] = await Promise.all([
     listReportWorkspaceResources({ reportKind: "daily" }),
     listReportWorkspaceResources({ reportKind: "weekly" }),
@@ -108,11 +104,13 @@ export async function getSpikeMediaHubLiveWindows(locale: Locale) {
     getAiMarketBriefSourceItems(locale),
   ]);
   const aiBriefPosts = aiBriefItems.map((item) => toTelegramSyntheticPost(item));
+  const [englishDay, englishWeek, englishMonth] =
+    locale === "en" ? await getSpikeUkraineEnglishRssWindows(aiBriefItems) : [];
 
   const monthlyDigest = await getMonthlyTelegramDigest([...dailyResources, ...weeklyResources]);
 
   return [
-    buildWindowSnapshot({
+    mergeWindowSnapshots(buildWindowSnapshot({
       digest: dailyDigest,
       label: locale === "uk" ? "День" : "Day",
       locale,
@@ -120,8 +118,8 @@ export async function getSpikeMediaHubLiveWindows(locale: Locale) {
       window: "day",
       extraPosts: aiBriefPosts,
       extraSourceCount: aiBriefPosts.length > 0 ? 1 : 0,
-    }),
-    buildWindowSnapshot({
+    }), englishDay),
+    mergeWindowSnapshots(buildWindowSnapshot({
       digest: weeklyDigest,
       label: locale === "uk" ? "7 Днів" : "7 Days",
       locale,
@@ -129,8 +127,8 @@ export async function getSpikeMediaHubLiveWindows(locale: Locale) {
       window: "week",
       extraPosts: aiBriefPosts,
       extraSourceCount: aiBriefPosts.length > 0 ? 1 : 0,
-    }),
-    buildWindowSnapshot({
+    }), englishWeek),
+    mergeWindowSnapshots(buildWindowSnapshot({
       digest: monthlyDigest,
       label: "30 Days",
       locale,
@@ -138,8 +136,94 @@ export async function getSpikeMediaHubLiveWindows(locale: Locale) {
       window: "month",
       extraPosts: aiBriefPosts,
       extraSourceCount: aiBriefPosts.length > 0 ? 1 : 0,
-    }),
+    }), englishMonth),
   ];
+}
+
+function mergeWindowSnapshots(
+  primary: MediaHubWindowSnapshot,
+  secondary?: MediaHubWindowSnapshot,
+): MediaHubWindowSnapshot {
+  if (!secondary) {
+    return primary;
+  }
+
+  const sourceCount = primary.sourceCount + secondary.sourceCount;
+  const itemCount = primary.itemCount + secondary.itemCount;
+  const topSources = [...primary.topSources, ...secondary.topSources]
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 4);
+  const topTopics = mergeCountedRows(primary.topTopics, secondary.topTopics)
+    .map((topic) => ({
+      count: topic.count,
+      hint: topic.hint,
+      label: topic.label,
+    }))
+    .slice(0, 4);
+
+  return {
+    ...primary,
+    distribution: mergeDistribution(primary.distribution, secondary.distribution),
+    feed: [...primary.feed, ...secondary.feed].slice(0, 8),
+    itemCount,
+    pulseCards: primary.pulseCards.length > 0 ? primary.pulseCards : secondary.pulseCards,
+    snapshotCards: primary.snapshotCards.map((card) => {
+      if (card.label === "Sources" || card.label === "Джерела") {
+        return { ...card, note: `${primary.itemCount + secondary.itemCount} items across unified SSI pool`, value: String(sourceCount) };
+      }
+      if (card.label === "Items" || card.label === "Матеріали") {
+        return { ...card, value: String(itemCount) };
+      }
+      if (card.label === "Topics" || card.label === "Теми") {
+        return { ...card, value: String(topTopics.length) };
+      }
+      return card;
+    }),
+    sourceCount,
+    summaryBody: [
+      ...primary.summaryBody,
+      ...secondary.summaryBody.slice(0, 1),
+    ],
+    topSources,
+    topTopics,
+    topicCount: topTopics.length,
+  };
+}
+
+function mergeDistribution(
+  primary: MediaHubWindowSnapshot["distribution"],
+  secondary: MediaHubWindowSnapshot["distribution"],
+) {
+  const colors = new Map<string, string>();
+  const counts = new Map<string, number>();
+  for (const item of [...primary, ...secondary]) {
+    colors.set(item.label, item.color);
+    counts.set(item.label, (counts.get(item.label) ?? 0) + item.value);
+  }
+  const total = [...counts.values()].reduce((sum, value) => sum + value, 0) || 1;
+  return [...counts.entries()]
+    .map(([label, value]) => ({
+      color: colors.get(label) ?? "#94a3b8",
+      label,
+      value: Math.max(1, Math.round((value / total) * 100)),
+    }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 5);
+}
+
+function mergeCountedRows<T extends { count: number; hint: string; label: string }>(
+  primary: T[],
+  secondary: T[],
+) {
+  const rows = new Map<string, T>();
+  for (const item of [...primary, ...secondary]) {
+    const existing = rows.get(item.label);
+    rows.set(item.label, {
+      ...item,
+      count: (existing?.count ?? 0) + item.count,
+    });
+  }
+  return [...rows.values()].sort((a, b) => b.count - a.count);
 }
 
 async function getAiMarketBriefSourceItems(locale: Locale) {
