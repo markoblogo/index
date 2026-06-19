@@ -1,7 +1,10 @@
 import "server-only";
 
 import { createHash } from "node:crypto";
-import type { MediaHubWindowSnapshot } from "@/lib/media-hub";
+import {
+  getMediaHubWindowProgressLabel,
+  type MediaHubWindowSnapshot,
+} from "@/lib/media-hub";
 
 type FeedSourceCategory =
   | "agro-general"
@@ -116,9 +119,9 @@ export async function get1d3xRssWindows(): Promise<MediaHubWindowSnapshot[]> {
   const now = Date.now();
 
   return [
-    buildWindow(items, now - 24 * 60 * 60 * 1000, "day", "Day", "1/1"),
-    buildWindow(items, now - 7 * 24 * 60 * 60 * 1000, "week", "7 Days", "7/7"),
-    buildWindow(items, now - 30 * 24 * 60 * 60 * 1000, "month", "30 Days", "30/30"),
+    buildWindow(items, now - 24 * 60 * 60 * 1000, "day", "Day"),
+    buildWindow(items, now - 7 * 24 * 60 * 60 * 1000, "week", "7 Days"),
+    buildWindow(items, now - 30 * 24 * 60 * 60 * 1000, "month", "30 Days"),
   ];
 }
 
@@ -138,9 +141,11 @@ async function getRssMonitorItems() {
     }),
   );
 
-  const items = dedupeItems(fetched.flat())
-    .filter((item) => item.relevanceScore >= 3)
+  const scoredItems = dedupeItems(fetched.flat())
     .sort((a, b) => b.relevanceScore - a.relevanceScore || Date.parse(b.publishedAt) - Date.parse(a.publishedAt));
+  const highlyRelevant = scoredItems.filter((item) => item.relevanceScore >= 3);
+  const fallbackRelevant = scoredItems.filter((item) => item.relevanceScore > 0);
+  const items = highlyRelevant.length >= 24 ? highlyRelevant : fallbackRelevant.slice(0, 240);
 
   cache = {
     generatedAt: Date.now(),
@@ -348,7 +353,6 @@ function buildWindow(
   sinceMs: number,
   window: "day" | "week" | "month",
   label: string,
-  progressLabel: string,
 ): MediaHubWindowSnapshot {
   const filtered = items.filter((item) => Date.parse(item.publishedAt) >= sinceMs);
   const topSources = countBy(filtered, (item) => item.source).slice(0, 4);
@@ -383,7 +387,9 @@ function buildWindow(
     })),
     itemCount: filtered.length,
     label,
-    progressLabel,
+    progressLabel: getMediaHubWindowProgressLabel(window, {
+      timezone: "Europe/Paris",
+    }),
     pulseCards: topTopics.slice(0, 3).map((item, index) => ({
       hint: item.hint,
       label: item.label,

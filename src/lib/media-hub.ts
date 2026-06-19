@@ -60,6 +60,34 @@ export type MediaHubSiteProfile = {
   windows: MediaHubWindowSnapshot[];
 };
 
+export function getMediaHubWindowProgressLabel(
+  window: MediaHubWindowKey,
+  options: { now?: Date; timezone?: string } = {},
+) {
+  if (window === "day") {
+    return "1/1";
+  }
+
+  const now = options.now ?? new Date();
+  const timezone = options.timezone ?? "Europe/Kyiv";
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: timezone,
+    weekday: "short",
+  }).formatToParts(now);
+  const weekdayLabel = parts.find((part) => part.type === "weekday")?.value ?? "Mon";
+  const monthDay = Number(parts.find((part) => part.type === "day")?.value ?? "1");
+  const weekdayIndex = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(weekdayLabel);
+
+  if (window === "week") {
+    const progress = weekdayIndex === 0 ? 1 : Math.min(7, weekdayIndex + 1);
+    return `${progress}/7`;
+  }
+
+  return `${Math.max(1, Math.min(30, monthDay))}/30`;
+}
+
 const spikeUkWindows: MediaHubWindowSnapshot[] = [
   {
     window: "day",

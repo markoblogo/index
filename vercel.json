@@ -37,6 +37,10 @@
       "schedule": "30 16 * * 1-5"
     },
     {
+      "path": "/api/cron/media-hub-monitoring",
+      "schedule": "0 */2 * * *"
+    },
+    {
       "path": "/api/cron/media-hub-publish",
       "schedule": "0 12 * * 6"
     },

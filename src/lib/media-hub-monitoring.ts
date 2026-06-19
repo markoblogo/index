@@ -3,7 +3,11 @@ import "server-only";
 import { todayInputDate } from "@/lib/admin-daily-inputs";
 import { getDefaultWeekEnd } from "@/lib/admin-reports";
 import type { Locale } from "@/lib/i18n";
-import type { MediaHubWindowSnapshot, MediaHubWindowKey } from "@/lib/media-hub";
+import {
+  getMediaHubWindowProgressLabel,
+  type MediaHubWindowSnapshot,
+  type MediaHubWindowKey,
+} from "@/lib/media-hub";
 import {
   listReportWorkspaceResources,
   type ReportWorkspaceResource,
@@ -204,8 +208,9 @@ function buildWindowSnapshot(input: {
     feed: buildFeed(includedPosts, input.locale),
     itemCount: includedPosts.length,
     label: input.label,
-    progressLabel:
-      input.window === "day" ? "1/1" : input.window === "week" ? "7/7" : "30/30",
+    progressLabel: getMediaHubWindowProgressLabel(input.window, {
+      timezone: "Europe/Kyiv",
+    }),
     pulseCards,
     snapshotCards: [
       {

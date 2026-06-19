@@ -4,7 +4,13 @@ import { createHash, randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { db, hasDatabaseUrl } from "@/lib/db";
 import { getActiveIndexConfig } from "@/lib/index-platform";
-import { getMonthlyMediaHubDigest } from "@/lib/media-hub-monitoring";
+import { get1d3xRssWindows } from "@/lib/media-hub-rss";
+import {
+  getMonthlyMediaHubDigest,
+  getSpikeMediaHubLiveWindows,
+} from "@/lib/media-hub-monitoring";
+import type { MediaHubWindowKey, MediaHubWindowSnapshot } from "@/lib/media-hub";
+import { isPlatformSite } from "@/lib/platform-site";
 import type { TelegramSourceDigest } from "@/lib/telegram-source-collector";
 import {
   autoPrepareWeeklyReportDraft,
@@ -80,25 +86,41 @@ export async function runDueMediaHubPublication(options: {
     : plan.kind;
 
   if (kind === "daily") {
+    const report = await publishMediaHubSnapshotReport("daily", plan.date);
+
     return {
       plan: { ...plan, kind },
       result: {
-        skippedReason: "daily_publication_is_owned_by_spike_auto_publish",
-        status: "skipped",
+        report,
+        status: "daily_media_hub_report_persisted",
       },
     };
   }
 
   if (kind === "weekly") {
+    if (isPlatformSite()) {
+      const report = await publishMediaHubSnapshotReport("weekly", plan.date);
+
+      return {
+        plan: { ...plan, kind },
+        result: {
+          report,
+          status: "weekly_media_hub_report_persisted",
+        },
+      };
+    }
+
     const prepare = await autoPrepareWeeklyReportDraft(plan.date);
     const publish = await autoPublishDueWeeklyReports(plan.date);
     const telegram = await sendDueWeeklyReports();
+    const report = await publishMediaHubSnapshotReport("weekly", plan.date);
 
     return {
       plan: { ...plan, kind },
       result: {
         prepare,
         publish,
+        report,
         status: "weekly_processed",
         telegram,
       },
@@ -106,6 +128,18 @@ export async function runDueMediaHubPublication(options: {
   }
 
   if (kind === "monthly") {
+    if (isPlatformSite()) {
+      const report = await publishMediaHubSnapshotReport("monthly", plan.date);
+
+      return {
+        plan: { ...plan, kind },
+        result: {
+          report,
+          status: "monthly_media_hub_report_persisted",
+        },
+      };
+    }
+
     const monthly = await publishMonthlyMediaHubReport(plan.date);
 
     return {
@@ -120,6 +154,139 @@ export async function runDueMediaHubPublication(options: {
       skippedReason: plan.reason,
       status: "skipped",
     },
+  };
+}
+
+export async function publishMediaHubSnapshotReport(
+  kind: Exclude<MediaHubPublicationKind, "none">,
+  periodEndDate: string,
+) {
+  if (!hasDatabaseUrl()) {
+    return { skippedReason: "database_not_configured", status: "skipped" as const };
+  }
+
+  await ensureMediaHubReportStorage();
+
+  const periodStartDate = shiftIsoDate(
+    periodEndDate,
+    kind === "daily" ? 0 : kind === "weekly" ? -6 : -29,
+  );
+  const windowKey: MediaHubWindowKey =
+    kind === "daily" ? "day" : kind === "weekly" ? "week" : "month";
+  const snapshots = await getPublicationSnapshots(windowKey);
+  const primarySnapshot = snapshots[0];
+  const content = buildSnapshotReportContent({
+    kind,
+    periodEndDate,
+    periodStartDate,
+    snapshots,
+  });
+  const contentHash = createHash("sha256")
+    .update(JSON.stringify(content))
+    .digest("hex");
+  const tenantId = isPlatformSite() ? "1d3x" : getActiveIndexConfig().id;
+  const existing = await getMediaHubReport(kind, periodEndDate, tenantId);
+  const id = existing?.id ?? randomUUID();
+
+  await db.$executeRawUnsafe(
+    `
+      INSERT INTO "MediaHubReport" (
+        "id", "tenantId", "kind", "periodStart", "periodEnd", "title",
+        "status", "contentHash", "contentJson", "sourceDigest",
+        "telegramSentAt", "telegramMessageIds", "createdAt", "updatedAt"
+      )
+      VALUES (
+        $1, $2, $3, $4::date, $5::date, $6,
+        'published', $7, $8::jsonb, $9::jsonb,
+        NULL, '[]'::jsonb, NOW(), NOW()
+      )
+      ON CONFLICT ("tenantId", "kind", "periodEnd")
+      DO UPDATE SET
+        "title" = EXCLUDED."title",
+        "status" = EXCLUDED."status",
+        "contentHash" = EXCLUDED."contentHash",
+        "contentJson" = EXCLUDED."contentJson",
+        "sourceDigest" = EXCLUDED."sourceDigest",
+        "updatedAt" = NOW()
+    `,
+    id,
+    tenantId,
+    kind,
+    periodStartDate,
+    periodEndDate,
+    content.title,
+    contentHash,
+    JSON.stringify(content),
+    JSON.stringify(snapshots),
+  );
+
+  revalidatePath("/media-hub");
+  revalidatePath("/uk/media-hub");
+  revalidatePath("/en/media-hub");
+
+  return {
+    itemCount: primarySnapshot?.itemCount ?? 0,
+    kind,
+    periodEndDate,
+    periodStartDate,
+    sourceCount: primarySnapshot?.sourceCount ?? 0,
+    status: "published" as const,
+  };
+}
+
+async function getPublicationSnapshots(windowKey: MediaHubWindowKey) {
+  if (isPlatformSite()) {
+    const windows = await get1d3xRssWindows();
+    return windows.filter((window) => window.window === windowKey);
+  }
+
+  const [ukWindows, enWindows] = await Promise.all([
+    getSpikeMediaHubLiveWindows("uk"),
+    getSpikeMediaHubLiveWindows("en"),
+  ]);
+
+  return [
+    ...ukWindows.filter((window) => window.window === windowKey),
+    ...enWindows.filter((window) => window.window === windowKey),
+  ];
+}
+
+function buildSnapshotReportContent(input: {
+  kind: Exclude<MediaHubPublicationKind, "none">;
+  periodEndDate: string;
+  periodStartDate: string;
+  snapshots: MediaHubWindowSnapshot[];
+}) {
+  const primary = input.snapshots[0];
+  const totalItems = input.snapshots.reduce((sum, snapshot) => sum + snapshot.itemCount, 0);
+  const totalSources = input.snapshots.reduce((sum, snapshot) => sum + snapshot.sourceCount, 0);
+
+  return {
+    generatedAt: new Date().toISOString(),
+    kind: input.kind,
+    periodEndDate: input.periodEndDate,
+    periodStartDate: input.periodStartDate,
+    summary: primary?.summaryBody ?? [],
+    title:
+      primary?.summaryTitle ??
+      `Media Hub ${input.kind} report · ${input.periodStartDate}—${input.periodEndDate}`,
+    totals: {
+      items: totalItems,
+      sources: totalSources,
+      windows: input.snapshots.length,
+    },
+    windows: input.snapshots.map((snapshot) => ({
+      feed: snapshot.feed,
+      itemCount: snapshot.itemCount,
+      label: snapshot.label,
+      progressLabel: snapshot.progressLabel,
+      sourceCount: snapshot.sourceCount,
+      summaryBody: snapshot.summaryBody,
+      summaryTitle: snapshot.summaryTitle,
+      topSources: snapshot.topSources,
+      topTopics: snapshot.topTopics,
+      window: snapshot.window,
+    })),
   };
 }
 
@@ -226,7 +393,11 @@ async function ensureMediaHubReportStorage() {
   `);
 }
 
-async function getMediaHubReport(kind: string, periodEndDate: string) {
+async function getMediaHubReport(
+  kind: string,
+  periodEndDate: string,
+  tenantId = getActiveIndexConfig().id,
+) {
   const rows = await db.$queryRawUnsafe<MediaHubReportRow[]>(
     `
       SELECT *
@@ -236,7 +407,7 @@ async function getMediaHubReport(kind: string, periodEndDate: string) {
         AND "periodEnd" = $3::date
       LIMIT 1
     `,
-    getActiveIndexConfig().id,
+    tenantId,
     kind,
     periodEndDate,
   );

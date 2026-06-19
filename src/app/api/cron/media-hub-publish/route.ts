@@ -10,6 +10,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   const secrets = [
+    process.env.MEDIA_HUB_CRON_SECRET,
     process.env.SPIKE_MEDIA_HUB_CRON_SECRET,
     process.env.SPIKE_WEEKLY_REPORT_CRON_SECRET,
     process.env.CRON_SECRET,
