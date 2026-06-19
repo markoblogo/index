@@ -62,9 +62,18 @@ type CacheEntry = {
   items: RssNewsItem[];
 };
 
+type ExtraRssNewsItem = {
+  publishedAt?: string;
+  source: string;
+  summary: string;
+  title: string;
+  topicTags?: string[];
+  url?: string;
+};
+
 const CACHE_TTL_MS = 10 * 60 * 1000;
 const FETCH_TIMEOUT_MS = 7_000;
-let cache: CacheEntry | null = null;
+const cache = new Map<string, CacheEntry>();
 
 const RSS_SOURCES: RssSource[] = [
   { id: "brownfield-main", name: "Brownfield Ag News", url: "https://brownfieldagnews.com/feed/", category: "agro-general", enabled: true },
@@ -102,6 +111,15 @@ const RSS_SOURCES: RssSource[] = [
   { id: "fao-news", name: "FAO News", url: "https://www.fao.org/news/rss/en/", category: "policy-macro", enabled: true },
 ];
 
+const SPIKE_EN_UKRAINE_RSS_SOURCES: RssSource[] = [
+  { id: "ukragroconsult-en", name: "UkrAgroConsult EN", url: "https://ukragroconsult.com/en/news/feed/", category: "grain-oilseeds", enabled: true },
+  { id: "kyiv-post-ukraine", name: "Kyiv Post", url: "https://www.kyivpost.com/feed", category: "policy-macro", enabled: true },
+  { id: "interfax-ukraine-en", name: "Interfax-Ukraine EN", url: "https://en.interfax.com.ua/news/economic/", category: "policy-macro", enabled: true },
+  { id: "mintec-ukraine", name: "Expana / Mintec", url: "https://www.mintecglobal.com/top-stories/rss.xml", category: "grain-oilseeds", enabled: true },
+  { id: "amis-ukraine-context", name: "AMIS", url: "https://www.amis-outlook.org/rss.xml", category: "policy-macro", enabled: true },
+  { id: "fao-ukraine-context", name: "FAO News", url: "https://www.fao.org/news/rss/en/", category: "policy-macro", enabled: true },
+];
+
 const STOPWORDS = [
   "celebrity",
   "gaming",
@@ -135,24 +153,71 @@ const REGIONS = [
 ];
 
 export async function get1d3xRssWindows(): Promise<MediaHubWindowSnapshot[]> {
-  const items = await getRssMonitorItems();
+  const items = await getRssMonitorItems({
+    cacheKey: "1d3x-global",
+    includeLegacy: true,
+    sources: RSS_SOURCES,
+  });
   const now = Date.now();
 
   return [
-    buildWindow(items, now - 24 * 60 * 60 * 1000, "day", "Day"),
-    buildWindow(items, now - 7 * 24 * 60 * 60 * 1000, "week", "7 Days"),
-    buildWindow(items, now - 30 * 24 * 60 * 60 * 1000, "month", "30 Days"),
+    buildWindow(items, now - 24 * 60 * 60 * 1000, "day", "Day", {
+      sources: RSS_SOURCES,
+      summaryScope: "global",
+      timezone: "Europe/Paris",
+    }),
+    buildWindow(items, now - 7 * 24 * 60 * 60 * 1000, "week", "7 Days", {
+      sources: RSS_SOURCES,
+      summaryScope: "global",
+      timezone: "Europe/Paris",
+    }),
+    buildWindow(items, now - 30 * 24 * 60 * 60 * 1000, "month", "30 Days", {
+      sources: RSS_SOURCES,
+      summaryScope: "global",
+      timezone: "Europe/Paris",
+    }),
   ];
 }
 
-async function getRssMonitorItems() {
-  if (cache && Date.now() - cache.generatedAt < CACHE_TTL_MS) {
-    return cache.items;
+export async function getSpikeUkraineEnglishRssWindows(
+  extraItems: ExtraRssNewsItem[] = [],
+): Promise<MediaHubWindowSnapshot[]> {
+  const items = await getRssMonitorItems({
+    cacheKey: "spike-en-ukraine",
+    extraItems,
+    includeLegacy: false,
+    sources: SPIKE_EN_UKRAINE_RSS_SOURCES,
+  });
+  const now = Date.now();
+  const options = {
+    extraSourceCount: extraItems.length > 0 ? 1 : 0,
+    sources: SPIKE_EN_UKRAINE_RSS_SOURCES,
+    summaryScope: "ukraine" as const,
+    timezone: "Europe/Kyiv",
+  };
+
+  return [
+    buildWindow(items, now - 24 * 60 * 60 * 1000, "day", "Day", options),
+    buildWindow(items, now - 7 * 24 * 60 * 60 * 1000, "week", "7 Days", options),
+    buildWindow(items, now - 30 * 24 * 60 * 60 * 1000, "month", "30 Days", options),
+  ];
+}
+
+async function getRssMonitorItems(input: {
+  cacheKey: string;
+  extraItems?: ExtraRssNewsItem[];
+  includeLegacy: boolean;
+  sources: RssSource[];
+}) {
+  const cached = cache.get(input.cacheKey);
+  const extraItems = mapExtraItems(input.extraItems ?? []);
+  if (cached && Date.now() - cached.generatedAt < CACHE_TTL_MS) {
+    return dedupeItems([...cached.items, ...extraItems]);
   }
 
   const [fetched, legacyItems] = await Promise.all([
     Promise.all(
-      RSS_SOURCES.filter((source) => source.enabled).map(async (source) => {
+      input.sources.filter((source) => source.enabled).map(async (source) => {
         try {
           const feedItems = await fetchFeed(source);
           return feedItems.map((item) => toNewsItem(source, item));
@@ -161,7 +226,7 @@ async function getRssMonitorItems() {
         }
       }),
     ),
-    getLegacyLast30DaysItems(),
+    input.includeLegacy ? getLegacyLast30DaysItems() : Promise.resolve([] as RssNewsItem[]),
   ]);
 
   const scoredItems = dedupeItems([...fetched.flat(), ...legacyItems])
@@ -170,12 +235,34 @@ async function getRssMonitorItems() {
   const fallbackRelevant = scoredItems.filter((item) => item.relevanceScore > 0);
   const items = highlyRelevant.length >= 24 ? highlyRelevant : fallbackRelevant.slice(0, 240);
 
-  cache = {
+  cache.set(input.cacheKey, {
     generatedAt: Date.now(),
     items,
-  };
+  });
 
-  return items;
+  return dedupeItems([...items, ...extraItems]);
+}
+
+function mapExtraItems(items: ExtraRssNewsItem[]): RssNewsItem[] {
+  return items.map((item, index) => {
+    const scored = scoreNews(item.title, item.summary, "grain-oilseeds");
+    return {
+      category: "grain-oilseeds",
+      cropTags: scored.cropTags,
+      id: createHash("sha1")
+        .update(`extra|${item.source}|${normalizeTitle(item.title)}|${index}`)
+        .digest("hex")
+        .slice(0, 20),
+      publishedAt: item.publishedAt ?? new Date().toISOString(),
+      regionTags: scored.regionTags,
+      relevanceScore: Math.max(scored.relevanceScore, 4),
+      source: item.source,
+      summary: item.summary,
+      title: item.title,
+      topicTags: [...new Set([...(item.topicTags ?? []), ...scored.topicTags])],
+      url: item.url ?? "",
+    };
+  });
 }
 
 async function getLegacyLast30DaysItems(): Promise<RssNewsItem[]> {
@@ -472,11 +559,19 @@ function buildWindow(
   sinceMs: number,
   window: "day" | "week" | "month",
   label: string,
+  options: {
+    extraSourceCount?: number;
+    sources: RssSource[];
+    summaryScope: "global" | "ukraine";
+    timezone: string;
+  },
 ): MediaHubWindowSnapshot {
   const filtered = items.filter((item) => Date.parse(item.publishedAt) >= sinceMs);
-  const configuredSources = RSS_SOURCES.filter((source) => source.enabled);
+  const configuredSources = options.sources.filter((source) => source.enabled);
   const configuredSourceCount =
-    configuredSources.length + (process.env.LAST30DAYS_JSON_URL || process.env.LAST30DAYS_JSON_PATH ? 1 : 0);
+    configuredSources.length +
+    (options.summaryScope === "global" && (process.env.LAST30DAYS_JSON_URL || process.env.LAST30DAYS_JSON_PATH) ? 1 : 0) +
+    (options.extraSourceCount ?? 0);
   const topSources = countBy(filtered, (item) => item.source).slice(0, 4);
   const visibleTopSources =
     topSources.length > 0
@@ -519,7 +614,7 @@ function buildWindow(
     itemCount: filtered.length,
     label,
     progressLabel: getMediaHubWindowProgressLabel(window, {
-      timezone: "Europe/Paris",
+      timezone: options.timezone,
     }),
     pulseCards: topTopics.slice(0, 3).map((item, index) => ({
       hint: item.hint,
@@ -533,7 +628,7 @@ function buildWindow(
       { label: "Topics", note: "keyword clusters", value: String(topTopics.length) },
     ],
     sourceCount: configuredSourceCount,
-    summaryBody: buildSummary(filtered, topTopics, visibleTopSources, window),
+    summaryBody: buildSummary(filtered, topTopics, visibleTopSources, window, options.summaryScope),
     summaryTitle:
       window === "day"
         ? "Global commodity monitoring brief"
@@ -552,13 +647,18 @@ function buildSummary(
   topTopics: Array<{ count: number; hint: string; label: string }>,
   topSources: Array<{ count: number; label: string }>,
   window: "day" | "week" | "month",
+  scope: "global" | "ukraine",
 ) {
   const topicText = topTopics.map((item) => item.label).join(", ");
   const sourceText = topSources.map((item) => item.label).join(", ");
   const label = window === "day" ? "day" : window === "week" ? "7-day" : "30-day";
+  const scopeText =
+    scope === "ukraine"
+      ? "English-language Ukraine grain and oilseed market monitoring window"
+      : "global commodity monitoring window";
 
   return [
-    `The ${label} monitoring window currently holds ${items.length} accepted items from the transferred Cropto RSS mesh.`,
+    `The ${label} ${scopeText} currently holds ${items.length} accepted items.`,
     `The strongest active themes are ${topicText || "current monitoring context"}, with the densest source contribution coming from ${sourceText || "the active feed mesh"}.`,
     "This is the keyless layer transferred from the legacy 30days logic: a broad RSS/Atom network that can run immediately without waiting for paid API credentials.",
   ];

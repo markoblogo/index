@@ -8,10 +8,14 @@ import {
   type MediaHubWindowSnapshot,
   type MediaHubWindowKey,
 } from "@/lib/media-hub";
+import { getPublishedAiMarketBrief } from "@/lib/ai-market-brief-public";
+import { getRealAnalyticsHistory } from "@/lib/ai-market-brief-public";
 import {
   listReportWorkspaceResources,
   type ReportWorkspaceResource,
 } from "@/lib/report-workspace";
+import { getSpikeUkraineEnglishRssWindows } from "@/lib/media-hub-rss";
+import { getActiveRespondentCountData } from "@/lib/respondent-directory-lazy";
 import {
   getDailyTelegramDigest,
   getTelegramDigestForResourcesWindow,
@@ -92,12 +96,18 @@ export type MediaHubRegistryRow = {
 };
 
 export async function getSpikeMediaHubLiveWindows(locale: Locale) {
-  const [dailyResources, weeklyResources, dailyDigest, weeklyDigest] = await Promise.all([
+  if (locale === "en") {
+    return getSpikeUkraineEnglishRssWindows(await getAiMarketBriefSourceItems(locale));
+  }
+
+  const [dailyResources, weeklyResources, dailyDigest, weeklyDigest, aiBriefItems] = await Promise.all([
     listReportWorkspaceResources({ reportKind: "daily" }),
     listReportWorkspaceResources({ reportKind: "weekly" }),
     getDailyTelegramDigest(todayInputDate()),
     getWeeklyTelegramDigest(getDefaultWeekEnd()),
+    getAiMarketBriefSourceItems(locale),
   ]);
+  const aiBriefPosts = aiBriefItems.map((item) => toTelegramSyntheticPost(item));
 
   const monthlyDigest = await getMonthlyTelegramDigest([...dailyResources, ...weeklyResources]);
 
@@ -108,6 +118,8 @@ export async function getSpikeMediaHubLiveWindows(locale: Locale) {
       locale,
       resourceRows: dailyResources,
       window: "day",
+      extraPosts: aiBriefPosts,
+      extraSourceCount: aiBriefPosts.length > 0 ? 1 : 0,
     }),
     buildWindowSnapshot({
       digest: weeklyDigest,
@@ -115,6 +127,8 @@ export async function getSpikeMediaHubLiveWindows(locale: Locale) {
       locale,
       resourceRows: weeklyResources,
       window: "week",
+      extraPosts: aiBriefPosts,
+      extraSourceCount: aiBriefPosts.length > 0 ? 1 : 0,
     }),
     buildWindowSnapshot({
       digest: monthlyDigest,
@@ -122,8 +136,53 @@ export async function getSpikeMediaHubLiveWindows(locale: Locale) {
       locale,
       resourceRows: [...dailyResources, ...weeklyResources],
       window: "month",
+      extraPosts: aiBriefPosts,
+      extraSourceCount: aiBriefPosts.length > 0 ? 1 : 0,
     }),
   ];
+}
+
+async function getAiMarketBriefSourceItems(locale: Locale) {
+  try {
+    const [history, activeRespondentCount] = await Promise.all([
+      getRealAnalyticsHistory(),
+      getActiveRespondentCountData(),
+    ]);
+    const brief = await getPublishedAiMarketBrief({
+      activeRespondentCount,
+      history,
+      locale,
+    });
+    if (!brief) {
+      return [];
+    }
+
+    return [{
+      publishedAt: brief.generatedAt,
+      source: "SPIKE AI Market Brief",
+      summary: brief.blocks.map((block) => `${block.title}: ${block.body}`).join("\n\n"),
+      title: `SPIKE AI Market Brief · ${brief.tradeDate}`,
+      topicTags: ["markets", "trade"],
+      url: `https://spike.1d3x.com/${locale}/analytics`,
+    }];
+  } catch {
+    return [];
+  }
+}
+
+function toTelegramSyntheticPost(item: Awaited<ReturnType<typeof getAiMarketBriefSourceItems>>[number]): TelegramCollectedPost {
+  const id = `ai-market-brief-${item.publishedAt}`;
+  return {
+    channelHandle: "spike-ai-market-brief",
+    channelTitle: item.source,
+    externalPostId: id,
+    id,
+    included: true,
+    peerId: null,
+    postUrl: item.url,
+    publishedAt: item.publishedAt ?? new Date().toISOString(),
+    text: `${item.title}\n\n${item.summary}`,
+  };
 }
 
 export async function getMonthlyMediaHubDigest() {
@@ -173,17 +232,23 @@ async function getMonthlyTelegramDigest(resources: ReportWorkspaceResource[]) {
 
 function buildWindowSnapshot(input: {
   digest: TelegramSourceDigest;
+  extraPosts?: TelegramCollectedPost[];
+  extraSourceCount?: number;
   label: string;
   locale: Locale;
   resourceRows: ReportWorkspaceResource[];
   window: MediaHubWindowKey;
 }): MediaHubWindowSnapshot {
-  const includedPosts = input.digest.channels.flatMap((channel) =>
-    channel.posts.filter((post) => post.included),
-  );
+  const includedPosts = [
+    ...input.digest.channels.flatMap((channel) =>
+      channel.posts.filter((post) => post.included),
+    ),
+    ...(input.extraPosts ?? []),
+  ];
   const topTopics = scoreTopics(includedPosts, input.locale).slice(0, 4);
   const activeSources = input.digest.channels.filter((channel) => channel.includedPostCount > 0);
   const configuredSources = input.resourceRows.filter((resource) => resource.enabled);
+  const configuredSourceCount = configuredSources.length + (input.extraSourceCount ?? 0);
   const distribution = buildDistribution(input.resourceRows);
   const pulseCards = topTopics.slice(0, 3).map((topic, index) => ({
     hint: topic.hint,
@@ -220,7 +285,7 @@ function buildWindowSnapshot(input: {
           input.locale === "uk"
             ? `${activeSources.length} active in window`
             : `${activeSources.length} active in window`,
-        value: String(configuredSources.length),
+        value: String(configuredSourceCount),
       },
       {
         label: input.locale === "uk" ? "Матеріали" : "Items",
@@ -233,7 +298,7 @@ function buildWindowSnapshot(input: {
         value: String(topTopics.length),
       },
     ],
-    sourceCount: configuredSources.length,
+    sourceCount: configuredSourceCount,
     summaryBody,
     summaryTitle:
       input.window === "day"
