@@ -387,15 +387,8 @@ async function getPublicationSnapshots(windowKey: MediaHubWindowKey) {
     return windows.filter((window) => window.window === windowKey);
   }
 
-  const [ukWindows, enWindows] = await Promise.all([
-    getSpikeMediaHubLiveWindows("uk"),
-    getSpikeMediaHubLiveWindows("en"),
-  ]);
-
-  return [
-    ...ukWindows.filter((window) => window.window === windowKey),
-    ...enWindows.filter((window) => window.window === windowKey),
-  ];
+  const windows = await getSpikeMediaHubLiveWindows("uk");
+  return windows.filter((window) => window.window === windowKey);
 }
 
 function buildSnapshotReportContent(input: {
