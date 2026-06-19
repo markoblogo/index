@@ -67,7 +67,7 @@ function windowToKind(window: MediaHubWindowKey) {
 
 function applyPublishedSummary(
   window: MediaHubWindowSnapshot,
-  summary: Awaited<ReturnType<typeof getLatestPublishedMediaHubReportSummary>>,
+  summary: { summaryBody: string[]; summaryTitle: string } | null,
 ): MediaHubWindowSnapshot {
   if (!summary?.summaryBody.length) {
     return window;
