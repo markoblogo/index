@@ -5,6 +5,10 @@ import { revalidatePath } from "next/cache";
 import { db, hasDatabaseUrl } from "@/lib/db";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import type { Locale } from "@/lib/i18n";
+import {
+  generateMediaHubLlmReports,
+  type MediaHubLocalizedReport,
+} from "@/lib/media-hub-llm-report";
 import { get1d3xRssWindows } from "@/lib/media-hub-rss";
 import {
   getMonthlyMediaHubDigest,
@@ -45,6 +49,12 @@ type MediaHubReportRow = {
 type MediaHubReportContentJson = {
   generatedAt: string;
   kind: Exclude<MediaHubPublicationKind, "none">;
+  llm?: {
+    model?: string;
+    provider?: string;
+    skippedReason?: string;
+  };
+  localized?: Partial<Record<Locale, MediaHubLocalizedReport>>;
   periodEndDate: string;
   periodStartDate: string;
   summary: string[];
@@ -113,11 +123,18 @@ export async function runDueMediaHubPublication(options: {
 
   if (kind === "daily") {
     const report = await publishMediaHubSnapshotReport("daily", plan.date);
+    const telegram = isPlatformSite()
+      ? { skippedReason: "platform_daily_telegram_not_configured", status: "skipped" as const }
+      : await sendMediaHubReportTelegram("daily", plan.date, {
+          audience: "spike",
+          locale: "uk",
+        });
 
     return {
       plan: { ...plan, kind },
       result: {
         report,
+        telegram,
         status: "daily_media_hub_report_persisted",
       },
     };
@@ -184,8 +201,19 @@ export async function publishMediaHubSnapshotReport(
     kind === "daily" ? "day" : kind === "weekly" ? "week" : "month";
   const snapshots = await getPublicationSnapshots(windowKey);
   const primarySnapshot = snapshots[0];
+  const tenantId = isPlatformSite() ? "1d3x" : getActiveIndexConfig().id;
+  const latestData = tenantId === "spike-ua" ? await getPublicLatestData() : [];
+  const llm = await generateMediaHubLlmReports({
+    kind,
+    latestData,
+    periodEndDate,
+    periodStartDate,
+    snapshots,
+    tenant: tenantId === "1d3x" ? "platform" : "spike",
+  });
   const content = buildSnapshotReportContent({
     kind,
+    llm,
     periodEndDate,
     periodStartDate,
     snapshots,
@@ -193,7 +221,6 @@ export async function publishMediaHubSnapshotReport(
   const contentHash = createHash("sha256")
     .update(JSON.stringify(content))
     .digest("hex");
-  const tenantId = isPlatformSite() ? "1d3x" : getActiveIndexConfig().id;
   const existing = await getMediaHubReport(kind, periodEndDate, tenantId);
   const id = existing?.id ?? randomUUID();
 
@@ -373,6 +400,7 @@ async function getPublicationSnapshots(windowKey: MediaHubWindowKey) {
 
 function buildSnapshotReportContent(input: {
   kind: Exclude<MediaHubPublicationKind, "none">;
+  llm?: Awaited<ReturnType<typeof generateMediaHubLlmReports>>;
   periodEndDate: string;
   periodStartDate: string;
   snapshots: MediaHubWindowSnapshot[];
@@ -384,6 +412,14 @@ function buildSnapshotReportContent(input: {
   return {
     generatedAt: new Date().toISOString(),
     kind: input.kind,
+    llm: input.llm
+      ? {
+          model: input.llm.model,
+          provider: input.llm.provider,
+          skippedReason: input.llm.skippedReason,
+        }
+      : undefined,
+    localized: input.llm?.localized,
     periodEndDate: input.periodEndDate,
     periodStartDate: input.periodStartDate,
     summary: primary?.summaryBody ?? [],
@@ -423,6 +459,7 @@ function buildMediaHubTelegramText(input: {
     (window) => window.itemCount > 0 || window.feed.length > 0 || window.topTopics.length > 0,
   );
   const primaryWindow = windows[0] ?? input.content.windows[0];
+  const localized = input.content.localized?.[input.locale];
   const title =
     input.tenant === "platform"
       ? `🌍 <b>1D3X Media Hub · ${reportKindLabel(input.kind, input.locale)}</b>`
@@ -440,10 +477,14 @@ function buildMediaHubTelegramText(input: {
   }
 
   if (primaryWindow) {
-    const summary = dedupeNonEmpty([
-      ...primaryWindow.summaryBody,
-      ...input.content.summary,
-    ]).filter((line) => !isGenericWeakLine(line));
+    const summary = dedupeNonEmpty(
+      localized?.summary?.length
+        ? localized.summary
+        : [
+            ...primaryWindow.summaryBody,
+            ...input.content.summary,
+          ],
+    ).filter((line) => !isGenericWeakLine(line));
     const topics = primaryWindow.topTopics
       .filter((topic) => topic.count > 0)
       .slice(0, 5);
@@ -453,8 +494,14 @@ function buildMediaHubTelegramText(input: {
 
     lines.push(
       "",
-      isUk ? "<b>🧠 Агрегований звіт дня</b>" : "<b>🧠 Aggregated market report</b>",
+      isUk
+        ? `<b>🧠 ${input.kind === "daily" ? "Агрегований звіт дня" : input.kind === "weekly" ? "Агрегований звіт тижня" : "Агрегований звіт місяця"}</b>`
+        : `<b>🧠 ${input.kind === "daily" ? "Aggregated daily report" : input.kind === "weekly" ? "Aggregated weekly report" : "Aggregated monthly report"}</b>`,
     );
+
+    if (localized?.title) {
+      lines.push("", `<b>${escapeHtml(localized.title)}</b>`);
+    }
 
     if (summary.length > 0) {
       lines.push(
@@ -555,10 +602,19 @@ function parseMediaHubReportContent(value: unknown): MediaHubReportContentJson |
   if (!candidate.title || !Array.isArray(candidate.windows)) {
     return null;
   }
+  const localized = parseLocalizedReports(candidate.localized);
 
   return {
     generatedAt: String(candidate.generatedAt ?? new Date().toISOString()),
     kind: normalizeMediaHubKind(candidate.kind),
+    llm: typeof candidate.llm === "object" && candidate.llm
+      ? {
+          model: String((candidate.llm as { model?: unknown }).model ?? ""),
+          provider: String((candidate.llm as { provider?: unknown }).provider ?? ""),
+          skippedReason: String((candidate.llm as { skippedReason?: unknown }).skippedReason ?? ""),
+        }
+      : undefined,
+    localized,
     periodEndDate: String(candidate.periodEndDate ?? ""),
     periodStartDate: String(candidate.periodStartDate ?? ""),
     summary: toStringArray(candidate.summary),
@@ -583,6 +639,52 @@ function parseMediaHubReportContent(value: unknown): MediaHubReportContentJson |
   };
 }
 
+export async function getLatestPublishedMediaHubReportSummary(input: {
+  kind: Exclude<MediaHubPublicationKind, "none">;
+  locale: Locale;
+  tenantId?: string;
+}) {
+  if (!hasDatabaseUrl()) {
+    return null;
+  }
+
+  await ensureMediaHubReportStorage();
+
+  const tenantId = input.tenantId ?? (isPlatformSite() ? "1d3x" : getActiveIndexConfig().id);
+  const rows = await db.$queryRawUnsafe<MediaHubReportRow[]>(
+    `
+      SELECT *
+      FROM "MediaHubReport"
+      WHERE "tenantId" = $1
+        AND "kind" = $2
+        AND "status" = 'published'
+      ORDER BY "periodEnd" DESC
+      LIMIT 1
+    `,
+    tenantId,
+    input.kind,
+  );
+  const content = parseMediaHubReportContent(rows[0]?.contentJson);
+  if (!content) {
+    return null;
+  }
+
+  const localized = content.localized?.[input.locale];
+  if (localized?.summary?.length) {
+    return {
+      periodEndDate: content.periodEndDate,
+      summaryBody: localized.summary,
+      summaryTitle: localized.title || content.title,
+    };
+  }
+
+  return {
+    periodEndDate: content.periodEndDate,
+    summaryBody: content.summary,
+    summaryTitle: content.title,
+  };
+}
+
 function normalizeMediaHubKind(value: unknown): Exclude<MediaHubPublicationKind, "none"> {
   return value === "weekly" || value === "monthly" ? value : "daily";
 }
@@ -599,6 +701,28 @@ function toStringArray(value: unknown) {
   return Array.isArray(value)
     ? value.filter((item): item is string => typeof item === "string")
     : [];
+}
+
+function parseLocalizedReports(value: unknown): Partial<Record<Locale, MediaHubLocalizedReport>> | undefined {
+  if (!value || typeof value !== "object") {
+    return undefined;
+  }
+
+  const localized: Partial<Record<Locale, MediaHubLocalizedReport>> = {};
+  for (const locale of ["uk", "en"] as const) {
+    const candidate = (value as Partial<Record<Locale, unknown>>)[locale];
+    if (!candidate || typeof candidate !== "object") {
+      continue;
+    }
+    const report = candidate as Partial<MediaHubLocalizedReport>;
+    const title = typeof report.title === "string" ? report.title : "";
+    const summary = toStringArray(report.summary).map((item) => item.trim()).filter(Boolean);
+    if (title && summary.length > 0) {
+      localized[locale] = { summary, title };
+    }
+  }
+
+  return Object.keys(localized).length > 0 ? localized : undefined;
 }
 
 function isGenericWeakLine(value: string) {
