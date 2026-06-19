@@ -17,6 +17,7 @@ import {
   getDeliveryBasisConfigForCommodityCode,
 } from "@/lib/tenant-basis";
 import { getSpikePublicVisibleTradeDate } from "@/lib/spike-publication-window";
+import { getLatestSubmissionFallbacks } from "@/lib/public-submission-fallbacks";
 
 export type PublicLatestItem = {
   commodityId: CommodityId;
@@ -169,6 +170,21 @@ async function getDatabaseLatestData(): Promise<PublicLatestItem[]> {
   ]);
   const basisByCode = new Map(bases.map((basis) => [basis.code, basis]));
   const basketByCode = new Map(baskets.map((basket) => [basket.code, basket]));
+  const basisByCommodityId = new Map(
+    dbCommodities
+      .map((commodity) => {
+        const basisConfig = getDeliveryBasisConfigForCommodityCode(
+          commodity.code,
+          activeIndex,
+        );
+        const basis = basisByCode.get(basisConfig.code);
+
+        return basis ? ([commodity.id, basis] as const) : null;
+      })
+      .filter((entry): entry is readonly [string, (typeof bases)[number]] =>
+        Boolean(entry),
+      ),
+  );
 
   if (bases.length === 0 || baskets.length === 0) {
     if (allowMockFallback()) {
@@ -181,6 +197,11 @@ async function getDatabaseLatestData(): Promise<PublicLatestItem[]> {
   const visibleTradeDate =
     activeIndex.id === "spike-ua" ? getSpikePublicVisibleTradeDate() : todayKyivDate();
   const visibleTradeDateAtMidnightUtc = new Date(`${visibleTradeDate}T00:00:00.000Z`);
+  const submissionFallbackByCommodityId = await getLatestSubmissionFallbacks({
+    basisByCommodityId,
+    commodities: dbCommodities,
+    visibleTradeDate: visibleTradeDateAtMidnightUtc,
+  });
 
   const rows = await Promise.all(
     dbCommodities.map(async (commodity) => {
@@ -209,18 +230,25 @@ async function getDatabaseLatestData(): Promise<PublicLatestItem[]> {
           tradeDate: { lte: visibleTradeDateAtMidnightUtc },
         },
       });
+      const submissionFallback = submissionFallbackByCommodityId.get(commodity.id);
 
       return {
         commodityId: mockCommodityIdByCode[commodity.code] ?? "corn",
         commodityCode: commodity.code,
         commodityNameUk: commodity.nameUk,
         commodityNameEn: commodity.nameEn,
-        date: published?.tradeDate.toISOString().slice(0, 10) ?? visibleTradeDate,
+        date:
+          published?.tradeDate.toISOString().slice(0, 10) ??
+          submissionFallback?.date ??
+          visibleTradeDate,
         basis: basisConfig.name,
-        valueUsdPerMt: published?.valueUsdPerMt.toNumber() ?? null,
+        valueUsdPerMt:
+          published?.valueUsdPerMt.toNumber() ?? submissionFallback?.value ?? null,
         changeAbs: published?.changeAbsUsdPerMt?.toNumber() ?? 0,
         changePct: published?.changePct?.toNumber() ?? 0,
-        respondents: activeRespondentCount,
+        respondents: published
+          ? activeRespondentCount
+          : (submissionFallback?.rawCount ?? activeRespondentCount),
       };
     }),
   );

@@ -24,6 +24,7 @@ import {
   getDeliveryBasisConfigForCommodityCode,
 } from "@/lib/tenant-basis";
 import { getSpikePublicVisibleTradeDate } from "@/lib/spike-publication-window";
+import { getLatestSubmissionFallbacks } from "@/lib/public-submission-fallbacks";
 
 export type PublicIndexSnapshot = {
   commodities: Commodity[];
@@ -259,6 +260,11 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
       .filter((index): index is NonNullable<typeof index> => Boolean(index))
       .map((index) => [index.commodityId, index]),
   );
+  const submissionFallbackByCommodityId = await getLatestSubmissionFallbacks({
+    basisByCommodityId,
+    commodities: dbCommodities,
+    visibleTradeDate: visibleTradeDateAtMidnightUtc,
+  });
   const latestPublishedDate =
     [...publishedByCommodityId.values()]
       .map((index) => index.tradeDate.toISOString().slice(0, 10))
@@ -271,6 +277,7 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
   const publicCommodities = dbCommodities.map((commodity) => {
     const mockCommodity = mockCommodityByCode.get(commodity.code) ?? commodities[0];
     const publishedIndex = publishedByCommodityId.get(commodity.id);
+    const submissionFallback = submissionFallbackByCommodityId.get(commodity.id);
     const history = recentPublishedByCommodityId.get(commodity.id) ?? [];
     const aiComment = {
       en: aiCommentsEn[commodity.code] ?? aiCommentsEn[mockCommodity.code] ?? "",
@@ -282,10 +289,10 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
         ...mockCommodity,
         code: commodity.code,
         name: { uk: commodity.nameUk, en: commodity.nameEn },
-        latest: null,
+        latest: submissionFallback?.value ?? null,
         absoluteChange: 0,
         percentChange: 0,
-        sparkline: buildRealSparkline(history, null),
+        sparkline: buildRealSparkline(history, submissionFallback?.value ?? null),
         aiComment,
       };
     }
@@ -306,6 +313,7 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
   const publicLatestQuotes = dbCommodities.map((commodity) => {
     const mockCommodity = mockCommodityByCode.get(commodity.code) ?? commodities[0];
     const publishedIndex = publishedByCommodityId.get(commodity.id);
+    const submissionFallback = submissionFallbackByCommodityId.get(commodity.id);
     const basisConfig = getDeliveryBasisConfigForCommodityCode(
       commodity.code,
       activeIndex,
@@ -318,11 +326,11 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
       return {
         ...quote,
         basis: basisConfig.name,
-        date: latestPublishedDate,
-        price: null,
+        date: submissionFallback?.date ?? latestPublishedDate,
+        price: submissionFallback?.value ?? null,
         absoluteChange: 0,
         percentChange: 0,
-        respondents: activeRespondentCount,
+        respondents: submissionFallback?.rawCount ?? activeRespondentCount,
       };
     }
 
@@ -342,9 +350,13 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
     commodities: publicCommodities,
     latestQuotes: publicLatestQuotes,
     updatedAt:
-      published
+      [
+        ...published
         .filter((index): index is NonNullable<typeof index> => Boolean(index))
-        .map((index) => index.publishedAt)
+        .map((index) => index.publishedAt),
+        ...submissionFallbackByCommodityId.values(),
+      ]
+        .map((item) => item instanceof Date ? item : item.updatedAt)
         .sort((first, second) => second.getTime() - first.getTime())[0]
         ?.toISOString() ?? indexUpdatedAt,
   };
