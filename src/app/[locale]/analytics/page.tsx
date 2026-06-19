@@ -9,7 +9,6 @@ import { getActiveIndexConfig } from "@/lib/index-platform";
 import { commodities, type Commodity, type CommodityId } from "@/lib/mock-data";
 import { getPublicHistoryData } from "@/lib/public-api-data";
 import { getActiveRespondentCountData } from "@/lib/respondent-directory-lazy";
-import type { WeeklyReportRecord } from "@/lib/weekly-ai-report";
 
 type AnalyticsPoint = {
   date: string;
@@ -118,34 +117,25 @@ export default async function AnalyticsPage({
   const isSpike = getActiveIndexConfig().id === "spike-ua";
   const hasHistory = history.length > 0;
   let aiBrief: PublicAiMarketBrief | null = null;
-  let latestWeeklyReport: WeeklyReportRecord | null = null;
   let AnalyticsSpikeSections: ((
     props: {
       aiBrief: PublicAiMarketBrief | null;
       aiCopy: AnalyticsCopy["aiBrief"];
       locale: Locale;
-      weeklyCopy: AnalyticsCopy["weeklyReport"];
-      weeklyReport: WeeklyReportRecord | null;
     },
   ) => ReactNode) | null = null;
 
   if (isSpike) {
-    const [
-      { getPublishedAiMarketBrief },
-      { getPublishedWeeklyReports },
-      spikeSectionsModule,
-    ] = await Promise.all([
-      import("@/lib/ai-market-brief-public"),
-      import("@/lib/weekly-ai-report-lazy"),
-      import("@/components/reports/analytics-spike-sections"),
-    ]);
-    const weeklyReports = await getPublishedWeeklyReports();
+    const [{ getPublishedAiMarketBrief }, spikeSectionsModule] =
+      await Promise.all([
+        import("@/lib/ai-market-brief-public"),
+        import("@/components/reports/analytics-spike-sections"),
+      ]);
     aiBrief = await getPublishedAiMarketBrief({
       activeRespondentCount,
       history,
       locale,
     });
-    latestWeeklyReport = weeklyReports[0] ?? null;
     AnalyticsSpikeSections = spikeSectionsModule.AnalyticsSpikeSections;
   }
 
@@ -182,41 +172,41 @@ export default async function AnalyticsPage({
           aiBrief={aiBrief}
           aiCopy={copy.aiBrief}
           locale={locale}
-          weeklyCopy={copy.weeklyReport}
-          weeklyReport={latestWeeklyReport}
         />
       ) : null}
 
       {hasHistory ? (
         <>
           <section className="border-y border-black bg-uga-mist">
-            <div className="mx-auto grid max-w-7xl gap-5 px-6 py-12 lg:grid-cols-[1.25fr_0.75fr] lg:px-8 lg:py-14">
-              <AnalyticsPanel
-                description={copy.trendDescription}
-                title={copy.trendTitle}
-              >
-                <AnalyticsTrendChartAsync
-                  commodities={commodities}
-                  history={history}
-                  locale={locale}
-                />
-              </AnalyticsPanel>
+            <div className="mx-auto grid max-w-7xl gap-5 px-6 py-12 lg:px-8 lg:py-14">
               <AnalyticsPanel
                 description={copy.movementDescription}
                 title={copy.movementTitle}
               >
                 <MovementSummary history={history} locale={locale} />
               </AnalyticsPanel>
-              <AnalyticsPanel
-                description={copy.volatilityDescription}
-                title={copy.volatilityTitle}
-              >
-                <VolatilityRangePanelAsync
-                  commodities={commodities}
-                  history={history}
-                  locale={locale}
-                />
-              </AnalyticsPanel>
+              <div className="grid gap-5 xl:grid-cols-2">
+                <AnalyticsPanel
+                  description={copy.trendDescription}
+                  title={copy.trendTitle}
+                >
+                  <AnalyticsTrendChartAsync
+                    commodities={commodities}
+                    history={history}
+                    locale={locale}
+                  />
+                </AnalyticsPanel>
+                <AnalyticsPanel
+                  description={copy.volatilityDescription}
+                  title={copy.volatilityTitle}
+                >
+                  <VolatilityRangePanelAsync
+                    commodities={commodities}
+                    history={history}
+                    locale={locale}
+                  />
+                </AnalyticsPanel>
+              </div>
             </div>
           </section>
 
@@ -361,65 +351,75 @@ function MovementSummary({
   locale: Locale;
 }) {
   return (
-    <div className="grid gap-3">
-      {commodities.map((commodity) => {
-        const commodityHistory = getCommodityHistory(history, commodity.id);
-        const latest = commodityHistory.at(-1);
+    <div className="-mx-4 overflow-x-auto px-4 pb-2 [scrollbar-width:thin]">
+      <div className="flex min-w-max gap-4">
+        {commodities.map((commodity) => {
+          const commodityHistory = getCommodityHistory(history, commodity.id);
+          const latest = commodityHistory.at(-1);
 
-        if (!latest) {
-          return null;
-        }
+          if (!latest) {
+            return null;
+          }
 
-        const latestDate = formatShortDate(latest.date, locale);
-        const sevenDay = latest.value - getPointBack(commodityHistory, 8).value;
-        const thirtyDay =
-          latest.value - getPointBack(commodityHistory, 31).value;
-        const ninetyDay = latest.value - commodityHistory[0].value;
+          const latestDate = formatShortDate(latest.date, locale);
+          const sevenDay =
+            latest.value - getPointBack(commodityHistory, 8).value;
+          const thirtyDay =
+            latest.value - getPointBack(commodityHistory, 31).value;
+          const ninetyDay = latest.value - commodityHistory[0].value;
 
-        return (
-          <div
-            className="grid grid-cols-[1fr_auto] gap-3 border border-black/20 p-3"
-            key={commodity.id}
-          >
-            <div>
-              <p className="text-sm font-black text-black">
-                {commodity.name[locale]}
-              </p>
-              <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-black/45">
+          return (
+            <article
+              className="min-h-[20rem] w-[17.5rem] rounded-[1.25rem] border border-black bg-[#050505] p-5 text-[#f8f8f2] shadow-[0_18px_55px_rgba(0,0,0,0.18)]"
+              key={commodity.id}
+            >
+              <p className="text-[0.66rem] font-black uppercase tracking-[0.24em] text-[var(--spike-accent)]">
                 {commodity.code}
               </p>
-            </div>
-            <div className="grid grid-cols-5 gap-3 text-right text-xs">
-              <div className="min-w-[4.25rem]">
-                <p className="font-black text-black/45">INDEX</p>
-                <p className="mt-1 font-black text-black">
+              <h3 className="mt-5 min-h-[3.5rem] text-2xl font-black uppercase leading-none tracking-tight text-[#f8f8f2]">
+                {commodity.name[locale]}
+              </h3>
+              <div className="mt-6">
+                <p className="text-[0.62rem] font-black uppercase tracking-[0.16em] text-white/42">
+                  Index
+                </p>
+                <p className="mt-1 text-5xl font-black leading-none text-[#f8f8f2]">
                   {latest.value.toFixed(0)}
                 </p>
-                <p className="mt-1 text-[0.65rem] font-semibold leading-none text-black/45">
+                <p className="mt-2 text-[0.68rem] font-black uppercase tracking-[0.12em] text-white/42">
                   {latestDate}
                 </p>
               </div>
-              <MetricDelta label="1D" value={latest.dayChange} />
-              <MetricDelta label="7D" value={sevenDay} />
-              <MetricDelta label="30D" value={thirtyDay} />
-              <MetricDelta label="90D" value={ninetyDay} />
-            </div>
-          </div>
-        );
-      })}
+              <div className="mt-6 grid grid-cols-2 gap-2 text-xs">
+                <MetricDelta label="1D" value={latest.dayChange} />
+                <MetricDelta label="7D" value={sevenDay} />
+                <MetricDelta label="30D" value={thirtyDay} />
+                <MetricDelta label="90D" value={ninetyDay} />
+              </div>
+            </article>
+          );
+        })}
+      </div>
     </div>
   );
 }
 
 function MetricDelta({ label, value }: { label: string; value: number }) {
+  const isPositive = value > 0;
+  const isNegative = value < 0;
+
   return (
-    <div>
-      <p className="font-black text-black/45">{label}</p>
+    <div className="rounded-[0.8rem] border border-white/10 bg-white/[0.06] px-3 py-2">
+      <p className="text-[0.62rem] font-black uppercase tracking-[0.14em] text-white/38">
+        {label}
+      </p>
       <p
         className={
-          value >= 0
-            ? "mt-1 font-black text-uga-green"
-            : "mt-1 font-black text-[color:var(--color-negative)]"
+          isPositive
+            ? "mt-1 font-black text-[var(--spike-accent)]"
+            : isNegative
+              ? "mt-1 font-black text-[color:var(--color-negative)]"
+              : "mt-1 font-black text-white/58"
         }
       >
         {formatSigned(value)}
@@ -878,24 +878,6 @@ function getAnalyticsCopy(locale: Locale) {
           `Найвища короткострокова волатильність у вибірці: ${commodity}, ${value}%. Це допомагає відокремити ринковий рух від шуму.`,
         volatilityTitle: "Volatility and spreads",
       },
-      weeklyReport: {
-        allReportsCta: "Усі щотижневі звіти",
-        confidenceLabel: "Рівень даних",
-        description:
-          "Щотижневий AI-assisted огляд ринку, який об’єднує дані SPIKE SPOT INDEX, логістику, експортні потоки, біржовий фон, зовнішні ринкові фактори та перевірені джерела у структурований звіт для сайту й Telegram.",
-        expandLabel: "Перегляд",
-        eyebrow: "Щотижневий звіт",
-        noReportBody:
-          "Щотижневі звіти створюються після завершення ринкового тижня і публікуються після перегляду.",
-        noReportLabel: "Ще немає опублікованого щотижневого звіту",
-        openLatestCta: "Відкрити останній звіт",
-        previewLabel: "Останній опублікований звіт",
-        previewTitle: "Згорнутий перегляд",
-        publicationLabel: "Публікація",
-        title: "Weekly AI Commodity & Logistics Report",
-        viewArchiveCta: "Переглянути архів звітів",
-        weekEndingLabel: "Тиждень до",
-      },
       apiBullets: [
         "Історія опублікованих індексів",
         "Аналітика трендів за культурами",
@@ -1060,24 +1042,6 @@ function getAnalyticsCopy(locale: Locale) {
         volatilityBody: (commodity: string, value: string) =>
           `The highest short-term volatility in the sample is ${commodity}, ${value}%. This helps separate market movement from noise.`,
         volatilityTitle: "Volatility and spreads",
-      },
-      weeklyReport: {
-        allReportsCta: "All weekly reports",
-        confidenceLabel: "Data confidence",
-        description:
-          "A weekly AI-assisted market report combining SPIKE SPOT INDEX data, logistics inputs, export flows, futures context, external market factors and verified sources into a structured website and Telegram report.",
-        expandLabel: "Preview",
-        eyebrow: "Weekly report",
-        noReportBody:
-          "Weekly reports are generated after the market week closes and published after review.",
-        noReportLabel: "No published weekly report yet",
-        openLatestCta: "Open latest weekly report",
-        previewLabel: "Latest published report",
-        previewTitle: "Collapsed preview",
-        publicationLabel: "Publication",
-        title: "Weekly AI Commodity & Logistics Report",
-        viewArchiveCta: "View weekly reports",
-        weekEndingLabel: "Week ending",
       },
       apiBullets: [
       "Published index history",
