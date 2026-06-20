@@ -6,7 +6,10 @@ import {
   type MediaHubWindowKey,
   type MediaHubWindowSnapshot,
 } from "@/lib/media-hub";
-import { getLatestPublishedMediaHubReportSummary } from "@/lib/media-hub-publication-scheduler";
+import {
+  getLatestPublishedMediaHubReportSummary,
+  getMediaHubPublicationPlan,
+} from "@/lib/media-hub-publication-scheduler";
 import { get1d3xRssWindows } from "@/lib/media-hub-rss";
 import { isPlatformSite } from "@/lib/platform-site";
 
@@ -34,7 +37,7 @@ export default async function PlatformMediaHubPage({
   ]);
   const selectedWindow = search.window
     ? normalizeWindow(search.window)
-    : kindToWindow(publishedSummary?.kind);
+    : kindToWindow(publishedSummary?.kind ?? getMediaHubPublicationPlan().kind);
   const profile = getMediaHubProfile("en", selectedWindow);
   const active = liveWindows.find((window) => window.window === selectedWindow) ?? liveWindows[0];
   const activeWithPublishedSummary = applyPublishedSummary(

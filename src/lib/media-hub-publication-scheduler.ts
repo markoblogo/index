@@ -191,37 +191,27 @@ export async function publishMediaHubSnapshotReport(
   kind: Exclude<MediaHubPublicationKind, "none">,
   periodEndDate: string,
 ) {
+  if (!hasDatabaseUrl() && isPlatformSite()) {
+    const transient = await buildTransientMediaHubSnapshotReport(kind, periodEndDate);
+    return {
+      itemCount: transient.primarySnapshot?.itemCount ?? 0,
+      kind,
+      periodEndDate,
+      periodStartDate: transient.periodStartDate,
+      sourceCount: transient.primarySnapshot?.sourceCount ?? 0,
+      status: "published_transient" as const,
+    };
+  }
+
   if (!hasDatabaseUrl()) {
     return { skippedReason: "database_not_configured", status: "skipped" as const };
   }
 
   await ensureMediaHubReportStorage();
 
-  const periodStartDate = shiftIsoDate(
-    periodEndDate,
-    kind === "daily" ? 0 : kind === "weekly" ? -6 : -29,
-  );
-  const windowKey: MediaHubWindowKey =
-    kind === "daily" ? "day" : kind === "weekly" ? "week" : "month";
-  const snapshots = await getPublicationSnapshots(windowKey);
-  const primarySnapshot = snapshots[0];
+  const { content, periodStartDate, primarySnapshot, snapshots } =
+    await buildTransientMediaHubSnapshotReport(kind, periodEndDate);
   const tenantId = isPlatformSite() ? "1d3x" : getActiveIndexConfig().id;
-  const latestData = tenantId === "spike-ua" ? await getPublicLatestData() : [];
-  const llm = await generateMediaHubLlmReports({
-    kind,
-    latestData,
-    periodEndDate,
-    periodStartDate,
-    snapshots,
-    tenant: tenantId === "1d3x" ? "platform" : "spike",
-  });
-  const content = buildSnapshotReportContent({
-    kind,
-    llm,
-    periodEndDate,
-    periodStartDate,
-    snapshots,
-  });
   const contentHash = createHash("sha256")
     .update(JSON.stringify(content))
     .digest("hex");
@@ -283,20 +273,14 @@ export async function sendMediaHubReportTelegram(
     locale: Locale;
   },
 ) {
-  if (!hasDatabaseUrl()) {
+  if (!hasDatabaseUrl() && options.audience !== "platform") {
     return { skippedReason: "database_not_configured", status: "skipped" as const };
   }
 
   const tenantId = options.audience === "platform" ? "1d3x" : getActiveIndexConfig().id;
-  const report = await getMediaHubReport(kind, periodEndDate, tenantId);
-
-  if (!report) {
-    return { skippedReason: "report_not_found", status: "skipped" as const };
-  }
-
-  if (report.telegramSentAt && !options.force) {
-    return { skippedReason: "already_sent", status: "skipped" as const };
-  }
+  const report = hasDatabaseUrl()
+    ? await getMediaHubReport(kind, periodEndDate, tenantId)
+    : null;
 
   const botToken =
     process.env.SPIKE_TELEGRAM_BOT_TOKEN ??
@@ -319,7 +303,17 @@ export async function sendMediaHubReportTelegram(
     return { skippedReason: "telegram_not_configured", status: "skipped" as const };
   }
 
-  const content = parseMediaHubReportContent(report.contentJson);
+  if (report?.telegramSentAt && !options.force) {
+    return { skippedReason: "already_sent", status: "skipped" as const };
+  }
+
+  if (!report && options.audience !== "platform") {
+    return { skippedReason: "report_not_found", status: "skipped" as const };
+  }
+
+  const content = report
+    ? parseMediaHubReportContent(report.contentJson)
+    : (await buildTransientMediaHubSnapshotReport(kind, periodEndDate)).content;
   if (!content) {
     return { skippedReason: "report_content_invalid", status: "skipped" as const };
   }
@@ -338,6 +332,90 @@ export async function sendMediaHubReportTelegram(
       tenant: options.audience,
     }),
   );
+  const sent = await sendTelegramMessages(botToken, chatId, messages);
+  if (sent.status === "failed") {
+    return sent;
+  }
+
+  if (!report || !hasDatabaseUrl()) {
+    return {
+      messageIds: sent.messageIds,
+      status: "sent_transient" as const,
+    };
+  }
+
+  await db.$executeRawUnsafe(
+    `
+      UPDATE "MediaHubReport"
+      SET "telegramSentAt" = NOW(),
+          "telegramMessageIds" = $4::jsonb,
+          "updatedAt" = NOW()
+      WHERE "tenantId" = $1
+        AND "kind" = $2
+        AND "periodEnd" = $3::date
+    `,
+    tenantId,
+    kind,
+    periodEndDate,
+    JSON.stringify(sent.messageIds),
+  );
+
+  return { messageIds: sent.messageIds, status: "sent" as const };
+}
+
+async function getPublicationSnapshots(windowKey: MediaHubWindowKey) {
+  if (isPlatformSite()) {
+    const windows = await get1d3xRssWindows();
+    return windows.filter((window) => window.window === windowKey);
+  }
+
+  const windows = await getSpikeMediaHubLiveWindows("uk");
+  return windows.filter((window) => window.window === windowKey);
+}
+
+async function buildTransientMediaHubSnapshotReport(
+  kind: Exclude<MediaHubPublicationKind, "none">,
+  periodEndDate: string,
+) {
+  const periodStartDate = shiftIsoDate(
+    periodEndDate,
+    kind === "daily" ? 0 : kind === "weekly" ? -6 : -29,
+  );
+  const windowKey: MediaHubWindowKey =
+    kind === "daily" ? "day" : kind === "weekly" ? "week" : "month";
+  const snapshots = await getPublicationSnapshots(windowKey);
+  const primarySnapshot = snapshots[0];
+  const tenantId = isPlatformSite() ? "1d3x" : getActiveIndexConfig().id;
+  const latestData = tenantId === "spike-ua" ? await getPublicLatestData() : [];
+  const llm = await generateMediaHubLlmReports({
+    kind,
+    latestData,
+    periodEndDate,
+    periodStartDate,
+    snapshots,
+    tenant: tenantId === "1d3x" ? "platform" : "spike",
+  });
+  const content = buildSnapshotReportContent({
+    kind,
+    llm,
+    periodEndDate,
+    periodStartDate,
+    snapshots,
+  });
+
+  return {
+    content,
+    periodStartDate,
+    primarySnapshot,
+    snapshots,
+  };
+}
+
+async function sendTelegramMessages(
+  botToken: string,
+  chatId: string,
+  messages: string[],
+) {
   const messageIds: number[] = [];
 
   for (const text of messages) {
@@ -366,33 +444,7 @@ export async function sendMediaHubReportTelegram(
     }
   }
 
-  await db.$executeRawUnsafe(
-    `
-      UPDATE "MediaHubReport"
-      SET "telegramSentAt" = NOW(),
-          "telegramMessageIds" = $4::jsonb,
-          "updatedAt" = NOW()
-      WHERE "tenantId" = $1
-        AND "kind" = $2
-        AND "periodEnd" = $3::date
-    `,
-    tenantId,
-    kind,
-    periodEndDate,
-    JSON.stringify(messageIds),
-  );
-
   return { messageIds, status: "sent" as const };
-}
-
-async function getPublicationSnapshots(windowKey: MediaHubWindowKey) {
-  if (isPlatformSite()) {
-    const windows = await get1d3xRssWindows();
-    return windows.filter((window) => window.window === windowKey);
-  }
-
-  const windows = await getSpikeMediaHubLiveWindows("uk");
-  return windows.filter((window) => window.window === windowKey);
 }
 
 function buildSnapshotReportContent(input: {

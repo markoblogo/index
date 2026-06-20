@@ -8,7 +8,10 @@ import {
   type MediaHubWindowKey,
   type MediaHubWindowSnapshot,
 } from "@/lib/media-hub";
-import { getLatestPublishedMediaHubReportSummary } from "@/lib/media-hub-publication-scheduler";
+import {
+  getLatestPublishedMediaHubReportSummary,
+  getMediaHubPublicationPlan,
+} from "@/lib/media-hub-publication-scheduler";
 
 export const revalidate = 3600;
 
@@ -38,7 +41,7 @@ export default async function MediaHubPage({
   ]);
   const selectedWindow = search.window
     ? normalizeWindow(search.window)
-    : kindToWindow(publishedSummary?.kind);
+    : kindToWindow(publishedSummary?.kind ?? getMediaHubPublicationPlan().kind);
   const profile = getMediaHubProfile(locale, selectedWindow);
   const active = liveWindows.find((window) => window.window === selectedWindow) ?? liveWindows[0];
   const activeWithPublishedSummary = applyPublishedSummary(active, publishedSummary);
