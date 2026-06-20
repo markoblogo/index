@@ -628,10 +628,10 @@ export const INDEX_CONFIGS: Record<IndexTenantId, IndexConfig> = {
     },
     contacts: {
       address: {
-        uk: ["Україна, 04070, Київ", "вул. Іллінська, 8", "БЦ «Іллінський»"],
-        en: ["Ukraine, 04070, Kyiv", "8 Illinska St.", "Illinskyi Business Center"],
+        uk: ["Україна, Київ"],
+        en: ["Ukraine, Kyiv"],
       },
-      phones: ["+380 63 412 86 33"],
+      phones: ["+380 50 386 29 91"],
       email: "info@spike.broker",
       social: [
         { label: "Substack", href: "https://mn7r.substack.com/", mark: "Substack" },
