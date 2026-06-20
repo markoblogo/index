@@ -24,7 +24,7 @@ export function RespondentOnboardingPreview({
 
   return (
     <>
-      <div className="rounded-[1rem] border border-white/14 bg-[linear-gradient(135deg,rgba(248,248,242,0.07),rgba(248,248,242,0.025))] p-3">
+      <div className="max-w-full rounded-[1rem] border border-white/14 bg-[linear-gradient(135deg,rgba(248,248,242,0.07),rgba(248,248,242,0.025))] p-3">
         <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_13rem] sm:items-center">
           <div className="min-w-0">
             <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[var(--spike-accent)]">
@@ -33,16 +33,16 @@ export function RespondentOnboardingPreview({
             <p className="mt-1 max-w-md text-xs leading-5 text-white/64">
               {hint}
             </p>
-            <div className="mt-3 flex flex-nowrap items-center gap-2">
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
               <a
-                className="inline-flex whitespace-nowrap rounded-full border border-[#f8f8f2]/45 bg-[#050505] px-4 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-[#f8f8f2] transition hover:border-[var(--spike-accent)] hover:bg-[var(--spike-accent)] hover:text-[#050505]"
+                className="inline-flex max-w-full justify-center rounded-full border border-[#f8f8f2]/45 bg-[#050505] px-4 py-2 text-center text-[10px] font-black uppercase tracking-[0.12em] text-[#f8f8f2] transition hover:border-[var(--spike-accent)] hover:bg-[var(--spike-accent)] hover:text-[#050505]"
                 download
                 href={downloadHref}
               >
                 {downloadLabel}
               </a>
               <button
-                className="inline-flex whitespace-nowrap rounded-full border border-[#f8f8f2]/30 bg-[#050505] px-4 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-[#f8f8f2] transition hover:border-[var(--spike-accent)] hover:bg-[var(--spike-accent)] hover:text-[#050505]"
+                className="inline-flex max-w-full justify-center rounded-full border border-[#f8f8f2]/30 bg-[#050505] px-4 py-2 text-center text-[10px] font-black uppercase tracking-[0.12em] text-[#f8f8f2] transition hover:border-[var(--spike-accent)] hover:bg-[var(--spike-accent)] hover:text-[#050505]"
                 onClick={() => setIsOpen(true)}
                 type="button"
               >
@@ -52,7 +52,7 @@ export function RespondentOnboardingPreview({
           </div>
 
           <button
-            className="group relative ml-auto block h-[8.5rem] w-full max-w-[13rem] overflow-hidden rounded-[0.8rem] border border-white/14 bg-[#123548] text-left shadow-[0_14px_30px_rgba(0,0,0,0.24)] transition hover:border-[var(--spike-accent)]"
+            className="group relative block h-[8.5rem] w-full overflow-hidden rounded-[0.8rem] border border-white/14 bg-[#123548] text-left shadow-[0_14px_30px_rgba(0,0,0,0.24)] transition hover:border-[var(--spike-accent)] sm:ml-auto sm:max-w-[13rem]"
             onClick={() => setIsOpen(true)}
             type="button"
           >
@@ -98,18 +98,18 @@ export function RespondentOnboardingPreview({
             type="button"
           />
           <div className="relative z-[1] max-h-[92vh] w-full max-w-6xl overflow-hidden rounded-[1.25rem] border border-white/12 bg-[#050505] shadow-[0_28px_90px_rgba(0,0,0,0.48)]">
-            <div className="flex items-center justify-between gap-4 border-b border-white/10 px-4 py-3 sm:px-5">
-              <div>
+            <div className="flex flex-col gap-3 border-b border-white/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+              <div className="min-w-0">
                 <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[var(--spike-accent)]">
                   Respondent onboarding
                 </p>
-                <p className="mt-1 text-sm font-semibold text-white/86">
+                <p className="mt-1 text-sm font-semibold text-white/86 [overflow-wrap:anywhere]">
                   {alt}
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex shrink-0 items-center gap-2">
                 <a
-                  className="inline-flex rounded-full border border-[#f8f8f2]/45 bg-[#050505] px-4 py-2 text-[11px] font-black uppercase tracking-[0.12em] text-[#f8f8f2] transition hover:border-[var(--spike-accent)] hover:bg-[var(--spike-accent)] hover:text-[#050505]"
+                  className="inline-flex rounded-full border border-[#f8f8f2]/45 bg-[#050505] px-3 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-[#f8f8f2] transition hover:border-[var(--spike-accent)] hover:bg-[var(--spike-accent)] hover:text-[#050505] sm:px-4 sm:text-[11px]"
                   download
                   href={downloadHref}
                 >

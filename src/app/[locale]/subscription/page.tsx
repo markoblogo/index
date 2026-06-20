@@ -150,27 +150,27 @@ function RespondentBlock({ locale }: { locale: Locale }) {
 
   return (
     <section className="border-y border-white/10 bg-[#090909]">
-      <div className="mx-auto grid max-w-[1900px] gap-6 px-6 py-10 lg:grid-cols-[0.94fr_1.16fr] lg:px-8 lg:py-14">
-        <div>
+      <div className="mx-auto grid max-w-[1900px] gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[minmax(0,0.94fr)_minmax(0,1.16fr)] lg:px-8 lg:py-14">
+        <div className="min-w-0">
           <p className="text-xs font-black uppercase tracking-[0.24em] text-[var(--spike-accent)]">
             {copy.eyebrow}
           </p>
-          <h2 className="mt-3 whitespace-nowrap text-[clamp(1.75rem,2.5vw,2.65rem)] font-black uppercase leading-none tracking-normal text-white">
+          <h2 className="mt-3 max-w-full text-[clamp(1.55rem,8vw,2.65rem)] font-black uppercase leading-[0.98] tracking-normal text-white [overflow-wrap:anywhere] sm:text-[clamp(1.75rem,4.5vw,2.65rem)]">
             {copy.title}
           </h2>
-          <p className="mt-4 max-w-none whitespace-nowrap text-sm leading-6 text-white/68">
+          <p className="mt-4 max-w-3xl text-sm leading-6 text-white/68">
             {copy.subtitle}
           </p>
-          <div className="mt-5 flex flex-nowrap gap-3">
+          <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <a
-              className="inline-flex whitespace-nowrap rounded-full border border-[#f8f8f2]/45 bg-[#050505] px-5 py-2.5 text-sm font-black uppercase tracking-[0.12em] text-[#f8f8f2] transition hover:border-[var(--spike-accent)] hover:bg-[var(--spike-accent)] hover:text-[#050505]"
+              className="inline-flex max-w-full justify-center rounded-full border border-[#f8f8f2]/45 bg-[#050505] px-4 py-2.5 text-center text-xs font-black uppercase tracking-[0.12em] text-[#f8f8f2] transition hover:border-[var(--spike-accent)] hover:bg-[var(--spike-accent)] hover:text-[#050505] sm:px-5 sm:text-sm"
               download
               href={pdfHref}
             >
               {copy.download}
             </a>
             <a
-              className="inline-flex whitespace-nowrap rounded-full border border-[#f8f8f2]/45 bg-[#050505] px-5 py-2.5 text-sm font-black uppercase tracking-[0.12em] text-[#f8f8f2] transition hover:border-[var(--spike-accent)] hover:bg-[var(--spike-accent)] hover:text-[#050505]"
+              className="inline-flex max-w-full justify-center rounded-full border border-[#f8f8f2]/45 bg-[#050505] px-4 py-2.5 text-center text-xs font-black uppercase tracking-[0.12em] text-[#f8f8f2] transition hover:border-[var(--spike-accent)] hover:bg-[var(--spike-accent)] hover:text-[#050505] sm:px-5 sm:text-sm"
               href={pdfHref}
               rel="noopener noreferrer"
               target="_blank"
@@ -191,7 +191,7 @@ function RespondentBlock({ locale }: { locale: Locale }) {
             </div>
           ) : null}
         </div>
-        <div className="overflow-hidden rounded-[1rem] border border-white/16 bg-black/55">
+        <div className="min-w-0 overflow-hidden rounded-[1rem] border border-white/16 bg-black/55">
           <iframe
             className="aspect-video w-full"
             src={youtubeSrc}
