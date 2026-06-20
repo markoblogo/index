@@ -661,18 +661,22 @@ function buildSummary(
   const topicText = topTopics.map((item) => item.label).join(", ");
   const sourceText = topSources.map((item) => item.label).join(", ");
   const label = window === "day" ? "day" : window === "week" ? "7-day" : "30-day";
+  const reportLabel = window === "day" ? "daily" : window === "week" ? "weekly" : "monthly";
   const scopeText =
     scope === "ukraine"
       ? "English-language Ukraine grain and oilseed market monitoring window"
       : "global commodity monitoring window";
   const leadItems = items.slice(0, 4).map((item) => item.title).filter(Boolean);
+  const topicNarrative = topTopics.slice(0, 3).map((item) => `${item.label.toLowerCase()} (${item.hint})`);
 
   return [
     `The ${label} ${scopeText} is led by ${topicText || "the current commodity monitoring context"}, with the densest source contribution coming from ${sourceText || "the active feed mesh"}.`,
     items.length > 0
       ? `The accepted feed contains ${items.length} monitored items; the strongest signals are ${leadItems.join("; ") || "clustered around the main topic groups"}.`
       : "The accepted feed is light, so the report keeps to verified monitoring context rather than inventing market drivers.",
-    "This report is generated from the keyless RSS/Atom monitoring layer while persisted LLM reports are unavailable for this tenant.",
+    topicNarrative.length > 0
+      ? `The ${reportLabel} read is organized around ${topicNarrative.join("; ")}, with emphasis on concrete developments rather than a raw source list.`
+      : `The ${reportLabel} read remains focused on verified commodity, logistics and policy signals from the monitoring layer.`,
   ];
 }
 

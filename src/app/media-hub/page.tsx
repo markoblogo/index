@@ -116,7 +116,6 @@ function formatFallbackPeriodLabel(window: MediaHubWindowKey) {
   }
 
   if (window === "week") {
-    end.setDate(end.getDate() - 1);
     const start = new Date(end);
     start.setDate(start.getDate() - 6);
     return `${formatShortDate(start)} - ${formatShortDate(end)}`;
