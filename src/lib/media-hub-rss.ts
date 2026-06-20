@@ -17,8 +17,13 @@ type FeedSourceTransport = "rss" | "google-news" | "gdelt";
 
 type RssSource = {
   canonicalDomain?: string;
+  cadenceMinutes?: number;
+  countryFocus?: string[];
   id: string;
+  language?: string;
   name: string;
+  sourceFamily?: string;
+  topicTags?: string[];
   transport?: FeedSourceTransport;
   url: string;
   category: FeedSourceCategory;
@@ -85,12 +90,13 @@ const RSS_SOURCES: RssSource[] = [
   { id: "brownfield-weather", name: "Brownfield Weather", url: "https://brownfieldagnews.com/category/weather/feed/", category: "agro-general", enabled: true },
   { id: "farmersweekly-world", name: "Farmers Weekly Markets", url: "https://www.fwi.co.uk/markets/feed", category: "agro-general", enabled: true },
   { id: "agweb-markets", name: "AgWeb Markets", url: "https://www.agweb.com/rss.xml", category: "agro-general", enabled: true },
-  { id: "world-grain-news", name: "World Grain", url: "https://www.world-grain.com/rss/topic/2670-world-grain-news", category: "grain-oilseeds", enabled: true },
+  { id: "world-grain-news", name: "World Grain", url: "https://www.world-grain.com/rss/articles", category: "grain-oilseeds", enabled: true },
   { id: "graincentral-news", name: "Grain Central", url: "https://www.graincentral.com/feed/", category: "grain-oilseeds", enabled: true },
   { id: "graincentral-markets", name: "Grain Central Markets", url: "https://www.graincentral.com/markets/feed", category: "grain-oilseeds", enabled: true },
   { id: "graincentral-trade", name: "Grain Central Trade", url: "https://www.graincentral.com/trade/feed", category: "grain-oilseeds", enabled: true },
   { id: "graincentral-production", name: "Grain Central Production", url: "https://www.graincentral.com/production/feed", category: "grain-oilseeds", enabled: true },
   { id: "farmdoc-daily", name: "farmdoc daily", url: "https://farmdocdaily.illinois.edu/feed", category: "grain-oilseeds", enabled: true },
+  { id: "farmprogress-global", name: "Farm Progress", url: "https://www.farmprogress.com/rss.xml", category: "grain-oilseeds", enabled: true },
   { id: "agrimoney", name: "Agrimoney", url: "https://www.agrimoney.com/rss", category: "grain-oilseeds", enabled: true },
   { id: "mundus-agri", name: "Mundus Agri", url: "https://mundus-agri.eu/feed/", category: "grain-oilseeds", enabled: true },
   { id: "biofuels-news", name: "Biofuels News", url: "https://biofuels-news.com/rss", category: "grain-oilseeds", enabled: true },
@@ -101,6 +107,9 @@ const RSS_SOURCES: RssSource[] = [
   { id: "gcaptain", name: "gCaptain", url: "https://gcaptain.com/feed/", category: "logistics-shipping", enabled: true },
   { id: "marine-insight", name: "Marine Insight", url: "https://www.marineinsight.com/feed/", category: "logistics-shipping", enabled: true },
   { id: "freightwaves", name: "FreightWaves", url: "https://www.freightwaves.com/news/feed", category: "logistics-shipping", enabled: true },
+  { id: "freightos-weekly", name: "Freightos", url: "https://www.freightos.com/feed/", category: "logistics-shipping", enabled: true },
+  { id: "railmarket-global", name: "RailMarket", url: "https://railmarket.com/feed/", category: "logistics-shipping", enabled: true },
+  { id: "railfreight-global", name: "RailFreight", url: "https://www.railfreight.com/feed/", category: "logistics-shipping", enabled: true },
   { id: "ein-shipping", name: "EIN Shipping & Logistics", url: "https://shipping.einnews.com/rss", category: "logistics-shipping", enabled: true },
   { id: "hellenic-shipping-news", name: "Hellenic Shipping News", url: "https://www.hellenicshippingnews.com/feed/", category: "logistics-shipping", enabled: true },
   { id: "agri-pulse-free", name: "Agri-Pulse", url: "https://www.agri-pulse.com/rss/topic/34-rss", category: "policy-macro", enabled: true },
@@ -113,6 +122,25 @@ const RSS_SOURCES: RssSource[] = [
   { id: "wto-news", name: "WTO News", url: "https://www.wto.org/english/news_e/news_e.xml", category: "policy-macro", enabled: true },
   { id: "ec-agri", name: "EU Agriculture and Rural Development", url: "https://agriculture.ec.europa.eu/news/rss_en", category: "policy-macro", enabled: true },
   { id: "fao-news", name: "FAO News", url: "https://www.fao.org/news/rss/en/", category: "policy-macro", enabled: true },
+  { id: "gnews-global-grains", name: "Google News · Global grains", url: googleNewsUrl("global grain market wheat corn soybeans harvest forecast when:1d"), transport: "google-news", category: "grain-oilseeds", enabled: true },
+  { id: "gnews-brazil-argentina", name: "Google News · South America crops", url: googleNewsUrl("Brazil Argentina soybean corn crop forecast Rosario Parana exports when:7d"), transport: "google-news", category: "grain-oilseeds", enabled: true },
+  { id: "gnews-usda-reports", name: "Google News · USDA reports", url: googleNewsUrl("USDA WASDE export sales crop progress corn soybeans wheat when:30d"), transport: "google-news", category: "policy-macro", enabled: true },
+  { id: "gnews-canada-australia", name: "Google News · Canada Australia crops", url: googleNewsUrl("Canada canola wheat Australia wheat barley canola crop forecast when:7d"), transport: "google-news", category: "grain-oilseeds", enabled: true },
+  { id: "gnews-eu-black-sea", name: "Google News · EU Black Sea crops", url: googleNewsUrl("EU France Russia Ukraine Black Sea wheat barley rapeseed exports quota freight when:7d"), transport: "google-news", category: "grain-oilseeds", enabled: true },
+  { id: "gnews-import-tenders", name: "Google News · Import tenders", url: googleNewsUrl("China soybean imports Egypt Algeria wheat tender grain tender when:7d"), transport: "google-news", category: "grain-oilseeds", enabled: true },
+  { id: "gnews-vegetable-oils", name: "Google News · Vegetable oils", url: googleNewsUrl("palm oil soybean oil sunflower oil rapeseed oil biodiesel mandate exports stocks when:7d"), transport: "google-news", category: "grain-oilseeds", enabled: true },
+  { id: "gnews-global-freight", name: "Google News · Grain freight", url: googleNewsUrl("grain freight rates dry bulk IGC Drewry Freightos AAR rail traffic DAT truckload rates when:7d"), transport: "google-news", category: "logistics-shipping", enabled: true },
+  { id: "gnews-official-crop-reports", name: "Google News · Official crop reports", url: googleNewsUrl("WASDE AMIS FAO GEOGLAM JRC MARS ABARES CONAB crop report wheat corn soybeans canola when:30d"), transport: "google-news", category: "policy-macro", enabled: true },
+  { id: "gdelt-global-grains-oilseeds", name: "GDELT · Global grains and oilseeds", url: gdeltDocUrl("(wheat OR corn OR maize OR barley OR sorghum OR soybean OR soybeans OR rapeseed OR canola OR sunflower OR oilseeds OR vegetable oil) (export OR harvest OR yield OR crop condition OR production forecast OR stocks OR tender OR import demand OR tariff OR quota)"), transport: "gdelt", category: "grain-oilseeds", enabled: true },
+  { id: "gdelt-major-exporters", name: "GDELT · Major exporters", url: gdeltDocUrl("(Brazil OR Argentina OR United States OR Canada OR Australia OR European Union OR France OR Russia OR Ukraine OR Kazakhstan) (wheat OR corn OR maize OR soybeans OR barley OR canola OR rapeseed OR sunflower) (exports OR harvest OR crop forecast OR drought OR port OR freight OR rail)"), transport: "gdelt", category: "grain-oilseeds", enabled: true },
+  { id: "gdelt-importers-tenders", name: "GDELT · Importers and tenders", url: gdeltDocUrl("(China OR Egypt OR Algeria OR Turkey OR Saudi Arabia OR Mexico OR Japan OR South Korea OR Indonesia) (wheat tender OR corn imports OR soybean imports OR grain tender OR oilseed imports OR vegetable oil imports)"), transport: "gdelt", category: "grain-oilseeds", enabled: true },
+  { id: "gdelt-black-sea-impact", name: "GDELT · Black Sea global impact", url: gdeltDocUrl("(Black Sea OR Danube OR Constanta OR Odesa OR Russia OR Ukraine OR Kazakhstan) (grain OR wheat OR corn OR sunflower oil OR barley) (exports OR shipping OR freight OR insurance OR port OR corridor OR sanctions)"), transport: "gdelt", category: "logistics-shipping", enabled: true },
+  { id: "gdelt-south-america", name: "GDELT · South America crops", url: gdeltDocUrl("(Brazil OR Paranagua OR Santos OR Argentina OR Rosario OR Parana River OR Bahia Blanca) (soybeans OR soybean meal OR soybean oil OR corn OR wheat) (harvest OR exports OR crop estimate OR drought OR river levels OR freight OR ports)"), transport: "gdelt", category: "grain-oilseeds", enabled: true },
+  { id: "gdelt-north-america", name: "GDELT · North America crops", url: gdeltDocUrl("(USDA OR United States OR US Gulf OR Pacific Northwest OR Mississippi River OR Canada OR Vancouver OR St Lawrence) (corn OR soybeans OR wheat OR canola OR barley) (crop progress OR export inspections OR export sales OR rail OR barge OR drought OR harvest)"), transport: "gdelt", category: "grain-oilseeds", enabled: true },
+  { id: "gdelt-eu-uk", name: "GDELT · EU and UK crops", url: gdeltDocUrl("(European Union OR France OR Germany OR Romania OR Poland OR Spain OR United Kingdom) (wheat OR barley OR maize OR rapeseed OR oilseed rape) (crop condition OR yield forecast OR exports OR imports OR tariff OR quota OR drought)"), transport: "gdelt", category: "grain-oilseeds", enabled: true },
+  { id: "gdelt-australia", name: "GDELT · Australia crops", url: gdeltDocUrl("(Australia OR Western Australia OR New South Wales OR Victoria OR South Australia) (wheat OR barley OR canola OR sorghum) (harvest OR crop forecast OR exports OR drought OR ports)"), transport: "gdelt", category: "grain-oilseeds", enabled: true },
+  { id: "gdelt-vegetable-oils", name: "GDELT · Vegetable oils", url: gdeltDocUrl("(palm oil OR soybean oil OR sunflower oil OR rapeseed oil OR canola oil) (biodiesel OR biofuel mandate OR exports OR imports OR stocks OR production OR Indonesia OR Malaysia OR Argentina OR Ukraine)"), transport: "gdelt", category: "grain-oilseeds", enabled: true },
+  { id: "gdelt-input-costs", name: "GDELT · Fertilizer and input costs", url: gdeltDocUrl("(fertilizer OR urea OR ammonia OR potash OR phosphate OR diesel) (corn OR wheat OR soybean OR farmers OR planting OR crop costs OR exports)"), transport: "gdelt", category: "policy-macro", enabled: true },
 ];
 
 const SPIKE_EN_UKRAINE_RSS_SOURCES: RssSource[] = [
@@ -151,26 +179,68 @@ const STOPWORDS = [
   "lottery",
   "betting",
   "crypto casino",
+  "rural lifestyle",
+  "farm machinery",
+  "tractor review",
+  "passenger rail",
+  "ecommerce",
+  "stock tips",
 ];
 
 const CROPS = [
-  "wheat", "corn", "maize", "soybean", "soybeans", "soy", "rapeseed", "canola", "sunflower", "sunflower oil", "barley", "oilseed", "oilseeds", "meal", "crush",
+  "wheat", "corn", "maize", "barley", "sorghum", "rice", "soybean", "soybeans", "soy", "soybean oil", "soybean meal", "rapeseed", "canola", "sunflower", "sunflower seed", "sunflower oil", "palm oil", "vegetable oil", "oilseed", "oilseeds", "meal", "crush",
 ];
 const TRADE = [
-  "harvest", "yield", "crop", "acreage", "planting", "export", "import", "tender", "futures", "basis", "stocks", "shipments", "quota", "shipment", "demand",
+  "harvest", "sowing", "yield", "crop", "acreage", "planting", "export", "import", "tender", "futures", "basis", "stocks", "shipments", "quota", "shipment", "demand", "inspections", "export sales", "food security", "balance sheet",
 ];
 const LOGISTICS = [
-  "freight", "vessel", "rail", "wagon", "barge", "port", "terminal", "shipping", "logistics", "river", "container", "border", "chokepoint", "panama canal", "suez", "bosphorus", "danube", "demurrage",
+  "freight", "vessel", "rail", "wagon", "truck", "trucking", "barge", "port", "terminal", "shipping", "logistics", "river", "container", "border", "insurance", "strike", "congestion", "chokepoint", "panama canal", "suez", "red sea", "bosphorus", "danube", "mississippi river", "parana river", "demurrage",
 ];
 const WEATHER = [
   "drought", "rainfall", "precipitation", "soil moisture", "heat", "frost", "weather", "storm", "flood", "temperature",
 ];
 const POLICY = [
-  "tariff", "quota", "sanctions", "export ban", "export duty", "regulation", "duties", "subsidy", "mandate", "restriction", "trade agreement", "compliance", "eu accession", "ministry", "customs",
+  "tariff", "quota", "sanctions", "export ban", "export duty", "regulation", "duties", "subsidy", "mandate", "biofuel", "biodiesel", "fertilizer", "urea", "ammonia", "potash", "phosphate", "diesel", "restriction", "trade agreement", "compliance", "eu accession", "ministry", "customs",
 ];
 const REGIONS = [
-  "ukraine", "odesa", "odessa", "chornomorsk", "pivdennyi", "izmail", "reni", "danube", "black sea", "eu", "france", "germany", "romania", "bulgaria", "poland", "moldova", "slovakia", "hungary", "us", "brazil", "argentina", "russia", "india", "china",
+  "ukraine", "odesa", "odessa", "chornomorsk", "pivdennyi", "izmail", "reni", "constanta", "danube", "black sea", "eu", "european union", "france", "germany", "romania", "bulgaria", "poland", "spain", "united kingdom", "moldova", "slovakia", "hungary", "us", "united states", "us gulf", "pnw", "mississippi", "brazil", "santos", "paranagua", "argentina", "rosario", "bahia blanca", "russia", "kazakhstan", "canada", "vancouver", "australia", "india", "china", "egypt", "algeria", "turkey", "mexico", "japan", "south korea", "indonesia", "malaysia", "saudi arabia",
 ];
+
+const GLOBAL_SOURCE_FAMILY_DOMAINS = new Set([
+  "freightwaves.com",
+  "brownfieldagnews.com",
+  "marineinsight.com",
+  "splash247.com",
+  "world-grain.com",
+  "agri-pulse.com",
+  "farmprogress.com",
+  "farmfutures.com",
+  "agriculture.com",
+  "producer.com",
+  "graincentral.com",
+  "farmersguardian.com",
+  "fginsight.com",
+  "ahdb.org.uk",
+  "usda.gov",
+  "fas.usda.gov",
+  "nass.usda.gov",
+  "esmis.nal.usda.gov",
+  "amis-outlook.org",
+  "fao.org",
+  "cropmonitor.org",
+  "geoglam.org",
+  "joint-research-centre.ec.europa.eu",
+  "publications.jrc.ec.europa.eu",
+  "igc.int",
+  "drewry.co.uk",
+  "freightos.com",
+  "aar.org",
+  "dat.com",
+  "bcr.com.ar",
+  "bolsadecereales.com",
+  "conab.gov.br",
+  "agriculture.ec.europa.eu",
+]);
 
 const SPIKE_TELEGRAM_SOURCE_DOMAINS = new Set([
   "agroportal.ua",
@@ -631,13 +701,16 @@ function normalizeTitle(title: string) {
 
 function dedupeItems(items: RssNewsItem[]) {
   const slots = new Map<string, RssNewsItem>();
-  const titleSlots = new Map<string, string>();
+  const titleSlots = new Map<string, Array<{ publishedAt: number; slotKey: string }>>();
   const urlSlots = new Map<string, string>();
 
   for (const item of items) {
     const titleKey = normalizeTitle(item.title);
     const urlKey = canonicalizeUrl(item.url);
-    const slotKey = (urlKey && urlSlots.get(urlKey)) || titleSlots.get(titleKey) || dedupeKey(item);
+    const slotKey =
+      (urlKey && urlSlots.get(urlKey)) ||
+      findRecentTitleSlot(titleSlots.get(titleKey), item.publishedAt) ||
+      dedupeKey(item);
     const existing = slots.get(slotKey);
     if (!existing || compareDedupeCandidate(item, existing) > 0) {
       slots.set(slotKey, item);
@@ -646,11 +719,26 @@ function dedupeItems(items: RssNewsItem[]) {
       urlSlots.set(urlKey, slotKey);
     }
     if (titleKey) {
-      titleSlots.set(titleKey, slotKey);
+      const existingTitleSlots = titleSlots.get(titleKey) ?? [];
+      if (!existingTitleSlots.some((entry) => entry.slotKey === slotKey)) {
+        existingTitleSlots.push({ publishedAt: Date.parse(item.publishedAt), slotKey });
+        titleSlots.set(titleKey, existingTitleSlots);
+      }
     }
   }
 
   return [...slots.values()];
+}
+
+function findRecentTitleSlot(slots: Array<{ publishedAt: number; slotKey: string }> | undefined, publishedAt: string) {
+  if (!slots?.length) {
+    return undefined;
+  }
+
+  const timestamp = Date.parse(publishedAt);
+  return slots.find((entry) =>
+    Math.abs(timestamp - entry.publishedAt) <= 14 * 24 * 60 * 60 * 1000,
+  )?.slotKey;
 }
 
 function dedupeKey(item: RssNewsItem) {
@@ -714,17 +802,40 @@ function gdeltDocUrl(query: string) {
 }
 
 function isDuplicateSpikeTelegramSource(value: string) {
-  const normalized = value
-    .toLowerCase()
-    .replace(/^https?:\/\//, "")
-    .replace(/^www\./, "")
-    .split("/")[0];
-  return SPIKE_TELEGRAM_SOURCE_DOMAINS.has(normalized);
+  return SPIKE_TELEGRAM_SOURCE_DOMAINS.has(toRootDomain(value));
+}
+
+function isDuplicateGlobalSourceFamily(value: string) {
+  const hostname = toHostname(value);
+  const rootDomain = toRootDomain(value);
+  return GLOBAL_SOURCE_FAMILY_DOMAINS.has(rootDomain) ||
+    [...GLOBAL_SOURCE_FAMILY_DOMAINS].some((domain) => hostname === domain || hostname.endsWith(`.${domain}`));
 }
 
 function isUnsafeMonitoringCandidate(title: string, summary = "") {
   const body = `${title} ${summary}`.toLowerCase();
   return STOPWORDS.some((word) => body.includes(word));
+}
+
+function isBlockedOrPaywalledSource(status: number, contentType = "") {
+  return [401, 402, 403, 451].includes(status) || contentType.toLowerCase().includes("paywall");
+}
+
+function toRootDomain(value: string) {
+  const normalized = toHostname(value).replace(/^www\./, "");
+  const parts = normalized.split(".").filter(Boolean);
+  if (parts.length <= 2) {
+    return normalized;
+  }
+  return parts.slice(-2).join(".");
+}
+
+function toHostname(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/^https?:\/\//, "")
+    .split("/")[0]
+    .split(":")[0];
 }
 
 function buildWindow(
@@ -1002,8 +1113,12 @@ export const __mediaHubRssTestHooks = {
   dedupeItems,
   gdeltDocUrl,
   googleNewsUrl,
+  isBlockedOrPaywalledSource,
+  isDuplicateGlobalSourceFamily,
   isDuplicateSpikeTelegramSource,
   isUnsafeMonitoringCandidate,
   normalizeTitle,
   scoreNews,
+  toHostname,
+  toRootDomain,
 };

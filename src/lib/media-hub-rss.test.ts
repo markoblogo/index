@@ -1,13 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
-import { __mediaHubRssTestHooks } from "@/lib/media-hub-rss";
-
 vi.mock("server-only", () => ({}));
+import { __mediaHubRssTestHooks } from "@/lib/media-hub-rss";
 
 const {
   canonicalizeUrl,
   dedupeItems,
   gdeltDocUrl,
   googleNewsUrl,
+  isBlockedOrPaywalledSource,
+  isDuplicateGlobalSourceFamily,
   isDuplicateSpikeTelegramSource,
   isUnsafeMonitoringCandidate,
   normalizeTitle,
@@ -66,10 +67,38 @@ describe("media hub RSS source hygiene", () => {
     expect(normalizeTitle(result[0].title)).toBe("ukraine grain exports through danube ports");
   });
 
+  it("keeps same title fingerprints separate outside the 14-day duplicate window", () => {
+    const result = dedupeItems([
+      item({
+        publishedAt: "2026-06-01T10:00:00.000Z",
+        source: "Direct",
+        title: "USDA releases wheat crop forecast",
+      }),
+      item({
+        publishedAt: "2026-06-10T10:00:00.000Z",
+        source: "GDELT",
+        title: "USDA releases wheat crop forecast",
+      }),
+      item({
+        publishedAt: "2026-06-20T10:00:00.000Z",
+        source: "Google News",
+        title: "USDA releases wheat crop forecast",
+      }),
+    ]);
+
+    expect(result).toHaveLength(2);
+  });
+
   it("flags existing Telegram-backed SPIKE source domains as duplicates", () => {
     expect(isDuplicateSpikeTelegramSource("https://latifundist.com/news")).toBe(true);
     expect(isDuplicateSpikeTelegramSource("www.superagronom.com")).toBe(true);
     expect(isDuplicateSpikeTelegramSource("en.usm.media")).toBe(false);
+  });
+
+  it("flags existing global source families before adding new feeds", () => {
+    expect(isDuplicateGlobalSourceFamily("https://www.freightwaves.com/news/feed")).toBe(true);
+    expect(isDuplicateGlobalSourceFamily("https://publications.jrc.ec.europa.eu/repository/")).toBe(true);
+    expect(isDuplicateGlobalSourceFamily("https://new-source.example/feed")).toBe(false);
   });
 
   it("keeps Ukraine grain logistics above generic non-market noise", () => {
@@ -88,9 +117,31 @@ describe("media hub RSS source hygiene", () => {
     expect(relevant.topicTags).toContain("logistics");
   });
 
+  it("scores global commodity fundamentals above generic logistics noise", () => {
+    const relevant = scoreNews(
+      "Brazil soybean exports rise as Rosario corn and wheat tenders support global grain trade",
+      "Crop forecasts, port flows, freight and import demand remain active market drivers.",
+      "grain-oilseeds",
+    );
+    const noise = scoreNews(
+      "Passenger rail app launches ecommerce logistics feature",
+      "Consumer mobility software and parcel dashboards with no physical commodity signal.",
+      "logistics-shipping",
+    );
+
+    expect(relevant.relevanceScore).toBeGreaterThan(noise.relevanceScore);
+    expect(relevant.topicTags).toEqual(expect.arrayContaining(["markets", "trade", "logistics"]));
+  });
+
   it("quarantines unsafe monitoring candidates", () => {
     expect(isUnsafeMonitoringCandidate("Casino slot giveaway", "not an agri-market signal")).toBe(true);
     expect(isUnsafeMonitoringCandidate("Ukraine wheat exports rise", "port shipments and tenders")).toBe(false);
+  });
+
+  it("recognizes blocked or paywalled source responses without archiving bodies", () => {
+    expect(isBlockedOrPaywalledSource(403)).toBe(true);
+    expect(isBlockedOrPaywalledSource(200, "text/html; paywall=true")).toBe(true);
+    expect(isBlockedOrPaywalledSource(200, "application/rss+xml")).toBe(false);
   });
 
   it("builds no-key discovery URLs for Google News RSS and GDELT", () => {
