@@ -288,9 +288,19 @@ function buildDeterministicAiMarketBrief(
         const commodity =
           commodities.find((item) => item.id === row.commodityId) ??
           commodities[0];
+        const commodityHistory = getCommodityHistory(history, row.commodityId);
+        const weeklyChange =
+          computeChangeFromPreviousFriday(
+            commodityHistory,
+            row.value,
+            row.date,
+          ) ?? 0;
         return [
           commodity.code,
-          copy.cardComment(commodity.name[locale], formatSigned(row.dayChange)),
+          copy.cardComment(
+            formatUsdPerT(row.dayChange, locale),
+            formatUsdPerT(weeklyChange, locale),
+          ),
         ];
       }),
     ),
@@ -394,6 +404,35 @@ function formatSigned(value: number) {
   return `${value > 0 ? "+" : ""}${value.toFixed(1)}`;
 }
 
+function computeChangeFromPreviousFriday(
+  history: AiAnalyticsPoint[],
+  latest: number,
+  latestDate: string,
+) {
+  const previousFriday = getPreviousFridayDate(latestDate);
+  const reference = history
+    .filter((point) => point.date <= previousFriday)
+    .sort((first, second) => first.date.localeCompare(second.date))
+    .at(-1);
+
+  return reference ? Math.round((latest - reference.value) * 10) / 10 : null;
+}
+
+function getPreviousFridayDate(date: string) {
+  const value = new Date(`${date}T00:00:00Z`);
+  const day = value.getUTCDay();
+  const daysSinceFriday = (day + 2) % 7;
+  value.setUTCDate(value.getUTCDate() - (daysSinceFriday === 0 ? 7 : daysSinceFriday));
+  return value.toISOString().slice(0, 10);
+}
+
+function formatUsdPerT(value: number, locale: Locale) {
+  const rounded = Math.round(value * 10) / 10;
+  const amount = Number.isInteger(rounded) ? rounded.toFixed(0) : rounded.toFixed(1);
+  const unit = locale === "uk" ? "$/т" : "$/t";
+  return `${rounded > 0 ? "+" : ""}${amount}${unit}`;
+}
+
 function formatShortDate(date: string, locale: Locale) {
   return new Intl.DateTimeFormat(locale === "uk" ? "uk-UA" : "en-US", {
     day: "numeric",
@@ -492,8 +531,8 @@ function buildFallbackWatchNextBody(
 function getFallbackCopy(locale: Locale) {
   return locale === "uk"
     ? {
-        cardComment: (commodity: string, change: string) =>
-          `${commodity}: денний рух ${change} USD/t. AI-коментар базується на опублікованих значеннях.`,
+        cardComment: (dayChange: string, weeklyChange: string) =>
+          `Сьогодні індекс змінився на ${dayChange} відносно минулого дня. Тижнева зміна відносно минулої п'ятниці склала ${weeklyChange}.`,
         moverLine: (commodity: string, change: string) =>
           `${commodity} показує один із найпомітніших короткострокових рухів: ${change} USD/t.`,
         moversTitle: "Що рухалося найсильніше",
@@ -513,8 +552,8 @@ function getFallbackCopy(locale: Locale) {
         watchTitle: "На що дивитися далі",
       }
     : {
-        cardComment: (commodity: string, change: string) =>
-          `${commodity}: daily move ${change} USD/t. AI note is based on published values.`,
+        cardComment: (dayChange: string, weeklyChange: string) =>
+          `Today the index changed by ${dayChange} versus the previous day. The weekly change versus last Friday was ${weeklyChange}.`,
         moverLine: (commodity: string, change: string) =>
           `${commodity} is one of the most visible short-term movers at ${change} USD/t.`,
         moversTitle: "Key Movers",

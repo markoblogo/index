@@ -388,6 +388,12 @@ function buildBriefInput(
         return null;
       }
 
+      const changeWeekToLastFriday = computeChangeFromPreviousFriday(
+        commodityHistory,
+        latest.value,
+        latest.date,
+      );
+
       return {
         change1d: latest.dayChange,
         change7d: roundOne(
@@ -399,6 +405,7 @@ function buildBriefInput(
         change90d: roundOne(latest.value - commodityHistory[0].value),
         code: commodity.code,
         commodityId: commodity.id,
+        changeWeekToLastFriday,
         latestUsdPerMt: latest.value,
         name: commodity.name[locale],
         volatility30d: roundOne(
@@ -460,7 +467,7 @@ async function callOpenAiBrief(
       input: [
         {
           content:
-            `You generate concise but fact-dense market intelligence briefs for SPIKE SPOT INDEX, a Ukrainian agro commodity spot benchmark. Use only the provided data. Do not invent prices, respondent names, trades, causes, news, or forecasts. Do not restate the full index table. Do not list all prices unless a value is necessary to explain a signal. When telegram digest data is provided, use it to extract factual market context and concrete short observations rather than generic abstractions. Prefer specific observations about logistics, export flow, policy, trade tone, farmer selling pace, processor demand, cross-market pressure and observed market mood if such facts are present in the provided digest. Do not present scenarios as forecasts. Do not give trading advice. Public outputs must not expose model, token, cost, or debug data. ${localeInstructions} The brief must answer: 1) what is the main market signal today, 2) which movements are meaningful, 3) where instability or divergence is visible, 4) what should be watched in the next publication cycle. Return strict JSON only with keys: marketSignal, keyMovers, riskRead, watchNext, dataConfidence, cardComments. keyMovers and watchNext should contain 2-4 short fact-based items each. dataConfidence must be one of limited, normal, strong. cardComments must contain one short object per provided position with code and comment. The brief is not trading advice.`,
+            `You generate concise but fact-dense market intelligence briefs for SPIKE SPOT INDEX, a Ukrainian agro commodity spot benchmark. Use only the provided data. Do not invent prices, respondent names, trades, causes, news, or forecasts. Do not restate the full index table. Do not list all prices unless a value is necessary to explain a signal. When telegram digest data is provided, use it to extract factual market context and concrete short observations rather than generic abstractions. Prefer specific observations about logistics, export flow, policy, trade tone, farmer selling pace, processor demand, cross-market pressure and observed market mood if such facts are present in the provided digest. Do not present scenarios as forecasts. Do not give trading advice. Public outputs must not expose model, token, cost, or debug data. ${localeInstructions} The brief must answer: 1) what is the main market signal today, 2) which movements are meaningful, 3) where instability or divergence is visible, 4) what should be watched in the next publication cycle. Return strict JSON only with keys: marketSignal, keyMovers, riskRead, watchNext, dataConfidence, cardComments. keyMovers and watchNext should contain 2-4 short fact-based items each. dataConfidence must be one of limited, normal, strong. cardComments must contain one short object per provided position with code and comment. Each cardComments.comment must be exactly two sentences: sentence 1 describes today's change versus the previous day using only change1d in USD/t; sentence 2 states the cumulative current-week change versus last Friday using only changeWeekToLastFriday in USD/t. Never use percentages in cardComments. The brief is not trading advice.`,
           role: "system",
         },
         {
@@ -868,9 +875,19 @@ function buildDeterministicAiMarketBrief(
         const commodity =
           commodities.find((item) => item.id === row.commodityId) ??
           commodities[0];
+        const commodityHistory = getCommodityHistory(history, row.commodityId);
+        const weeklyChange =
+          computeChangeFromPreviousFriday(
+            commodityHistory,
+            row.value,
+            row.date,
+          ) ?? 0;
         return [
           commodity.code,
-          copy.cardComment(commodity.name[locale], formatSigned(row.dayChange)),
+          copy.cardComment(
+            formatUsdPerT(row.dayChange, locale),
+            formatUsdPerT(weeklyChange, locale),
+          ),
         ];
       }),
     ),
@@ -1043,6 +1060,28 @@ function getPointBack(history: AiAnalyticsPoint[], countFromEnd: number) {
   );
 }
 
+function computeChangeFromPreviousFriday(
+  history: AiAnalyticsPoint[],
+  latest: number,
+  latestDate: string,
+) {
+  const previousFriday = getPreviousFridayDate(latestDate);
+  const reference = history
+    .filter((point) => point.date <= previousFriday)
+    .sort((first, second) => first.date.localeCompare(second.date))
+    .at(-1);
+
+  return reference ? roundOne(latest - reference.value) : null;
+}
+
+function getPreviousFridayDate(date: string) {
+  const value = new Date(`${date}T00:00:00Z`);
+  const day = value.getUTCDay();
+  const daysSinceFriday = (day + 2) % 7;
+  value.setUTCDate(value.getUTCDate() - (daysSinceFriday === 0 ? 7 : daysSinceFriday));
+  return value.toISOString().slice(0, 10);
+}
+
 function getLatestHistoryDate(history: AiAnalyticsPoint[]) {
   return (
     history
@@ -1085,6 +1124,13 @@ function standardDeviation(values: number[]) {
 
 function formatSigned(value: number) {
   return `${value > 0 ? "+" : ""}${value.toFixed(1)}`;
+}
+
+function formatUsdPerT(value: number, locale: Locale) {
+  const rounded = roundOne(value);
+  const amount = Number.isInteger(rounded) ? rounded.toFixed(0) : rounded.toFixed(1);
+  const unit = locale === "uk" ? "$/т" : "$/t";
+  return `${rounded > 0 ? "+" : ""}${amount}${unit}`;
 }
 
 function roundOne(value: number) {
@@ -1411,8 +1457,8 @@ function formatDailyDelta(value: number | null) {
 function getFallbackCopy(locale: Locale) {
   return locale === "uk"
     ? {
-        cardComment: (commodity: string, change: string) =>
-          `${commodity}: денний рух ${change} USD/t. AI-коментар базується на опублікованих значеннях.`,
+        cardComment: (dayChange: string, weeklyChange: string) =>
+          `Сьогодні індекс змінився на ${dayChange} відносно минулого дня. Тижнева зміна відносно минулої п'ятниці склала ${weeklyChange}.`,
         moverLine: (commodity: string, change: string) =>
           `${commodity} показує один із найпомітніших короткострокових рухів: ${change} USD/t.`,
         moversTitle: "Що рухалося найсильніше",
@@ -1432,8 +1478,8 @@ function getFallbackCopy(locale: Locale) {
         watchTitle: "На що дивитися далі",
       }
     : {
-        cardComment: (commodity: string, change: string) =>
-          `${commodity}: daily move ${change} USD/t. AI note is based on published values.`,
+        cardComment: (dayChange: string, weeklyChange: string) =>
+          `Today the index changed by ${dayChange} versus the previous day. The weekly change versus last Friday was ${weeklyChange}.`,
         moverLine: (commodity: string, change: string) =>
           `${commodity} is one of the most visible short-term movers at ${change} USD/t.`,
         moversTitle: "Key Movers",

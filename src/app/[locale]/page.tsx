@@ -50,7 +50,7 @@ function HomeAiBriefBlock({ locale }: { locale: Locale }) {
           disclaimer:
             "AI не встановлює і не коригує офіційні значення індексу. Офіційні значення залишаються методологічними.",
           eyebrow: "AI-assisted market brief",
-          title: "AI пояснює ринок, але не замінює методологію",
+          title: "AI пояснює ринок",
         }
       : {
           body:
@@ -59,7 +59,7 @@ function HomeAiBriefBlock({ locale }: { locale: Locale }) {
           disclaimer:
             "AI does not set or adjust official index values. Official values remain methodology-driven.",
           eyebrow: "AI-assisted market brief",
-          title: "AI explains the market, but does not replace methodology",
+          title: "AI explains the market",
         };
 
   return (

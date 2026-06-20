@@ -179,8 +179,9 @@ const spikeCommodities: IndexCommodityConfig[] = [
     percentChange: 0,
     sparkline: [225, 226, 227, 228, 229, 229, 229],
     detailMetrics: [
+      { label: { uk: "Якість", en: "Quality" }, value: { uk: "експорт", en: "export" } },
       { label: { uk: "Базис", en: "Basis" }, value: { uk: "CPT Одеса", en: "CPT Odesa" } },
-      { label: { uk: "Напрям", en: "Flow" }, value: { uk: "експорт", en: "export" } },
+      { label: { uk: "Напрямок", en: "Direction" }, value: { uk: "порт експорт", en: "port export" } },
     ],
   },
   {
@@ -188,8 +189,8 @@ const spikeCommodities: IndexCommodityConfig[] = [
     code: "WHT 11.5",
     dbCode: "WHT_115",
     marker: "W",
-    name: { uk: "Пшениця 11.5pro", en: "Wheat 11.5% protein" },
-    shortName: { uk: "Пшениця", en: "Wheat" },
+    name: { uk: "Продовольча пшениця", en: "Milling Wheat" },
+    shortName: { uk: "Продовольча пшениця", en: "Milling Wheat" },
     group: "export",
     category: "all-seasons",
     sortOrder: 2,
@@ -198,8 +199,9 @@ const spikeCommodities: IndexCommodityConfig[] = [
     percentChange: 0,
     sparkline: [221, 221, 222, 222, 222, 222, 222],
     detailMetrics: [
-      { label: { uk: "Протеїн", en: "Protein" }, value: { uk: "11.5%", en: "11.5%" } },
-      { label: { uk: "Напрям", en: "Flow" }, value: { uk: "експорт", en: "export" } },
+      { label: { uk: "Якість", en: "Quality" }, value: { uk: "11.5% білок", en: "11.5% protein" } },
+      { label: { uk: "Базис", en: "Basis" }, value: { uk: "CPT Одеса", en: "CPT Odesa" } },
+      { label: { uk: "Напрямок", en: "Direction" }, value: { uk: "порт експорт", en: "port export" } },
     ],
   },
   {
@@ -217,8 +219,9 @@ const spikeCommodities: IndexCommodityConfig[] = [
     percentChange: 0.5,
     sparkline: [216, 217, 217, 218, 218, 219, 219],
     detailMetrics: [
+      { label: { uk: "Якість", en: "Quality" }, value: { uk: "експорт", en: "export" } },
       { label: { uk: "Базис", en: "Basis" }, value: { uk: "CPT Одеса", en: "CPT Odesa" } },
-      { label: { uk: "Напрям", en: "Flow" }, value: { uk: "експорт", en: "export" } },
+      { label: { uk: "Напрямок", en: "Direction" }, value: { uk: "порт експорт", en: "port export" } },
     ],
   },
   {
@@ -237,8 +240,9 @@ const spikeCommodities: IndexCommodityConfig[] = [
     percentChange: 0,
     sparkline: [214, 215, 215, 216, 216, 216, 216],
     detailMetrics: [
+      { label: { uk: "Якість", en: "Quality" }, value: { uk: "експорт", en: "export" } },
       { label: { uk: "Базис", en: "Basis" }, value: { uk: "FCA Чоп", en: "FCA Chop" } },
-      { label: { uk: "Напрям", en: "Flow" }, value: { uk: "експорт", en: "export" } },
+      { label: { uk: "Напрямок", en: "Direction" }, value: { uk: "кордон експорт", en: "border export" } },
     ],
   },
   {
@@ -265,7 +269,7 @@ const spikeCommodities: IndexCommodityConfig[] = [
         label: { uk: "Базис", en: "Basis" },
         value: { uk: "CPT parity Одеса", en: "CPT parity Odesa" },
       },
-      { label: { uk: "Напрям", en: "Flow" }, value: { uk: "переробка", en: "processing" } },
+      { label: { uk: "Напрямок", en: "Direction" }, value: { uk: "переробка", en: "processing" } },
     ],
   },
   {
@@ -292,7 +296,7 @@ const spikeCommodities: IndexCommodityConfig[] = [
         label: { uk: "Базис", en: "Basis" },
         value: { uk: "CPT parity Одеса", en: "CPT parity Odesa" },
       },
-      { label: { uk: "Напрям", en: "Flow" }, value: { uk: "переробка", en: "processing" } },
+      { label: { uk: "Напрямок", en: "Direction" }, value: { uk: "переробка", en: "processing" } },
     ],
   },
   {
@@ -319,7 +323,7 @@ const spikeCommodities: IndexCommodityConfig[] = [
         label: { uk: "Базис", en: "Basis" },
         value: { uk: "CPT parity Одеса", en: "CPT parity Odesa" },
       },
-      { label: { uk: "Напрям", en: "Flow" }, value: { uk: "переробка", en: "processing" } },
+      { label: { uk: "Напрямок", en: "Direction" }, value: { uk: "переробка", en: "processing" } },
     ],
   },
   {
@@ -337,8 +341,9 @@ const spikeCommodities: IndexCommodityConfig[] = [
     percentChange: 0,
     sparkline: [468, 469, 470, 471, 472, 472, 472],
     detailMetrics: [
+      { label: { uk: "Якість", en: "Quality" }, value: { uk: "ГМО", en: "GMO" } },
       { label: { uk: "Базис", en: "Basis" }, value: { uk: "CPT Port", en: "CPT Port" } },
-      { label: { uk: "Напрям", en: "Flow" }, value: { uk: "експорт", en: "export" } },
+      { label: { uk: "Напрямок", en: "Direction" }, value: { uk: "порт експорт", en: "port export" } },
     ],
   },
   {
@@ -357,8 +362,9 @@ const spikeCommodities: IndexCommodityConfig[] = [
     percentChange: 0,
     sparkline: [462, 463, 464, 465, 466, 466, 466],
     detailMetrics: [
+      { label: { uk: "Якість", en: "Quality" }, value: { uk: "ГМО", en: "GMO" } },
       { label: { uk: "Базис", en: "Basis" }, value: { uk: "FCA Чоп", en: "FCA Chop" } },
-      { label: { uk: "Напрям", en: "Flow" }, value: { uk: "експорт", en: "export" } },
+      { label: { uk: "Напрямок", en: "Direction" }, value: { uk: "кордон експорт", en: "border export" } },
     ],
   },
   {
@@ -376,8 +382,9 @@ const spikeCommodities: IndexCommodityConfig[] = [
     percentChange: 0,
     sparkline: [484, 485, 486, 487, 488, 488, 488],
     detailMetrics: [
+      { label: { uk: "Якість", en: "Quality" }, value: { uk: "не ГМО", en: "NON-GMO" } },
       { label: { uk: "Базис", en: "Basis" }, value: { uk: "CPT Port", en: "CPT Port" } },
-      { label: { uk: "Напрям", en: "Flow" }, value: { uk: "експорт", en: "export" } },
+      { label: { uk: "Напрямок", en: "Direction" }, value: { uk: "порт експорт", en: "port export" } },
     ],
   },
   {
@@ -396,8 +403,9 @@ const spikeCommodities: IndexCommodityConfig[] = [
     percentChange: 0,
     sparkline: [477, 478, 479, 480, 481, 481, 481],
     detailMetrics: [
+      { label: { uk: "Якість", en: "Quality" }, value: { uk: "не ГМО", en: "NON-GMO" } },
       { label: { uk: "Базис", en: "Basis" }, value: { uk: "FCA Чоп", en: "FCA Chop" } },
-      { label: { uk: "Напрям", en: "Flow" }, value: { uk: "експорт", en: "export" } },
+      { label: { uk: "Напрямок", en: "Direction" }, value: { uk: "кордон експорт", en: "border export" } },
     ],
   },
   {
@@ -415,8 +423,9 @@ const spikeCommodities: IndexCommodityConfig[] = [
     percentChange: 0,
     sparkline: [497, 498, 499, 500, 501, 501, 501],
     detailMetrics: [
+      { label: { uk: "Якість", en: "Quality" }, value: { uk: "48% олії, не ГМО", en: "48% oil, NON-GMO" } },
       { label: { uk: "Базис", en: "Basis" }, value: { uk: "CPT Port", en: "CPT Port" } },
-      { label: { uk: "Напрям", en: "Flow" }, value: { uk: "експорт", en: "export" } },
+      { label: { uk: "Напрямок", en: "Direction" }, value: { uk: "порт експорт", en: "port export" } },
     ],
   },
   {
@@ -435,8 +444,9 @@ const spikeCommodities: IndexCommodityConfig[] = [
     percentChange: 0,
     sparkline: [490, 491, 492, 493, 494, 494, 494],
     detailMetrics: [
+      { label: { uk: "Якість", en: "Quality" }, value: { uk: "48% олії, не ГМО", en: "48% oil, NON-GMO" } },
       { label: { uk: "Базис", en: "Basis" }, value: { uk: "FCA Чоп", en: "FCA Chop" } },
-      { label: { uk: "Напрям", en: "Flow" }, value: { uk: "експорт", en: "export" } },
+      { label: { uk: "Напрямок", en: "Direction" }, value: { uk: "кордон експорт", en: "border export" } },
     ],
   },
 ];
@@ -596,13 +606,13 @@ export const INDEX_CONFIGS: Record<IndexTenantId, IndexConfig> = {
       boardKicker: { uk: "Market update", en: "Market update" },
       facts: {
         uk: [
-          { value: "13", label: "позицій" },
-          { value: "3", label: "базиси" },
+          { value: "13", label: "товарів" },
+          { value: "3", label: "напрямки" },
           { value: "3", label: "категорії" },
         ],
         en: [
-          { value: "13", label: "positions" },
-          { value: "3", label: "bases" },
+          { value: "13", label: "commodities" },
+          { value: "3", label: "directions" },
           { value: "3", label: "categories" },
         ],
       },
@@ -691,8 +701,8 @@ export function getSpikeCommodityCategories(locale: Locale) {
       label: locale === "uk" ? "Processors" : "Processors",
       description:
         locale === "uk"
-          ? "Внутрішній ринок переробки з цінами USD/t incl. VAT."
-          : "Domestic processing market with USD/t VAT-included values.",
+          ? "Переробка: soybean 37 pro, GMO; Sunflower Seeds 48% dry oil; Rapeseed 48% dry oil, NON-GMO. USD/t incl. VAT."
+          : "Processing: soybean 37 pro, GMO; Sunflower Seeds 48% dry oil; Rapeseed 48% dry oil, NON-GMO. USD/t VAT-included.",
     },
     {
       id: "seasonal-export" as const,

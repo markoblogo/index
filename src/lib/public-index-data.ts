@@ -291,7 +291,7 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
         ? submissionFallback
         : null;
     const history = recentPublishedByCommodityId.get(commodity.id) ?? [];
-    const aiComment = {
+    const storedAiComment = {
       en: aiCommentsEn[commodity.code] ?? aiCommentsEn[mockCommodity.code] ?? "",
       uk: aiCommentsUk[commodity.code] ?? aiCommentsUk[mockCommodity.code] ?? "",
     };
@@ -304,6 +304,17 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
         latest === null
           ? { changeAbs: 0, changePct: 0 }
           : computeChange(latest, previous);
+      const latestDate =
+        displayFallback?.date ??
+        publishedIndex?.tradeDate.toISOString().slice(0, 10) ??
+        latestPublishedDate;
+      const aiComment = buildCardAiComment({
+        dayChange: change.changeAbs,
+        history,
+        latest,
+        latestDate,
+        stored: storedAiComment,
+      });
 
       return {
         ...mockCommodity,
@@ -318,6 +329,14 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
     }
 
     const latest = publishedIndex.valueUsdPerMt.toNumber();
+    const latestDate = publishedIndex.tradeDate.toISOString().slice(0, 10);
+    const aiComment = buildCardAiComment({
+      dayChange: publishedIndex.changeAbsUsdPerMt?.toNumber() ?? 0,
+      history,
+      latest,
+      latestDate,
+      stored: storedAiComment,
+    });
 
     return {
       ...mockCommodity,
@@ -416,6 +435,64 @@ function computeChange(latest: number, previous: number | null) {
     changeAbs,
     changePct: roundTwo((changeAbs / previous) * 100),
   };
+}
+
+function buildCardAiComment({
+  dayChange,
+  history,
+  latest,
+  latestDate,
+  stored,
+}: {
+  dayChange: number;
+  history: Array<{ date: string; value: number }>;
+  latest: number | null;
+  latestDate: string;
+  stored: Record<"en" | "uk", string>;
+}) {
+  if (latest === null) {
+    return stored;
+  }
+
+  const weeklyChange = computeChangeFromPreviousFriday(history, latest, latestDate);
+
+  if (weeklyChange === null) {
+    return stored;
+  }
+
+  return {
+    en: `Today the index changed by ${formatUsdPerT(dayChange, "en")} versus the previous day. The weekly change versus last Friday was ${formatUsdPerT(weeklyChange, "en")}.`,
+    uk: `Сьогодні індекс змінився на ${formatUsdPerT(dayChange, "uk")} відносно минулого дня. Тижнева зміна відносно минулої п'ятниці склала ${formatUsdPerT(weeklyChange, "uk")}.`,
+  };
+}
+
+function computeChangeFromPreviousFriday(
+  history: Array<{ date: string; value: number }>,
+  latest: number,
+  latestDate: string,
+) {
+  const previousFriday = getPreviousFridayDate(latestDate);
+  const reference = history
+    .filter((point) => point.date <= previousFriday)
+    .sort((first, second) => first.date.localeCompare(second.date))
+    .at(-1);
+
+  return reference ? roundOne(latest - reference.value) : null;
+}
+
+function getPreviousFridayDate(date: string) {
+  const value = new Date(`${date}T00:00:00Z`);
+  const day = value.getUTCDay();
+  const daysSinceFriday = (day + 2) % 7;
+  value.setUTCDate(value.getUTCDate() - (daysSinceFriday === 0 ? 7 : daysSinceFriday));
+  return value.toISOString().slice(0, 10);
+}
+
+function formatUsdPerT(value: number, locale: "en" | "uk") {
+  const rounded = roundOne(value);
+  const amount = Number.isInteger(rounded) ? rounded.toFixed(0) : rounded.toFixed(1);
+  const unit = locale === "uk" ? "$/т" : "$/t";
+  return `${rounded > 0 ? "+" : ""}${amount}${unit}`;
 }
 
 function roundOne(value: number) {

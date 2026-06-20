@@ -70,6 +70,7 @@ export function SpreadAnalysisPanel({
   const [chartPeriod, setChartPeriod] =
     useState<(typeof chartPeriods)[number]["value"]>(90);
   const [rangePeriod, setRangePeriod] = useState<(typeof rangePeriods)[number]>(90);
+  const [hoveredChartIndex, setHoveredChartIndex] = useState<number | null>(null);
 
   const spreadSeries = useMemo(() => buildSpreadSeries(history), [history]);
   const activeSpread =
@@ -101,6 +102,18 @@ export function SpreadAnalysisPanel({
       : ((currentPoint.value - rangeMin) / (rangeMax - rangeMin)) * 100;
   const chartValues = chartSeries.map((point) => point.value);
   const chartRange = getPaddedRange(Math.min(...chartValues), Math.max(...chartValues));
+  const hoveredPoint =
+    hoveredChartIndex === null ? null : chartSeries[hoveredChartIndex] ?? null;
+  const hoveredPosition =
+    hoveredPoint && hoveredChartIndex !== null
+      ? getChartPointPosition(
+          hoveredPoint.value,
+          hoveredChartIndex,
+          chartSeries.length,
+          chartRange.min,
+          chartRange.max,
+        )
+      : null;
   const text = getCopy(locale);
 
   return (
@@ -147,27 +160,62 @@ export function SpreadAnalysisPanel({
             </div>
           </div>
 
-          <svg
-            aria-label={text.chartTitle}
-            className="mt-5 h-72 w-full overflow-visible"
-            preserveAspectRatio="none"
-            viewBox="0 0 100 100"
+          <div
+            className="relative mt-5 h-72 w-full touch-none"
+            onPointerLeave={() => setHoveredChartIndex(null)}
+            onPointerMove={(event) => {
+              if (chartSeries.length === 0) {
+                return;
+              }
+
+              const bounds = event.currentTarget.getBoundingClientRect();
+              const ratio = Math.min(
+                Math.max((event.clientX - bounds.left) / bounds.width, 0),
+                1,
+              );
+              setHoveredChartIndex(Math.round(ratio * (chartSeries.length - 1)));
+            }}
           >
-            <GridLines />
-            <polyline
-              fill="none"
-              points={toChartPoints(
-                chartSeries.map((point) => point.value),
-                chartRange.min,
-                chartRange.max,
-              )}
-              stroke="var(--color-green)"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="3"
-              vectorEffect="non-scaling-stroke"
-            />
-          </svg>
+            <svg
+              aria-label={text.chartTitle}
+              className="h-full w-full overflow-visible"
+              preserveAspectRatio="none"
+              viewBox="0 0 100 100"
+            >
+              <GridLines />
+              <polyline
+                fill="none"
+                points={toChartPoints(
+                  chartSeries.map((point) => point.value),
+                  chartRange.min,
+                  chartRange.max,
+                )}
+                stroke="var(--color-green)"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="3"
+                vectorEffect="non-scaling-stroke"
+              />
+            </svg>
+            {hoveredPoint && hoveredPosition ? (
+              <>
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute top-0 h-full w-0.5 -translate-x-1/2 bg-uga-green shadow-[0_0_16px_rgba(57,255,20,0.7)]"
+                  style={{ left: `${hoveredPosition.x}%` }}
+                />
+                <div
+                  className="pointer-events-none absolute z-10 -translate-x-1/2 rounded-full border border-uga-green bg-black px-2.5 py-1 text-xs font-black text-uga-green shadow-lg shadow-black/35"
+                  style={{
+                    left: `${Math.min(Math.max(hoveredPosition.x, 8), 92)}%`,
+                    top: `${Math.max(hoveredPosition.y - 13, 2)}%`,
+                  }}
+                >
+                  {formatSigned(hoveredPoint.value)} USD/t
+                </div>
+              </>
+            ) : null}
+          </div>
 
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs font-black uppercase text-black/50">
             <span>{formatDate(chartSeries[0]?.date, locale)}</span>
@@ -332,11 +380,31 @@ function toChartPoints(values: number[], min: number, max: number) {
 
   return values
     .map((value, index) => {
-      const x = values.length === 1 ? 0 : (index / (values.length - 1)) * 100;
-      const y = 82 - ((value - min) / range) * 64;
+      const { x, y } = getChartPointPosition(
+        value,
+        index,
+        values.length,
+        min,
+        max,
+      );
       return `${x},${y}`;
     })
     .join(" ");
+}
+
+function getChartPointPosition(
+  value: number,
+  index: number,
+  length: number,
+  min: number,
+  max: number,
+) {
+  const range = Math.max(max - min, 1);
+
+  return {
+    x: length === 1 ? 0 : (index / (length - 1)) * 100,
+    y: 82 - ((value - min) / range) * 64,
+  };
 }
 
 function GridLines() {

@@ -369,7 +369,7 @@ function SpikeCommodityCard({
   const compactTitle =
     commodity.id === "wheat-115"
       ? {
-          accent: locale === "uk" ? "11.5pro" : "11.5% protein",
+          accent: null,
           title: commodity.shortName?.[locale] ?? commodity.name[locale],
         }
       : commodity.id === "corn-fca-chop"
