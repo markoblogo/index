@@ -699,25 +699,32 @@ function buildPeriodSummary(
     `The ${periodLabel} ${scopeLabel} read is built from ${items.length} monitored items across ${sourceText || "the active source mesh"}, with the strongest clusters in ${topicText || "commodity, logistics and policy signals"}.`,
   );
 
+  const usedItemIds = new Set<string>();
   const grainItems = selectSignalItems(items, (item) =>
     item.category === "grain-oilseeds" ||
     item.cropTags.some((tag) => ["corn", "wheat", "soy", "rapeseed", "sunflower"].includes(tag)) ||
     item.topicTags.includes("markets"),
   );
+  markUsed(usedItemIds, grainItems);
   const logisticsItems = selectSignalItems(items, (item) =>
-    item.category === "logistics-shipping" || item.topicTags.includes("logistics"),
+    !usedItemIds.has(item.id) && (item.category === "logistics-shipping" || item.topicTags.includes("logistics")),
   );
-  const weatherItems = selectSignalItems(items, (item) => item.topicTags.includes("weather"));
+  markUsed(usedItemIds, logisticsItems);
+  const weatherItems = selectSignalItems(items, (item) =>
+    !usedItemIds.has(item.id) && item.topicTags.includes("weather"),
+  );
+  markUsed(usedItemIds, weatherItems);
   const tradeItems = selectSignalItems(items, (item) =>
-    item.topicTags.includes("trade") ||
-    item.category === "policy-macro" ||
-    item.regionTags.some((tag) => ["black-sea", "ukraine", "china", "eu"].includes(tag)),
+    !usedItemIds.has(item.id) &&
+    (
+      item.topicTags.includes("trade") ||
+      item.category === "policy-macro" ||
+      item.regionTags.some((tag) => ["black-sea", "ukraine", "china", "eu"].includes(tag))
+    ),
   );
+  markUsed(usedItemIds, tradeItems);
   const remainingItems = selectSignalItems(items, (item) =>
-    !grainItems.includes(item) &&
-    !logisticsItems.includes(item) &&
-    !weatherItems.includes(item) &&
-    !tradeItems.includes(item),
+    !usedItemIds.has(item.id),
   );
 
   pushSignalLine(lines, "Grains and oilseeds", grainItems, "price tone, futures, basis and crop-flow signals");
@@ -731,6 +738,12 @@ function buildPeriodSummary(
   }
 
   return lines.slice(0, window === "week" ? 7 : 8);
+}
+
+function markUsed(usedItemIds: Set<string>, items: RssNewsItem[]) {
+  for (const item of items) {
+    usedItemIds.add(item.id);
+  }
 }
 
 function selectSignalItems(
