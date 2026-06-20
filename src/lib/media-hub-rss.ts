@@ -658,26 +658,113 @@ function buildSummary(
   window: "day" | "week" | "month",
   scope: "global" | "ukraine",
 ) {
+  if (window !== "day") {
+    return buildPeriodSummary(items, topTopics, topSources, window, scope);
+  }
+
   const topicText = topTopics.map((item) => item.label).join(", ");
   const sourceText = topSources.map((item) => item.label).join(", ");
-  const label = window === "day" ? "day" : window === "week" ? "7-day" : "30-day";
-  const reportLabel = window === "day" ? "daily" : window === "week" ? "weekly" : "monthly";
   const scopeText =
     scope === "ukraine"
       ? "English-language Ukraine grain and oilseed market monitoring window"
       : "global commodity monitoring window";
   const leadItems = items.slice(0, 4).map((item) => item.title).filter(Boolean);
-  const topicNarrative = topTopics.slice(0, 3).map((item) => `${item.label.toLowerCase()} (${item.hint})`);
 
   return [
-    `The ${label} ${scopeText} is led by ${topicText || "the current commodity monitoring context"}, with the densest source contribution coming from ${sourceText || "the active feed mesh"}.`,
+    `The day ${scopeText} is led by ${topicText || "the current commodity monitoring context"}, with the densest source contribution coming from ${sourceText || "the active feed mesh"}.`,
     items.length > 0
       ? `The accepted feed contains ${items.length} monitored items; the strongest signals are ${leadItems.join("; ") || "clustered around the main topic groups"}.`
       : "The accepted feed is light, so the report keeps to verified monitoring context rather than inventing market drivers.",
-    topicNarrative.length > 0
-      ? `The ${reportLabel} read is organized around ${topicNarrative.join("; ")}, with emphasis on concrete developments rather than a raw source list.`
-      : `The ${reportLabel} read remains focused on verified commodity, logistics and policy signals from the monitoring layer.`,
+    "The daily read remains focused on verified commodity, logistics and policy signals from the monitoring layer.",
   ];
+}
+
+function buildPeriodSummary(
+  items: RssNewsItem[],
+  topTopics: Array<{ count: number; hint: string; label: string }>,
+  topSources: Array<{ count: number; label: string }>,
+  window: "week" | "month",
+  scope: "global" | "ukraine",
+) {
+  const periodLabel = window === "week" ? "week" : "30-day period";
+  const scopeLabel =
+    scope === "ukraine"
+      ? "Ukraine-focused grain and oilseed market"
+      : "global commodity market";
+  const topicText = topTopics.slice(0, 4).map((item) => item.label.toLowerCase()).join(", ");
+  const sourceText = topSources.slice(0, 4).map((item) => item.label).join(", ");
+  const lines: string[] = [];
+
+  lines.push(
+    `The ${periodLabel} ${scopeLabel} read is built from ${items.length} monitored items across ${sourceText || "the active source mesh"}, with the strongest clusters in ${topicText || "commodity, logistics and policy signals"}.`,
+  );
+
+  const grainItems = selectSignalItems(items, (item) =>
+    item.category === "grain-oilseeds" ||
+    item.cropTags.some((tag) => ["corn", "wheat", "soy", "rapeseed", "sunflower"].includes(tag)) ||
+    item.topicTags.includes("markets"),
+  );
+  const logisticsItems = selectSignalItems(items, (item) =>
+    item.category === "logistics-shipping" || item.topicTags.includes("logistics"),
+  );
+  const weatherItems = selectSignalItems(items, (item) => item.topicTags.includes("weather"));
+  const tradeItems = selectSignalItems(items, (item) =>
+    item.topicTags.includes("trade") ||
+    item.category === "policy-macro" ||
+    item.regionTags.some((tag) => ["black-sea", "ukraine", "china", "eu"].includes(tag)),
+  );
+  const remainingItems = selectSignalItems(items, (item) =>
+    !grainItems.includes(item) &&
+    !logisticsItems.includes(item) &&
+    !weatherItems.includes(item) &&
+    !tradeItems.includes(item),
+  );
+
+  pushSignalLine(lines, "Grains and oilseeds", grainItems, "price tone, futures, basis and crop-flow signals");
+  pushSignalLine(lines, "Logistics and shipping", logisticsItems, "freight, ports, chokepoints and execution risk");
+  pushSignalLine(lines, "Weather and crop outlook", weatherItems, "field conditions, production outlook and regional weather risk");
+  pushSignalLine(lines, "Trade and policy", tradeItems, "export demand, regulation, tenders and macro policy");
+  pushSignalLine(lines, "Other monitored signals", remainingItems, "adjacent commodity and supply-chain developments");
+
+  if (lines.length < 4 && items.length > 0) {
+    lines.push(`Additional monitored signals include ${formatItemList(selectSignalItems(items, () => true, 5))}.`);
+  }
+
+  return lines.slice(0, window === "week" ? 7 : 8);
+}
+
+function selectSignalItems(
+  items: RssNewsItem[],
+  predicate: (item: RssNewsItem) => boolean,
+  limit = 4,
+) {
+  return items
+    .filter(predicate)
+    .sort((first, second) =>
+      second.relevanceScore - first.relevanceScore ||
+      Date.parse(second.publishedAt) - Date.parse(first.publishedAt),
+    )
+    .slice(0, limit);
+}
+
+function pushSignalLine(
+  lines: string[],
+  label: string,
+  items: RssNewsItem[],
+  fallbackContext: string,
+) {
+  if (items.length === 0) {
+    return;
+  }
+
+  lines.push(`${label}: ${formatItemList(items)}. This cluster frames ${fallbackContext}.`);
+}
+
+function formatItemList(items: RssNewsItem[]) {
+  return items
+    .map((item) => `${item.title} (${item.source})`)
+    .filter(Boolean)
+    .join("; ");
 }
 
 function countBy<T>(items: T[], pick: (item: T) => string) {
