@@ -68,19 +68,37 @@ async function generateOneLocale(input: {
   const prompt = buildPrompt(input);
 
   try {
-    const response = await fetch("https://api.openai.com/v1/responses", {
-      body: JSON.stringify({
-        input: prompt,
-        max_output_tokens: input.kind === "daily" ? 900 : 1300,
-        model: input.model,
-        temperature: 0.3,
-      }),
+    const requestBody: Record<string, unknown> = {
+      input: prompt,
+      max_output_tokens: input.kind === "daily" ? 900 : 1800,
+      model: input.model,
+      temperature: 0.25,
+    };
+
+    if (input.kind !== "daily") {
+      requestBody.tools = [{ type: "web_search_preview" }];
+    }
+
+    let response = await fetch("https://api.openai.com/v1/responses", {
+      body: JSON.stringify(requestBody),
       headers: {
         Authorization: `Bearer ${input.apiKey}`,
         "Content-Type": "application/json",
       },
       method: "POST",
     });
+
+    if (!response.ok && input.kind !== "daily") {
+      delete requestBody.tools;
+      response = await fetch("https://api.openai.com/v1/responses", {
+        body: JSON.stringify(requestBody),
+        headers: {
+          Authorization: `Bearer ${input.apiKey}`,
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+      });
+    }
 
     if (!response.ok) {
       return null;
@@ -118,8 +136,16 @@ function buildPrompt(input: {
     input.kind === "daily"
       ? "Create a compact daily market intelligence report. Focus only on concrete changes, trends, events and watch points. Do not list empty sections."
       : input.kind === "weekly"
-        ? "Create a weekly market intelligence report. Use only sections with real information. No empty headings, no generic filler, no invented facts."
-        : "Create a monthly market intelligence report. Use only recurring themes and concrete source-backed developments.";
+        ? [
+            "Create a full weekly market intelligence report, not a recap of the last daily note.",
+            "Cover the full week with: SPIKE weekly price moves, Ukraine export/logistics flow, oilseeds/processing, Black Sea/shipping risks, and relevant global grain/oilseed/policy/weather drivers.",
+            "Use web search context for current weekly industry events when monitored items are thin.",
+            "Use only sections with real information. No empty headings, no generic filler, no invented facts.",
+          ].join(" ")
+        : [
+            "Create a monthly market intelligence report with recurring themes and concrete source-backed developments.",
+            "Use web search context for global and Ukrainian commodity, logistics, policy and weather developments when monitored items are thin.",
+          ].join(" ");
   const indexLines = input.latestData
     .filter((item) => item.valueUsdPerMt !== null)
     .slice(0, 18)
@@ -146,7 +172,9 @@ function buildPrompt(input: {
     reportInstruction,
     `Period: ${input.periodStartDate} to ${input.periodEndDate}. Report kind: ${input.kind}.`,
     "Return strict JSON only. Shape: {\"title\":\"...\",\"summary\":[\"paragraph or bullet\",\"...\"]}.",
-    "Rules: 4-7 summary items. Be factual and concise. Do not mention lack of data as a section. Do not invent prices, deals, forecasts, or causes. Not trading advice.",
+    input.kind === "daily"
+      ? "Rules: 4-7 summary items. Be factual and concise. Do not mention lack of data as a section. Do not invent prices, deals, forecasts, or causes. Not trading advice."
+      : "Rules: 7-10 substantial summary items. Every item must add weekly context. Include price dynamics, logistics/shipping, Ukraine export flow, global commodity drivers and watch points when supported. Do not mention lack of data as a section. Do not invent prices, deals, forecasts, or causes. Not trading advice.",
     "Use monitored items as context, but do not output a source list, monitoring-feed list, or raw topic-cluster list. Write the report itself, not the evidence log.",
     isUk
       ? "Ukrainian style: clear business Ukrainian, no Russian, no English section titles unless source names require it."

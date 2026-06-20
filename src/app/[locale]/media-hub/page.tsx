@@ -28,16 +28,18 @@ export default async function MediaHubPage({
     redirect(`/${locale}/analytics`);
   }
 
-  const selectedWindow = normalizeWindow(search.window);
-  const profile = getMediaHubProfile(locale, selectedWindow);
   const [liveWindows, publishedSummary] = await Promise.all([
     getSpikeMediaHubLiveWindows(locale),
     getLatestPublishedMediaHubReportSummary({
-      kind: windowToKind(selectedWindow),
+      kind: search.window ? windowToKind(normalizeWindow(search.window)) : undefined,
       locale,
       tenantId: "spike-ua",
     }),
   ]);
+  const selectedWindow = search.window
+    ? normalizeWindow(search.window)
+    : kindToWindow(publishedSummary?.kind);
+  const profile = getMediaHubProfile(locale, selectedWindow);
   const active = liveWindows.find((window) => window.window === selectedWindow) ?? liveWindows[0];
   const activeWithPublishedSummary = applyPublishedSummary(active, publishedSummary);
   const rest = liveWindows.filter((window) => window.window !== active.window);
@@ -62,6 +64,10 @@ function normalizeWindow(value: string | undefined): MediaHubWindowKey {
 
 function windowToKind(window: MediaHubWindowKey) {
   return window === "week" ? "weekly" : window === "month" ? "monthly" : "daily";
+}
+
+function kindToWindow(kind: string | undefined): MediaHubWindowKey {
+  return kind === "weekly" ? "week" : kind === "monthly" ? "month" : "day";
 }
 
 function applyPublishedSummary(

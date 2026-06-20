@@ -603,7 +603,7 @@ function parseMediaHubReportContent(value: unknown): MediaHubReportContentJson |
 }
 
 export async function getLatestPublishedMediaHubReportSummary(input: {
-  kind: Exclude<MediaHubPublicationKind, "none">;
+  kind?: Exclude<MediaHubPublicationKind, "none">;
   locale: Locale;
   tenantId?: string;
 }) {
@@ -619,13 +619,20 @@ export async function getLatestPublishedMediaHubReportSummary(input: {
       SELECT *
       FROM "MediaHubReport"
       WHERE "tenantId" = $1
-        AND "kind" = $2
+        AND ($2::text IS NULL OR "kind" = $2)
         AND "status" = 'published'
-      ORDER BY "periodEnd" DESC
+      ORDER BY
+        "periodEnd" DESC,
+        CASE "kind"
+          WHEN 'monthly' THEN 3
+          WHEN 'weekly' THEN 2
+          WHEN 'daily' THEN 1
+          ELSE 0
+        END DESC
       LIMIT 1
     `,
     tenantId,
-    input.kind,
+    input.kind ?? null,
   );
   const content = parseMediaHubReportContent(rows[0]?.contentJson);
   if (!content) {
@@ -635,6 +642,7 @@ export async function getLatestPublishedMediaHubReportSummary(input: {
   const localized = content.localized?.[input.locale];
   if (localized?.summary?.length) {
     return {
+      kind: content.kind,
       periodEndDate: content.periodEndDate,
       summaryBody: localized.summary,
       summaryTitle: localized.title || content.title,
@@ -642,6 +650,7 @@ export async function getLatestPublishedMediaHubReportSummary(input: {
   }
 
   return {
+    kind: content.kind,
     periodEndDate: content.periodEndDate,
     summaryBody: content.summary,
     summaryTitle: content.title,

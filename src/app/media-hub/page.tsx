@@ -24,16 +24,18 @@ export default async function PlatformMediaHubPage({
   }
 
   const search = await searchParams;
-  const selectedWindow = normalizeWindow(search.window);
-  const profile = getMediaHubProfile("en", selectedWindow);
   const [liveWindows, publishedSummary] = await Promise.all([
     get1d3xRssWindows(),
     getLatestPublishedMediaHubReportSummary({
-      kind: windowToKind(selectedWindow),
+      kind: search.window ? windowToKind(normalizeWindow(search.window)) : undefined,
       locale: "en",
       tenantId: "1d3x",
     }),
   ]);
+  const selectedWindow = search.window
+    ? normalizeWindow(search.window)
+    : kindToWindow(publishedSummary?.kind);
+  const profile = getMediaHubProfile("en", selectedWindow);
   const active = liveWindows.find((window) => window.window === selectedWindow) ?? liveWindows[0];
   const activeWithPublishedSummary = applyPublishedSummary(
     active,
@@ -65,9 +67,13 @@ function windowToKind(window: MediaHubWindowKey) {
   return window === "week" ? "weekly" : window === "month" ? "monthly" : "daily";
 }
 
+function kindToWindow(kind: string | undefined): MediaHubWindowKey {
+  return kind === "weekly" ? "week" : kind === "monthly" ? "month" : "day";
+}
+
 function applyPublishedSummary(
   window: MediaHubWindowSnapshot,
-  summary: { summaryBody: string[]; summaryTitle: string } | null,
+  summary: { kind?: string; summaryBody: string[]; summaryTitle: string } | null,
 ): MediaHubWindowSnapshot {
   if (!summary?.summaryBody.length) {
     return window;
