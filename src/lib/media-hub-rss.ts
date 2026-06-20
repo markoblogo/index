@@ -13,9 +13,13 @@ type FeedSourceCategory =
   | "logistics-shipping"
   | "policy-macro";
 
+type FeedSourceTransport = "rss" | "google-news" | "gdelt";
+
 type RssSource = {
+  canonicalDomain?: string;
   id: string;
   name: string;
+  transport?: FeedSourceTransport;
   url: string;
   category: FeedSourceCategory;
   enabled: boolean;
@@ -113,11 +117,24 @@ const RSS_SOURCES: RssSource[] = [
 
 const SPIKE_EN_UKRAINE_RSS_SOURCES: RssSource[] = [
   { id: "ukragroconsult-en", name: "UkrAgroConsult EN", url: "https://ukragroconsult.com/en/news/feed/", category: "grain-oilseeds", enabled: true },
+  { id: "proagro-ukraine-en", name: "ProAgro Ukraine EN", url: "https://www.proagroukraine.com/en/feed/", category: "grain-oilseeds", enabled: true },
+  { id: "agrotimes-ua", name: "AgroTimes UA", url: "https://agrotimes.ua/feed/", category: "agro-general", enabled: true },
+  { id: "usm-shipping-en", name: "USM Shipping EN", url: "https://en.usm.media/feed/", category: "logistics-shipping", enabled: true },
+  { id: "railinsider-ua", name: "Rail Insider UA", url: "https://www.railinsider.com.ua/feed/", category: "logistics-shipping", enabled: true },
+  { id: "railfreight-ukraine", name: "RailFreight Ukraine", url: "https://www.railfreight.com/feed/", category: "logistics-shipping", enabled: true },
   { id: "kyiv-post-ukraine", name: "Kyiv Post", url: "https://www.kyivpost.com/feed", category: "policy-macro", enabled: true },
   { id: "interfax-ukraine-en", name: "Interfax-Ukraine EN", url: "https://en.interfax.com.ua/news/economic/", category: "policy-macro", enabled: true },
   { id: "mintec-ukraine", name: "Expana / Mintec", url: "https://www.mintecglobal.com/top-stories/rss.xml", category: "grain-oilseeds", enabled: true },
   { id: "amis-ukraine-context", name: "AMIS", url: "https://www.amis-outlook.org/rss.xml", category: "policy-macro", enabled: true },
   { id: "fao-ukraine-context", name: "FAO News", url: "https://www.fao.org/news/rss/en/", category: "policy-macro", enabled: true },
+  { id: "gnews-ukraine-grain-export", name: "Google News · Ukraine grain export", url: googleNewsUrl("\"Ukraine\" grain export OR wheat OR corn OR oilseeds"), transport: "google-news", category: "grain-oilseeds", enabled: true },
+  { id: "gnews-ukraine-black-sea", name: "Google News · Black Sea grain corridor", url: googleNewsUrl("\"Black Sea\" grain Ukraine port OR corridor OR vessel"), transport: "google-news", category: "logistics-shipping", enabled: true },
+  { id: "gnews-ukraine-danube-rail", name: "Google News · Ukraine Danube rail logistics", url: googleNewsUrl("Ukraine grain Danube OR rail OR border logistics"), transport: "google-news", category: "logistics-shipping", enabled: true },
+  { id: "gnews-ukraine-agri-policy", name: "Google News · Ukraine agri policy", url: googleNewsUrl("Ukraine agriculture EU policy tariff quota grain"), transport: "google-news", category: "policy-macro", enabled: true },
+  { id: "gnews-ukraine-oilseeds", name: "Google News · Ukraine oilseeds", url: googleNewsUrl("Ukraine sunflower soybean rapeseed oilseed market"), transport: "google-news", category: "grain-oilseeds", enabled: true },
+  { id: "gdelt-ukraine-grain-export", name: "GDELT · Ukraine grain export", url: gdeltDocUrl("(Ukraine grain export OR Ukraine wheat OR Ukraine corn OR Ukraine oilseeds)"), transport: "gdelt", category: "grain-oilseeds", enabled: true },
+  { id: "gdelt-ukraine-logistics", name: "GDELT · Ukraine logistics", url: gdeltDocUrl("(Ukraine grain port OR Ukraine Danube OR Black Sea grain corridor OR Ukraine rail freight)"), transport: "gdelt", category: "logistics-shipping", enabled: true },
+  { id: "gdelt-ukraine-policy", name: "GDELT · Ukraine agri policy", url: gdeltDocUrl("(Ukraine agriculture EU policy OR Ukraine grain tariff OR Ukraine export quota)"), transport: "gdelt", category: "policy-macro", enabled: true },
 ];
 
 const STOPWORDS = [
@@ -131,26 +148,39 @@ const STOPWORDS = [
   "casino",
   "esports",
   "tv show",
+  "lottery",
+  "betting",
+  "crypto casino",
 ];
 
 const CROPS = [
-  "wheat", "corn", "maize", "soybean", "soybeans", "soy", "rapeseed", "canola", "sunflower", "barley", "oilseed", "oilseeds", "meal", "crush",
+  "wheat", "corn", "maize", "soybean", "soybeans", "soy", "rapeseed", "canola", "sunflower", "sunflower oil", "barley", "oilseed", "oilseeds", "meal", "crush",
 ];
 const TRADE = [
-  "harvest", "yield", "crop", "acreage", "planting", "export", "import", "tender", "futures", "basis", "stocks", "shipments",
+  "harvest", "yield", "crop", "acreage", "planting", "export", "import", "tender", "futures", "basis", "stocks", "shipments", "quota", "shipment", "demand",
 ];
 const LOGISTICS = [
-  "freight", "vessel", "rail", "barge", "port", "terminal", "shipping", "logistics", "river", "container", "chokepoint", "panama canal", "suez", "demurrage",
+  "freight", "vessel", "rail", "wagon", "barge", "port", "terminal", "shipping", "logistics", "river", "container", "border", "chokepoint", "panama canal", "suez", "bosphorus", "danube", "demurrage",
 ];
 const WEATHER = [
   "drought", "rainfall", "precipitation", "soil moisture", "heat", "frost", "weather", "storm", "flood", "temperature",
 ];
 const POLICY = [
-  "tariff", "quota", "sanctions", "export ban", "export duty", "regulation", "duties", "subsidy", "mandate", "restriction", "trade agreement", "compliance",
+  "tariff", "quota", "sanctions", "export ban", "export duty", "regulation", "duties", "subsidy", "mandate", "restriction", "trade agreement", "compliance", "eu accession", "ministry", "customs",
 ];
 const REGIONS = [
-  "ukraine", "black sea", "eu", "france", "germany", "romania", "bulgaria", "poland", "us", "brazil", "argentina", "russia", "india", "china",
+  "ukraine", "odesa", "odessa", "chornomorsk", "pivdennyi", "izmail", "reni", "danube", "black sea", "eu", "france", "germany", "romania", "bulgaria", "poland", "moldova", "slovakia", "hungary", "us", "brazil", "argentina", "russia", "india", "china",
 ];
+
+const SPIKE_TELEGRAM_SOURCE_DOMAINS = new Set([
+  "agroportal.ua",
+  "apk-inform.com",
+  "elevatorist.com",
+  "latifundist.com",
+  "kurkul.com",
+  "superagronom.com",
+  "uga.ua",
+]);
 
 export async function get1d3xRssWindows(): Promise<MediaHubWindowSnapshot[]> {
   const items = await getRssMonitorItems({
@@ -221,7 +251,7 @@ async function getRssMonitorItems(input: {
     Promise.all(
       input.sources.filter((source) => source.enabled).map(async (source) => {
         try {
-          const feedItems = await fetchFeed(source);
+          const feedItems = await fetchSourceItems(source);
           return feedItems.map((item) => toNewsItem(source, item));
         } catch {
           return [] as RssNewsItem[];
@@ -232,6 +262,7 @@ async function getRssMonitorItems(input: {
   ]);
 
   const scoredItems = dedupeItems([...fetched.flat(), ...legacyItems])
+    .filter((item) => !isUnsafeMonitoringCandidate(item.title, item.summary))
     .sort((a, b) => b.relevanceScore - a.relevanceScore || Date.parse(b.publishedAt) - Date.parse(a.publishedAt));
   const highlyRelevant = scoredItems.filter((item) => item.relevanceScore >= 3);
   const fallbackRelevant = scoredItems.filter((item) => item.relevanceScore > 0);
@@ -370,6 +401,14 @@ function normalizeLegacyCategory(value?: string): FeedSourceCategory {
   return "agro-general";
 }
 
+async function fetchSourceItems(source: RssSource): Promise<ParsedFeedItem[]> {
+  if (source.transport === "gdelt") {
+    return fetchGdeltItems(source);
+  }
+
+  return fetchFeed(source);
+}
+
 async function fetchFeed(source: RssSource): Promise<ParsedFeedItem[]> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
@@ -389,6 +428,47 @@ async function fetchFeed(source: RssSource): Promise<ParsedFeedItem[]> {
 
     const xml = await response.text();
     return parseFeedXml(xml);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function fetchGdeltItems(source: RssSource): Promise<ParsedFeedItem[]> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(source.url, {
+      signal: controller.signal,
+      headers: {
+        accept: "application/json",
+        "user-agent": "1D3XMediaHub/1.0 (+https://1d3x.com)",
+      },
+      next: { revalidate: 900 },
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const payload = await response.json() as { articles?: Array<{
+      seendate?: string;
+      sourceCommonName?: string;
+      title?: string;
+      url?: string;
+    }> };
+
+    return (payload.articles ?? []).flatMap((article) => {
+      if (!article.title || !article.url) {
+        return [];
+      }
+
+      return [{
+        link: article.url,
+        publishedAt: parseGdeltDate(article.seendate),
+        summary: article.sourceCommonName,
+        title: article.title,
+      }];
+    });
   } finally {
     clearTimeout(timeout);
   }
@@ -484,7 +564,7 @@ function toNewsItem(source: RssSource, item: ParsedFeedItem): RssNewsItem {
     summary,
     title,
     topicTags: scored.topicTags,
-    url: item.link,
+    url: canonicalizeUrl(item.link) || item.link,
   };
 }
 
@@ -550,17 +630,101 @@ function normalizeTitle(title: string) {
 }
 
 function dedupeItems(items: RssNewsItem[]) {
-  const map = new Map<string, RssNewsItem>();
+  const slots = new Map<string, RssNewsItem>();
+  const titleSlots = new Map<string, string>();
+  const urlSlots = new Map<string, string>();
 
   for (const item of items) {
-    const key = `${item.source}|${normalizeTitle(item.title)}`;
-    const existing = map.get(key);
-    if (!existing || Date.parse(item.publishedAt) > Date.parse(existing.publishedAt)) {
-      map.set(key, item);
+    const titleKey = normalizeTitle(item.title);
+    const urlKey = canonicalizeUrl(item.url);
+    const slotKey = (urlKey && urlSlots.get(urlKey)) || titleSlots.get(titleKey) || dedupeKey(item);
+    const existing = slots.get(slotKey);
+    if (!existing || compareDedupeCandidate(item, existing) > 0) {
+      slots.set(slotKey, item);
+    }
+    if (urlKey) {
+      urlSlots.set(urlKey, slotKey);
+    }
+    if (titleKey) {
+      titleSlots.set(titleKey, slotKey);
     }
   }
 
-  return [...map.values()];
+  return [...slots.values()];
+}
+
+function dedupeKey(item: RssNewsItem) {
+  return canonicalizeUrl(item.url) || normalizeTitle(item.title);
+}
+
+function compareDedupeCandidate(candidate: RssNewsItem, existing: RssNewsItem) {
+  const relevanceDelta = candidate.relevanceScore - existing.relevanceScore;
+  if (Math.abs(relevanceDelta) >= 2) {
+    return relevanceDelta;
+  }
+  return Date.parse(candidate.publishedAt) - Date.parse(existing.publishedAt);
+}
+
+function canonicalizeUrl(value: string) {
+  if (!value) {
+    return "";
+  }
+
+  try {
+    const url = new URL(value);
+    url.hash = "";
+    for (const key of [...url.searchParams.keys()]) {
+      if (/^utm_/i.test(key) || ["fbclid", "gclid", "mc_cid", "mc_eid", "ocid", "ref"].includes(key.toLowerCase())) {
+        url.searchParams.delete(key);
+      }
+    }
+    url.hostname = url.hostname.replace(/^www\./, "");
+    return url.toString().replace(/\/$/, "");
+  } catch {
+    return "";
+  }
+}
+
+function parseGdeltDate(value?: string) {
+  if (!value) {
+    return undefined;
+  }
+
+  const normalized = value.match(/^(\d{4})(\d{2})(\d{2})T?(\d{2})(\d{2})(\d{2})Z?$/);
+  if (normalized) {
+    return new Date(Date.UTC(
+      Number(normalized[1]),
+      Number(normalized[2]) - 1,
+      Number(normalized[3]),
+      Number(normalized[4]),
+      Number(normalized[5]),
+      Number(normalized[6]),
+    )).toISOString();
+  }
+
+  return Number.isFinite(Date.parse(value)) ? new Date(value).toISOString() : undefined;
+}
+
+function googleNewsUrl(query: string) {
+  return `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
+}
+
+function gdeltDocUrl(query: string) {
+  return `https://api.gdeltproject.org/api/v2/doc/doc?query=${encodeURIComponent(query)}&mode=ArtList&format=json&maxrecords=30&sort=HybridRel`;
+}
+
+function isDuplicateSpikeTelegramSource(value: string) {
+  const normalized = value
+    .toLowerCase()
+    .replace(/^https?:\/\//, "")
+    .replace(/^www\./, "")
+    .split("/")[0];
+  return SPIKE_TELEGRAM_SOURCE_DOMAINS.has(normalized);
+}
+
+function isUnsafeMonitoringCandidate(title: string, summary = "") {
+  const body = `${title} ${summary}`.toLowerCase();
+  return STOPWORDS.some((word) => body.includes(word));
 }
 
 function buildWindow(
@@ -832,3 +996,14 @@ function formatDate(value: string) {
     month: "2-digit",
   }).format(new Date(value));
 }
+
+export const __mediaHubRssTestHooks = {
+  canonicalizeUrl,
+  dedupeItems,
+  gdeltDocUrl,
+  googleNewsUrl,
+  isDuplicateSpikeTelegramSource,
+  isUnsafeMonitoringCandidate,
+  normalizeTitle,
+  scoreNews,
+};
