@@ -109,3 +109,53 @@ Operational notes:
 - If Bot API privacy mode hides messages, disable privacy or use explicit mentions/commands depending on Telegram setup.
 - Bluesky uses public read-only AppView endpoint; no login or app password is required.
 - Corporate blog posts are deduped by canonical URL, title fingerprint and content/source hash logic already used by Media Hub.
+
+## Production webhook setup
+
+Real Bot API route:
+
+```text
+POST https://spike.1d3x.com/api/telegram/media-hub
+```
+
+Required environment variables:
+
+- `MEDIA_HUB_TELEGRAM_BOT_TOKEN` - preferred dedicated token for `@idex_grains_bot`.
+- `ID3X_TELEGRAM_BOT_TOKEN` - fallback token for `@idex_grains_bot`.
+- `SPIKE_TELEGRAM_BOT_TOKEN` - final fallback only; keep it for SSI respondent/report bot flows.
+- `INDEX_TELEGRAM_BOT_TOKEN` - shared fallback when tenant-specific bot envs are not set.
+- `TELEGRAM_MEDIA_HUB_WEBHOOK_SECRET` - Telegram webhook secret token and diagnostic endpoint bearer token.
+- `MEDIA_HUB_TELEGRAM_WEBHOOK_URL` - optional explicit webhook URL, normally `https://spike.1d3x.com/api/telegram/media-hub`.
+- `NEXT_PUBLIC_SITE_URL` - fallback base URL when `MEDIA_HUB_TELEGRAM_WEBHOOK_URL` is not set.
+- `MEDIA_HUB_MATERIAL_ALLOWED_TELEGRAM_USER_IDS` - optional allowlist; empty means all users are accepted.
+- `MEDIA_HUB_MATERIAL_ALLOWED_TELEGRAM_CHAT_IDS` - optional allowlist; empty means all chats are accepted.
+
+If either allowlist is configured and the sender is not allowed, the bot replies with an access-denied message containing the sender chat id and user id.
+
+Diagnostics through the production route, without printing secrets:
+
+```bash
+curl -sS \
+  -H "Authorization: Bearer $TELEGRAM_MEDIA_HUB_WEBHOOK_SECRET" \
+  "https://spike.1d3x.com/api/telegram/media-hub?action=getMe"
+
+curl -sS \
+  -H "Authorization: Bearer $TELEGRAM_MEDIA_HUB_WEBHOOK_SECRET" \
+  "https://spike.1d3x.com/api/telegram/media-hub?action=getWebhookInfo"
+
+curl -sS \
+  -H "Authorization: Bearer $TELEGRAM_MEDIA_HUB_WEBHOOK_SECRET" \
+  "https://spike.1d3x.com/api/telegram/media-hub?action=setWebhook"
+```
+
+Direct Telegram fallback command:
+
+```bash
+curl -sS "https://api.telegram.org/bot$MEDIA_HUB_TELEGRAM_BOT_TOKEN/setWebhook" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://spike.1d3x.com/api/telegram/media-hub",
+    "secret_token": "'"$TELEGRAM_MEDIA_HUB_WEBHOOK_SECRET"'",
+    "allowed_updates": ["message", "edited_message", "callback_query"]
+  }'
+```

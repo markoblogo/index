@@ -39,11 +39,94 @@ type TelegramMessage = {
   text?: string;
 };
 
+const MEDIA_HUB_BOT_TOKEN_ENV_NAMES = [
+  "MEDIA_HUB_TELEGRAM_BOT_TOKEN",
+  "ID3X_TELEGRAM_BOT_TOKEN",
+  "SPIKE_TELEGRAM_BOT_TOKEN",
+  "INDEX_TELEGRAM_BOT_TOKEN",
+] as const;
+
+const MEDIA_HUB_ROUTE_PATH = "/api/telegram/media-hub";
+const TELEGRAM_ALLOWED_UPDATES = ["message", "edited_message", "callback_query"] as const;
+
+export async function GET(request: Request) {
+  const auth = isDiagnosticRequestAuthorized(request);
+  if (!auth.ok) {
+    safeWarn("media_hub_telegram_diagnostic_unauthorized", auth.meta);
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const token = getMediaHubBotToken();
+  if (!token.value) {
+    return NextResponse.json(
+      {
+        error: "media_hub_bot_token_missing",
+        ok: false,
+        requiredEnv: MEDIA_HUB_BOT_TOKEN_ENV_NAMES,
+      },
+      { status: 500 },
+    );
+  }
+
+  const url = new URL(request.url);
+  const action = url.searchParams.get("action") ?? "getWebhookInfo";
+
+  if (action === "getMe") {
+    const result = await callTelegramBotApi(token.value, "getMe");
+    return NextResponse.json(sanitizeTelegramGetMe(result, token.name));
+  }
+
+  if (action === "getWebhookInfo") {
+    const result = await callTelegramBotApi(token.value, "getWebhookInfo");
+    return NextResponse.json(sanitizeTelegramWebhookInfo(result, token.name));
+  }
+
+  if (action === "setWebhook") {
+    const webhookUrl = getMediaHubWebhookUrl(request);
+    const result = await callTelegramBotApi(token.value, "setWebhook", {
+      allowed_updates: TELEGRAM_ALLOWED_UPDATES,
+      drop_pending_updates: url.searchParams.get("dropPending") === "1",
+      secret_token: process.env.TELEGRAM_MEDIA_HUB_WEBHOOK_SECRET || undefined,
+      url: webhookUrl,
+    });
+    return NextResponse.json({
+      ...sanitizeTelegramApiResult(result),
+      allowed_updates: TELEGRAM_ALLOWED_UPDATES,
+      botTokenEnv: token.name,
+      webhookUrl,
+    });
+  }
+
+  return NextResponse.json(
+    { error: "Unsupported action. Use getMe, getWebhookInfo or setWebhook." },
+    { status: 400 },
+  );
+}
+
 export async function POST(request: Request) {
   const secret = process.env.TELEGRAM_MEDIA_HUB_WEBHOOK_SECRET;
   const provided = request.headers.get("x-telegram-bot-api-secret-token");
   if (secret && provided !== secret) {
+    safeWarn("media_hub_telegram_webhook_secret_mismatch", {
+      hasProvided: Boolean(provided),
+      hasSecret: true,
+    });
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const botToken = getMediaHubBotToken();
+  if (!botToken.value) {
+    safeWarn("media_hub_telegram_bot_token_missing", {
+      requiredEnv: MEDIA_HUB_BOT_TOKEN_ENV_NAMES,
+    });
+    return NextResponse.json(
+      {
+        error: "media_hub_bot_token_missing",
+        ok: false,
+        requiredEnv: MEDIA_HUB_BOT_TOKEN_ENV_NAMES,
+      },
+      { status: 500 },
+    );
   }
 
   const payload = await request.json().catch(() => null);
@@ -53,19 +136,19 @@ export async function POST(request: Request) {
   }
 
   if (!isAllowedMediaHubTelegramSender(message)) {
+    await sendTelegramText(
+      botToken.value,
+      String(message.chat.id),
+      buildAccessDeniedText(message),
+    );
     return NextResponse.json({ ok: true, skippedReason: "sender_not_allowed" });
-  }
-
-  const botToken = process.env.ID3X_TELEGRAM_BOT_TOKEN ?? process.env.SPIKE_TELEGRAM_BOT_TOKEN;
-  if (!botToken) {
-    return NextResponse.json({ ok: true, skippedReason: "telegram_bot_token_missing" });
   }
 
   const text = [message.text, message.caption].filter(Boolean).join(" ");
   const isCorporateGroupMessage = isCorporateTelegramChat(message.chat.id);
   const command = parseMediaHubMaterialBotCommand(message.text);
   if (command) {
-    await handleBotCommand(botToken, message, command);
+    await handleBotCommand(botToken.value, message, command);
     return NextResponse.json({ command, ok: true });
   }
 
@@ -89,12 +172,12 @@ export async function POST(request: Request) {
         text,
       });
       if (tenantIds.length === 0) {
-        await sendTelegramText(botToken, String(message.chat.id), "Матеріал збережено як corporate Telegram unrouted. Додайте #ssi або #1d3x, щоб він автоматично потрапив у відповідний Media Hub report.");
+        await sendTelegramText(botToken.value, String(message.chat.id), "Матеріал збережено як corporate Telegram unrouted. Додайте #ssi або #1d3x, щоб він автоматично потрапив у відповідний Media Hub report.");
         return NextResponse.json({ ok: true, skippedReason: "corporate_telegram_unrouted" });
       }
     }
     if (tenantIds.length === 0) {
-      await sendTelegramText(botToken, String(message.chat.id), buildMissingProjectTagText());
+      await sendTelegramText(botToken.value, String(message.chat.id), buildMissingProjectTagText());
       return NextResponse.json({ ok: true, skippedReason: "missing_tenant_hashtag" });
     }
   }
@@ -116,7 +199,7 @@ export async function POST(request: Request) {
       });
       results.push(result);
       await replyForResult({
-        botToken,
+        botToken: botToken.value,
         kind: routed.kind,
         label: url,
         message,
@@ -128,7 +211,7 @@ export async function POST(request: Request) {
   }
 
   if (message.document) {
-    const file = await downloadTelegramFile(botToken, message.document.file_id);
+    const file = await downloadTelegramFile(botToken.value, message.document.file_id);
     for (const tenantId of tenantIds) {
       const result = file
         ? await ingestMediaHubFileMaterial({
@@ -151,7 +234,7 @@ export async function POST(request: Request) {
           };
       results.push(result);
       await replyForResult({
-        botToken,
+        botToken: botToken.value,
         kind: routed.kind,
         label: message.document.file_name ?? "file",
         message,
@@ -177,7 +260,7 @@ export async function POST(request: Request) {
       });
       results.push(result);
       await replyForResult({
-        botToken,
+        botToken: botToken.value,
         kind: routed.kind,
         label: "corporate Telegram message",
         message,
@@ -189,7 +272,7 @@ export async function POST(request: Request) {
   }
 
   if (results.length === 0) {
-    await sendTelegramText(botToken, String(message.chat.id), "Матеріал не знайдено. Надішліть посилання або PDF/XLSX/CSV/TXT файл з #ssi або #1d3x.");
+    await sendTelegramText(botToken.value, String(message.chat.id), "Матеріал не знайдено. Надішліть посилання або PDF/XLSX/CSV/TXT файл з #ssi або #1d3x.");
   }
 
   return NextResponse.json({ ok: true, results });
@@ -246,9 +329,70 @@ function parseAllowlist(value?: string) {
     .filter(Boolean);
 }
 
+function getMediaHubBotToken() {
+  for (const name of MEDIA_HUB_BOT_TOKEN_ENV_NAMES) {
+    const value = process.env[name];
+    if (value) {
+      return { name, value };
+    }
+  }
+  return { name: null, value: null };
+}
+
+function isDiagnosticRequestAuthorized(request: Request) {
+  const configuredSecret = process.env.TELEGRAM_MEDIA_HUB_WEBHOOK_SECRET;
+  if (!configuredSecret) {
+    return {
+      meta: { reason: "diagnostic_secret_not_configured" },
+      ok: false,
+    };
+  }
+
+  const url = new URL(request.url);
+  const authorization = request.headers.get("authorization");
+  const bearer = authorization?.match(/^Bearer\s+(.+)$/i)?.[1];
+  const provided = bearer ??
+    request.headers.get("x-telegram-bot-api-secret-token") ??
+    url.searchParams.get("secret");
+
+  return {
+    meta: {
+      hasBearer: Boolean(bearer),
+      hasHeaderSecret: Boolean(request.headers.get("x-telegram-bot-api-secret-token")),
+      hasQuerySecret: Boolean(url.searchParams.get("secret")),
+    },
+    ok: provided === configuredSecret,
+  };
+}
+
+function getMediaHubWebhookUrl(request: Request) {
+  const url = new URL(request.url);
+  const explicit = url.searchParams.get("webhookUrl") ??
+    process.env.MEDIA_HUB_TELEGRAM_WEBHOOK_URL;
+  if (explicit) {
+    return explicit;
+  }
+
+  const base = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
+    url.origin.replace(/\/$/, "");
+  return `${base}${MEDIA_HUB_ROUTE_PATH}`;
+}
+
+function buildAccessDeniedText(message: TelegramMessage) {
+  const userId = message.from?.id ? String(message.from.id) : "unknown";
+  return [
+    "Access denied.",
+    "This Media Hub bot accepts materials only from allowed Telegram users/chats.",
+    `Your chat id: ${String(message.chat.id)}.`,
+    `Your user id: ${userId}.`,
+    "Ask an admin to add the needed id to MEDIA_HUB_MATERIAL_ALLOWED_TELEGRAM_CHAT_IDS or MEDIA_HUB_MATERIAL_ALLOWED_TELEGRAM_USER_IDS.",
+  ].join("\n");
+}
+
 async function downloadTelegramFile(botToken: string, fileId: string) {
   const metadataResponse = await fetch(`https://api.telegram.org/bot${botToken}/getFile?file_id=${encodeURIComponent(fileId)}`);
   if (!metadataResponse.ok) {
+    safeWarn("media_hub_telegram_get_file_failed", { status: metadataResponse.status });
     return null;
   }
   const metadata = await metadataResponse.json() as { result?: { file_path?: string } };
@@ -258,6 +402,7 @@ async function downloadTelegramFile(botToken: string, fileId: string) {
   }
   const fileResponse = await fetch(`https://api.telegram.org/file/bot${botToken}/${filePath}`);
   if (!fileResponse.ok) {
+    safeWarn("media_hub_telegram_file_download_failed", { status: fileResponse.status });
     return null;
   }
   return Buffer.from(await fileResponse.arrayBuffer());
@@ -297,11 +442,29 @@ async function replyForResult({
 }
 
 async function sendTelegramText(botToken: string, chatId: string, text: string) {
-  await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+  const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
     body: JSON.stringify({ chat_id: chatId, text }),
     headers: { "Content-Type": "application/json" },
     method: "POST",
-  }).catch(() => undefined);
+  }).catch((error: unknown) => {
+    safeWarn("media_hub_telegram_send_exception", {
+      message: getSafeErrorMessage(error),
+    });
+    return null;
+  });
+
+  if (!response) {
+    return false;
+  }
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    safeWarn("media_hub_telegram_send_failed", {
+      body: body.slice(0, 300),
+      status: response.status,
+    });
+    return false;
+  }
+  return true;
 }
 
 function buildStatusText(
@@ -325,4 +488,120 @@ function buildStatusText(
 function getAdminMaterialsUrl() {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "");
   return siteUrl ? `${siteUrl}/admin/media-hub/materials` : "/admin/media-hub/materials";
+}
+
+async function callTelegramBotApi(
+  botToken: string,
+  method: "getMe" | "getWebhookInfo" | "setWebhook",
+  body?: Record<string, unknown>,
+) {
+  const response = await fetch(`https://api.telegram.org/bot${botToken}/${method}`, {
+    body: body ? JSON.stringify(body) : undefined,
+    headers: body ? { "Content-Type": "application/json" } : undefined,
+    method: body ? "POST" : "GET",
+  }).catch((error: unknown) => ({
+    error: getSafeErrorMessage(error),
+    ok: false,
+  }));
+
+  if (!(response instanceof Response)) {
+    safeWarn("media_hub_telegram_api_exception", { method, message: response.error });
+    return response;
+  }
+
+  const payload = await response.json().catch(async () => ({
+    description: (await response.text().catch(() => "")).slice(0, 300),
+    ok: false,
+  }));
+
+  if (!response.ok) {
+    safeWarn("media_hub_telegram_api_failed", {
+      method,
+      status: response.status,
+    });
+  }
+
+  return payload;
+}
+
+function sanitizeTelegramGetMe(result: unknown, botTokenEnv: string | null) {
+  const payload = sanitizeTelegramApiResult(result) as {
+    ok: boolean;
+    result?: {
+      first_name?: string;
+      id?: number;
+      is_bot?: boolean;
+      username?: string;
+    };
+  };
+  return {
+    botTokenEnv,
+    ok: payload.ok,
+    result: payload.result
+      ? {
+          first_name: payload.result.first_name,
+          id: payload.result.id,
+          is_bot: payload.result.is_bot,
+          username: payload.result.username,
+        }
+      : undefined,
+  };
+}
+
+function sanitizeTelegramWebhookInfo(result: unknown, botTokenEnv: string | null) {
+  const payload = sanitizeTelegramApiResult(result) as {
+    ok: boolean;
+    result?: {
+      allowed_updates?: string[];
+      has_custom_certificate?: boolean;
+      ip_address?: string;
+      last_error_date?: number;
+      last_error_message?: string;
+      max_connections?: number;
+      pending_update_count?: number;
+      url?: string;
+    };
+  };
+  return {
+    botTokenEnv,
+    ok: payload.ok,
+    result: payload.result
+      ? {
+          allowed_updates: payload.result.allowed_updates,
+          has_custom_certificate: payload.result.has_custom_certificate,
+          ip_address: payload.result.ip_address,
+          last_error_date: payload.result.last_error_date,
+          last_error_message: payload.result.last_error_message,
+          max_connections: payload.result.max_connections,
+          pending_update_count: payload.result.pending_update_count,
+          url: payload.result.url,
+        }
+      : undefined,
+  };
+}
+
+function sanitizeTelegramApiResult(result: unknown) {
+  if (!result || typeof result !== "object") {
+    return { ok: false };
+  }
+  const payload = result as {
+    description?: string;
+    error_code?: number;
+    ok?: boolean;
+    result?: unknown;
+  };
+  return {
+    description: payload.description,
+    error_code: payload.error_code,
+    ok: Boolean(payload.ok),
+    result: payload.result,
+  };
+}
+
+function safeWarn(message: string, meta?: Record<string, unknown>) {
+  console.warn(message, meta);
+}
+
+function getSafeErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
 }
