@@ -624,7 +624,7 @@ function youtubeUrl(query: string) {
 function comtradeUrl() {
   return "https://comtradeapi.un.org/public/v1/getComtradeReleases";
 }
-function comtradeHeaders() {
+function comtradeHeaders(): Record<string, string> {
   const token = process.env.UN_COMTRADE_SUBSCRIPTION_KEY?.trim();
   return token ? { "Ocp-Apim-Subscription-Key": token } : {};
 }
