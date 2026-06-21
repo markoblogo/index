@@ -23,10 +23,12 @@ export function buildMediaHubReportPrompt(input: {
       : build1d3xWeeklyMonthlyPrompt(input);
   }
 
-  return buildDailyPrompt(input);
+  return input.tenant === "spike"
+    ? buildSsiDailyReportPrompt(input)
+    : build1d3xDailyReportPrompt(input);
 }
 
-function buildDailyPrompt(input: {
+export function buildSsiDailyReportPrompt(input: {
   kind: ReportKind;
   latestData: PublicLatestItem[];
   locale: Locale;
@@ -37,14 +39,66 @@ function buildDailyPrompt(input: {
 }) {
   const isUk = input.locale === "uk";
   return [
-    input.tenant === "spike"
-      ? isUk
-        ? "You write for SPIKE SPOT INDEX Ukraine. Use all monitored Ukrainian and English materials, but write only in Ukrainian. Connect the narrative to today's SPIKE index values when provided."
-        : "You write for SPIKE SPOT INDEX Ukraine. Write only in English. Market scope is Ukraine."
-      : "You write for 1D3X Media Hub. Write only in English. Scope is global grains, oilseeds and logistics.",
-    "Create a compact daily market intelligence report. Focus only on concrete changes, trends, events and watch points. Do not list empty sections.",
+    isUk
+      ? "You write for SPIKE SPOT INDEX Ukraine. Use all monitored Ukrainian and English materials, but write only in Ukrainian. Market scope is Ukraine."
+      : "You write for SPIKE SPOT INDEX Ukraine. Write only in English. Market scope is Ukraine.",
+    "Create only the market/news part of the daily report. The deterministic index section is rendered by code before your text.",
+    "Use SPIKE index data only as context for main signals; do not repeat every index line and do not invent missing index values.",
+    "Required non-empty sections in summary array. Put section headings as standalone items, followed by bullet text items without bullet symbols.",
+    isUk
+      ? [
+          "🔎 Головні сигнали",
+          "🌾 Ринок зернових",
+          "🌻 Олійні та продукти переробки",
+          "🚚 Логістика та експорт",
+          "🌦 Урожай, погода та виробництво",
+          "⚖️ Політика, регулювання та торгівля",
+          "🏭 Переробка, попит та внутрішній ринок",
+          "🌍 Міжнародний контекст",
+        ].join("\n")
+      : [
+          "🔎 Key signals",
+          "🌽 Grains",
+          "🌱 Oilseeds and vegetable oils",
+          "🚢 Logistics and freight",
+          "🌦 Crop weather and production",
+          "⚖️ Trade policy and demand",
+          "🏭 Processing and domestic demand",
+          "🌍 International context",
+        ].join("\n"),
+    "Omit thematic sections that have no concrete source-backed facts. Keep daily shorter than weekly.",
+    noHallucinationRules(),
     commonJsonRules(input),
     renderIndexData(input.latestData, isUk),
+    renderSnapshotEvidence(input.snapshots, input.kind),
+  ].join("\n\n");
+}
+
+export function build1d3xDailyReportPrompt(input: {
+  kind: ReportKind;
+  latestData: PublicLatestItem[];
+  locale: Locale;
+  periodEndDate: string;
+  periodStartDate: string;
+  snapshots: MediaHubWindowSnapshot[];
+  tenant: Tenant;
+}) {
+  return [
+    "You write for 1D3X Media Hub. Write only in English. Scope is global grains, oilseeds, vegetable oils, physical/futures markets and logistics.",
+    "Create a compact daily market/news report. 1D3X has no index section; do not include SPIKE Spot Commodity Index Ukraine.",
+    "Required non-empty sections in summary array. Put section headings as standalone items, followed by bullet text items without bullet symbols.",
+    [
+      "🔎 Key signals",
+      "🌽 Grains",
+      "🌱 Oilseeds and vegetable oils",
+      "🚢 Logistics and freight",
+      "🌦 Crop weather and production",
+      "⚖️ Trade policy and demand",
+      "🌍 Regional notes",
+    ].join("\n"),
+    "Omit thematic sections that have no concrete source-backed facts. Do not become Ukraine-only unless Ukraine/Black Sea materially drives the global market.",
+    noHallucinationRules(),
+    commonJsonRules(input),
     renderSnapshotEvidence(input.snapshots, input.kind),
   ].join("\n\n");
 }
@@ -97,6 +151,17 @@ export function buildSsiWeeklyMonthlyPrompt(input: {
   ].join("\n\n");
 }
 
+function noHallucinationRules() {
+  return [
+    "No-hallucination rules:",
+    "Do not invent prices, volumes, sources, dates, destinations or causes.",
+    "If data is unavailable, omit the item or explicitly say data is unavailable.",
+    "Do not write trading recommendations.",
+    "Do not copy long passages from sources.",
+    "Use concise professional commodity-market language.",
+  ].join("\n");
+}
+
 export function build1d3xWeeklyMonthlyPrompt(input: {
   avoidPhrases?: string[];
   kind: ReportKind;
@@ -144,7 +209,7 @@ function commonJsonRules(input: {
     `Period: ${input.periodStartDate} to ${input.periodEndDate}. Report kind: ${input.kind}.`,
     "Return strict JSON only. Shape: {\"title\":\"...\",\"summary\":[\"section or paragraph\",\"...\"]}.",
     input.kind === "daily"
-      ? "Use 4-7 summary items."
+      ? "Use section headings plus concise bullet-text items; keep the full summary under 28 array items."
       : "Use substantial sectioned summary items. Omit empty sections completely.",
     "Paraphrase source materials. Do not copy long copyrighted text. If data is missing, omit it or write data unavailable.",
   ].join("\n");

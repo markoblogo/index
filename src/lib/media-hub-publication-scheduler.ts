@@ -22,8 +22,17 @@ import {
 import { isPlatformSite } from "@/lib/platform-site";
 import {
   getPublicLatestData,
+  getPublicHistoryData,
   type PublicLatestItem,
 } from "@/lib/public-api-data";
+import {
+  build1d3xDailyReportView,
+  buildSsiDailyReportView,
+  escapeHtml,
+  renderDailyNewsTelegramSection,
+  renderSsiDailyIndexTelegramSection,
+  type MediaHubDailyReportView,
+} from "@/lib/media-hub-daily-report";
 import type { TelegramSourceDigest } from "@/lib/telegram-source-collector";
 
 export type MediaHubPublicationKind = "daily" | "weekly" | "monthly" | "none";
@@ -65,6 +74,7 @@ type MediaHubReportContentJson = {
     sourceType: string;
   }>;
   localized?: Partial<Record<Locale, MediaHubLocalizedReport>>;
+  dailyReports?: Partial<Record<Locale, MediaHubDailyReportView>>;
   periodEndDate: string;
   periodStartDate: string;
   summary: string[];
@@ -101,6 +111,14 @@ export type MediaHubReportArchiveItem = {
   periodEndDate: string;
   periodStartDate: string;
   sourceCount: number;
+  summaryTitle: string;
+};
+
+export type MediaHubReportSummary = {
+  dailyReport?: MediaHubDailyReportView;
+  kind: Exclude<MediaHubPublicationKind, "none">;
+  periodEndDate: string;
+  summaryBody: string[];
   summaryTitle: string;
 };
 
@@ -451,6 +469,7 @@ async function buildTransientMediaHubSnapshotReport(
   const primarySnapshot = snapshots[0];
   const tenantId = isPlatformSite() ? "1d3x" : getActiveIndexConfig().id;
   const latestData = tenantId === "spike-ua" ? await getPublicLatestData() : [];
+  const historyData = tenantId === "spike-ua" && kind === "daily" ? await getPublicHistoryData() : [];
   const manualMaterials = await getManualMaterialsForPeriod({
     kind,
     periodEndDate,
@@ -474,6 +493,8 @@ async function buildTransientMediaHubSnapshotReport(
   const content = buildSnapshotReportContent({
     kind,
     llm,
+    historyData,
+    latestData,
     manualMaterials,
     periodEndDate,
     periodStartDate,
@@ -526,7 +547,9 @@ async function sendTelegramMessages(
 }
 
 function buildSnapshotReportContent(input: {
+  historyData?: Awaited<ReturnType<typeof getPublicHistoryData>>;
   kind: Exclude<MediaHubPublicationKind, "none">;
+  latestData?: PublicLatestItem[];
   llm?: Awaited<ReturnType<typeof generateMediaHubLlmReports>>;
   manualMaterials?: MediaHubManualMaterialDigest[];
   periodEndDate: string;
@@ -536,6 +559,16 @@ function buildSnapshotReportContent(input: {
   const primary = input.snapshots[0];
   const totalItems = input.snapshots.reduce((sum, snapshot) => sum + snapshot.itemCount, 0);
   const totalSources = input.snapshots.reduce((sum, snapshot) => sum + snapshot.sourceCount, 0);
+  const dailyReports = input.kind === "daily"
+    ? buildDailyReportViews({
+        historyData: input.historyData ?? [],
+        latestData: input.latestData ?? [],
+        llm: input.llm,
+        periodEndDate: input.periodEndDate,
+        primarySummary: primary?.summaryBody ?? [],
+        primaryTitle: primary?.summaryTitle,
+      })
+    : undefined;
 
   return {
     generatedAt: new Date().toISOString(),
@@ -553,6 +586,7 @@ function buildSnapshotReportContent(input: {
       sourceType: material.sourceType,
     })) ?? [],
     localized: input.llm?.localized,
+    dailyReports,
     periodEndDate: input.periodEndDate,
     periodStartDate: input.periodStartDate,
     summary: primary?.summaryBody ?? [],
@@ -579,6 +613,47 @@ function buildSnapshotReportContent(input: {
   };
 }
 
+function buildDailyReportViews(input: {
+  historyData: Awaited<ReturnType<typeof getPublicHistoryData>>;
+  latestData: PublicLatestItem[];
+  llm?: Awaited<ReturnType<typeof generateMediaHubLlmReports>>;
+  periodEndDate: string;
+  primarySummary: string[];
+  primaryTitle?: string;
+}): Partial<Record<Locale, MediaHubDailyReportView>> | undefined {
+  if (isPlatformSite()) {
+    const en = input.llm?.localized.en;
+    return {
+      en: build1d3xDailyReportView({
+        localizedSummary: en?.summary?.length ? en.summary : input.primarySummary,
+        localizedTitle: en?.title || input.primaryTitle,
+        periodEndDate: input.periodEndDate,
+      }),
+    };
+  }
+
+  const uk = input.llm?.localized.uk;
+  const en = input.llm?.localized.en;
+  return {
+    uk: buildSsiDailyReportView({
+      historyData: input.historyData,
+      latestData: input.latestData,
+      locale: "uk",
+      localizedSummary: uk?.summary?.length ? uk.summary : input.primarySummary,
+      localizedTitle: uk?.title || input.primaryTitle,
+      periodEndDate: input.periodEndDate,
+    }),
+    en: buildSsiDailyReportView({
+      historyData: input.historyData,
+      latestData: input.latestData,
+      locale: "en",
+      localizedSummary: en?.summary?.length ? en.summary : input.primarySummary,
+      localizedTitle: en?.title || input.primaryTitle,
+      periodEndDate: input.periodEndDate,
+    }),
+  };
+}
+
 function buildMediaHubTelegramText(input: {
   content: MediaHubReportContentJson;
   kind: Exclude<MediaHubPublicationKind, "none">;
@@ -593,6 +668,7 @@ function buildMediaHubTelegramText(input: {
   );
   const primaryWindow = windows[0] ?? input.content.windows[0];
   const localized = input.content.localized?.[input.locale];
+  const dailyReport = input.kind === "daily" ? input.content.dailyReports?.[input.locale] : undefined;
   const title =
     input.tenant === "platform"
       ? `🌍 <b>1D3X Media Hub · ${reportKindLabel(input.kind, input.locale)}</b>`
@@ -602,14 +678,13 @@ function buildMediaHubTelegramText(input: {
     `<b>📅 ${escapeHtml(formatReportDate(input.periodEndDate, input.locale))}</b>`,
   ];
 
-  if (input.tenant === "spike" && input.kind === "daily") {
-    const indexSection = buildSpikeDailyIndexSection(input.latestData, input.locale);
-    if (indexSection.length > 0) {
-      lines.push("", ...indexSection);
-    }
+  if (dailyReport?.indexSection) {
+    lines.push("", ...renderSsiDailyIndexTelegramSection(dailyReport.indexSection));
   }
 
-  if (primaryWindow) {
+  if (dailyReport) {
+    lines.push("", ...renderDailyNewsTelegramSection(dailyReport.newsSection));
+  } else if (primaryWindow) {
     const summary = dedupeNonEmpty(
       localized?.summary?.length
         ? localized.summary
@@ -633,40 +708,16 @@ function buildMediaHubTelegramText(input: {
 
   lines.push(
     "",
-    input.tenant === "platform"
-      ? "<b>1D3X</b>\nhttps://1d3x.com/"
-      : "<b>Spike Spot Index</b>\nhttps://spike.1d3x.com/",
-    "",
     isUk
       ? "<i>AI-assisted Media Hub digest на базі опублікованих індексів, підключених джерел і редакторських фільтрів. Не є торговою рекомендацією.</i>"
       : "<i>AI-assisted Media Hub digest based on index data, monitored sources and editorial filters. Not a trading recommendation.</i>",
+    "",
+    input.tenant === "platform"
+      ? "<b>1D3X</b>\nhttps://1d3x.com/"
+      : "<b>Spike Spot Index</b>\nhttps://spike.1d3x.com/",
   );
 
   return lines.join("\n");
-}
-
-function buildSpikeDailyIndexSection(
-  latestData: PublicLatestItem[],
-  locale: Locale,
-) {
-  const isUk = locale === "uk";
-  const rows = latestData
-    .filter((item) => item.valueUsdPerMt !== null)
-    .sort((first, second) => first.commodityCode.localeCompare(second.commodityCode));
-
-  if (rows.length === 0) {
-    return [];
-  }
-
-  return [
-    isUk ? "<b>🌾 Сьогоднішні індекси</b>" : "<b>🌾 Today's index values</b>",
-    ...rows.map((item) => {
-      const name = isUk ? item.commodityNameUk : item.commodityNameEn;
-      const change = formatChange(item.changeAbs);
-      const basis = item.basis ? ` · ${item.basis}` : "";
-      return `• ${escapeHtml(name)}${escapeHtml(basis)} — <b>${item.valueUsdPerMt} USD/t</b> (${change})`;
-    }),
-  ];
 }
 
 function splitTelegramMessage(text: string) {
@@ -718,6 +769,7 @@ function parseMediaHubReportContent(value: unknown): MediaHubReportContentJson |
         }
       : undefined,
     localized,
+    dailyReports: parseDailyReports(candidate.dailyReports),
     manualMaterialsUsed: Array.isArray(candidate.manualMaterialsUsed)
       ? candidate.manualMaterialsUsed
           .filter((item) => Boolean(item) && typeof item === "object")
@@ -752,6 +804,22 @@ function parseMediaHubReportContent(value: unknown): MediaHubReportContentJson |
       window: normalizeWindowKey(window.window),
     })),
   };
+}
+
+function parseDailyReports(value: unknown): Partial<Record<Locale, MediaHubDailyReportView>> | undefined {
+  if (!value || typeof value !== "object") {
+    return undefined;
+  }
+  const reports: Partial<Record<Locale, MediaHubDailyReportView>> = {};
+  for (const locale of ["uk", "en"] as const) {
+    const report = (value as Partial<Record<Locale, unknown>>)[locale];
+    if (!report || typeof report !== "object") continue;
+    const candidate = report as MediaHubDailyReportView;
+    if (candidate.newsSection?.title && Array.isArray(candidate.newsSection.themes)) {
+      reports[locale] = candidate;
+    }
+  }
+  return Object.keys(reports).length > 0 ? reports : undefined;
 }
 
 export async function getLatestPublishedMediaHubReportSummary(input: {
@@ -795,21 +863,36 @@ export async function getLatestPublishedMediaHubReportSummary(input: {
   }
 
   const localized = content.localized?.[input.locale];
+  const dailyReport = content.dailyReports?.[input.locale];
   if (localized?.summary?.length) {
     return {
+      dailyReport,
       kind: content.kind,
       periodEndDate: content.periodEndDate,
-      summaryBody: localized.summary,
+      summaryBody: dailyReport
+        ? flattenDailyReportSummary(dailyReport)
+        : localized.summary,
       summaryTitle: localized.title || content.title,
     };
   }
 
   return {
     kind: content.kind,
+    dailyReport,
     periodEndDate: content.periodEndDate,
-    summaryBody: content.summary,
+    summaryBody: dailyReport
+      ? flattenDailyReportSummary(dailyReport)
+      : content.summary,
     summaryTitle: content.title,
   };
+}
+
+function flattenDailyReportSummary(report: MediaHubDailyReportView | undefined) {
+  if (!report) return [];
+  return report.newsSection.themes.flatMap((theme) => [
+    theme.title,
+    ...theme.items,
+  ]);
 }
 
 export async function getMediaHubReportArchive(input: {
@@ -972,12 +1055,6 @@ function formatReportDate(date: string, locale: Locale) {
     month: "2-digit",
     year: "numeric",
   }).format(parsed);
-}
-
-function formatChange(value: number) {
-  if (value > 0) return `+${value}`;
-  if (value < 0) return `${value}`;
-  return "0";
 }
 
 export async function publishMonthlyMediaHubReport(periodEndDate: string) {

@@ -111,7 +111,7 @@ async function generateOneLocale(input: {
     }
 
     const payload = await response.json();
-    const parsed = parseGeneratedJson(extractResponseText(payload));
+    const parsed = parseGeneratedJson(extractResponseText(payload), input.kind);
     if (!parsed) {
       return null;
     }
@@ -170,7 +170,7 @@ function extractResponseText(payload: unknown): string {
   );
 }
 
-function parseGeneratedJson(value: string): MediaHubLocalizedReport | null {
+function parseGeneratedJson(value: string, kind: MediaHubReportKind): MediaHubLocalizedReport | null {
   const trimmed = value.trim();
   const jsonText = trimmed.startsWith("```")
     ? trimmed.replace(/^```(?:json)?/i, "").replace(/```$/i, "").trim()
@@ -184,7 +184,7 @@ function parseGeneratedJson(value: string): MediaHubLocalizedReport | null {
           .filter((item): item is string => typeof item === "string")
           .map((item) => item.trim())
           .filter(Boolean)
-          .slice(0, 8)
+          .slice(0, kind === "daily" ? 40 : 120)
       : [];
 
     if (!title || summary.length === 0) {

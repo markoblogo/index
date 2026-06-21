@@ -106,7 +106,7 @@ function kindToWindow(kind: string | undefined): MediaHubWindowKey {
 
 function applyPublishedSummary(
   window: MediaHubWindowSnapshot,
-  summary: { kind?: string; periodEndDate?: string; summaryBody: string[]; summaryTitle: string } | null,
+  summary: { dailyReport?: MediaHubWindowSnapshot["dailyReport"]; kind?: string; periodEndDate?: string; summaryBody: string[]; summaryTitle: string } | null,
 ): MediaHubWindowSnapshot {
   if (!summary?.summaryBody.length) {
     return window;
@@ -114,6 +114,7 @@ function applyPublishedSummary(
 
   return {
     ...window,
+    dailyReport: summary.dailyReport,
     summaryBody: summary.summaryBody,
     summaryTitle: summary.summaryTitle,
   };

@@ -1,5 +1,6 @@
 import type { Locale } from "@/lib/i18n";
 import { getActiveIndexConfig, type MediaHubLocalePolicy } from "@/lib/index-platform";
+import type { MediaHubDailyReportView } from "@/lib/media-hub-daily-report";
 import { isPlatformSite } from "@/lib/platform-site";
 
 export type MediaHubWindowKey = "day" | "week" | "month";
@@ -35,6 +36,7 @@ export type MediaHubWindowSnapshot = {
   progressLabel: string;
   summaryTitle: string;
   summaryBody: string[];
+  dailyReport?: MediaHubDailyReportView;
   sourceCount: number;
   itemCount: number;
   topicCount: number;

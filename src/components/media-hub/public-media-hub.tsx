@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import type { Locale } from "@/lib/i18n";
+import type { DailyNewsTheme, SsiDailyIndexGroup } from "@/lib/media-hub-daily-report";
 import type { MediaHubReportArchiveItem } from "@/lib/media-hub-publication-scheduler";
 import type {
   MediaHubSiteProfile,
@@ -130,13 +131,17 @@ export function PublicMediaHub({
               {activeWindow.topicCount} topics
             </span>
           </div>
-          <div className="mt-6 max-w-6xl space-y-5">
-            {activeWindow.summaryBody.map((paragraph) => (
-              <p className="text-lg leading-8 text-white/78" key={paragraph}>
-                {paragraph}
-              </p>
-            ))}
-          </div>
+          {activeWindow.dailyReport ? (
+            <DailyReportBody report={activeWindow.dailyReport} locale={locale} />
+          ) : (
+            <div className="mt-6 max-w-6xl space-y-5">
+              {activeWindow.summaryBody.map((paragraph) => (
+                <p className="text-lg leading-8 text-white/78" key={paragraph}>
+                  {paragraph}
+                </p>
+              ))}
+            </div>
+          )}
         </article>
       </section>
 
@@ -253,6 +258,119 @@ export function PublicMediaHub({
       </section>
     </div>
   );
+}
+
+function DailyReportBody({
+  locale,
+  report,
+}: {
+  locale: Locale;
+  report: NonNullable<MediaHubWindowSnapshot["dailyReport"]>;
+}) {
+  return (
+    <div className="mt-6 space-y-6">
+      {report.indexSection ? (
+        <section className="rounded-[1.5rem] border border-white/10 bg-black/18 p-4">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-[var(--media-hub-accent)]">
+                {locale === "uk" ? "Індекси дня" : "Daily indices"}
+              </p>
+              <h3 className="mt-1 text-2xl font-black">{report.indexSection.title}</h3>
+            </div>
+            <span className="text-sm font-bold text-white/54">{report.indexSection.date}</span>
+          </div>
+          <div className="mt-5 grid gap-4 xl:grid-cols-3">
+            {report.indexSection.groups.map((group) => (
+              <IndexGroupCard group={group} key={group.id} />
+            ))}
+          </div>
+          <div className="mt-5 rounded-[1rem] border border-white/10 bg-[var(--media-hub-card)] p-3">
+            {report.indexSection.notes.map((note) => (
+              <p className="text-sm leading-6 text-white/58" key={note}>
+                {note}
+              </p>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      <section>
+        <h3 className="text-2xl font-black">{report.newsSection.title}</h3>
+        <div className="mt-4 grid gap-3">
+          {report.newsSection.themes.map((theme) => (
+            <NewsThemeCard theme={theme} key={theme.id} />
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function IndexGroupCard({ group }: { group: SsiDailyIndexGroup }) {
+  return (
+    <article className="rounded-[1.25rem] border border-white/10 bg-[var(--media-hub-card)] p-4">
+      <p className="text-xs font-black uppercase tracking-[0.18em] text-[var(--media-hub-accent)]">
+        {group.title}
+      </p>
+      <p className="mt-1 text-sm font-bold text-white/50">{group.subtitle}</p>
+      <div className="mt-4 grid gap-3">
+        {group.items.length > 0 ? (
+          group.items.map((item) => (
+            <div className="rounded-[1rem] border border-white/8 bg-black/18 p-3" key={item.commodityCode}>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h4 className="text-base font-black">{item.name}</h4>
+                  <p className="mt-1 text-xs font-bold text-white/46">{item.basis}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xl font-black">{formatIndexValueForSite(item.value)}</p>
+                  <p className="text-xs font-bold text-white/46">{item.unit}{item.vatIncluded ? " · VAT" : ""}</p>
+                </div>
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-black">
+                <span className="rounded-full border border-white/10 px-2 py-1 text-white/64">
+                  d/d {formatSignedForSite(item.dayChange)}
+                </span>
+                <span className="rounded-full border border-white/10 px-2 py-1 text-white/64">
+                  пт {formatSignedForSite(item.previousFridayChange)}
+                </span>
+              </div>
+              <p className="mt-3 text-sm leading-6 text-white/62">{item.comment}</p>
+            </div>
+          ))
+        ) : (
+          <p className="text-sm text-white/48">Індекси недоступні.</p>
+        )}
+      </div>
+    </article>
+  );
+}
+
+function NewsThemeCard({ theme }: { theme: DailyNewsTheme }) {
+  return (
+    <article className="rounded-[1.1rem] border border-white/10 bg-[var(--media-hub-card)] p-4">
+      <h4 className="text-lg font-black">{theme.title}</h4>
+      <div className="mt-3 grid gap-2">
+        {theme.items.map((item) => (
+          <p className="text-base leading-7 text-white/72" key={item}>
+            • {item}
+          </p>
+        ))}
+      </div>
+    </article>
+  );
+}
+
+function formatIndexValueForSite(value: number | null) {
+  if (value === null) return "—";
+  return Number.isInteger(value) ? String(value) : value.toFixed(1);
+}
+
+function formatSignedForSite(value: number | null) {
+  if (value === null) return "n/a";
+  if (value === 0) return "0";
+  return `${value > 0 ? "+" : ""}${Number.isInteger(value) ? value : value.toFixed(1)}`;
 }
 
 function formatArchivePeriod(report: MediaHubReportArchiveItem) {

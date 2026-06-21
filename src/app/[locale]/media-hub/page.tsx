@@ -113,6 +113,7 @@ function applyPublishedSummary(
 
   return {
     ...window,
+    dailyReport: summary.dailyReport,
     summaryBody: summary.summaryBody,
     summaryTitle: summary.summaryTitle,
   };
