@@ -590,6 +590,7 @@ function buildSnapshotReportContent(input: {
   const primary = input.snapshots[0];
   const totalItems = input.snapshots.reduce((sum, snapshot) => sum + snapshot.itemCount, 0);
   const totalSources = input.snapshots.reduce((sum, snapshot) => sum + snapshot.sourceCount, 0);
+  const primaryLocalized = getPrimaryLocalizedReport(input.llm?.localized);
   const evidenceFallback = input.kind === "daily" && isPlatformSite()
     ? buildPlatformDailyEvidenceFallback({
         manualMaterials: input.manualMaterials ?? [],
@@ -629,8 +630,12 @@ function buildSnapshotReportContent(input: {
     dailyReports,
     periodEndDate: input.periodEndDate,
     periodStartDate: input.periodStartDate,
-    summary: evidenceFallback?.summary.length ? evidenceFallback.summary : (primary?.summaryBody ?? []),
-    title: evidenceFallback?.title ||
+    summary: primaryLocalized?.summary?.length
+      ? primaryLocalized.summary
+      : evidenceFallback?.summary.length
+        ? evidenceFallback.summary
+        : (primary?.summaryBody ?? []),
+    title: primaryLocalized?.title || evidenceFallback?.title ||
       (primary?.summaryTitle ??
         `Media Hub ${input.kind} report · ${input.periodStartDate}—${input.periodEndDate}`),
     totals: {
@@ -651,6 +656,12 @@ function buildSnapshotReportContent(input: {
       window: snapshot.window,
     })),
   };
+}
+
+function getPrimaryLocalizedReport(
+  localized: Awaited<ReturnType<typeof generateMediaHubLlmReports>>["localized"] | undefined,
+) {
+  return localized?.en ?? localized?.uk;
 }
 
 function buildPlatformDailyEvidenceFallback(input: {

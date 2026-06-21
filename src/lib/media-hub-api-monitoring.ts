@@ -97,15 +97,15 @@ export const MEDIA_HUB_API_PROVIDER_REGISTRY: ProviderRegistryEntry[] = [
   provider("copernicus_cds", "COPERNICUS_CDS_KEY", "climate_api", 1, 0, "Heavy async downloads; manual/weekly only.", "manual", false),
   provider("newsapi_ai", "NEWSAPI_AI_KEY", "news_api", 1, 0, "Disabled for daily polling; enable via allowlist.", "manual", false),
   {
-    cadence: "daily-or-weekly",
+    cadence: "manual",
     conservativeBudget: 10,
-    enabledByDefault: true,
+    enabledByDefault: false,
     freeTierLimit: "public releases endpoint",
     id: "un_comtrade_releases",
     maxRequestsPerRun: 1,
-    notes: "No-key release endpoint; optional UN_COMTRADE_SUBSCRIPTION_KEY.",
-    priority: 50,
-    resetWindow: "daily",
+    notes: "Release-stub endpoint only; disabled for reports until a commodity-specific Comtrade query is wired.",
+    priority: 1,
+    resetWindow: "manual",
     timeoutMs: DEFAULT_TIMEOUT_MS,
     type: "trade_api",
   },
@@ -152,15 +152,19 @@ const MARKET_KEYWORDS = [
   "usd", "usda", "yield",
 ];
 const WEAK_SOURCE_DOMAINS = [
+  "britannica.com",
+  "help.topstep.com",
   "wikipedia.org",
   "seedoilfreecertified.com",
 ];
 const WEAK_TITLE_PATTERNS = [
   /\b4d lidar\b/i,
   /\bclass 8 safety\b/i,
+  /\bstock trader'?s guide\b/i,
   /\btruckload market cycle\b/i,
   /\bdomestic transportation offering\b/i,
   /\bseed oils list\b/i,
+  /\bwhen and what products can i trade\b/i,
   /\bwhat foods contain seed oils\b/i,
 ];
 
@@ -339,7 +343,7 @@ async function fetchTavily(entry: ProviderRegistryEntry, queries: string[]) {
 }
 
 function routeMediaHubItemToTenants(item: ApiItem): RoutedItem[] {
-  if (isWeakApiItem(item)) {
+  if (isWeakApiItem(item) || isStaleApiItem(item)) {
     return [];
   }
   const haystack = `${item.title} ${item.summary ?? ""}`.toLowerCase();
@@ -407,6 +411,10 @@ async function ingestRoutedItems(items: RoutedItem[], kind: "daily" | "monthly" 
 
 function formatApiItemForMaterial(item: RoutedItem) {
   return cleanTextForStorage([
+    item.title,
+    "",
+    item.summary ?? "",
+    "",
     `Provider: ${item.providerId}`,
     `Source: ${item.source}`,
     `Published: ${item.publishedAt ?? "unknown"}`,
@@ -418,10 +426,6 @@ function formatApiItemForMaterial(item: RoutedItem) {
       ...item.tags.country,
       ...item.tags.risk,
     ].join(", ")}`,
-    "",
-    item.title,
-    "",
-    item.summary ?? "",
   ].join("\n")).slice(0, 8_000);
 }
 
@@ -768,11 +772,29 @@ function item(
 
 function isWeakApiItem(item: ApiItem) {
   const url = item.url?.toLowerCase() ?? "";
+  const source = item.source.toLowerCase();
   const haystack = `${item.title} ${item.summary ?? ""}`.toLowerCase();
+  if (item.providerId === "un_comtrade_releases" || source.includes("un comtrade")) {
+    return true;
+  }
   if (WEAK_SOURCE_DOMAINS.some((domain) => url.includes(domain))) {
     return true;
   }
   return WEAK_TITLE_PATTERNS.some((pattern) => pattern.test(haystack));
+}
+
+function isStaleApiItem(item: ApiItem) {
+  if (!item.publishedAt) {
+    return false;
+  }
+  const published = Date.parse(item.publishedAt);
+  if (!Number.isFinite(published)) {
+    return false;
+  }
+  const now = Date.now();
+  const maxAgeMs = 14 * 24 * 60 * 60 * 1000;
+  const futureSlackMs = 36 * 60 * 60 * 1000;
+  return published < now - maxAgeMs || published > now + futureSlackMs;
 }
 
 function getPath(value: unknown, path: string[]) {

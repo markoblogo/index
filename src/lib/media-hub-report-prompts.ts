@@ -269,9 +269,20 @@ function renderManualMaterials(materials: MediaHubManualMaterialDigest[]) {
   return [
     "Additional API/manual evidence:",
     ...ranked.slice(0, 24).map(({ material }, index) =>
-      `${index + 1}. ${material.sourceDomain || material.originalFilename || material.originalUrl || material.id} | ${material.summary || material.extractedText.slice(0, 600)}`,
+      `${index + 1}. ${material.sourceDomain || material.originalFilename || material.originalUrl || material.id} | ${formatMaterialEvidence(material)}`,
     ),
   ].join("\n");
+}
+
+function formatMaterialEvidence(material: MediaHubManualMaterialDigest) {
+  const source = material.summary || material.extractedText;
+  const lines = source
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .filter((line) => !/^(provider|source|published|url|routing|tags):/i.test(line))
+    .filter((line) => !line.startsWith("{") && !line.startsWith("["));
+  return (lines.join(" ") || source).replace(/\s+/g, " ").slice(0, 700);
 }
 
 function scoreManualMaterial(material: MediaHubManualMaterialDigest) {
