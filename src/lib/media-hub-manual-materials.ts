@@ -19,6 +19,7 @@ export type MediaHubManualMaterialSourceType =
   | "corporate_telegram_group"
   | "admin_upload"
   | "admin_link"
+  | "scheduled_api"
   | "scheduled_pdf"
   | "scheduled_html";
 
@@ -268,8 +269,10 @@ export async function ingestMediaHubFileMaterial(input: {
 
 export async function ingestMediaHubTextMaterial(input: {
   kind: MediaHubManualMaterialKind;
+  originalUrl?: string;
   receivedFrom: "telegram" | "admin" | "scheduler";
-  sourceType: Extract<MediaHubManualMaterialSourceType, "corporate_telegram_group">;
+  sourceDomain?: string;
+  sourceType: Extract<MediaHubManualMaterialSourceType, "corporate_telegram_group" | "scheduled_api">;
   telegramChatId?: string;
   telegramFromId?: string;
   telegramMessageId?: string;
@@ -704,7 +707,7 @@ function getSourceRegistrationStatus(
   sourceType: MediaHubManualMaterialSourceType,
   canonicalUrl?: string,
 ) {
-  if (sourceType === "scheduled_html" || sourceType === "scheduled_pdf") {
+  if (sourceType === "scheduled_html" || sourceType === "scheduled_pdf" || sourceType === "scheduled_api") {
     return "active";
   }
   if (sourceType === "corporate_telegram_group") {

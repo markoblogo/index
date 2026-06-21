@@ -3,6 +3,7 @@ import "server-only";
 import { todayInputDate } from "@/lib/admin-daily-inputs";
 import { getDefaultWeekEnd } from "@/lib/admin-reports";
 import type { Locale } from "@/lib/i18n";
+import { listMediaHubApiProviderRegistry } from "@/lib/media-hub-api-monitoring";
 import {
   getMediaHubWindowProgressLabel,
   type MediaHubWindowSnapshot,
@@ -306,6 +307,7 @@ export async function listUnifiedMediaHubRegistry() {
     mergeRegistryResource(map, resource, "week");
   }
   mergeCorporateRegistryRows(map);
+  mergeApiProviderRegistryRows(map);
 
   return [...map.values()].sort((a, b) => {
     const roleSort = a.role === b.role ? 0 : a.role === "analysis_source" ? -1 : 1;
@@ -314,6 +316,29 @@ export async function listUnifiedMediaHubRegistry() {
     }
     return a.title.localeCompare(b.title);
   });
+}
+
+function mergeApiProviderRegistryRows(map: Map<string, MediaHubRegistryRow>) {
+  for (const provider of listMediaHubApiProviderRegistry()) {
+    map.set(`api::${provider.id}`, {
+      id: `api::${provider.id}`,
+      language: provider.id.includes("ukraine") ? "uk/en" : "en",
+      notes: [
+        `${provider.type}; cadence=${provider.cadence}; maxRequestsPerRun=${provider.maxRequestsPerRun}.`,
+        `Soft budget=${provider.conservativeBudget}; reset=${provider.resetWindow}.`,
+        `Env ${provider.envVar ?? "not required"}: ${provider.envConfigured ? "configured" : "missing"}.`,
+        provider.enabled ? "Status: enabled." : "Status: disabled or missing key.",
+        provider.notes,
+      ].join(" "),
+      reportKind: "weekly",
+      role: "analysis_source",
+      scope: "permanent",
+      title: `API · ${provider.id}`,
+      type: provider.type,
+      url: provider.envVar ? `env:${provider.envVar}` : "https://comtradeapi.un.org/public/v1/getComtradeReleases",
+      windows: ["day", "week"],
+    });
+  }
 }
 
 function mergeCorporateRegistryRows(map: Map<string, MediaHubRegistryRow>) {

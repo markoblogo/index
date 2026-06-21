@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { runMediaHubApiMonitoring } from "@/lib/media-hub-api-monitoring";
 import { get1d3xRssWindows } from "@/lib/media-hub-rss";
 import { ingestScheduledMediaHubSources } from "@/lib/media-hub-manual-materials";
 import { getSpikeMediaHubLiveWindows } from "@/lib/media-hub-monitoring";
@@ -36,12 +37,14 @@ export async function GET(request: Request) {
   }
 
   if (isPlatformSite()) {
-    const [windows, scheduledSources] = await Promise.all([
+    const [windows, scheduledSources, apiMonitoring] = await Promise.all([
       get1d3xRssWindows(),
       ingestScheduledMediaHubSources(),
+      runMediaHubApiMonitoring({ tenantMode: "platform" }),
     ]);
 
     return NextResponse.json({
+      apiMonitoring,
       mode: "rss",
       scheduledSources,
       tenant: "1d3x",
@@ -56,10 +59,11 @@ export async function GET(request: Request) {
     });
   }
 
-  const [dailySync, weeklySync, scheduledSources] = await Promise.all([
+  const [dailySync, weeklySync, scheduledSources, apiMonitoring] = await Promise.all([
     syncTelegramWorkspaceResources("daily", { maxPagesPerChannel: 2 }),
     syncTelegramWorkspaceResources("weekly", { maxPagesPerChannel: 2 }),
     ingestScheduledMediaHubSources(),
+    runMediaHubApiMonitoring({ tenantMode: "unified" }),
   ]);
   const windows = await getSpikeMediaHubLiveWindows("uk", { syncTelegram: false });
 
@@ -72,6 +76,7 @@ export async function GET(request: Request) {
       weekly: weeklySync,
     },
     scheduledSources,
+    apiMonitoring,
     windows: summarizeWindows(windows),
   });
 }

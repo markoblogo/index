@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { db, hasDatabaseUrl } from "@/lib/db";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import type { Locale } from "@/lib/i18n";
+import { runMediaHubApiMonitoring } from "@/lib/media-hub-api-monitoring";
 import {
   generateMediaHubLlmReports,
   type MediaHubLocalizedReport,
@@ -464,6 +465,11 @@ async function buildTransientMediaHubSnapshotReport(
   );
   const windowKey: MediaHubWindowKey =
     kind === "daily" ? "day" : kind === "weekly" ? "week" : "month";
+  await runMediaHubApiMonitoring({
+    force: kind === "weekly" || kind === "monthly",
+    kind,
+    tenantMode: isPlatformSite() ? "platform" : "unified",
+  });
   const snapshots = await getPublicationSnapshots(windowKey);
   const primarySnapshot = snapshots[0];
   const tenantId = isPlatformSite() ? "1d3x" : getActiveIndexConfig().id;
