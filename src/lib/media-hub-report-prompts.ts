@@ -32,6 +32,7 @@ export function buildSsiDailyReportPrompt(input: {
   kind: ReportKind;
   latestData: PublicLatestItem[];
   locale: Locale;
+  manualMaterials?: MediaHubManualMaterialDigest[];
   periodEndDate: string;
   periodStartDate: string;
   snapshots: MediaHubWindowSnapshot[];
@@ -70,6 +71,7 @@ export function buildSsiDailyReportPrompt(input: {
     noHallucinationRules(),
     commonJsonRules(input),
     renderIndexData(input.latestData, isUk),
+    renderManualMaterials(input.manualMaterials ?? []),
     renderSnapshotEvidence(input.snapshots, input.kind),
   ].join("\n\n");
 }
@@ -78,6 +80,7 @@ export function build1d3xDailyReportPrompt(input: {
   kind: ReportKind;
   latestData: PublicLatestItem[];
   locale: Locale;
+  manualMaterials?: MediaHubManualMaterialDigest[];
   periodEndDate: string;
   periodStartDate: string;
   snapshots: MediaHubWindowSnapshot[];
@@ -86,6 +89,8 @@ export function build1d3xDailyReportPrompt(input: {
   return [
     "You write for 1D3X Media Hub. Write only in English. Scope is global grains, oilseeds, vegetable oils, physical/futures markets and logistics.",
     "Create a compact daily market/news report. 1D3X has no index section; do not include SPIKE Spot Commodity Index Ukraine.",
+    "Use API/scheduled materials as primary evidence when present. The report must discuss concrete market events, not only source counts or topic names.",
+    "Do not write phrases like 'the feed contains N items', 'densest source contribution', or 'led by Logistics'. Translate monitoring evidence into market implications.",
     "Required non-empty sections in summary array. Put section headings as standalone items, followed by bullet text items without bullet symbols.",
     [
       "🔎 Key signals",
@@ -99,6 +104,7 @@ export function build1d3xDailyReportPrompt(input: {
     "Omit thematic sections that have no concrete source-backed facts. Do not become Ukraine-only unless Ukraine/Black Sea materially drives the global market.",
     noHallucinationRules(),
     commonJsonRules(input),
+    renderManualMaterials(input.manualMaterials ?? []),
     renderSnapshotEvidence(input.snapshots, input.kind),
   ].join("\n\n");
 }
@@ -249,11 +255,11 @@ function renderSnapshotEvidence(snapshots: MediaHubWindowSnapshot[], kind: Repor
 
 function renderManualMaterials(materials: MediaHubManualMaterialDigest[]) {
   if (materials.length === 0) {
-    return "Manual weekly/monthly materials: none.";
+    return "Additional API/manual evidence: none.";
   }
 
   return [
-    "Manual weekly/monthly materials:",
+    "Additional API/manual evidence:",
     ...materials.slice(0, 16).map((material, index) =>
       `${index + 1}. ${material.sourceDomain || material.originalFilename || material.originalUrl || material.id} | ${material.summary || material.extractedText.slice(0, 600)}`,
     ),

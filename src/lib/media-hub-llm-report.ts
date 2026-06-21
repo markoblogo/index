@@ -74,14 +74,15 @@ async function generateOneLocale(input: {
   const prompt = buildPrompt(input);
 
   try {
+    const useWebSearch = input.kind !== "daily" || input.tenant === "platform";
     const requestBody: Record<string, unknown> = {
       input: prompt,
-      max_output_tokens: input.kind === "daily" ? 900 : input.kind === "weekly" ? 3600 : 4200,
+      max_output_tokens: input.kind === "daily" ? 1700 : input.kind === "weekly" ? 3600 : 4200,
       model: input.model,
       temperature: 0.25,
     };
 
-    if (input.kind !== "daily") {
+    if (useWebSearch) {
       requestBody.tools = [{ type: "web_search_preview" }];
     }
 
@@ -94,7 +95,7 @@ async function generateOneLocale(input: {
       method: "POST",
     });
 
-    if (!response.ok && input.kind !== "daily") {
+    if (!response.ok && useWebSearch) {
       delete requestBody.tools;
       response = await fetch("https://api.openai.com/v1/responses", {
         body: JSON.stringify(requestBody),
