@@ -78,18 +78,18 @@ const DEFAULT_TIMEOUT_MS = 8_000;
 const USER_AGENT = "1D3X-MediaHub/1.0 (+https://1d3x.com)";
 
 export const MEDIA_HUB_API_PROVIDER_REGISTRY: ProviderRegistryEntry[] = [
-  provider("guardian", "GUARDIAN_API_KEY", "news_api", 50, 4, "500 calls/day; search endpoint."),
-  provider("currents", "CURRENTS_API_KEY", "news_api", 50, 4, "1000 calls/day; search endpoint."),
-  provider("newsdata", "NEWSDATA_API_KEY", "news_api", 30, 4, "200 credits/day; short keyword searches."),
-  provider("newsapi", "NEWSAPI_KEY", "news_api", 15, 3, "100 calls/day; everything endpoint."),
-  provider("gnews", "GNEWS_API_KEY", "news_api", 10, 3, "Assume 100 calls/day; conservative."),
+  provider("guardian", "GUARDIAN_API_KEY", "news_api", 50, 4, "500 calls/day; commodity search endpoint."),
+  provider("currents", "CURRENTS_API_KEY", "news_api", 50, 4, "1000 calls/day; commodity search endpoint."),
+  provider("newsdata", "NEWSDATA_API_KEY", "news_api", 30, 4, "200 credits/day; commodity searches."),
+  provider("newsapi", "NEWSAPI_KEY", "news_api", 30, 4, "100 calls/day; commodity everything endpoint."),
+  provider("gnews", "GNEWS_API_KEY", "news_api", 20, 4, "Commodity/news search; conservative."),
   provider("mediastack", "MEDIASTACK_API_KEY", "news_api", 30, 1, "100 calls/month; one small call/day."),
   provider("marketaux", "MARKETAUX_API_KEY", "news_api", 10, 2, "100 calls/day; market news."),
   provider("thenewsapi", "THENEWSAPI_KEY", "news_api", 10, 2, "100 calls/day; market news."),
   provider("world_news_api", "WORLD_NEWS_API_KEY", "news_api", 5, 1, "50 points/day; very small scan."),
   provider("tavily", "TAVILY_API_KEY", "search_api", 300, 2, "1000 credits/month; search fallback.", "monthly"),
   provider("serpapi", "SERPAPI_API_KEY", "search_api", 120, 1, "250 searches/month; Google News fallback.", "monthly"),
-  provider("brave_search", "BRAVE_SEARCH_API_KEY", "search_api", 15, 2, "Conservative web/news search."),
+  provider("brave_search", "BRAVE_SEARCH_API_KEY", "search_api", 30, 4, "Commodity web/news search."),
   provider("newscatcher", "NEWSCATCHER_API_KEY", "news_api", 2, 1, "Limited credits; one compact query."),
   provider("youtube", "YOUTUBE_API_KEY", "video_api", 1_000, 2, "10k units/day; narrow search fallback only."),
   provider("noaa_cdo", "NOAA_CDO_TOKEN", "weather_api", 100, 1, "Weather metadata endpoint; not high-frequency."),
@@ -114,10 +114,12 @@ export const MEDIA_HUB_API_PROVIDER_REGISTRY: ProviderRegistryEntry[] = [
 
 const QUERY_PACKS = {
   global: [
-    "wheat corn soybeans oilseeds export harvest crop weather",
-    "Black Sea grain freight wheat corn sunflower oil",
-    "Brazil Argentina soybean corn crop exports",
-    "vegetable oils palm soybean sunflower rapeseed biodiesel",
+    "wheat corn soybean futures export tender crop weather USDA",
+    "CBOT wheat corn soybeans Euronext MATIF grain market",
+    "Black Sea grain wheat corn sunflower oil export port freight",
+    "Brazil Argentina soybean corn crop weather exports",
+    "palm oil soybean oil sunflower oil rapeseed canola vegetable oils",
+    "Egypt wheat tender Algeria wheat tender China soybean imports",
   ],
   ukraine: [
     "Ukraine grain exports Odesa Danube rail border wheat corn",
@@ -143,6 +145,23 @@ const UKRAINE_KEYWORDS = [
 const GLOBAL_IMPACT_KEYWORDS = [
   "attack", "ban", "corridor", "customs", "disruption", "export", "freight", "import",
   "quota", "safeguard", "sanction", "tender", "tariff", "страйк", "експорт", "тендер",
+];
+const MARKET_KEYWORDS = [
+  "basis", "bid", "cbot", "elevator", "euronext", "fob", "forward", "future",
+  "futures", "harvest", "matif", "price", "prices", "production", "stocks", "supply",
+  "usd", "usda", "yield",
+];
+const WEAK_SOURCE_DOMAINS = [
+  "wikipedia.org",
+  "seedoilfreecertified.com",
+];
+const WEAK_TITLE_PATTERNS = [
+  /\b4d lidar\b/i,
+  /\bclass 8 safety\b/i,
+  /\btruckload market cycle\b/i,
+  /\bdomestic transportation offering\b/i,
+  /\bseed oils list\b/i,
+  /\bwhat foods contain seed oils\b/i,
 ];
 
 function provider(
@@ -204,7 +223,9 @@ export async function runMediaHubApiMonitoring(input: {
 
   const providerResults: ApiMonitoringResult["providers"] = [];
   let ingested = 0;
-  for (const entry of listMediaHubApiProviderRegistry().filter((item) => item.enabled)) {
+  for (const entry of listMediaHubApiProviderRegistry()
+    .filter((item) => item.enabled)
+    .sort((first, second) => second.priority - first.priority)) {
     const budget = await acquireProviderBudget(entry);
     if (!budget.allowed) {
       providerResults.push({ id: entry.id, skippedReason: budget.reason, status: "skipped" });
@@ -233,7 +254,7 @@ async function fetchProviderItems(entry: ProviderRegistryEntry, tenantMode: ApiM
   if (entry.maxRequestsPerRun <= 0) {
     return [] as ApiItem[];
   }
-  const queries = selectQueries(tenantMode).slice(0, entry.maxRequestsPerRun);
+  const queries = selectQueries(entry, tenantMode).slice(0, entry.maxRequestsPerRun);
   switch (entry.id) {
     case "guardian":
       return fetchJsonSearch(entry, queries, guardianUrl, extractGuardian);
@@ -318,12 +339,19 @@ async function fetchTavily(entry: ProviderRegistryEntry, queries: string[]) {
 }
 
 function routeMediaHubItemToTenants(item: ApiItem): RoutedItem[] {
+  if (isWeakApiItem(item)) {
+    return [];
+  }
   const haystack = `${item.title} ${item.summary ?? ""}`.toLowerCase();
   const commodity = findMatches(haystack, COMMODITY_KEYWORDS);
   const logistics = findMatches(haystack, LOGISTICS_KEYWORDS);
   const country = findMatches(haystack, UKRAINE_KEYWORDS);
+  const market = findMatches(haystack, MARKET_KEYWORDS);
   const risk = findMatches(haystack, GLOBAL_IMPACT_KEYWORDS);
-  if (commodity.length === 0 && logistics.length === 0) {
+  const hasCommodityMarketSignal = commodity.length > 0 && (market.length > 0 || risk.length > 0);
+  const hasCommodityLogisticsSignal = commodity.length > 0 && logistics.length > 0;
+  const hasUkraineGlobalSignal = country.length > 0 && (commodity.length > 0 || risk.length > 0);
+  if (!hasCommodityMarketSignal && !hasCommodityLogisticsSignal && !hasUkraineGlobalSignal) {
     return [];
   }
 
@@ -343,7 +371,7 @@ function routeMediaHubItemToTenants(item: ApiItem): RoutedItem[] {
       logistics,
       provider: [item.providerId],
       region: isUkraine ? ["ukraine_black_sea"] : ["global"],
-      risk,
+      risk: [...risk, ...market],
     },
     tenantRoutingReason: isUkraine
       ? hasGlobalImpact
@@ -532,10 +560,19 @@ function getBudgetOverrides(entry: ProviderRegistryEntry) {
   };
 }
 
-function selectQueries(tenantMode: ApiMonitoringResult["tenantMode"]) {
-  if (tenantMode === "platform") return QUERY_PACKS.global;
-  if (tenantMode === "spike") return QUERY_PACKS.ukraine;
-  return [...QUERY_PACKS.ukraine, ...QUERY_PACKS.global];
+function selectQueries(entry: ProviderRegistryEntry, tenantMode: ApiMonitoringResult["tenantMode"]) {
+  const pack = tenantMode === "platform"
+    ? QUERY_PACKS.global
+    : tenantMode === "spike"
+      ? QUERY_PACKS.ukraine
+      : [...QUERY_PACKS.ukraine, ...QUERY_PACKS.global];
+  if (entry.type === "search_api") {
+    return pack.map((query) => `${query} -wikipedia -recipe -diet -nutrition -cars -trucking jobs`);
+  }
+  if (entry.type === "video_api") {
+    return pack.filter((query) => /wheat|corn|soybean|Black Sea|palm oil/i.test(query));
+  }
+  return pack;
 }
 
 function isApiMonitoringEnabled() {
@@ -727,6 +764,15 @@ function item(
     title: cleanTextForStorage(stripHtml(getStringPath(row, titlePath))),
     url: urlPath ? cleanTextForStorage(getStringPath(row, urlPath)) : undefined,
   };
+}
+
+function isWeakApiItem(item: ApiItem) {
+  const url = item.url?.toLowerCase() ?? "";
+  const haystack = `${item.title} ${item.summary ?? ""}`.toLowerCase();
+  if (WEAK_SOURCE_DOMAINS.some((domain) => url.includes(domain))) {
+    return true;
+  }
+  return WEAK_TITLE_PATTERNS.some((pattern) => pattern.test(haystack));
 }
 
 function getPath(value: unknown, path: string[]) {

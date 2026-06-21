@@ -24,10 +24,15 @@ type SmokeTestBody = {
 };
 
 const DEFAULT_SMOKE_PROVIDER_ALLOWLIST = [
+  "currents",
   "guardian",
   "gnews",
+  "marketaux",
+  "newsapi",
+  "newsdata",
   "brave_search",
   "un_comtrade_releases",
+  "world_news_api",
 ];
 
 export async function POST(request: Request) {
