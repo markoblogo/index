@@ -52,6 +52,8 @@ Shared capabilities:
 - public JSON APIs for latest values, history and FX rates;
 - analytics pages with historical values, spreads, movers, volatility and
   scenario views;
+- MediaHub pages for daily, weekly and monthly market-news context on 1D3X and
+  SPIKE;
 - Vercel cron endpoints for scheduled imports, notifications and publication.
 
 UGA-specific features:
@@ -79,6 +81,8 @@ Spike-specific features:
 - Telegram-first respondent workflow through `@spike_spot_bot`;
 - admin and respondent password onboarding with temporary credentials;
 - auto-publication if no manual publish happens before the evening cut-off;
+- SSI MediaHub: unified Ukrainian/English source pool, Ukrainian and English
+  public localizations, and Ukrainian Telegram distribution;
 - public blog with mixed-language posts and language filtering;
 - Supabase PostgreSQL production database.
 
@@ -374,7 +378,7 @@ SPIKE_TELEGRAM_SMOKE_CHAT_ID="optional-smoke-chat-id"
 RESPONDENT_TELEGRAM_CRON_SECRET="set-in-vercel"
 SPIKE_RESPONDENT_TELEGRAM_INITIAL_HOUR="17"
 SPIKE_RESPONDENT_TELEGRAM_REMINDER_HOURS="18,19"
-OPENAI_API_KEY="set-in-vercel-for-ai-market-brief"
+OPENAI_API_KEY="set-in-vercel-for-media-hub-and-internal-ai-briefs"
 MEDIA_HUB_TIMEZONE="Europe/Paris"
 MEDIA_HUB_REPORT_TIME="17:00"
 MEDIA_HUB_TELEGRAM_CHAT_ID="optional-shared-media-hub-chat-id"
@@ -399,26 +403,42 @@ Do not commit production secrets, connection strings or bot tokens. Use Vercel
 Environment Variables or an untracked local `.env` file for operational
 commands.
 
-## SPIKE AI Market Brief
+## MediaHub
 
-SPIKE uses a cost-controlled AI layer above published index values. The model is
-not called on public page views. A daily brief is generated once per trade date
-and locale, stored in `AiMarketBrief`, and then reused by the public analytics
-page, index-card AI notes, the admin publication workflow and the AI API.
+MediaHub is the shared news/context layer for `1d3x` and `spike-ua`.
+It is separate from index analytics:
 
-- Default model: `SPIKE_AI_BRIEF_MODEL` (`gpt-4.1-mini`).
-- API: `GET /api/ai/market-brief?locale=uk|en` returns the saved public brief.
-- Regeneration: `POST /api/ai/market-brief?date=YYYY-MM-DD&force=1` with
-  `Authorization: Bearer $SPIKE_AI_BRIEF_CRON_SECRET`.
-- Admin: `/admin/calculate` shows saved brief status, model, hash, tokens,
-  estimated cost, fallback reason and errors, with a manual regenerate button.
-- Auto-publish: when Spike auto-publishes daily values, it also generates and
-  stores the UK/EN daily AI brief.
-- Telegram: if `SPIKE_AI_TELEGRAM_CHAT_ID` is set, auto-publish sends the UK
-  AI summary to that chat.
-- Cost logging: token usage is saved from OpenAI Responses API usage. Estimated
-  cost uses `SPIKE_AI_INPUT_USD_PER_1M` and `SPIKE_AI_OUTPUT_USD_PER_1M`, which
-  can be updated if provider pricing changes.
+- analytics pages explain published index values, history, volatility and
+  spreads;
+- MediaHub monitors market news, Telegram channels, API/search providers, RSS
+  feeds and editor-submitted links/files;
+- daily reports are published on business days;
+- weekly reports replace daily reports on weekly publication days;
+- monthly reports replace weekly reports on monthly publication days;
+- reports are persisted in `MediaHubReport` and rendered on public MediaHub
+  pages;
+- Telegram publication uses the same persisted report text, with SSI keeping
+  the deterministic index table before the MediaHub report.
+
+1D3X MediaHub covers global grains, oilseeds, vegetable oils, crop-weather,
+trade-policy and ag-logistics signals in English. SSI MediaHub uses a unified
+Ukrainian/English source pool for Ukraine-focused market context and renders
+localized reports on the Ukrainian and English Spike sites. Empty source-backed
+sections are omitted instead of publishing placeholder text.
+
+Operational pieces:
+
+- public pages: `/media-hub` for 1D3X and `/{uk,en}/media-hub` for Spike;
+- admin shell: `/admin/media-hub`, `/admin/media-hub/materials`,
+  `/admin/media-hub/sources`;
+- monitoring cron: `/api/cron/media-hub-monitoring`;
+- publishing cron: `/api/cron/media-hub-publish`;
+- manual/Telegram intake: `/api/telegram/media-hub`;
+- forced smoke endpoint: `/api/admin/media-hub/smoke-test`;
+- docs: [`docs/media-hub-manual-materials.md`](docs/media-hub-manual-materials.md).
+
+`AiMarketBrief` remains an internal SPIKE index-data helper for admin/index-card
+context, but the public market-news product is MediaHub.
 
 ## Database
 

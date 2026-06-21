@@ -217,15 +217,23 @@ export function formatIndexChange(value: number | null, suffix = "") {
 }
 
 export function renderSsiDailyIndexTelegramSection(indexSection: NonNullable<MediaHubDailyReportView["indexSection"]>) {
+  const groups = indexSection.groups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => item.value !== null),
+    }))
+    .filter((group) => group.items.length > 0);
+  if (groups.length === 0) {
+    return [];
+  }
   const lines = [
     `<b>📊 ${escapeHtml(indexSection.title)}</b>`,
   ];
 
-  for (const group of indexSection.groups) {
+  for (const group of groups) {
     lines.push("", "-----------------------------", `<b>${escapeHtml(group.title)}</b>`, `<i>${escapeHtml(group.subtitle)}</i>`);
     const byBasis = groupItemsByBasis(group.items);
     if (byBasis.length === 0) {
-      lines.push("• індекси недоступні");
       continue;
     }
     for (const [basis, items] of byBasis) {
@@ -322,7 +330,8 @@ function normalizeSummaryLines(summary: string[]) {
     .map((line) => line.trim())
     .filter(Boolean)
     .filter((line) => !/^ai-assisted/i.test(line))
-    .filter((line) => !/^data confidence/i.test(line));
+    .filter((line) => !/^data confidence/i.test(line))
+    .filter((line) => !isUnavailablePlaceholder(line));
 }
 
 function stripBullet(value: string) {
@@ -336,6 +345,10 @@ function normalizeHeading(value: string) {
 function isKnownThemeHeading(value: string, titles: Record<DailyNewsThemeId, string>) {
   const normalized = normalizeHeading(value);
   return Object.values(titles).some((title) => normalizeHeading(title) === normalized);
+}
+
+function isUnavailablePlaceholder(value: string) {
+  return /(^|\b)(data unavailable|дані недоступні|немає даних|no concrete|no specific|not available|n\/a)\b/i.test(value);
 }
 
 function getSsiIndexGroupId(

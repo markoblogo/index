@@ -132,7 +132,11 @@ export function PublicMediaHub({
             </span>
           </div>
           {activeWindow.dailyReport ? (
-            <DailyReportBody report={activeWindow.dailyReport} locale={locale} />
+            <DailyReportBody
+              hideIndexSection={profile.id === "spike"}
+              report={activeWindow.dailyReport}
+              locale={locale}
+            />
           ) : (
             <div className="mt-6 max-w-6xl space-y-5">
               {activeWindow.summaryBody.map((paragraph) => (
@@ -267,15 +271,17 @@ export function PublicMediaHub({
 }
 
 function DailyReportBody({
+  hideIndexSection = false,
   locale,
   report,
 }: {
+  hideIndexSection?: boolean;
   locale: Locale;
   report: NonNullable<MediaHubWindowSnapshot["dailyReport"]>;
 }) {
   return (
     <div className="mt-6 space-y-6">
-      {report.indexSection ? (
+      {report.indexSection && !hideIndexSection ? (
         <section className="rounded-[1.5rem] border border-white/10 bg-black/18 p-4">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>

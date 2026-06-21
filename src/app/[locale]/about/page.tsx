@@ -522,24 +522,24 @@ function SpikeAboutAiLayer({ locale }: { locale: Locale }) {
     locale === "uk"
       ? {
           body: [
-            "SPIKE SPOT INDEX розвивається не лише як щоденний benchmark спотових цін, а й як AI-assisted market intelligence layer для українських аграрних commodities.",
+            "SPIKE SPOT INDEX розвивається не лише як щоденний benchmark спотових цін, а й як поєднання index analytics та MediaHub для українських аграрних commodities.",
             "Офіційне значення індексу залишається методологічним. Воно базується на оцінках партнерів-респондентів, медіанній валідації, фільтрації викидів, правилах мінімального покриття та locked publication.",
-            "AI layer працює над опублікованими даними індексу. Він допомагає користувачам структуровано інтерпретувати ринковий рух, волатильність, спреди та короткострокові сценарії. AI не встановлює, не коригує і не замінює офіційні значення індексу. Він перетворює перевірені ринкові дані на зрозуміліший аналітичний контекст.",
+            "Аналітика на сайті пояснює опубліковані значення індексу: рух, волатильність, спреди та історичні зрізи. MediaHub окремо моніторить Telegram, news/API sources і редакційні матеріали, щоб показати новинний, логістичний та міжнародний контекст, який може впливати на ринок.",
           ],
-          card: "Офіційні значення залишаються методологічними. AI використовується для пояснення опублікованого руху індексу, волатильності, спредів і сценаріїв, а не для генерації чи коригування самого індексу.",
-          eyebrow: "AI layer",
+          card: "Офіційні значення залишаються методологічними. AI використовується для пояснення опублікованого руху індексу та для MediaHub-звітів, а не для генерації чи коригування самого індексу.",
+          eyebrow: "Analytics + MediaHub",
           title:
-            "AI-assisted market intelligence над перевіреними даними індексу",
+            "Index analytics і MediaHub над перевіреними даними",
         }
       : {
           body: [
-            "SPIKE SPOT INDEX is being developed not only as a daily spot-price benchmark, but also as an AI-assisted market intelligence layer for Ukrainian agricultural commodities.",
+            "SPIKE SPOT INDEX is being developed not only as a daily spot-price benchmark, but also as a combination of index analytics and MediaHub for Ukrainian agricultural commodities.",
             "The official index value remains methodology-driven. It is based on respondent-partner assessments, median validation, outlier filtering, minimum coverage rules and locked publication.",
-            "The AI layer works above the published index data. It helps users interpret market movement, volatility, spreads and short-term scenarios in a structured way. AI does not set, correct or replace official index values. It turns verified market data into clearer analytical context.",
+            "Analytics explains published index data: movement, volatility, spreads and historical views. MediaHub separately monitors Telegram, news/API sources and editor-submitted materials to provide news, logistics and international context around the market.",
           ],
-          card: "Official values remain methodology-based. AI is used to explain published index movements, volatility, spreads and scenarios, not to generate or adjust the index itself.",
-          eyebrow: "AI layer",
-          title: "AI-assisted market intelligence above verified index data",
+          card: "Official values remain methodology-based. AI is used to explain published index movement and to generate MediaHub reports, not to generate or adjust the index itself.",
+          eyebrow: "Analytics + MediaHub",
+          title: "Index analytics and MediaHub above verified data",
         };
 
   return (

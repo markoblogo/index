@@ -62,26 +62,26 @@ function AiSubscriptionBlock({ locale }: { locale: Locale }) {
   const copy =
     locale === "uk"
       ? {
-          body: "Після публікації індексу AI Market Brief перетворює verified spot data на короткий market intelligence note: рухи за 1D/7D/30D/90D, волатильність, спреди, покриття респондентів і caution notes. Це working preview майбутнього комерційного AI-модуля.",
-          eyebrow: "AI module",
+          body: "MediaHub збирає Telegram-джерела, API/news monitoring, ручні матеріали редактора та опубліковані індекси, щоб формувати daily / weekly / monthly market context для SPIKE Spot Index.",
+          eyebrow: "MediaHub",
           items: [
-            "daily AI Market Brief",
-            "volatility and spread notes",
-            "methodology-grounded scenario notes",
-            "auditable input data hash",
+            "daily / weekly / monthly market reports",
+            "Telegram та API source monitoring",
+            "editorial materials intake",
+            "AI-assisted market context",
           ],
-          title: "AI market intelligence layer",
+          title: "MediaHub market context layer",
         }
       : {
-          body: "After index publication, the AI Market Brief turns verified spot data into a compact market intelligence note: 1D/7D/30D/90D moves, volatility, spreads, respondent coverage and caution notes. This is a working preview of a future commercial AI module.",
-          eyebrow: "AI module",
+          body: "MediaHub combines Telegram sources, API/news monitoring, editor-submitted materials and published index data into daily / weekly / monthly market context for SPIKE Spot Index.",
+          eyebrow: "MediaHub",
           items: [
-            "daily AI Market Brief",
-            "volatility and spread notes",
-            "methodology-grounded scenario notes",
-            "auditable input data hash",
+            "daily / weekly / monthly market reports",
+            "Telegram and API source monitoring",
+            "editorial materials intake",
+            "AI-assisted market context",
           ],
-          title: "AI market intelligence layer",
+          title: "MediaHub market context layer",
         };
 
   return (
@@ -412,7 +412,7 @@ function getSubscriptionCopy(locale: Locale) {
         "Значення з валютним перерахунком",
         "Аналітика спредів",
         "AI-assisted scenario outputs",
-        "Доступ до generated market briefs",
+        "Доступ до MediaHub reports",
       ],
       apiText:
         "Майбутній платний доступ планується з API-ендпоінтами для історії опублікованих індексів, commodity-level analytics, FX-adjusted display values, spread data та AI-assisted scenario outputs.",
@@ -420,7 +420,7 @@ function getSubscriptionCopy(locale: Locale) {
       tiers: [
         {
           description:
-            "Базовий рівень для користувачів, яким потрібні історія індексу, таблиці, спреди, volatility views і standard analytics без AI-assisted scenario modelling або generated market briefs.",
+            "Базовий рівень для користувачів, яким потрібні історія індексу, таблиці, спреди, volatility views і standard analytics без AI-assisted scenario modelling або MediaHub archive access.",
           eyebrow: "Підписка",
           features: [
             "Повна історія опублікованих індексів",
@@ -433,10 +433,10 @@ function getSubscriptionCopy(locale: Locale) {
         },
         {
           description:
-            "Розширений рівень для користувачів, яким потрібна AI-assisted інтерпретація опублікованих даних SPIKE SPOT INDEX, включно зі scenario ranges, volatility notes, spread interpretation та structured market briefs.",
+            "Розширений рівень для користувачів, яким потрібні AI-assisted інтерпретація опублікованих даних SPIKE SPOT INDEX та MediaHub reports, включно зі scenario ranges, volatility notes, spread interpretation і market context.",
           eyebrow: "AI option",
           features: [
-            "AI-assisted market briefs",
+            "MediaHub market reports",
             "Scenario ranges by commodity",
             "Scenario ranges by specific spread",
             "Volatility and movement summaries",
@@ -523,7 +523,7 @@ function getSubscriptionCopy(locale: Locale) {
       "Currency-adjusted values",
       "Spread analytics",
       "AI-assisted scenario outputs",
-      "Generated market brief access",
+      "MediaHub report access",
     ],
     apiText:
       "Future paid access is planned to include API endpoints for published index history, commodity-level analytics, FX-adjusted display values, spread data and AI-assisted scenario outputs.",
@@ -531,7 +531,7 @@ function getSubscriptionCopy(locale: Locale) {
     tiers: [
       {
         description:
-          "Base level for users who need index history, tables, spreads, volatility views and standard analytics without AI-assisted scenario modelling or generated market briefs.",
+          "Base level for users who need index history, tables, spreads, volatility views and standard analytics without AI-assisted scenario modelling or MediaHub archive access.",
         eyebrow: "Subscription",
         features: [
           "Full published index history",
@@ -544,10 +544,10 @@ function getSubscriptionCopy(locale: Locale) {
       },
       {
         description:
-          "Extended level for users who need AI-assisted interpretation of published SPIKE SPOT INDEX data, including scenario ranges, volatility notes, spread interpretation and structured market briefs.",
+          "Extended level for users who need AI-assisted interpretation of published SPIKE SPOT INDEX data and MediaHub reports, including scenario ranges, volatility notes, spread interpretation and market context.",
         eyebrow: "AI option",
         features: [
-          "AI-assisted market briefs",
+          "MediaHub market reports",
           "Scenario ranges by commodity",
           "Scenario ranges by specific spread",
           "Volatility and movement summaries",

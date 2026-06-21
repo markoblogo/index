@@ -35,31 +35,31 @@ export default async function LocaleHome({
         respondentCount={respondentCount}
         updatedAt={updatedAt}
       />
-      {activeIndex.id === "spike-ua" ? <HomeAiBriefBlock locale={locale} /> : null}
+      {activeIndex.id === "spike-ua" ? <HomeMediaHubBlock locale={locale} /> : null}
     </>
   );
 }
 
-function HomeAiBriefBlock({ locale }: { locale: Locale }) {
+function HomeMediaHubBlock({ locale }: { locale: Locale }) {
   const copy =
     locale === "uk"
       ? {
           body:
-            "SPIKE додає AI-assisted аналітичний шар поверх опублікованих spot index values. Система читає перевірені рухи індексу, волатильність, спреди та покриття респондентів і формує короткий daily market brief.",
-          cta: "Відкрити AI brief",
+            "MediaHub щоденно збирає ринкові новини, Telegram-джерела, API-моніторинг і редакційні матеріали, а потім формує daily / weekly / monthly контекст до руху SPIKE Spot Index.",
+          cta: "Відкрити MediaHub",
           disclaimer:
-            "AI не встановлює і не коригує офіційні значення індексу. Офіційні значення залишаються методологічними.",
-          eyebrow: "AI-assisted market brief",
-          title: "AI пояснює ринок",
+            "Індекси залишаються методологічними. MediaHub пояснює новинний та логістичний контекст навколо ринку.",
+          eyebrow: "MediaHub",
+          title: "Новинний контекст для індексу",
         }
       : {
           body:
-            "SPIKE is adding an AI-assisted analytical layer above published spot index values. The system reads verified index movement, volatility, spreads and respondent coverage, then generates a compact daily market brief.",
-          cta: "Open AI brief",
+            "MediaHub monitors market news, Telegram sources, API feeds and editorial inputs, then turns them into daily / weekly / monthly context around SPIKE Spot Index moves.",
+          cta: "Open MediaHub",
           disclaimer:
-            "AI does not set or adjust official index values. Official values remain methodology-driven.",
-          eyebrow: "AI-assisted market brief",
-          title: "AI explains the market",
+            "Index values remain methodology-driven. MediaHub explains the market, logistics and news context around them.",
+          eyebrow: "MediaHub",
+          title: "Market context for the index",
         };
 
   return (

@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import nextDynamic from "next/dynamic";
 import { SITE_CONFIG } from "@/lib/constants";
-import type { PublicAiMarketBrief } from "@/lib/ai-market-brief-types";
 import { allowMockFallback, hasDatabaseUrl } from "@/lib/db";
 import { getFxRates } from "@/lib/fx-rates";
 import type { Locale } from "@/lib/i18n";
@@ -118,28 +117,6 @@ export default async function AnalyticsPage({
   const tableRows = selectRecentPublishedRows(history, 3);
   const isSpike = getActiveIndexConfig().id === "spike-ua";
   const hasHistory = history.length > 0;
-  let aiBrief: PublicAiMarketBrief | null = null;
-  let AnalyticsSpikeSections: ((
-    props: {
-      aiBrief: PublicAiMarketBrief | null;
-      aiCopy: AnalyticsCopy["aiBrief"];
-      locale: Locale;
-    },
-  ) => ReactNode) | null = null;
-
-  if (isSpike) {
-    const [{ getPublishedAiMarketBrief }, spikeSectionsModule] =
-      await Promise.all([
-        import("@/lib/ai-market-brief-public"),
-        import("@/components/reports/analytics-spike-sections"),
-      ]);
-    aiBrief = await getPublishedAiMarketBrief({
-      activeRespondentCount,
-      history,
-      locale,
-    });
-    AnalyticsSpikeSections = spikeSectionsModule.AnalyticsSpikeSections;
-  }
 
   return (
     <main
@@ -168,14 +145,6 @@ export default async function AnalyticsPage({
       <section className="mx-auto max-w-7xl px-6 py-10 lg:px-8">
         <KpiStrip items={snapshot} />
       </section>
-
-      {AnalyticsSpikeSections ? (
-        <AnalyticsSpikeSections
-          aiBrief={aiBrief}
-          aiCopy={copy.aiBrief}
-          locale={locale}
-        />
-      ) : null}
 
       {hasHistory ? (
         <>

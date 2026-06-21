@@ -356,8 +356,8 @@ function SpikeAiPolicySection({ locale }: { locale: Locale }) {
           body: [
             "SPIKE SPOT INDEX використовує hybrid approach: спочатку deterministic index calculation, потім AI-assisted interpretation.",
             "Офіційний розрахунок індексу не спирається на AI. Опубліковані значення розраховуються за методологією SPIKE: збір даних респондентів, медіанна валідація, фільтрація викидів, арифметичне середнє очищеної вибірки, мінімальне покриття респондентів і locked publication.",
-            "AI використовується лише як аналітичний шар над опублікованими або preview-даними. Він може допомагати генерувати market briefs, scenario notes, volatility summaries та spread interpretation на основі вже розрахованих значень індексу й історичного руху.",
-            "AI outputs не є офіційними цінами, торговими сигналами чи рекомендаціями. Вони не мають доступу до індивідуальних подань респондентів і не замінюють методологію. Увесь AI-assisted content слід читати як аналітичний контекст для розуміння ринку.",
+            "AI використовується лише як аналітичний шар над опублікованими або preview-даними. Analytics page пояснює рух індексу, volatility і spreads; MediaHub окремо моніторить зовнішні джерела та формує daily / weekly / monthly market context.",
+            "AI outputs і MediaHub reports не є офіційними цінами, торговими сигналами чи рекомендаціями. Вони не мають доступу до індивідуальних подань респондентів і не замінюють методологію. Увесь AI-assisted content слід читати як аналітичний контекст для розуміння ринку.",
           ],
           disclaimer:
             "Official SPIKE SPOT INDEX values are methodology-based and non-AI-generated. AI-assisted outputs are provided for analytical context only.",
@@ -365,7 +365,7 @@ function SpikeAiPolicySection({ locale }: { locale: Locale }) {
           items: [
             "verified market data first",
             "deterministic methodology second",
-            "AI-assisted interpretation third",
+            "MediaHub market context third",
           ],
           title: "Як AI використовується у SPIKE SPOT INDEX",
         }
@@ -373,8 +373,8 @@ function SpikeAiPolicySection({ locale }: { locale: Locale }) {
           body: [
             "SPIKE SPOT INDEX uses a hybrid approach: deterministic index calculation first, AI-assisted interpretation second.",
             "The official index calculation does not rely on AI. Published values are calculated through the SPIKE methodology: respondent data collection, median validation, outlier filtering, arithmetic averaging of the cleaned sample, minimum respondent coverage and locked publication.",
-            "AI is used only as an analytical layer above published or preview data. It may help generate market briefs, scenario notes, volatility summaries and spread interpretation based on already calculated index values and historical movement.",
-            "AI outputs are not official prices, trading signals or recommendations. They do not access individual respondent submissions and do not override the methodology. All AI-assisted content should be read as analytical context for market understanding.",
+            "AI is used only as an analytical layer above published or preview data. The analytics page explains index movement, volatility and spreads; MediaHub separately monitors external sources and generates daily / weekly / monthly market context.",
+            "AI outputs and MediaHub reports are not official prices, trading signals or recommendations. They do not access individual respondent submissions and do not override the methodology. All AI-assisted content should be read as analytical context for market understanding.",
           ],
           disclaimer:
             "Official SPIKE SPOT INDEX values are methodology-based and non-AI-generated. AI-assisted outputs are provided for analytical context only.",
@@ -382,7 +382,7 @@ function SpikeAiPolicySection({ locale }: { locale: Locale }) {
           items: [
             "verified market data first",
             "deterministic methodology second",
-            "AI-assisted interpretation third",
+            "MediaHub market context third",
           ],
           title: "How AI is used in SPIKE SPOT INDEX",
         };
