@@ -18,9 +18,17 @@ type SmokeTestBody = {
   generateWeekly?: boolean;
   publishToSite?: boolean;
   publishToTelegram?: boolean;
+  providerAllowlist?: string[];
   resend?: boolean;
   runMonitoring?: boolean;
 };
+
+const DEFAULT_SMOKE_PROVIDER_ALLOWLIST = [
+  "guardian",
+  "gnews",
+  "brave_search",
+  "un_comtrade_releases",
+];
 
 export async function POST(request: Request) {
   if (!isAuthorized(request)) {
@@ -59,15 +67,29 @@ export async function POST(request: Request) {
   };
 
   if (body.runMonitoring !== false) {
-    const [scheduledSources, apiMonitoring] = await Promise.all([
-      ingestScheduledMediaHubSources(),
-      runMediaHubApiMonitoring({
-        force: true,
-        kind: "daily",
-        tenantMode: platform ? "platform" : "unified",
-      }),
-    ]);
-    result.monitoring = { apiMonitoring, scheduledSources };
+    const previousAllowlist = process.env.MEDIA_HUB_API_PROVIDER_ALLOWLIST;
+    process.env.MEDIA_HUB_API_PROVIDER_ALLOWLIST = (
+      Array.isArray(body.providerAllowlist) && body.providerAllowlist.length > 0
+        ? body.providerAllowlist
+        : DEFAULT_SMOKE_PROVIDER_ALLOWLIST
+    ).join(",");
+    try {
+      const [scheduledSources, apiMonitoring] = await Promise.all([
+        ingestScheduledMediaHubSources(),
+        runMediaHubApiMonitoring({
+          force: true,
+          kind: "daily",
+          tenantMode: platform ? "platform" : "unified",
+        }),
+      ]);
+      result.monitoring = { apiMonitoring, scheduledSources };
+    } finally {
+      if (previousAllowlist === undefined) {
+        delete process.env.MEDIA_HUB_API_PROVIDER_ALLOWLIST;
+      } else {
+        process.env.MEDIA_HUB_API_PROVIDER_ALLOWLIST = previousAllowlist;
+      }
+    }
   }
 
   if (body.generateDailyReports !== false && body.publishToSite !== false) {
