@@ -8,6 +8,14 @@ vi.mock("@/lib/db", () => ({
 
 import { buildMediaHubReportPrompt } from "./media-hub-report-prompts";
 import {
+  buildMediaHubMaterialHelpText,
+  buildMediaHubMaterialsText,
+  buildMediaHubSubmissionReply,
+  buildMediaHubTagsText,
+  buildMissingProjectTagText,
+  parseMediaHubMaterialBotCommand,
+} from "./media-hub-material-bot";
+import {
   __mediaHubManualMaterialTestHooks,
 } from "./media-hub-manual-materials";
 
@@ -37,11 +45,26 @@ describe("media hub manual materials", () => {
     });
   });
 
+  it("defaults material report type to weekly and accepts explicit weekly tag", () => {
+    expect(parseMediaHubMaterialHashtags("#ssi #weekly https://example.com")).toMatchObject({
+      kind: "weekly_material",
+      tenantIds: ["spike-ua"],
+    });
+    expect(parseMediaHubMaterialHashtags("#1d3x file caption")).toMatchObject({
+      kind: "weekly_material",
+      tenantIds: ["1d3x"],
+    });
+  });
+
   it("canonicalizes material URLs and strips tracking params", () => {
     expect(canonicalizeMediaHubMaterialUrl("https://www.example.com/a/?utm_source=x&b=1#top"))
       .toBe("https://example.com/a?b=1");
     expect(extractUrlsFromText("#ssi https://example.com/a?fbclid=1")).toEqual([
       "https://example.com/a",
+    ]);
+    expect(extractUrlsFromText("#ssi https://example.com/a https://example.org/b")).toEqual([
+      "https://example.com/a",
+      "https://example.org/b",
     ]);
   });
 
@@ -55,6 +78,53 @@ describe("media hub manual materials", () => {
       reportingWeekEnd: "2026-06-19",
       reportingMonth: "2026-06",
     });
+  });
+});
+
+describe("media hub material bot", () => {
+  it("parses help and operator commands", () => {
+    expect(parseMediaHubMaterialBotCommand("/start")).toBe("start");
+    expect(parseMediaHubMaterialBotCommand("/help@idex_grains_bot")).toBe("help");
+    expect(parseMediaHubMaterialBotCommand("/materials")).toBe("materials");
+    expect(parseMediaHubMaterialBotCommand("/status")).toBe("status");
+    expect(parseMediaHubMaterialBotCommand("/tags")).toBe("tags");
+    expect(parseMediaHubMaterialBotCommand("#ssi https://example.com")).toBeNull();
+  });
+
+  it("renders user-facing bot instructions with project and report tags", () => {
+    const helpText = buildMediaHubMaterialHelpText();
+    expect(helpText).toContain("#ssi");
+    expect(helpText).toContain("#1d3x");
+    expect(helpText).toContain("#weekly");
+    expect(helpText).toContain("#monthly");
+    expect(helpText).toContain("PDF, XLSX, CSV, DOCX");
+
+    const materialsText = buildMediaHubMaterialsText("/admin/media-hub/materials");
+    expect(materialsText).toContain("#ssi #weekly <посилання>");
+    expect(materialsText).toContain("#1d3x #weekly <посилання>");
+    expect(materialsText).toContain("/admin/media-hub/materials");
+
+    expect(buildMediaHubTagsText()).toContain("без #weekly/#monthly/#daily матеріал піде у #weekly");
+    expect(buildMissingProjectTagText()).toContain("Додайте #ssi або #1d3x");
+  });
+
+  it("renders status-aware submission replies", () => {
+    expect(buildMediaHubSubmissionReply({
+      kind: "weekly_material",
+      label: "https://example.com/report",
+      sourceType: "link",
+      status: "extracted",
+      tenantId: "1d3x",
+    })).toContain("Матеріал оброблено для 1D3X: weekly");
+
+    expect(buildMediaHubSubmissionReply({
+      kind: "monthly_material",
+      label: "file.pdf",
+      mimeType: "application/pdf",
+      sourceType: "file",
+      status: "duplicate",
+      tenantId: "spike-ua",
+    })).toContain("Дублікат не додано");
   });
 });
 

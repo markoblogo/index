@@ -383,6 +383,11 @@ SPIKE_AI_INPUT_USD_PER_1M="0.4"
 SPIKE_AI_OUTPUT_USD_PER_1M="1.6"
 ```
 
+Media Hub manual material intake is documented in
+[`docs/media-hub-manual-materials.md`](docs/media-hub-manual-materials.md).
+Use `@idex_grains_bot` for links/files that should be added to SSI or 1D3X
+reports; the respondent bot is not used for this workflow.
+
 Do not commit production secrets, connection strings or bot tokens. Use Vercel
 Environment Variables or an untracked local `.env` file for operational
 commands.

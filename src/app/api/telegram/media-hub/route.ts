@@ -3,9 +3,20 @@ import {
   extractUrlsFromText,
   ingestMediaHubFileMaterial,
   ingestMediaHubLinkMaterial,
+  listRecentMediaHubManualMaterialsForChat,
   parseMediaHubMaterialHashtags,
   type MediaHubManualMaterialTenant,
 } from "@/lib/media-hub-manual-materials";
+import {
+  buildMediaHubMaterialHelpText,
+  buildMediaHubMaterialsText,
+  buildMediaHubSubmissionReply,
+  buildMediaHubTagsText,
+  buildMissingProjectTagText,
+  getMediaHubProjectName,
+  getMediaHubReportKindLabel,
+  parseMediaHubMaterialBotCommand,
+} from "@/lib/media-hub-material-bot";
 
 export const dynamic = "force-dynamic";
 
@@ -46,9 +57,15 @@ export async function POST(request: Request) {
   }
 
   const text = [message.text, message.caption].filter(Boolean).join(" ");
+  const command = parseMediaHubMaterialBotCommand(message.text);
+  if (command) {
+    await handleBotCommand(botToken, message, command);
+    return NextResponse.json({ command, ok: true });
+  }
+
   const routed = parseMediaHubMaterialHashtags(text);
   if (routed.tenantIds.length === 0) {
-    await sendTelegramText(botToken, String(message.chat.id), "Додайте #ssi або #1d3x до файлу чи лінку, щоб прив’язати матеріал до потрібного звіту.");
+    await sendTelegramText(botToken, String(message.chat.id), buildMissingProjectTagText());
     return NextResponse.json({ ok: true, skippedReason: "missing_tenant_hashtag" });
   }
 
@@ -68,7 +85,15 @@ export async function POST(request: Request) {
         url,
       });
       results.push(result);
-      await replyForResult(botToken, message, tenantId, result.extractionStatus, url);
+      await replyForResult({
+        botToken,
+        kind: routed.kind,
+        label: url,
+        message,
+        sourceType: "link",
+        status: result.extractionStatus,
+        tenantId,
+      });
     }
   }
 
@@ -95,13 +120,16 @@ export async function POST(request: Request) {
             tenantId,
           };
       results.push(result);
-      await replyForResult(
+      await replyForResult({
         botToken,
+        kind: routed.kind,
+        label: message.document.file_name ?? "file",
         message,
+        mimeType: message.document.mime_type ?? "application/octet-stream",
+        sourceType: "file",
+        status: result.extractionStatus,
         tenantId,
-        result.extractionStatus,
-        message.document.file_name ?? "file",
-      );
+      });
     }
   }
 
@@ -110,6 +138,28 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json({ ok: true, results });
+}
+
+async function handleBotCommand(
+  botToken: string,
+  message: TelegramMessage,
+  command: "help" | "materials" | "start" | "status" | "tags",
+) {
+  const chatId = String(message.chat.id);
+  if (command === "materials") {
+    await sendTelegramText(botToken, chatId, buildMediaHubMaterialsText(getAdminMaterialsUrl()));
+    return;
+  }
+  if (command === "tags") {
+    await sendTelegramText(botToken, chatId, buildMediaHubTagsText());
+    return;
+  }
+  if (command === "status") {
+    const materials = await listRecentMediaHubManualMaterialsForChat(chatId);
+    await sendTelegramText(botToken, chatId, buildStatusText(materials));
+    return;
+  }
+  await sendTelegramText(botToken, chatId, buildMediaHubMaterialHelpText());
 }
 
 function extractMessage(update: unknown): TelegramMessage | null {
@@ -158,27 +208,37 @@ async function downloadTelegramFile(botToken: string, fileId: string) {
   return Buffer.from(await fileResponse.arrayBuffer());
 }
 
-async function replyForResult(
-  botToken: string,
-  message: TelegramMessage,
-  tenantId: MediaHubManualMaterialTenant,
-  status: string,
-  label: string,
-) {
-  const tenantLabel = tenantId === "1d3x" ? "1D3X" : "SSI";
-  if (status === "duplicate") {
-    await sendTelegramText(botToken, String(message.chat.id), `Цей матеріал уже є в системі для ${tenantLabel} за цей період. Дублікат не додано.`);
-    return;
-  }
-  if (status === "unsupported" || status === "unsupported_image_ocr") {
-    await sendTelegramText(botToken, String(message.chat.id), "Файл отримано, але цей формат поки не підтримується для автоматичного аналізу. Надішліть PDF, XLSX, CSV або посилання.");
-    return;
-  }
-  if (status === "failed") {
-    await sendTelegramText(botToken, String(message.chat.id), "Матеріал отримано, але автоматичне читання не вдалося. Він збережений як metadata-only і не буде використаний у звіті без повторної обробки.");
-    return;
-  }
-  await sendTelegramText(botToken, String(message.chat.id), `Матеріал оброблено для ${tenantLabel} weekly report: ${label}. Статус: ${status}.`);
+async function replyForResult({
+  botToken,
+  kind,
+  label,
+  message,
+  mimeType,
+  sourceType,
+  status,
+  tenantId,
+}: {
+  botToken: string;
+  kind: ReturnType<typeof parseMediaHubMaterialHashtags>["kind"];
+  label: string;
+  message: TelegramMessage;
+  mimeType?: string;
+  sourceType: "file" | "link";
+  status: string;
+  tenantId: MediaHubManualMaterialTenant;
+}) {
+  await sendTelegramText(
+    botToken,
+    String(message.chat.id),
+    buildMediaHubSubmissionReply({
+      kind,
+      label,
+      mimeType,
+      sourceType,
+      status,
+      tenantId,
+    }),
+  );
 }
 
 async function sendTelegramText(botToken: string, chatId: string, text: string) {
@@ -187,4 +247,27 @@ async function sendTelegramText(botToken: string, chatId: string, text: string) 
     headers: { "Content-Type": "application/json" },
     method: "POST",
   }).catch(() => undefined);
+}
+
+function buildStatusText(
+  materials: Awaited<ReturnType<typeof listRecentMediaHubManualMaterialsForChat>>,
+) {
+  if (materials.length === 0) {
+    return "Поки немає матеріалів, надісланих з цього чату.";
+  }
+
+  const lines = materials.map((material) => {
+    const label = material.originalFilename || material.sourceDomain || material.originalUrl || material.id;
+    const receivedAt = material.receivedAt instanceof Date
+      ? material.receivedAt.toISOString().slice(0, 16).replace("T", " ")
+      : String(material.receivedAt);
+    return `• ${getMediaHubProjectName(material.tenantId as MediaHubManualMaterialTenant)} · ${getMediaHubReportKindLabel(material.kind as ReturnType<typeof parseMediaHubMaterialHashtags>["kind"])} · ${label} · ${material.extractionStatus} · ${receivedAt}`;
+  });
+
+  return ["Останні матеріали з цього чату:", "", ...lines].join("\n");
+}
+
+function getAdminMaterialsUrl() {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "");
+  return siteUrl ? `${siteUrl}/admin/media-hub/materials` : "/admin/media-hub/materials";
 }

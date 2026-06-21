@@ -53,12 +53,41 @@ export default async function AdminMediaHubMaterialsPage() {
           Media Hub inputs
         </p>
         <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white">
-          Manual weekly/monthly materials
+          Manual materials for Media Hub reports
         </h1>
         <p className="mt-3 max-w-4xl text-sm leading-6 text-white/68">
-          Backup intake for Telegram: paste a URL or upload PDF/XLSX/CSV/TXT.
-          Materials are stored as extracted facts and summaries, not public files.
+          Use this page when Telegram upload is inconvenient or when you need
+          to submit a link/file directly from the admin panel. Project selects
+          SSI or 1D3X, report type selects daily/weekly/monthly, link stores a
+          URL to an article/report/PDF, and file accepts PDF, XLSX, CSV, DOCX,
+          TXT/HTML/MD. Notes can be included in the uploaded document or link
+          context for the analyst/AI.
         </p>
+        <div className="mt-5 grid gap-3 text-sm leading-6 text-white/70 lg:grid-cols-3">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+            <p className="font-bold text-white">Tag guide</p>
+            <p className="mt-2">#ssi · Spike Spot Index</p>
+            <p>#1d3x · 1D3X</p>
+            <p>#weekly · weekly report</p>
+            <p>#monthly · monthly report</p>
+            <p>#daily · daily report</p>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+            <p className="font-bold text-white">Telegram examples</p>
+            <p className="mt-2">#ssi #weekly logistics PDF</p>
+            <p>#1d3x #weekly global grains link</p>
+            <p>#ssi #monthly XLSX export statistics</p>
+            <p>#ssi #1d3x #weekly shared source</p>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+            <p className="font-bold text-white">Default rule</p>
+            <p className="mt-2">
+              If report type is not specified in Telegram, material is routed
+              to weekly by default. Screenshots are metadata-only unless OCR is
+              added later.
+            </p>
+          </div>
+        </div>
       </header>
 
       <form
@@ -110,13 +139,29 @@ export default async function AdminMediaHubMaterialsPage() {
               key={material.id}
             >
               <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-white/42">
+                <span>{material.tenantId}</span>
                 <span>{material.kind}</span>
                 <span>{material.sourceType}</span>
+                <span>{material.extractionStatus}</span>
                 <span>{material.sourceRegistrationStatus}</span>
               </div>
               <h3 className="mt-2 text-base font-semibold text-white">
                 {material.originalFilename || material.sourceDomain || material.originalUrl || material.id}
               </h3>
+              <dl className="mt-3 grid gap-2 text-xs text-white/48 md:grid-cols-3">
+                <div>
+                  <dt className="font-bold uppercase tracking-[0.12em]">Received</dt>
+                  <dd>{formatMaterialDate(material.receivedAt)}</dd>
+                </div>
+                <div>
+                  <dt className="font-bold uppercase tracking-[0.12em]">Used in report</dt>
+                  <dd>{material.usedInReportId || "not yet"}</dd>
+                </div>
+                <div>
+                  <dt className="font-bold uppercase tracking-[0.12em]">Domain/file</dt>
+                  <dd>{material.sourceDomain || material.originalFilename || "n/a"}</dd>
+                </div>
+              </dl>
               <p className="mt-2 line-clamp-3 text-sm leading-6 text-white/62">
                 {material.summary || "No extracted summary yet."}
               </p>
@@ -137,4 +182,12 @@ function normalizeKind(value: string): MediaHubManualMaterialKind {
     return value;
   }
   return "weekly_material";
+}
+
+function formatMaterialDate(value: Date | string) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "n/a";
+  }
+  return date.toISOString().slice(0, 16).replace("T", " ");
 }

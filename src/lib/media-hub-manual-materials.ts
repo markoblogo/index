@@ -69,14 +69,18 @@ export type MediaHubManualMaterialDigest = {
   extractedFacts: unknown;
   extractedTables: unknown;
   extractedText: string;
+  extractionStatus: string;
   id: string;
   kind: string;
+  receivedAt: Date;
   originalFilename: string | null;
   originalUrl: string | null;
   sourceDomain: string | null;
   sourceRegistrationStatus: string;
   sourceType: string;
   summary: string;
+  tenantId: string;
+  usedInReportId: string | null;
 };
 
 const MAX_EXTRACTED_TEXT_CHARS = 18_000;
@@ -332,14 +336,18 @@ export async function getManualMaterialsForPeriod(input: {
     extractedFacts: row.extractedFactsJson,
     extractedTables: row.extractedTablesJson,
     extractedText: (row.extractedText ?? "").slice(0, 4000),
+    extractionStatus: row.extractionStatus,
     id: row.id,
     kind: row.kind,
+    receivedAt: row.receivedAt,
     originalFilename: row.originalFilename,
     originalUrl: row.originalUrl,
     sourceDomain: row.sourceDomain,
     sourceRegistrationStatus: row.sourceRegistrationStatus,
     sourceType: row.sourceType,
     summary: row.summary ?? "",
+    tenantId: row.tenantId,
+    usedInReportId: row.usedInReportId,
   }));
 }
 
@@ -365,14 +373,55 @@ export async function listRecentMediaHubManualMaterials(tenantId?: string) {
     extractedFacts: row.extractedFactsJson,
     extractedTables: row.extractedTablesJson,
     extractedText: row.extractedText ?? "",
+    extractionStatus: row.extractionStatus,
     id: row.id,
     kind: row.kind,
+    receivedAt: row.receivedAt,
     originalFilename: row.originalFilename,
     originalUrl: row.originalUrl,
     sourceDomain: row.sourceDomain,
     sourceRegistrationStatus: row.sourceRegistrationStatus,
     sourceType: row.sourceType,
     summary: row.summary ?? "",
+    tenantId: row.tenantId,
+    usedInReportId: row.usedInReportId,
+  }));
+}
+
+export async function listRecentMediaHubManualMaterialsForChat(chatId: string) {
+  if (!hasDatabaseUrl()) {
+    return [] as MediaHubManualMaterialDigest[];
+  }
+
+  await ensureMediaHubManualMaterialStorage();
+
+  const rows = await db.$queryRawUnsafe<MaterialRow[]>(
+    `
+      SELECT *
+      FROM "MediaHubManualMaterial"
+      WHERE "telegramChatId" = $1
+      ORDER BY "receivedAt" DESC
+      LIMIT 5
+    `,
+    chatId,
+  );
+
+  return rows.map((row) => ({
+    extractedFacts: row.extractedFactsJson,
+    extractedTables: row.extractedTablesJson,
+    extractedText: row.extractedText ?? "",
+    extractionStatus: row.extractionStatus,
+    id: row.id,
+    kind: row.kind,
+    originalFilename: row.originalFilename,
+    originalUrl: row.originalUrl,
+    receivedAt: row.receivedAt,
+    sourceDomain: row.sourceDomain,
+    sourceRegistrationStatus: row.sourceRegistrationStatus,
+    sourceType: row.sourceType,
+    summary: row.summary ?? "",
+    tenantId: row.tenantId,
+    usedInReportId: row.usedInReportId,
   }));
 }
 
