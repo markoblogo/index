@@ -129,7 +129,7 @@ export function AnalyticsTrendChart({
           {hoverPoint ? (
             <g className="pointer-events-none">
               <line
-                stroke="rgba(0,0,0,0.55)"
+                stroke="rgba(255,255,255,0.28)"
                 strokeDasharray="3 3"
                 strokeWidth="1.4"
                 vectorEffect="non-scaling-stroke"
@@ -143,34 +143,33 @@ export function AnalyticsTrendChart({
                 cy={hoverPoint.y}
                 fill={hoverPoint.color}
                 r="1.7"
-                stroke="#050505"
+                stroke="#f7f7ef"
                 strokeWidth="0.7"
                 vectorEffect="non-scaling-stroke"
               />
-              <text
-                fill="#050505"
-                fontSize="4"
-                fontWeight="900"
-                textAnchor={hoverPoint.x > 72 ? "end" : "start"}
-                x={hoverPoint.x > 72 ? hoverPoint.x - 2 : hoverPoint.x + 2}
-                y={Math.max(10, hoverPoint.y - 4)}
-              >
-                {hoverPoint.value.toFixed(0)} USD/t
-              </text>
-              <text
-                fill="rgba(0,0,0,0.58)"
-                fontSize="3.3"
-                fontWeight="900"
-                textAnchor="middle"
-                x={hoverPoint.x}
-                y="98"
-              >
-                {formatHoverDate(hoverPoint.date, locale)}
-              </text>
             </g>
           ) : null}
         </svg>
-        <div className="pointer-events-none absolute right-0 top-1 text-right text-[0.65rem] font-black uppercase leading-4 text-black/40">
+        {hoverPoint ? (
+          <>
+            <div
+              className="pointer-events-none absolute z-10 -translate-x-1/2 rounded-full border border-white/20 bg-[#f7f7ef] px-2.5 py-1 text-xs font-black text-[#07100c] shadow-lg shadow-black/35"
+              style={{
+                left: `${Math.min(Math.max(hoverPoint.x, 8), 92)}%`,
+                top: `${Math.max(hoverPoint.y - 12, 2)}%`,
+              }}
+            >
+              {hoverPoint.value.toFixed(0)} USD/t
+            </div>
+            <div
+              className="pointer-events-none absolute bottom-0 z-10 -translate-x-1/2 text-xs font-black uppercase tracking-[0.12em] text-white/70"
+              style={{ left: `${Math.min(Math.max(hoverPoint.x, 8), 92)}%` }}
+            >
+              {formatHoverDate(hoverPoint.date, locale)}
+            </div>
+          </>
+        ) : null}
+        <div className="pointer-events-none absolute right-0 top-1 text-right text-[0.65rem] font-black uppercase leading-4 text-white/58">
           <p>{paddedRange.max.toFixed(0)} USD/t</p>
           <p className="mt-[13.9rem]">{paddedRange.min.toFixed(0)} USD/t</p>
         </div>
