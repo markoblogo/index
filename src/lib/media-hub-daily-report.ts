@@ -281,7 +281,9 @@ export function buildDailyNewsThemes(
   const primary: DailyNewsThemeId[] = tenant === "platform"
     ? ["key_signals", "grains", "oilseeds", "logistics", "crop_weather", "policy", "regional"]
     : ["key_signals", "grains", "oilseeds", "logistics", "crop_weather", "policy", "processing", "international"];
-  const keySignals = normalized.slice(0, tenant === "platform" ? 5 : 7);
+  const keySignals = normalized
+    .filter((line) => !isKnownThemeHeading(line, titles))
+    .slice(0, tenant === "platform" ? 5 : 7);
   return primary
     .map((id, index) => ({
       id,
@@ -329,6 +331,11 @@ function stripBullet(value: string) {
 
 function normalizeHeading(value: string) {
   return value.replace(/[^\p{L}\p{N}\s]/gu, "").trim().toLowerCase();
+}
+
+function isKnownThemeHeading(value: string, titles: Record<DailyNewsThemeId, string>) {
+  const normalized = normalizeHeading(value);
+  return Object.values(titles).some((title) => normalizeHeading(title) === normalized);
 }
 
 function getSsiIndexGroupId(

@@ -274,7 +274,7 @@ function parseGeneratedJson(value: string, kind: MediaHubReportKind): MediaHubLo
           .slice(0, kind === "daily" ? 40 : 120)
       : [];
 
-    if (!title || summary.length === 0) {
+    if (!title || !isUsableGeneratedSummary(summary, kind)) {
       return null;
     }
 
@@ -282,6 +282,44 @@ function parseGeneratedJson(value: string, kind: MediaHubReportKind): MediaHubLo
   } catch {
     return null;
   }
+}
+
+function isUsableGeneratedSummary(summary: string[], kind: MediaHubReportKind) {
+  const minNarrativeItems = kind === "daily" ? 3 : 8;
+  const narrativeItems = summary.filter((item) => {
+    const normalized = normalizeGeneratedLine(item);
+    if (!normalized) return false;
+    if (isSectionHeadingOnly(normalized)) return false;
+    if (/^data unavailable\b/i.test(normalized)) return false;
+    if (/^no (specific|concrete|source-backed)\b/i.test(normalized)) return false;
+    return normalized.split(/\s+/).length >= 7;
+  });
+  return narrativeItems.length >= minNarrativeItems;
+}
+
+function normalizeGeneratedLine(value: string) {
+  return value
+    .replace(/^[^\p{L}\p{N}]+/u, "")
+    .replace(/[^\p{L}\p{N}\s/&-]+$/gu, "")
+    .trim();
+}
+
+function isSectionHeadingOnly(value: string) {
+  const normalized = value.toLowerCase();
+  return [
+    "key signals",
+    "main signals",
+    "grains",
+    "oilseeds",
+    "oilseeds and vegetable oils",
+    "logistics",
+    "logistics and freight",
+    "crop weather",
+    "crop weather and production",
+    "trade policy and demand",
+    "regional notes",
+    "international context",
+  ].includes(normalized);
 }
 
 function getMediaHubModel(kind: MediaHubReportKind) {
