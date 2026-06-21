@@ -15,7 +15,7 @@ import {
   type MediaHubPublicationKind,
 } from "@/lib/media-hub-publication-scheduler";
 
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
 type MediaHubPageProps = {
   params: Promise<{ locale: Locale }>;

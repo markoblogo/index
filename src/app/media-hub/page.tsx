@@ -15,7 +15,7 @@ import {
 import { get1d3xRssWindows } from "@/lib/media-hub-rss";
 import { isPlatformSite } from "@/lib/platform-site";
 
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
 type PlatformMediaHubPageProps = {
   searchParams: Promise<{ date?: string; kind?: string; window?: string }>;
