@@ -145,32 +145,32 @@ export function PublicMediaHub({
         </article>
       </section>
 
-      {archive.length > 0 ? (
-        <section className="mx-auto max-w-[1900px] px-5 pb-8 sm:px-8 lg:px-10">
-          <div className="rounded-[2rem] border border-white/10 bg-[var(--media-hub-panel)] p-5">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-white/42">
-                  Report archive
-                </p>
-                <h2 className="mt-1 text-2xl font-black">
-                  {locale === "uk" ? "Опубліковані звіти" : "Published reports"}
-                </h2>
-              </div>
-              {archiveHref ? (
-                <div className="flex flex-wrap gap-2">
-                  {archiveFilters.map((filter) => (
-                    <Link
-                      className="rounded-full border border-white/12 px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-white/62 hover:border-[color:var(--media-hub-accent)] hover:text-white"
-                      href={archiveHref({ kind: filter.kind })}
-                      key={filter.label}
-                    >
-                      {filter.label}
-                    </Link>
-                  ))}
-                </div>
-              ) : null}
+      <section className="mx-auto max-w-[1900px] px-5 pb-8 sm:px-8 lg:px-10">
+        <div className="rounded-[2rem] border border-white/10 bg-[var(--media-hub-panel)] p-5">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-white/42">
+                Report archive
+              </p>
+              <h2 className="mt-1 text-2xl font-black">
+                {locale === "uk" ? "Опубліковані звіти" : "Published reports"}
+              </h2>
             </div>
+            {archiveHref ? (
+              <div className="flex flex-wrap gap-2">
+                {archiveFilters.map((filter) => (
+                  <Link
+                    className="rounded-full border border-white/12 px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-white/62 hover:border-[color:var(--media-hub-accent)] hover:text-white"
+                    href={archiveHref({ kind: filter.kind })}
+                    key={filter.label}
+                  >
+                    {filter.label}
+                  </Link>
+                ))}
+              </div>
+            ) : null}
+          </div>
+          {archive.length > 0 ? (
             <div className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
               {archive.slice(0, 12).map((report) => (
                 <Link
@@ -198,9 +198,15 @@ export function PublicMediaHub({
                 </Link>
               ))}
             </div>
-          </div>
-        </section>
-      ) : null}
+          ) : (
+            <div className="mt-4 rounded-[1.25rem] border border-white/10 bg-[var(--media-hub-card)] p-4 text-sm leading-6 text-white/58">
+              {locale === "uk"
+                ? "Опублікованих звітів ще немає. Вони з’являться тут після першої daily, weekly або monthly публікації."
+                : "No reports published yet. Reports will appear here after the first daily, weekly or monthly publication."}
+            </div>
+          )}
+        </div>
+      </section>
 
       <section className="mx-auto max-w-[1900px] px-5 pb-8 sm:px-8 lg:px-10">
         <div className="grid gap-6 xl:grid-cols-3">
