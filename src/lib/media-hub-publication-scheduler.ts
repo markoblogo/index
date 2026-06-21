@@ -28,7 +28,6 @@ import {
 import {
   build1d3xDailyReportView,
   buildSsiDailyReportView,
-  escapeHtml,
   renderDailyNewsTelegramSection,
   renderSsiDailyIndexTelegramSection,
   type MediaHubDailyReportView,
