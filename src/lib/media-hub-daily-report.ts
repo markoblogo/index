@@ -187,7 +187,7 @@ export function groupSsiIndicesForDailyReport(items: SsiDailyIndexItem[]): SsiDa
 }
 
 export function getPreviousPublishedBusinessDay(reportDate: string) {
-  let cursor = parseIsoDate(reportDate);
+  const cursor = parseIsoDate(reportDate);
   do {
     cursor.setUTCDate(cursor.getUTCDate() - 1);
   } while (cursor.getUTCDay() === 0 || cursor.getUTCDay() === 6);
