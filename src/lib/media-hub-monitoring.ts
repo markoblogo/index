@@ -711,6 +711,9 @@ function buildTopicHintEn(topicId: string) {
 
 function formatRelativeWindowDate(value: string) {
   const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) {
+    return "n/a";
+  }
   return new Intl.DateTimeFormat("en-GB", {
     day: "2-digit",
     hour: "2-digit",

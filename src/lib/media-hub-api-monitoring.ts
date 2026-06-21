@@ -378,7 +378,7 @@ async function ingestRoutedItems(items: RoutedItem[], kind: "daily" | "monthly" 
 }
 
 function formatApiItemForMaterial(item: RoutedItem) {
-  return [
+  return cleanTextForStorage([
     `Provider: ${item.providerId}`,
     `Source: ${item.source}`,
     `Published: ${item.publishedAt ?? "unknown"}`,
@@ -394,7 +394,7 @@ function formatApiItemForMaterial(item: RoutedItem) {
     item.title,
     "",
     item.summary ?? "",
-  ].join("\n").slice(0, 8_000);
+  ].join("\n")).slice(0, 8_000);
 }
 
 function dedupeRoutedItems(items: RoutedItem[]) {
@@ -720,12 +720,12 @@ function item(
   source = providerId,
 ): ApiItem {
   return {
-    providerId,
+    providerId: cleanTextForStorage(providerId),
     publishedAt: publishedPath ? normalizeDate(getStringPath(row, publishedPath)) : undefined,
-    source,
-    summary: summaryPath ? stripHtml(getStringPath(row, summaryPath)) : "",
-    title: stripHtml(getStringPath(row, titlePath)),
-    url: urlPath ? getStringPath(row, urlPath) : undefined,
+    source: cleanTextForStorage(source),
+    summary: summaryPath ? cleanTextForStorage(stripHtml(getStringPath(row, summaryPath))) : "",
+    title: cleanTextForStorage(stripHtml(getStringPath(row, titlePath))),
+    url: urlPath ? cleanTextForStorage(getStringPath(row, urlPath)) : undefined,
   };
 }
 
@@ -754,10 +754,13 @@ function normalizeDate(value?: string) {
   return value && Number.isFinite(Date.parse(value)) ? new Date(value).toISOString() : undefined;
 }
 function stripHtml(value: string) {
-  return value.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  return cleanTextForStorage(value.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim());
 }
 function normalizeText(value: string) {
   return stripHtml(value).toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+}
+function cleanTextForStorage(value: string) {
+  return value.replace(/\u0000/g, "").trim();
 }
 function canonicalUrl(value?: string) {
   if (!value) return "";
