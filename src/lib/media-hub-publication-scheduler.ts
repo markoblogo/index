@@ -629,11 +629,10 @@ function buildSnapshotReportContent(input: {
     dailyReports,
     periodEndDate: input.periodEndDate,
     periodStartDate: input.periodStartDate,
-    summary: evidenceFallback?.summary.length ? evidenceFallback.summary : primary?.summaryBody ?? [],
-    title:
-      evidenceFallback?.title ||
-      primary?.summaryTitle ??
-      `Media Hub ${input.kind} report · ${input.periodStartDate}—${input.periodEndDate}`,
+    summary: evidenceFallback?.summary.length ? evidenceFallback.summary : (primary?.summaryBody ?? []),
+    title: evidenceFallback?.title ||
+      (primary?.summaryTitle ??
+        `Media Hub ${input.kind} report · ${input.periodStartDate}—${input.periodEndDate}`),
     totals: {
       items: totalItems,
       sources: totalSources,
