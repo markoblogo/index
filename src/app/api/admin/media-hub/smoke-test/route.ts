@@ -75,12 +75,18 @@ export async function POST(request: Request) {
     ).join(",");
     try {
       const [scheduledSources, apiMonitoring] = await Promise.all([
-        ingestScheduledMediaHubSources(),
+        ingestScheduledMediaHubSources().catch((error: unknown) => ({
+          error: safeErrorMessage(error),
+          status: "failed" as const,
+        })),
         runMediaHubApiMonitoring({
           force: true,
           kind: "daily",
           tenantMode: platform ? "platform" : "unified",
-        }),
+        }).catch((error: unknown) => ({
+          error: safeErrorMessage(error),
+          status: "failed" as const,
+        })),
       ]);
       result.monitoring = { apiMonitoring, scheduledSources };
     } finally {
@@ -121,6 +127,10 @@ function isAuthorized(request: Request) {
 
 function normalizeDate(value: string | undefined) {
   return value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : undefined;
+}
+
+function safeErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "unknown_error";
 }
 
 function getLocalDate() {

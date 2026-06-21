@@ -262,78 +262,93 @@ export async function publishMediaHubSnapshotReport(
   periodEndDate: string,
 ) {
   if (!hasDatabaseUrl() && isPlatformSite()) {
-    const transient = await buildTransientMediaHubSnapshotReport(kind, periodEndDate);
-    return {
-      itemCount: transient.primarySnapshot?.itemCount ?? 0,
-      kind,
-      periodEndDate,
-      periodStartDate: transient.periodStartDate,
-      sourceCount: transient.primarySnapshot?.sourceCount ?? 0,
-      status: "published_transient" as const,
-    };
+    return buildTransientPublishResult(kind, periodEndDate);
   }
 
   if (!hasDatabaseUrl()) {
     return { skippedReason: "database_not_configured", status: "skipped" as const };
   }
 
-  await ensureMediaHubReportStorage();
+  try {
+    await ensureMediaHubReportStorage();
 
-  const { content, manualMaterials, periodStartDate, primarySnapshot, snapshots } =
-    await buildTransientMediaHubSnapshotReport(kind, periodEndDate);
-  const tenantId = isPlatformSite() ? "1d3x" : getActiveIndexConfig().id;
-  const contentHash = createHash("sha256")
-    .update(JSON.stringify(content))
-    .digest("hex");
-  const existing = await getMediaHubReport(kind, periodEndDate, tenantId);
-  const id = existing?.id ?? randomUUID();
+    const { content, manualMaterials, periodStartDate, primarySnapshot, snapshots } =
+      await buildTransientMediaHubSnapshotReport(kind, periodEndDate);
+    const tenantId = isPlatformSite() ? "1d3x" : getActiveIndexConfig().id;
+    const contentHash = createHash("sha256")
+      .update(JSON.stringify(content))
+      .digest("hex");
+    const existing = await getMediaHubReport(kind, periodEndDate, tenantId);
+    const id = existing?.id ?? randomUUID();
 
-  await db.$executeRawUnsafe(
-    `
-      INSERT INTO "MediaHubReport" (
-        "id", "tenantId", "kind", "periodStart", "periodEnd", "title",
-        "status", "contentHash", "contentJson", "sourceDigest",
-        "telegramSentAt", "telegramMessageIds", "createdAt", "updatedAt"
-      )
-      VALUES (
-        $1, $2, $3, $4::date, $5::date, $6,
-        'published', $7, $8::jsonb, $9::jsonb,
-        NULL, '[]'::jsonb, NOW(), NOW()
-      )
-      ON CONFLICT ("tenantId", "kind", "periodEnd")
-      DO UPDATE SET
-        "title" = EXCLUDED."title",
-        "status" = EXCLUDED."status",
-        "contentHash" = EXCLUDED."contentHash",
-        "contentJson" = EXCLUDED."contentJson",
-        "sourceDigest" = EXCLUDED."sourceDigest",
-        "updatedAt" = NOW()
-    `,
-    id,
-    tenantId,
-    kind,
-    periodStartDate,
-    periodEndDate,
-    content.title,
-    contentHash,
-    JSON.stringify(content),
-    JSON.stringify({
-      manualMaterials,
-      snapshots,
-    }),
-  );
+    await db.$executeRawUnsafe(
+      `
+        INSERT INTO "MediaHubReport" (
+          "id", "tenantId", "kind", "periodStart", "periodEnd", "title",
+          "status", "contentHash", "contentJson", "sourceDigest",
+          "telegramSentAt", "telegramMessageIds", "createdAt", "updatedAt"
+        )
+        VALUES (
+          $1, $2, $3, $4::date, $5::date, $6,
+          'published', $7, $8::jsonb, $9::jsonb,
+          NULL, '[]'::jsonb, NOW(), NOW()
+        )
+        ON CONFLICT ("tenantId", "kind", "periodEnd")
+        DO UPDATE SET
+          "title" = EXCLUDED."title",
+          "status" = EXCLUDED."status",
+          "contentHash" = EXCLUDED."contentHash",
+          "contentJson" = EXCLUDED."contentJson",
+          "sourceDigest" = EXCLUDED."sourceDigest",
+          "updatedAt" = NOW()
+      `,
+      id,
+      tenantId,
+      kind,
+      periodStartDate,
+      periodEndDate,
+      content.title,
+      contentHash,
+      JSON.stringify(content),
+      JSON.stringify({
+        manualMaterials,
+        snapshots,
+      }),
+    );
 
-  revalidatePath("/media-hub");
-  revalidatePath("/uk/media-hub");
-  revalidatePath("/en/media-hub");
+    revalidatePath("/media-hub");
+    revalidatePath("/uk/media-hub");
+    revalidatePath("/en/media-hub");
 
+    return {
+      itemCount: primarySnapshot?.itemCount ?? 0,
+      kind,
+      periodEndDate,
+      periodStartDate,
+      sourceCount: primarySnapshot?.sourceCount ?? 0,
+      status: "published" as const,
+    };
+  } catch (error) {
+    if (isPlatformSite()) {
+      console.warn("Falling back to transient 1D3X Media Hub report.", safeErrorMessage(error));
+      return buildTransientPublishResult(kind, periodEndDate);
+    }
+    throw error;
+  }
+}
+
+async function buildTransientPublishResult(
+  kind: Exclude<MediaHubPublicationKind, "none">,
+  periodEndDate: string,
+) {
+  const transient = await buildTransientMediaHubSnapshotReport(kind, periodEndDate);
   return {
-    itemCount: primarySnapshot?.itemCount ?? 0,
+    itemCount: transient.primarySnapshot?.itemCount ?? 0,
     kind,
     periodEndDate,
-    periodStartDate,
-    sourceCount: primarySnapshot?.sourceCount ?? 0,
-    status: "published" as const,
+    periodStartDate: transient.periodStartDate,
+    sourceCount: transient.primarySnapshot?.sourceCount ?? 0,
+    status: "published_transient" as const,
   };
 }
 
@@ -469,6 +484,9 @@ async function buildTransientMediaHubSnapshotReport(
     force: kind === "weekly" || kind === "monthly",
     kind,
     tenantMode: isPlatformSite() ? "platform" : "unified",
+  }).catch((error: unknown) => {
+    if (!isPlatformSite()) throw error;
+    console.warn("Skipping 1D3X API monitoring during report build.", safeErrorMessage(error));
   });
   const snapshots = await getPublicationSnapshots(windowKey);
   const primarySnapshot = snapshots[0];
@@ -480,10 +498,18 @@ async function buildTransientMediaHubSnapshotReport(
     periodEndDate,
     periodStartDate,
     tenantId,
+  }).catch((error: unknown) => {
+    if (!isPlatformSite()) throw error;
+    console.warn("Skipping 1D3X Media Hub manual materials.", safeErrorMessage(error));
+    return [] as MediaHubManualMaterialDigest[];
   });
   const avoidPhrases = await getPreviousReportAvoidPhrases({
     kind,
     tenantId,
+  }).catch((error: unknown) => {
+    if (!isPlatformSite()) throw error;
+    console.warn("Skipping 1D3X Media Hub avoid phrases.", safeErrorMessage(error));
+    return [] as string[];
   });
   const llm = await generateMediaHubLlmReports({
     avoidPhrases,
@@ -837,59 +863,67 @@ export async function getLatestPublishedMediaHubReportSummary(input: {
     return null;
   }
 
-  await ensureMediaHubReportStorage();
+  try {
+    await ensureMediaHubReportStorage();
 
-  const tenantId = input.tenantId ?? (isPlatformSite() ? "1d3x" : getActiveIndexConfig().id);
-  const rows = await db.$queryRawUnsafe<MediaHubReportRow[]>(
-    `
-      SELECT *
-      FROM "MediaHubReport"
-      WHERE "tenantId" = $1
-        AND ($2::text IS NULL OR "kind" = $2)
-        AND ($3::date IS NULL OR "periodEnd" = $3::date)
-        AND "status" = 'published'
-      ORDER BY
-        "periodEnd" DESC,
-        CASE "kind"
-          WHEN 'monthly' THEN 3
-          WHEN 'weekly' THEN 2
-          WHEN 'daily' THEN 1
-          ELSE 0
-        END DESC
-      LIMIT 1
-    `,
-    tenantId,
-    input.kind ?? null,
-    input.periodEndDate ?? null,
-  );
-  const content = parseMediaHubReportContent(rows[0]?.contentJson);
-  if (!content) {
-    return null;
-  }
+    const tenantId = input.tenantId ?? (isPlatformSite() ? "1d3x" : getActiveIndexConfig().id);
+    const rows = await db.$queryRawUnsafe<MediaHubReportRow[]>(
+      `
+        SELECT *
+        FROM "MediaHubReport"
+        WHERE "tenantId" = $1
+          AND ($2::text IS NULL OR "kind" = $2)
+          AND ($3::date IS NULL OR "periodEnd" = $3::date)
+          AND "status" = 'published'
+        ORDER BY
+          "periodEnd" DESC,
+          CASE "kind"
+            WHEN 'monthly' THEN 3
+            WHEN 'weekly' THEN 2
+            WHEN 'daily' THEN 1
+            ELSE 0
+          END DESC
+        LIMIT 1
+      `,
+      tenantId,
+      input.kind ?? null,
+      input.periodEndDate ?? null,
+    );
+    const content = parseMediaHubReportContent(rows[0]?.contentJson);
+    if (!content) {
+      return null;
+    }
 
-  const localized = content.localized?.[input.locale];
-  const dailyReport = content.dailyReports?.[input.locale];
-  if (localized?.summary?.length) {
+    const localized = content.localized?.[input.locale];
+    const dailyReport = content.dailyReports?.[input.locale];
+    if (localized?.summary?.length) {
+      return {
+        dailyReport,
+        kind: content.kind,
+        periodEndDate: content.periodEndDate,
+        summaryBody: dailyReport
+          ? flattenDailyReportSummary(dailyReport)
+          : localized.summary,
+        summaryTitle: localized.title || content.title,
+      };
+    }
+
     return {
-      dailyReport,
       kind: content.kind,
+      dailyReport,
       periodEndDate: content.periodEndDate,
       summaryBody: dailyReport
         ? flattenDailyReportSummary(dailyReport)
-        : localized.summary,
-      summaryTitle: localized.title || content.title,
+        : content.summary,
+      summaryTitle: content.title,
     };
+  } catch (error) {
+    if (isPlatformSite()) {
+      console.warn("Skipping latest 1D3X Media Hub report.", safeErrorMessage(error));
+      return null;
+    }
+    throw error;
   }
-
-  return {
-    kind: content.kind,
-    dailyReport,
-    periodEndDate: content.periodEndDate,
-    summaryBody: dailyReport
-      ? flattenDailyReportSummary(dailyReport)
-      : content.summary,
-    summaryTitle: content.title,
-  };
 }
 
 function flattenDailyReportSummary(report: MediaHubDailyReportView | undefined) {
@@ -910,47 +944,55 @@ export async function getMediaHubReportArchive(input: {
     return [];
   }
 
-  await ensureMediaHubReportStorage();
+  try {
+    await ensureMediaHubReportStorage();
 
-  const tenantId = input.tenantId ?? (isPlatformSite() ? "1d3x" : getActiveIndexConfig().id);
-  const rows = await db.$queryRawUnsafe<MediaHubReportRow[]>(
-    `
-      SELECT *
-      FROM "MediaHubReport"
-      WHERE "tenantId" = $1
-        AND ($2::text IS NULL OR "kind" = $2)
-        AND "status" = 'published'
-      ORDER BY
-        "periodEnd" DESC,
-        CASE "kind"
-          WHEN 'monthly' THEN 3
-          WHEN 'weekly' THEN 2
-          WHEN 'daily' THEN 1
-          ELSE 0
-        END DESC
-      LIMIT $3
-    `,
-    tenantId,
-    input.kind ?? null,
-    input.limit ?? 36,
-  );
+    const tenantId = input.tenantId ?? (isPlatformSite() ? "1d3x" : getActiveIndexConfig().id);
+    const rows = await db.$queryRawUnsafe<MediaHubReportRow[]>(
+      `
+        SELECT *
+        FROM "MediaHubReport"
+        WHERE "tenantId" = $1
+          AND ($2::text IS NULL OR "kind" = $2)
+          AND "status" = 'published'
+        ORDER BY
+          "periodEnd" DESC,
+          CASE "kind"
+            WHEN 'monthly' THEN 3
+            WHEN 'weekly' THEN 2
+            WHEN 'daily' THEN 1
+            ELSE 0
+          END DESC
+        LIMIT $3
+      `,
+      tenantId,
+      input.kind ?? null,
+      input.limit ?? 36,
+    );
 
-  return rows.flatMap((row): MediaHubReportArchiveItem[] => {
-    const content = parseMediaHubReportContent(row.contentJson);
-    if (!content) {
+    return rows.flatMap((row): MediaHubReportArchiveItem[] => {
+      const content = parseMediaHubReportContent(row.contentJson);
+      if (!content) {
+        return [];
+      }
+      const localized = content.localized?.[input.locale];
+
+      return [{
+        itemCount: content.totals.items,
+        kind: content.kind,
+        periodEndDate: content.periodEndDate,
+        periodStartDate: content.periodStartDate,
+        sourceCount: content.totals.sources,
+        summaryTitle: localized?.title || content.title,
+      }];
+    });
+  } catch (error) {
+    if (isPlatformSite()) {
+      console.warn("Skipping 1D3X Media Hub archive.", safeErrorMessage(error));
       return [];
     }
-    const localized = content.localized?.[input.locale];
-
-    return [{
-      itemCount: content.totals.items,
-      kind: content.kind,
-      periodEndDate: content.periodEndDate,
-      periodStartDate: content.periodStartDate,
-      sourceCount: content.totals.sources,
-      summaryTitle: localized?.title || content.title,
-    }];
-  });
+    throw error;
+  }
 }
 
 async function getPreviousReportAvoidPhrases(input: {
@@ -1174,21 +1216,33 @@ async function getMediaHubReport(
   periodEndDate: string,
   tenantId: string = getActiveIndexConfig().id,
 ) {
-  const rows = await db.$queryRawUnsafe<MediaHubReportRow[]>(
-    `
-      SELECT *
-      FROM "MediaHubReport"
-      WHERE "tenantId" = $1
-        AND "kind" = $2
-        AND "periodEnd" = $3::date
-      LIMIT 1
-    `,
-    tenantId,
-    kind,
-    periodEndDate,
-  );
+  try {
+    const rows = await db.$queryRawUnsafe<MediaHubReportRow[]>(
+      `
+        SELECT *
+        FROM "MediaHubReport"
+        WHERE "tenantId" = $1
+          AND "kind" = $2
+          AND "periodEnd" = $3::date
+        LIMIT 1
+      `,
+      tenantId,
+      kind,
+      periodEndDate,
+    );
 
-  return rows[0] ?? null;
+    return rows[0] ?? null;
+  } catch (error) {
+    if (tenantId === "1d3x") {
+      console.warn("Skipping 1D3X Media Hub report lookup.", safeErrorMessage(error));
+      return null;
+    }
+    throw error;
+  }
+}
+
+function safeErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "unknown_error";
 }
 
 function buildMonthlyReportContent(
