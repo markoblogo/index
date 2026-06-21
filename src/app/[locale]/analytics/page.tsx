@@ -10,6 +10,8 @@ import { commodities, type Commodity, type CommodityId } from "@/lib/mock-data";
 import { getPublicHistoryData } from "@/lib/public-api-data";
 import { getActiveRespondentCountData } from "@/lib/respondent-directory-lazy";
 
+export const dynamic = "force-dynamic";
+
 type AnalyticsPoint = {
   date: string;
   commodityId: CommodityId;
