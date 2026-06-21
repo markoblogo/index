@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import dynamic from "next/dynamic";
+import nextDynamic from "next/dynamic";
 import { SITE_CONFIG } from "@/lib/constants";
 import type { PublicAiMarketBrief } from "@/lib/ai-market-brief-types";
 import { allowMockFallback, hasDatabaseUrl } from "@/lib/db";
@@ -21,7 +21,7 @@ type AnalyticsPoint = {
   respondents: number;
 };
 
-const AnalyticsTrendChartAsync = dynamic(
+const AnalyticsTrendChartAsync = nextDynamic(
   () =>
     import("@/components/ui/analytics-trend-chart").then(
       (module) => module.AnalyticsTrendChart,
@@ -35,7 +35,7 @@ const AnalyticsTrendChartAsync = dynamic(
   },
 );
 
-const CurrencyValueAsync = dynamic(
+const CurrencyValueAsync = nextDynamic(
   () =>
     import("@/components/ui/currency-toggle").then(
       (module) => module.CurrencyValue,
@@ -45,7 +45,7 @@ const CurrencyValueAsync = dynamic(
   },
 );
 
-const ScenarioModelPanelAsync = dynamic(
+const ScenarioModelPanelAsync = nextDynamic(
   () =>
     import("@/components/ui/scenario-model-panel").then(
       (module) => module.ScenarioModelPanel,
@@ -61,7 +61,7 @@ const ScenarioModelPanelAsync = dynamic(
   },
 );
 
-const SpreadAnalysisPanelAsync = dynamic(
+const SpreadAnalysisPanelAsync = nextDynamic(
   () =>
     import("@/components/ui/spread-analysis-panel").then(
       (module) => module.SpreadAnalysisPanel,
@@ -77,7 +77,7 @@ const SpreadAnalysisPanelAsync = dynamic(
   },
 );
 
-const VolatilityRangePanelAsync = dynamic(
+const VolatilityRangePanelAsync = nextDynamic(
   () =>
     import("@/components/ui/volatility-range-panel").then(
       (module) => module.VolatilityRangePanel,
