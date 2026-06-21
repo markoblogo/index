@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Locale } from "@/lib/i18n";
 import { getPublishedWeeklyReports } from "@/lib/weekly-ai-report-lazy";
 
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
 export default async function WeeklyReportsArchivePage({
   params,

@@ -3,7 +3,7 @@ import { WeeklyReportView } from "@/components/reports/weekly-report-view";
 import type { Locale } from "@/lib/i18n";
 import { getPublishedWeeklyReportBySlug } from "@/lib/weekly-ai-report-lazy";
 
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
 export default async function WeeklyReportDetailPage({
   params,
