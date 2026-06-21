@@ -42,11 +42,15 @@ export async function generateMediaHubLlmReports(input: {
   const locales: Locale[] = input.tenant === "spike" ? ["uk", "en"] : ["en"];
   const model = getMediaHubModel(input.kind);
   const localized: Partial<Record<Locale, MediaHubLocalizedReport>> = {};
+  const errors: string[] = [];
 
   for (const locale of locales) {
     const generated = await generateOneLocale({ ...input, apiKey, locale, model });
-    if (generated) {
-      localized[locale] = generated;
+    if (generated.report) {
+      localized[locale] = generated.report;
+    }
+    if (generated.error) {
+      errors.push(`${locale}:${generated.error}`);
     }
   }
 
@@ -54,7 +58,9 @@ export async function generateMediaHubLlmReports(input: {
     localized,
     model,
     provider: "openai",
-    skippedReason: Object.keys(localized).length > 0 ? undefined : "openai_generation_empty",
+    skippedReason: Object.keys(localized).length > 0
+      ? undefined
+      : errors[0] ? `openai_generation_empty:${errors.slice(0, 2).join("|")}` : "openai_generation_empty",
   };
 }
 
@@ -74,73 +80,113 @@ async function generateOneLocale(input: {
   const prompt = buildPrompt(input);
 
   try {
-    const useWebSearch = input.kind !== "daily" || input.tenant === "platform";
-    const requestBody: Record<string, unknown> = {
-      input: prompt,
-      max_output_tokens: input.kind === "daily" ? 1700 : input.kind === "weekly" ? 3600 : 4200,
-      model: input.model,
-      text: {
-        format: {
-          name: "media_hub_report",
-          schema: {
-            additionalProperties: false,
-            properties: {
-              summary: {
-                items: { type: "string" },
-                minItems: 1,
-                type: "array",
-              },
-              title: { minLength: 1, type: "string" },
-            },
-            required: ["title", "summary"],
-            type: "object",
-          },
-          strict: true,
-          type: "json_schema",
-        },
-      },
-      temperature: 0.25,
-    };
+    const attempts = [...new Set([input.model, "gpt-4o-mini"])];
+    let lastError = "";
 
-    if (useWebSearch) {
-      requestBody.tools = [{ type: "web_search_preview" }];
+    for (const model of attempts) {
+      const responses = await callResponsesApi({ ...input, model, prompt });
+      if (responses.report) {
+        return responses;
+      }
+      lastError = responses.error || lastError;
+
+      const chat = await callChatCompletionsApi({ ...input, model, prompt });
+      if (chat.report) {
+        return chat;
+      }
+      lastError = chat.error || lastError;
     }
 
-    let response = await fetch("https://api.openai.com/v1/responses", {
+    return { error: lastError || "empty_result" };
+  } catch (error) {
+    return { error: sanitizeOpenAiError(error) };
+  }
+}
+
+async function callResponsesApi(input: {
+  apiKey: string;
+  kind: MediaHubReportKind;
+  model: string;
+  prompt: string;
+  tenant: MediaHubTenant;
+}) {
+  const useWebSearch = input.kind !== "daily" || input.tenant === "platform";
+  const requestBody: Record<string, unknown> = {
+    input: input.prompt,
+    max_output_tokens: input.kind === "daily" ? 1700 : input.kind === "weekly" ? 3600 : 4200,
+    model: input.model,
+    temperature: 0.25,
+  };
+
+  if (useWebSearch) {
+    requestBody.tools = [{ type: "web_search_preview" }];
+  }
+
+  let response = await fetch("https://api.openai.com/v1/responses", {
+    body: JSON.stringify(requestBody),
+    headers: openAiHeaders(input.apiKey),
+    method: "POST",
+  });
+
+  if (!response.ok && useWebSearch) {
+    delete requestBody.tools;
+    response = await fetch("https://api.openai.com/v1/responses", {
       body: JSON.stringify(requestBody),
-      headers: {
-        Authorization: `Bearer ${input.apiKey}`,
-        "Content-Type": "application/json",
-      },
+      headers: openAiHeaders(input.apiKey),
       method: "POST",
     });
-
-    if (!response.ok && useWebSearch) {
-      delete requestBody.tools;
-      response = await fetch("https://api.openai.com/v1/responses", {
-        body: JSON.stringify(requestBody),
-        headers: {
-          Authorization: `Bearer ${input.apiKey}`,
-          "Content-Type": "application/json",
-        },
-        method: "POST",
-      });
-    }
-
-    if (!response.ok) {
-      return null;
-    }
-
-    const payload = await response.json();
-    const parsed = parseGeneratedJson(extractResponseText(payload), input.kind);
-    if (!parsed) {
-      return null;
-    }
-
-    return parsed;
-  } catch {
-    return null;
   }
+
+  if (!response.ok) {
+    return { error: await safeOpenAiResponseError(response) };
+  }
+
+  const payload = await response.json();
+  const report = parseGeneratedJson(extractResponseText(payload), input.kind);
+  return report ? { report } : { error: "responses_parse_empty" };
+}
+
+async function callChatCompletionsApi(input: {
+  apiKey: string;
+  kind: MediaHubReportKind;
+  model: string;
+  prompt: string;
+}) {
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    body: JSON.stringify({
+      max_tokens: input.kind === "daily" ? 1700 : input.kind === "weekly" ? 3600 : 4200,
+      messages: [
+        {
+          content: "Return strict JSON only with keys title and summary. summary must be an array of strings.",
+          role: "system",
+        },
+        {
+          content: input.prompt,
+          role: "user",
+        },
+      ],
+      model: input.model,
+      response_format: { type: "json_object" },
+      temperature: 0.25,
+    }),
+    headers: openAiHeaders(input.apiKey),
+    method: "POST",
+  });
+
+  if (!response.ok) {
+    return { error: await safeOpenAiResponseError(response) };
+  }
+
+  const payload = await response.json();
+  const report = parseGeneratedJson(extractChatCompletionText(payload), input.kind);
+  return report ? { report } : { error: "chat_parse_empty" };
+}
+
+function openAiHeaders(apiKey: string) {
+  return {
+    Authorization: `Bearer ${apiKey}`,
+    "Content-Type": "application/json",
+  };
 }
 
 function buildPrompt(input: {
@@ -191,6 +237,16 @@ function extractResponseText(payload: unknown): string {
   );
 }
 
+function extractChatCompletionText(payload: unknown): string {
+  if (!payload || typeof payload !== "object") {
+    return "";
+  }
+  const response = payload as {
+    choices?: Array<{ message?: { content?: string } }>;
+  };
+  return response.choices?.[0]?.message?.content?.trim() || "";
+}
+
 function parseGeneratedJson(value: string, kind: MediaHubReportKind): MediaHubLocalizedReport | null {
   const trimmed = value.trim();
   const withoutFence = trimmed.startsWith("```")
@@ -236,4 +292,16 @@ function getMediaHubModel(kind: MediaHubReportKind) {
     process.env.SPIKE_WEEKLY_REPORT_MODEL ||
     process.env.SPIKE_AI_BRIEF_MODEL ||
     "gpt-4.1-mini";
+}
+
+async function safeOpenAiResponseError(response: Response) {
+  const text = await response.text().catch(() => "");
+  return `http_${response.status}:${sanitizeOpenAiError(text)}`;
+}
+
+function sanitizeOpenAiError(error: unknown) {
+  return String(error instanceof Error ? error.message : error)
+    .replace(/sk-[A-Za-z0-9_-]+/g, "sk-redacted")
+    .replace(/\s+/g, " ")
+    .slice(0, 240);
 }
