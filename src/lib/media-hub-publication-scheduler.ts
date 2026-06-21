@@ -482,6 +482,7 @@ async function buildTransientMediaHubSnapshotReport(
 
   return {
     content,
+    manualMaterials,
     periodStartDate,
     primarySnapshot,
     snapshots,
