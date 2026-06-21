@@ -261,7 +261,7 @@ export async function publishMediaHubSnapshotReport(
 
   await ensureMediaHubReportStorage();
 
-  const { content, periodStartDate, primarySnapshot, snapshots } =
+  const { content, manualMaterials, periodStartDate, primarySnapshot, snapshots } =
     await buildTransientMediaHubSnapshotReport(kind, periodEndDate);
   const tenantId = isPlatformSite() ? "1d3x" : getActiveIndexConfig().id;
   const contentHash = createHash("sha256")
