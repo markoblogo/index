@@ -119,6 +119,7 @@ export function buildMissingProjectTagText() {
 }
 
 export function getMediaHubProjectName(tenantId: MediaHubManualMaterialTenant) {
+  if (tenantId === "corporate-unrouted") return "Corporate unrouted";
   return tenantId === "1d3x" ? "1D3X" : "SSI";
 }
 
@@ -140,7 +141,7 @@ export function buildMediaHubSubmissionReply({
   kind: MediaHubManualMaterialKind;
   label: string;
   mimeType?: string;
-  sourceType: "file" | "link";
+  sourceType: "file" | "link" | "text";
   status: string;
   tenantId: MediaHubManualMaterialTenant;
 }) {
@@ -160,7 +161,9 @@ export function buildMediaHubSubmissionReply({
   if (sourceType === "file") {
     return `Файл прийнято для ${projectName}: ${reportKind}. Тип: ${mimeType ?? "file"}. Статус: обробка.\nМатеріал оброблено для ${projectName}: ${reportKind}. Буде враховано у звіті за ${reportKind}.`;
   }
+  if (sourceType === "text") {
+    return `Текст прийнято для ${projectName}: ${reportKind}. Статус: оброблено.\nБуде враховано у звіті за ${reportKind}.`;
+  }
 
   return `Матеріал прийнято для ${projectName}: ${reportKind}. Тип: link. Статус: обробка.\nМатеріал оброблено для ${projectName}: ${reportKind}. Буде враховано у звіті за ${reportKind}.\nДжерело: ${label}`;
 }
-

@@ -75,3 +75,37 @@ The admin page supports:
 - Duplicates are skipped by content hash or canonical URL for the same reporting window.
 - Unknown links are stored as source candidates or manual materials depending on tag/context.
 - Materials are used by Media Hub report generation through the persisted `MediaHubManualMaterial` table.
+
+## Corporate Media Hub sources
+
+First-party corporate sources are connected to the Media Hub monitoring layer without new paid APIs or manual API keys:
+
+- `mn7r_blog` - MN7R Blog, `https://mn7r.com/blog`, HTML blog fallback adapter.
+- `spike_spot_index_blog` - Spike Spot Index Blog, `https://spike.1d3x.com/en/blog`, internal blog adapter.
+- `id3x_blog` - 1D3X Blog, `https://1d3x.com/blog`, internal blog adapter.
+- `mn7r_bluesky` - MN7R Bluesky, `https://bsky.app/profile/mn7r.bsky.social`, public AT Protocol AppView adapter.
+- `corporate_telegram_group_1865902381` - Corporate Telegram Group, raw peer id `1865902381`.
+
+Routing:
+
+- `#ssi` routes Telegram/manual material to SSI (`spike-ua`).
+- `#1d3x` or `#id3x` routes to 1D3X.
+- Both tags route the same material to both projects.
+- Corporate Telegram messages without tags use keyword fallback.
+- If routing is still unclear, the message is stored as `corporate-unrouted` and is not used in SSI/1D3X reports automatically.
+
+Telegram peer id vs Bot API chat id:
+
+- Raw peer id: `1865902381`.
+- Bot API supergroup/channel candidate: `-1001865902381`.
+- Set `MEDIA_HUB_CORPORATE_TELEGRAM_PEER_ID=1865902381` for raw peer/client semantics.
+- Set `MEDIA_HUB_CORPORATE_TELEGRAM_CHAT_ID=-1001865902381` for Bot API webhook semantics.
+- The actual Bot API chat id must be verified by adding the bot/client to the group and sending a test message.
+
+Operational notes:
+
+- Use `@idex_grains_bot` for Media Hub material intake.
+- The bot/client must be present in the Telegram group.
+- If Bot API privacy mode hides messages, disable privacy or use explicit mentions/commands depending on Telegram setup.
+- Bluesky uses public read-only AppView endpoint; no login or app password is required.
+- Corporate blog posts are deduped by canonical URL, title fingerprint and content/source hash logic already used by Media Hub.

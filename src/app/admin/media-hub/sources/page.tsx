@@ -214,6 +214,11 @@ export default async function AdminMediaHubSourcesPage() {
                     <span className="rounded-full border border-white/10 px-2.5 py-1 text-xs font-semibold text-white/54">
                       {resource.windows.join(" + ")}
                     </span>
+                    {resource.id.startsWith("corporate::") ? (
+                      <span className="rounded-full border border-sky-300/25 bg-sky-300/10 px-2.5 py-1 text-xs font-semibold text-sky-100">
+                        first-party
+                      </span>
+                    ) : null}
                   </div>
                   {resource.url ? (
                     <p className="mt-2 text-sm leading-6 text-white/62">{resource.url}</p>
@@ -222,27 +227,33 @@ export default async function AdminMediaHubSourcesPage() {
                     <p className="mt-2 text-sm leading-6 text-white/54">{resource.notes}</p>
                   ) : null}
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <form action={toggleAction}>
-                    <input name="resourceId" type="hidden" value={resource.id} />
-                    <input name="enabled" type="hidden" value="0" />
-                    <button
-                      className="rounded-full border border-white/14 px-3 py-1.5 text-xs font-semibold text-white/72 transition hover:border-amber-300 hover:text-amber-100"
-                      type="submit"
-                    >
-                      Disable row
-                    </button>
-                  </form>
-                  <form action={deleteAction}>
-                    <input name="resourceId" type="hidden" value={resource.id} />
-                    <button
-                      className="rounded-full border border-rose-400/30 px-3 py-1.5 text-xs font-semibold text-rose-100 transition hover:border-rose-300"
-                      type="submit"
-                    >
-                      Delete row
-                    </button>
-                  </form>
-                </div>
+                {resource.id.startsWith("corporate::") ? (
+                  <span className="rounded-full border border-white/10 px-3 py-1.5 text-xs font-semibold text-white/54">
+                    Static source
+                  </span>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    <form action={toggleAction}>
+                      <input name="resourceId" type="hidden" value={resource.id} />
+                      <input name="enabled" type="hidden" value="0" />
+                      <button
+                        className="rounded-full border border-white/14 px-3 py-1.5 text-xs font-semibold text-white/72 transition hover:border-amber-300 hover:text-amber-100"
+                        type="submit"
+                      >
+                        Disable row
+                      </button>
+                    </form>
+                    <form action={deleteAction}>
+                      <input name="resourceId" type="hidden" value={resource.id} />
+                      <button
+                        className="rounded-full border border-rose-400/30 px-3 py-1.5 text-xs font-semibold text-rose-100 transition hover:border-rose-300"
+                        type="submit"
+                      >
+                        Delete row
+                      </button>
+                    </form>
+                  </div>
+                )}
               </div>
             </article>
           ))}

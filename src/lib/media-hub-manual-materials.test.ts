@@ -16,6 +16,11 @@ import {
   parseMediaHubMaterialBotCommand,
 } from "./media-hub-material-bot";
 import {
+  __mediaHubCorporateTelegramTestHooks,
+  CORPORATE_TELEGRAM_BOT_API_CHAT_ID,
+  CORPORATE_TELEGRAM_PEER_ID,
+} from "./media-hub-corporate-telegram";
+import {
   __mediaHubManualMaterialTestHooks,
 } from "./media-hub-manual-materials";
 
@@ -25,6 +30,10 @@ const {
   getMediaHubManualMaterialPeriod,
   parseMediaHubMaterialHashtags,
 } = __mediaHubManualMaterialTestHooks;
+const {
+  inferCorporateTelegramTenants,
+  normalizeTelegramBotApiChatId,
+} = __mediaHubCorporateTelegramTestHooks;
 
 describe("media hub manual materials", () => {
   it("routes hashtags to SSI, 1D3X, or both tenants", () => {
@@ -125,6 +134,23 @@ describe("media hub material bot", () => {
       status: "duplicate",
       tenantId: "spike-ua",
     })).toContain("Дублікат не додано");
+  });
+});
+
+describe("media hub corporate Telegram group", () => {
+  it("normalizes raw peer id to Bot API supergroup chat id", () => {
+    expect(CORPORATE_TELEGRAM_PEER_ID).toBe("1865902381");
+    expect(CORPORATE_TELEGRAM_BOT_API_CHAT_ID).toBe("-1001865902381");
+    expect(normalizeTelegramBotApiChatId("1865902381")).toBe("-1001865902381");
+    expect(normalizeTelegramBotApiChatId("-1001865902381")).toBe("-1001865902381");
+  });
+
+  it("routes corporate Telegram messages by tags and keyword fallback", () => {
+    expect(inferCorporateTelegramTenants("#ssi Ukraine corn CPT Odesa")).toEqual(["spike-ua"]);
+    expect(inferCorporateTelegramTenants("#1d3x CBOT soybean futures")).toEqual(["1d3x"]);
+    expect(inferCorporateTelegramTenants("#ssi #1d3x wheat freight update")).toEqual(["spike-ua", "1d3x"]);
+    expect(inferCorporateTelegramTenants("Brazil USDA crop weather and global grains")).toEqual(["1d3x"]);
+    expect(inferCorporateTelegramTenants("internal design note with no market routing")).toEqual([]);
   });
 });
 

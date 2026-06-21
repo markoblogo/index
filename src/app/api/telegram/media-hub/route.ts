@@ -3,10 +3,15 @@ import {
   extractUrlsFromText,
   ingestMediaHubFileMaterial,
   ingestMediaHubLinkMaterial,
+  ingestMediaHubTextMaterial,
   listRecentMediaHubManualMaterialsForChat,
   parseMediaHubMaterialHashtags,
   type MediaHubManualMaterialTenant,
 } from "@/lib/media-hub-manual-materials";
+import {
+  inferCorporateTelegramTenants,
+  isCorporateTelegramChat,
+} from "@/lib/media-hub-corporate-telegram";
 import {
   buildMediaHubMaterialHelpText,
   buildMediaHubMaterialsText,
@@ -57,6 +62,7 @@ export async function POST(request: Request) {
   }
 
   const text = [message.text, message.caption].filter(Boolean).join(" ");
+  const isCorporateGroupMessage = isCorporateTelegramChat(message.chat.id);
   const command = parseMediaHubMaterialBotCommand(message.text);
   if (command) {
     await handleBotCommand(botToken, message, command);
@@ -64,15 +70,39 @@ export async function POST(request: Request) {
   }
 
   const routed = parseMediaHubMaterialHashtags(text);
+  const inferredTenantIds = isCorporateGroupMessage && routed.tenantIds.length === 0
+    ? inferCorporateTelegramTenants(text)
+    : [];
+  const tenantIds = routed.tenantIds.length > 0
+    ? routed.tenantIds
+    : inferredTenantIds;
   if (routed.tenantIds.length === 0) {
-    await sendTelegramText(botToken, String(message.chat.id), buildMissingProjectTagText());
-    return NextResponse.json({ ok: true, skippedReason: "missing_tenant_hashtag" });
+    if (isCorporateGroupMessage && tenantIds.length === 0 && text.trim()) {
+      await ingestMediaHubTextMaterial({
+        kind: "source_candidate",
+        receivedFrom: "telegram",
+        sourceType: "corporate_telegram_group",
+        telegramChatId: String(message.chat.id),
+        telegramFromId: message.from?.id ? String(message.from.id) : undefined,
+        telegramMessageId: String(message.message_id),
+        tenantId: "corporate-unrouted",
+        text,
+      });
+      if (tenantIds.length === 0) {
+        await sendTelegramText(botToken, String(message.chat.id), "Матеріал збережено як corporate Telegram unrouted. Додайте #ssi або #1d3x, щоб він автоматично потрапив у відповідний Media Hub report.");
+        return NextResponse.json({ ok: true, skippedReason: "corporate_telegram_unrouted" });
+      }
+    }
+    if (tenantIds.length === 0) {
+      await sendTelegramText(botToken, String(message.chat.id), buildMissingProjectTagText());
+      return NextResponse.json({ ok: true, skippedReason: "missing_tenant_hashtag" });
+    }
   }
 
   const urls = extractUrlsFromText(text);
   const results = [];
 
-  for (const tenantId of routed.tenantIds) {
+  for (const tenantId of tenantIds) {
     for (const url of urls) {
       const result = await ingestMediaHubLinkMaterial({
         kind: routed.kind,
@@ -99,7 +129,7 @@ export async function POST(request: Request) {
 
   if (message.document) {
     const file = await downloadTelegramFile(botToken, message.document.file_id);
-    for (const tenantId of routed.tenantIds) {
+    for (const tenantId of tenantIds) {
       const result = file
         ? await ingestMediaHubFileMaterial({
             bytes: file,
@@ -127,6 +157,31 @@ export async function POST(request: Request) {
         message,
         mimeType: message.document.mime_type ?? "application/octet-stream",
         sourceType: "file",
+        status: result.extractionStatus,
+        tenantId,
+      });
+    }
+  }
+
+  if (isCorporateGroupMessage && results.length === 0 && text.trim()) {
+    for (const tenantId of tenantIds) {
+      const result = await ingestMediaHubTextMaterial({
+        kind: routed.kind,
+        receivedFrom: "telegram",
+        sourceType: "corporate_telegram_group",
+        telegramChatId: String(message.chat.id),
+        telegramFromId: message.from?.id ? String(message.from.id) : undefined,
+        telegramMessageId: String(message.message_id),
+        tenantId,
+        text,
+      });
+      results.push(result);
+      await replyForResult({
+        botToken,
+        kind: routed.kind,
+        label: "corporate Telegram message",
+        message,
+        sourceType: "text",
         status: result.extractionStatus,
         tenantId,
       });
@@ -223,7 +278,7 @@ async function replyForResult({
   label: string;
   message: TelegramMessage;
   mimeType?: string;
-  sourceType: "file" | "link";
+  sourceType: "file" | "link" | "text";
   status: string;
   tenantId: MediaHubManualMaterialTenant;
 }) {

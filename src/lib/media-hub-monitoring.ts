@@ -23,6 +23,11 @@ import {
   type TelegramSourceDigest,
   type TelegramCollectedPost,
 } from "@/lib/telegram-source-collector";
+import { listCorporateMediaHubRssSources } from "@/lib/media-hub-rss";
+import {
+  CORPORATE_TELEGRAM_BOT_API_CHAT_ID,
+  CORPORATE_TELEGRAM_PEER_ID,
+} from "@/lib/media-hub-corporate-telegram";
 
 type TopicDefinition = {
   id: string;
@@ -300,6 +305,7 @@ export async function listUnifiedMediaHubRegistry() {
   for (const resource of weeklyResources) {
     mergeRegistryResource(map, resource, "week");
   }
+  mergeCorporateRegistryRows(map);
 
   return [...map.values()].sort((a, b) => {
     const roleSort = a.role === b.role ? 0 : a.role === "analysis_source" ? -1 : 1;
@@ -307,6 +313,45 @@ export async function listUnifiedMediaHubRegistry() {
       return roleSort;
     }
     return a.title.localeCompare(b.title);
+  });
+}
+
+function mergeCorporateRegistryRows(map: Map<string, MediaHubRegistryRow>) {
+  for (const source of listCorporateMediaHubRssSources()) {
+    map.set(`corporate::${source.id}`, {
+      id: `corporate::${source.id}`,
+      language: source.id === "mn7r_bluesky" ? "en" : "multi",
+      notes: [
+        `${source.sourceFamily}; ${source.sourceTrust}; corporateOwned=${source.corporateOwned}.`,
+        `Adapter: ${source.transport}. Cadence: ${source.cadenceMinutes}m.`,
+        `Primary tenants: ${source.primaryTenants.join(", ") || "n/a"}.`,
+        source.secondaryTenants.length > 0 ? `Secondary tenants: ${source.secondaryTenants.join(", ")}.` : null,
+      ].filter(Boolean).join(" "),
+      reportKind: "weekly",
+      role: "analysis_source",
+      scope: "permanent",
+      title: source.name,
+      type: source.transport,
+      url: source.url,
+      windows: ["day", "week"],
+    });
+  }
+
+  map.set("corporate::corporate_telegram_group_1865902381", {
+    id: "corporate::corporate_telegram_group_1865902381",
+    language: "multi",
+    notes: [
+      "corporate_telegram; first_party; corporateOwned=true.",
+      `Raw peer id: ${CORPORATE_TELEGRAM_PEER_ID}. Bot API candidate chat id: ${CORPORATE_TELEGRAM_BOT_API_CHAT_ID}.`,
+      "Routing: #ssi, #1d3x, then keyword fallback. Unclear messages are stored as corporate-unrouted and not used in reports.",
+    ].join(" "),
+    reportKind: "weekly",
+    role: "analysis_source",
+    scope: "permanent",
+    title: "Corporate Telegram Group",
+    type: "telegram_group",
+    url: `telegram-peer:${CORPORATE_TELEGRAM_PEER_ID}`,
+    windows: ["day", "week"],
   });
 }
 

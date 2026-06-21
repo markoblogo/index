@@ -3,6 +3,7 @@ vi.mock("server-only", () => ({}));
 import { __mediaHubRssTestHooks } from "@/lib/media-hub-rss";
 
 const {
+  blueskyPostUrl,
   canonicalizeUrl,
   dedupeItems,
   gdeltDocUrl,
@@ -11,7 +12,9 @@ const {
   isDuplicateGlobalSourceFamily,
   isDuplicateSpikeTelegramSource,
   isUnsafeMonitoringCandidate,
+  listCorporateMediaHubRssSources,
   normalizeTitle,
+  parseBlogHtmlList,
   scoreNews,
 } = __mediaHubRssTestHooks;
 
@@ -147,5 +150,59 @@ describe("media hub RSS source hygiene", () => {
   it("builds no-key discovery URLs for Google News RSS and GDELT", () => {
     expect(googleNewsUrl("Ukraine grain export")).toContain("news.google.com/rss/search");
     expect(gdeltDocUrl("Ukraine grain export")).toContain("api.gdeltproject.org/api/v2/doc/doc");
+  });
+
+  it("registers first-party corporate Media Hub sources without duplicates", () => {
+    const sources = listCorporateMediaHubRssSources();
+    const ids = sources.map((source) => source.id);
+
+    expect(ids).toEqual(expect.arrayContaining([
+      "mn7r_blog",
+      "spike_spot_index_blog",
+      "id3x_blog",
+      "mn7r_bluesky",
+    ]));
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(sources.find((source) => source.id === "mn7r_blog")).toMatchObject({
+      corporateOwned: true,
+      sourceFamily: "corporate_blog",
+      sourceTrust: "first_party",
+      transport: "html-blog",
+    });
+    expect(sources.find((source) => source.id === "spike_spot_index_blog")).toMatchObject({
+      primaryTenants: ["spike-ua"],
+      secondaryTenants: ["1d3x"],
+    });
+    expect(sources.find((source) => source.id === "id3x_blog")).toMatchObject({
+      primaryTenants: ["1d3x"],
+      secondaryTenants: ["spike-ua"],
+    });
+    expect(sources.find((source) => source.id === "mn7r_bluesky")).toMatchObject({
+      handle: "mn7r.bsky.social",
+      transport: "bluesky-author-feed",
+    });
+  });
+
+  it("parses HTML blog list fallback and dedupes canonical article URLs", () => {
+    const items = parseBlogHtmlList(`
+      <html><body>
+        <a href="/blog/grain-market-update?utm_source=x">Grain market update</a><p>Wheat and corn logistics.</p>
+        <a href="https://mn7r.com/blog/grain-market-update">Grain market update</a>
+        <a href="/contact">Contact</a>
+      </body></html>
+    `, "https://mn7r.com/blog");
+
+    expect(items).toHaveLength(1);
+    expect(items[0]).toMatchObject({
+      link: "https://mn7r.com/blog/grain-market-update?utm_source=x",
+      title: "Grain market update",
+    });
+  });
+
+  it("derives canonical Bluesky post URLs from AT URIs", () => {
+    expect(blueskyPostUrl(
+      "mn7r.bsky.social",
+      "at://did:plc:abc/app.bsky.feed.post/3lxyz",
+    )).toBe("https://bsky.app/profile/mn7r.bsky.social/post/3lxyz");
   });
 });

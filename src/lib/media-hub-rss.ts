@@ -2,10 +2,12 @@ import "server-only";
 
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
+import { spikeBlogPosts } from "@/lib/blog-posts";
 import {
   getMediaHubWindowProgressLabel,
   type MediaHubWindowSnapshot,
 } from "@/lib/media-hub";
+import { getPlatformBlogPosts } from "@/lib/platform-blog-posts";
 
 type FeedSourceCategory =
   | "agro-general"
@@ -13,16 +15,29 @@ type FeedSourceCategory =
   | "logistics-shipping"
   | "policy-macro";
 
-type FeedSourceTransport = "rss" | "google-news" | "gdelt";
+type FeedSourceTransport =
+  | "bluesky-author-feed"
+  | "gdelt"
+  | "google-news"
+  | "html-blog"
+  | "internal-1d3x-blog"
+  | "internal-spike-blog"
+  | "rss";
 
 type RssSource = {
   canonicalDomain?: string;
   cadenceMinutes?: number;
+  corporateOwned?: boolean;
   countryFocus?: string[];
+  displayBadges?: string[];
+  handle?: string;
   id: string;
   language?: string;
   name: string;
+  primaryTenants?: Array<"1d3x" | "spike-ua">;
   sourceFamily?: string;
+  sourceTrust?: "first_party" | "owned" | "standard";
+  secondaryTenants?: Array<"1d3x" | "spike-ua">;
   topicTags?: string[];
   transport?: FeedSourceTransport;
   url: string;
@@ -84,7 +99,114 @@ const CACHE_TTL_MS = 10 * 60 * 1000;
 const FETCH_TIMEOUT_MS = 7_000;
 const cache = new Map<string, CacheEntry>();
 
+const CORPORATE_SHARED_SOURCES: RssSource[] = [
+  {
+    cadenceMinutes: 60,
+    category: "grain-oilseeds",
+    corporateOwned: true,
+    displayBadges: ["First-party", "Corporate"],
+    enabled: true,
+    id: "mn7r_blog",
+    name: "MN7R Blog",
+    primaryTenants: ["1d3x", "spike-ua"],
+    sourceFamily: "corporate_blog",
+    sourceTrust: "first_party",
+    topicTags: ["corporate", "mn7r", "blog", "analytics", "commodity_market", "first_party"],
+    transport: "html-blog",
+    url: "https://mn7r.com/blog",
+  },
+  {
+    cadenceMinutes: 60,
+    category: "agro-general",
+    corporateOwned: true,
+    displayBadges: ["First-party", "Corporate"],
+    enabled: true,
+    handle: "mn7r.bsky.social",
+    id: "mn7r_bluesky",
+    name: "MN7R Bluesky",
+    primaryTenants: ["1d3x", "spike-ua"],
+    sourceFamily: "corporate_social",
+    sourceTrust: "first_party",
+    topicTags: ["corporate", "mn7r", "bluesky", "social", "first_party"],
+    transport: "bluesky-author-feed",
+    url: "https://bsky.app/profile/mn7r.bsky.social",
+  },
+];
+
+const SPIKE_CORPORATE_SOURCES: RssSource[] = [
+  {
+    cadenceMinutes: 60,
+    category: "grain-oilseeds",
+    corporateOwned: true,
+    displayBadges: ["First-party", "Corporate"],
+    enabled: true,
+    id: "spike_spot_index_blog",
+    name: "Spike Spot Index Blog",
+    primaryTenants: ["spike-ua"],
+    secondaryTenants: ["1d3x"],
+    sourceFamily: "corporate_blog",
+    sourceTrust: "first_party",
+    topicTags: ["corporate", "spike_spot_index", "ssi", "ukraine", "grain", "oilseeds", "index", "first_party"],
+    transport: "internal-spike-blog",
+    url: "https://spike.1d3x.com/en/blog",
+  },
+  {
+    cadenceMinutes: 60,
+    category: "grain-oilseeds",
+    corporateOwned: true,
+    displayBadges: ["First-party", "Corporate"],
+    enabled: true,
+    id: "id3x_blog",
+    name: "1D3X Blog",
+    primaryTenants: ["1d3x"],
+    secondaryTenants: ["spike-ua"],
+    sourceFamily: "corporate_blog",
+    sourceTrust: "first_party",
+    topicTags: ["corporate", "1d3x", "blog", "global", "grain", "oilseeds", "market_intelligence", "first_party"],
+    transport: "internal-1d3x-blog",
+    url: "https://1d3x.com/blog",
+  },
+  ...CORPORATE_SHARED_SOURCES,
+];
+
+const ID3X_CORPORATE_SOURCES: RssSource[] = [
+  {
+    cadenceMinutes: 60,
+    category: "grain-oilseeds",
+    corporateOwned: true,
+    displayBadges: ["First-party", "Corporate"],
+    enabled: true,
+    id: "id3x_blog",
+    name: "1D3X Blog",
+    primaryTenants: ["1d3x"],
+    secondaryTenants: ["spike-ua"],
+    sourceFamily: "corporate_blog",
+    sourceTrust: "first_party",
+    topicTags: ["corporate", "1d3x", "blog", "global", "grain", "oilseeds", "market_intelligence", "first_party"],
+    transport: "internal-1d3x-blog",
+    url: "https://1d3x.com/blog",
+  },
+  {
+    cadenceMinutes: 60,
+    category: "grain-oilseeds",
+    corporateOwned: true,
+    displayBadges: ["First-party", "Corporate"],
+    enabled: true,
+    id: "spike_spot_index_blog",
+    name: "Spike Spot Index Blog",
+    primaryTenants: ["spike-ua"],
+    secondaryTenants: ["1d3x"],
+    sourceFamily: "corporate_blog",
+    sourceTrust: "first_party",
+    topicTags: ["corporate", "spike_spot_index", "ssi", "ukraine", "grain", "oilseeds", "index", "first_party"],
+    transport: "internal-spike-blog",
+    url: "https://spike.1d3x.com/en/blog",
+  },
+  ...CORPORATE_SHARED_SOURCES,
+];
+
 const RSS_SOURCES: RssSource[] = [
+  ...ID3X_CORPORATE_SOURCES,
   { id: "brownfield-main", name: "Brownfield Ag News", url: "https://brownfieldagnews.com/feed/", category: "agro-general", enabled: true },
   { id: "brownfield-markets", name: "Brownfield Markets", url: "https://brownfieldagnews.com/category/markets/feed/", category: "agro-general", enabled: true },
   { id: "brownfield-weather", name: "Brownfield Weather", url: "https://brownfieldagnews.com/category/weather/feed/", category: "agro-general", enabled: true },
@@ -144,6 +266,7 @@ const RSS_SOURCES: RssSource[] = [
 ];
 
 const SPIKE_EN_UKRAINE_RSS_SOURCES: RssSource[] = [
+  ...SPIKE_CORPORATE_SOURCES,
   { id: "ukragroconsult-en", name: "UkrAgroConsult EN", url: "https://ukragroconsult.com/en/news/feed/", category: "grain-oilseeds", enabled: true },
   { id: "proagro-ukraine-en", name: "ProAgro Ukraine EN", url: "https://www.proagroukraine.com/en/feed/", category: "grain-oilseeds", enabled: true },
   { id: "agrotimes-ua", name: "AgroTimes UA", url: "https://agrotimes.ua/feed/", category: "agro-general", enabled: true },
@@ -472,11 +595,137 @@ function normalizeLegacyCategory(value?: string): FeedSourceCategory {
 }
 
 async function fetchSourceItems(source: RssSource): Promise<ParsedFeedItem[]> {
+  if (source.transport === "internal-spike-blog") {
+    return getSpikeInternalBlogItems();
+  }
+  if (source.transport === "internal-1d3x-blog") {
+    return get1d3xInternalBlogItems();
+  }
+  if (source.transport === "html-blog") {
+    return fetchHtmlBlogItems(source);
+  }
+  if (source.transport === "bluesky-author-feed") {
+    return fetchBlueskyAuthorFeed(source);
+  }
   if (source.transport === "gdelt") {
     return fetchGdeltItems(source);
   }
 
   return fetchFeed(source);
+}
+
+function getSpikeInternalBlogItems(): ParsedFeedItem[] {
+  return spikeBlogPosts
+    .filter((post) => post.language === "en" && post.publishedAt)
+    .map((post) => ({
+      link: `https://spike.1d3x.com/en/blog/${post.slug}`,
+      publishedAt: post.publishedAt,
+      summary: [post.excerpt, ...post.body.slice(0, 2)].join(" "),
+      title: post.title,
+    }));
+}
+
+function get1d3xInternalBlogItems(): ParsedFeedItem[] {
+  return getPlatformBlogPosts().map((post) => ({
+    link: `https://1d3x.com/blog/${post.slug}`,
+    publishedAt: post.publishedAt,
+    summary: [post.excerpt, ...post.body.slice(0, 2)].join(" "),
+    title: post.title,
+  }));
+}
+
+async function fetchHtmlBlogItems(source: RssSource): Promise<ParsedFeedItem[]> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(source.url, {
+      signal: controller.signal,
+      headers: {
+        accept: "text/html,application/xhtml+xml",
+        "user-agent": "1D3XMediaHub/1.0 (+https://1d3x.com)",
+      },
+      next: { revalidate: 900 },
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const html = await response.text();
+    return parseBlogHtmlList(html, source.url);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function fetchBlueskyAuthorFeed(source: RssSource): Promise<ParsedFeedItem[]> {
+  const handle = source.handle ?? source.url.split("/").pop() ?? "";
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(
+      `https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed?actor=${encodeURIComponent(handle)}&filter=posts_no_replies&limit=50`,
+      {
+        signal: controller.signal,
+        headers: {
+          accept: "application/json",
+          "user-agent": "1D3XMediaHub/1.0 (+https://1d3x.com)",
+        },
+        next: { revalidate: 900 },
+      },
+    );
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const payload = await response.json() as {
+      feed?: Array<{
+        post?: {
+          cid?: string;
+          embed?: {
+            external?: {
+              description?: string;
+              title?: string;
+              uri?: string;
+            };
+          };
+          record?: {
+            createdAt?: string;
+            text?: string;
+          };
+          uri?: string;
+        };
+      }>;
+    };
+
+    return (payload.feed ?? []).flatMap((entry) => {
+      const post = entry.post;
+      const text = post?.record?.text?.trim();
+      const atUri = post?.uri ?? "";
+      if (!post || !text || !atUri) {
+        return [];
+      }
+      const external = post.embed?.external;
+      const postUrl = blueskyPostUrl(handle, atUri);
+      const linkedUrl = external?.uri ? canonicalizeUrl(external.uri) || external.uri : "";
+      return [{
+        link: linkedUrl || postUrl || atUri,
+        publishedAt: post.record?.createdAt,
+        summary: [
+          text,
+          external?.title ? `Linked: ${external.title}` : "",
+          external?.description ?? "",
+          post.cid ? `CID: ${post.cid}` : "",
+          atUri ? `AT URI: ${atUri}` : "",
+          postUrl ? `Bluesky: ${postUrl}` : "",
+        ].filter(Boolean).join("\n"),
+        title: external?.title || text.split("\n")[0].slice(0, 120),
+      }];
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 async function fetchFeed(source: RssSource): Promise<ParsedFeedItem[]> {
@@ -571,6 +820,128 @@ function parseFeedXml(xml: string): ParsedFeedItem[] {
   return items;
 }
 
+function parseBlogHtmlList(html: string, baseUrl: string): ParsedFeedItem[] {
+  const jsonLdItems = parseJsonLdBlogItems(html, baseUrl);
+  if (jsonLdItems.length > 0) {
+    return jsonLdItems;
+  }
+
+  const items: ParsedFeedItem[] = [];
+  const seen = new Set<string>();
+  const anchors = [...html.matchAll(/<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)];
+
+  for (const match of anchors) {
+    const link = absoluteUrl(match[1], baseUrl);
+    const title = stripHtml(match[2]);
+    const key = canonicalizeUrl(link) || link;
+    if (!link || !title || seen.has(key) || !isLikelyBlogArticleUrl(link, baseUrl)) {
+      continue;
+    }
+    seen.add(key);
+    items.push({
+      link,
+      summary: extractNearbyMetaSummary(html, match.index ?? 0),
+      title,
+    });
+    if (items.length >= 24) {
+      break;
+    }
+  }
+
+  return items;
+}
+
+function parseJsonLdBlogItems(html: string, baseUrl: string): ParsedFeedItem[] {
+  const scripts = [...html.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)];
+  const items: ParsedFeedItem[] = [];
+
+  for (const script of scripts) {
+    try {
+      const payload = JSON.parse(decodeXml(script[1]));
+      const rows = flattenJsonLd(payload);
+      for (const row of rows) {
+        const record = row as Record<string, unknown>;
+        const type = Array.isArray(record["@type"]) ? record["@type"].join(" ") : String(record["@type"] ?? "");
+        if (!/(blogposting|article|newsarticle)/i.test(type)) {
+          continue;
+        }
+        const title = String(record.headline ?? record.name ?? "").trim();
+        const link = absoluteUrl(String(record.url ?? record.mainEntityOfPage ?? ""), baseUrl);
+        if (!title || !link) {
+          continue;
+        }
+        items.push({
+          link,
+          publishedAt: typeof record.datePublished === "string" ? record.datePublished : undefined,
+          summary: String(record.description ?? ""),
+          title,
+        });
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  return dedupeParsedFeedItems(items).slice(0, 24);
+}
+
+function flattenJsonLd(value: unknown): unknown[] {
+  if (Array.isArray(value)) {
+    return value.flatMap(flattenJsonLd);
+  }
+  if (!value || typeof value !== "object") {
+    return [];
+  }
+  const record = value as Record<string, unknown>;
+  return [
+    value,
+    ...flattenJsonLd(record["@graph"]),
+    ...flattenJsonLd(record.itemListElement),
+  ];
+}
+
+function dedupeParsedFeedItems(items: ParsedFeedItem[]) {
+  const map = new Map<string, ParsedFeedItem>();
+  for (const item of items) {
+    map.set(canonicalizeUrl(item.link) || normalizeTitle(item.title), item);
+  }
+  return [...map.values()];
+}
+
+function absoluteUrl(value: string, baseUrl: string) {
+  if (!value || value.startsWith("#") || value.startsWith("mailto:") || value.startsWith("tel:")) {
+    return "";
+  }
+  try {
+    return new URL(value, baseUrl).toString();
+  } catch {
+    return "";
+  }
+}
+
+function isLikelyBlogArticleUrl(link: string, baseUrl: string) {
+  try {
+    const url = new URL(link);
+    const base = new URL(baseUrl);
+    return url.hostname === base.hostname &&
+      url.pathname !== base.pathname &&
+      /blog|news|article|insight|market/i.test(url.pathname);
+  } catch {
+    return false;
+  }
+}
+
+function extractNearbyMetaSummary(html: string, index: number) {
+  const slice = html.slice(index, index + 1200);
+  const paragraph = slice.match(/<p\b[^>]*>([\s\S]*?)<\/p>/i)?.[1];
+  return paragraph ? stripHtml(paragraph) : undefined;
+}
+
+function blueskyPostUrl(handle: string, atUri: string) {
+  const rkey = atUri.match(/\/app\.bsky\.feed\.post\/([^/]+)$/)?.[1];
+  return rkey ? `https://bsky.app/profile/${handle}/post/${rkey}` : "";
+}
+
 function extractTagValue(block: string, tag: string): string | null {
   const fullTagRegex = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, "i");
   const fullTag = block.match(fullTagRegex);
@@ -614,6 +985,8 @@ function toNewsItem(source: RssSource, item: ParsedFeedItem): RssNewsItem {
   const title = item.title.trim();
   const summary = stripHtml(item.summary || "");
   const scored = scoreNews(title, summary, source.category);
+  const sourceTopicTags = (source.topicTags ?? [])
+    .filter((tag) => !["corporate", "first_party", "blog", "social", "mn7r", "1d3x", "ssi", "spike_spot_index"].includes(tag));
   const publishedAt =
     item.publishedAt && Number.isFinite(Date.parse(item.publishedAt))
       ? new Date(item.publishedAt).toISOString()
@@ -629,11 +1002,11 @@ function toNewsItem(source: RssSource, item: ParsedFeedItem): RssNewsItem {
     id,
     publishedAt,
     regionTags: scored.regionTags,
-    relevanceScore: scored.relevanceScore,
+    relevanceScore: scored.relevanceScore + (source.corporateOwned ? 2 : 0),
     source: source.name,
     summary,
     title,
-    topicTags: scored.topicTags,
+    topicTags: [...new Set([...sourceTopicTags, ...scored.topicTags])],
     url: canonicalizeUrl(item.link) || item.link,
   };
 }
@@ -810,6 +1183,27 @@ function isDuplicateGlobalSourceFamily(value: string) {
   const rootDomain = toRootDomain(value);
   return GLOBAL_SOURCE_FAMILY_DOMAINS.has(rootDomain) ||
     [...GLOBAL_SOURCE_FAMILY_DOMAINS].some((domain) => hostname === domain || hostname.endsWith(`.${domain}`));
+}
+
+export function listCorporateMediaHubRssSources() {
+  const sources = new Map<string, RssSource>();
+  for (const source of [...ID3X_CORPORATE_SOURCES, ...SPIKE_CORPORATE_SOURCES]) {
+    sources.set(source.id, source);
+  }
+  return [...sources.values()].map((source) => ({
+    cadenceMinutes: source.cadenceMinutes ?? 60,
+    corporateOwned: Boolean(source.corporateOwned),
+    displayBadges: source.displayBadges ?? [],
+    handle: source.handle ?? null,
+    id: source.id,
+    name: source.name,
+    primaryTenants: source.primaryTenants ?? [],
+    secondaryTenants: source.secondaryTenants ?? [],
+    sourceFamily: source.sourceFamily ?? "standard",
+    sourceTrust: source.sourceTrust ?? "standard",
+    transport: source.transport ?? "rss",
+    url: source.url,
+  }));
 }
 
 function isUnsafeMonitoringCandidate(title: string, summary = "") {
@@ -1109,6 +1503,7 @@ function formatDate(value: string) {
 }
 
 export const __mediaHubRssTestHooks = {
+  blueskyPostUrl,
   canonicalizeUrl,
   dedupeItems,
   gdeltDocUrl,
@@ -1117,7 +1512,9 @@ export const __mediaHubRssTestHooks = {
   isDuplicateGlobalSourceFamily,
   isDuplicateSpikeTelegramSource,
   isUnsafeMonitoringCandidate,
+  listCorporateMediaHubRssSources,
   normalizeTitle,
+  parseBlogHtmlList,
   scoreNews,
   toHostname,
   toRootDomain,

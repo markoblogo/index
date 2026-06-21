@@ -16,12 +16,13 @@ export type MediaHubManualMaterialKind =
 export type MediaHubManualMaterialSourceType =
   | "telegram_file"
   | "telegram_link"
+  | "corporate_telegram_group"
   | "admin_upload"
   | "admin_link"
   | "scheduled_pdf"
   | "scheduled_html";
 
-export type MediaHubManualMaterialTenant = "spike-ua" | "1d3x";
+export type MediaHubManualMaterialTenant = "spike-ua" | "1d3x" | "corporate-unrouted";
 
 export type MaterialIngestResult = {
   extractionStatus: string;
@@ -263,6 +264,34 @@ export async function ingestMediaHubFileMaterial(input: {
   } finally {
     await rm(tmp, { force: true, recursive: true }).catch(() => undefined);
   }
+}
+
+export async function ingestMediaHubTextMaterial(input: {
+  kind: MediaHubManualMaterialKind;
+  receivedFrom: "telegram" | "admin" | "scheduler";
+  sourceType: Extract<MediaHubManualMaterialSourceType, "corporate_telegram_group">;
+  telegramChatId?: string;
+  telegramFromId?: string;
+  telegramMessageId?: string;
+  tenantId: MediaHubManualMaterialTenant;
+  text: string;
+}) {
+  const text = input.text.trim();
+  if (!text) {
+    return buildResult(input.tenantId, input.kind, "failed", "Empty text material.");
+  }
+
+  return storeManualMaterial({
+    ...input,
+    contentBytes: Buffer.from(text, "utf8"),
+    extraction: {
+      extractedFacts: extractFacts(text),
+      extractedTables: [],
+      extractedText: text.slice(0, MAX_EXTRACTED_TEXT_CHARS),
+      extractionStatus: "extracted",
+    },
+    mimeType: "text/plain",
+  });
 }
 
 export async function ingestScheduledMediaHubSources() {
@@ -676,6 +705,9 @@ function getSourceRegistrationStatus(
   canonicalUrl?: string,
 ) {
   if (sourceType === "scheduled_html" || sourceType === "scheduled_pdf") {
+    return "active";
+  }
+  if (sourceType === "corporate_telegram_group") {
     return "active";
   }
   return canonicalUrl ? "candidate" : "none";

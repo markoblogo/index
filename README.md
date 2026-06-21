@@ -365,6 +365,8 @@ ID3X_TELEGRAM_BOT_TOKEN="optional-1d3x-media-hub-bot-token"
 TELEGRAM_MEDIA_HUB_WEBHOOK_SECRET="optional-media-hub-telegram-webhook-secret"
 MEDIA_HUB_MATERIAL_ALLOWED_TELEGRAM_USER_IDS="optional-space-separated-user-ids"
 MEDIA_HUB_MATERIAL_ALLOWED_TELEGRAM_CHAT_IDS="optional-space-separated-chat-ids"
+MEDIA_HUB_CORPORATE_TELEGRAM_PEER_ID="1865902381"
+MEDIA_HUB_CORPORATE_TELEGRAM_CHAT_ID="-1001865902381"
 MEDIA_HUB_MANUAL_MATERIAL_MAX_MB="20"
 SPIKE_TELEGRAM_SMOKE_CHAT_ID="optional-smoke-chat-id"
 RESPONDENT_TELEGRAM_CRON_SECRET="set-in-vercel"
@@ -387,6 +389,9 @@ Media Hub manual material intake is documented in
 [`docs/media-hub-manual-materials.md`](docs/media-hub-manual-materials.md).
 Use `@idex_grains_bot` for links/files that should be added to SSI or 1D3X
 reports; the respondent bot is not used for this workflow.
+Corporate Media Hub sources are also documented there, including MN7R Blog,
+Spike Spot Index Blog, 1D3X Blog, MN7R Bluesky and the corporate Telegram group
+peer/chat-id handling.
 
 Do not commit production secrets, connection strings or bot tokens. Use Vercel
 Environment Variables or an untracked local `.env` file for operational
