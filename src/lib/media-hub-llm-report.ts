@@ -19,6 +19,11 @@ type GeneratedPayload = {
   title?: unknown;
 };
 
+type GenerationResult = {
+  error?: string;
+  report?: MediaHubLocalizedReport;
+};
+
 export async function generateMediaHubLlmReports(input: {
   kind: MediaHubReportKind;
   latestData: PublicLatestItem[];
@@ -76,7 +81,7 @@ async function generateOneLocale(input: {
   periodStartDate: string;
   snapshots: MediaHubWindowSnapshot[];
   tenant: MediaHubTenant;
-}) {
+}): Promise<GenerationResult> {
   const prompt = buildPrompt(input);
 
   try {
@@ -109,7 +114,7 @@ async function callResponsesApi(input: {
   model: string;
   prompt: string;
   tenant: MediaHubTenant;
-}) {
+}): Promise<GenerationResult> {
   const useWebSearch = input.kind !== "daily" || input.tenant === "platform";
   const requestBody: Record<string, unknown> = {
     input: input.prompt,
@@ -151,7 +156,7 @@ async function callChatCompletionsApi(input: {
   kind: MediaHubReportKind;
   model: string;
   prompt: string;
-}) {
+}): Promise<GenerationResult> {
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     body: JSON.stringify({
       max_tokens: input.kind === "daily" ? 1700 : input.kind === "weekly" ? 3600 : 4200,
