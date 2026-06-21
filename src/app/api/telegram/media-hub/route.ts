@@ -294,7 +294,7 @@ async function handleBotCommand(
   }
   if (command === "status") {
     const materials = await listRecentMediaHubManualMaterialsForChat(chatId);
-    await sendTelegramText(botToken, chatId, buildStatusText(materials));
+    await sendTelegramText(botToken, chatId, buildStatusText(materials, chatId));
     return;
   }
   await sendTelegramText(botToken, chatId, buildMediaHubMaterialHelpText());
@@ -469,9 +469,11 @@ async function sendTelegramText(botToken: string, chatId: string, text: string) 
 
 function buildStatusText(
   materials: Awaited<ReturnType<typeof listRecentMediaHubManualMaterialsForChat>>,
+  chatId: string,
 ) {
+  const heading = `Chat ID: ${chatId}`;
   if (materials.length === 0) {
-    return "Поки немає матеріалів, надісланих з цього чату.";
+    return [heading, "", "Поки немає матеріалів, надісланих з цього чату."].join("\n");
   }
 
   const lines = materials.map((material) => {
@@ -482,7 +484,7 @@ function buildStatusText(
     return `• ${getMediaHubProjectName(material.tenantId as MediaHubManualMaterialTenant)} · ${getMediaHubReportKindLabel(material.kind as ReturnType<typeof parseMediaHubMaterialHashtags>["kind"])} · ${label} · ${material.extractionStatus} · ${receivedAt}`;
   });
 
-  return ["Останні матеріали з цього чату:", "", ...lines].join("\n");
+  return [heading, "", "Останні матеріали з цього чату:", "", ...lines].join("\n");
 }
 
 function getAdminMaterialsUrl() {
