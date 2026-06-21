@@ -34,14 +34,15 @@ export function PublicMediaHub({
     profile.windows.find((window) => window.window === selectedWindow) ?? profile.windows[0];
   const totalDistribution = activeWindow.distribution.reduce((sum, item) => sum + item.value, 0);
   const theme = getMediaHubTheme(profile.id);
+  const copy = getMediaHubCopy(locale);
   const archiveFilters: Array<{
     kind?: MediaHubReportArchiveItem["kind"];
     label: string;
   }> = [
-    { label: locale === "uk" ? "Усі" : "All" },
-    { kind: "daily", label: locale === "uk" ? "День" : "Daily" },
-    { kind: "weekly", label: locale === "uk" ? "Тиждень" : "Weekly" },
-    { kind: "monthly", label: locale === "uk" ? "Місяць" : "Monthly" },
+    { label: copy.all },
+    { kind: "daily", label: copy.daily },
+    { kind: "weekly", label: copy.weekly },
+    { kind: "monthly", label: copy.monthly },
   ];
 
   return (
@@ -100,13 +101,13 @@ export function PublicMediaHub({
               <div className="grid gap-4 lg:grid-cols-[0.7fr_1.3fr] lg:items-center">
                 <div>
                   <p className="text-sm font-black uppercase tracking-[0.18em] text-white/48">
-                    Distribution
+                    {copy.distribution}
                   </p>
-                  <h2 className="mt-2 text-3xl font-black">{activeWindow.sourceCount} sources</h2>
+                  <h2 className="mt-2 text-3xl font-black">
+                    {activeWindow.sourceCount} {copy.sources}
+                  </h2>
                   <p className="mt-2 text-sm leading-6 text-white/64">
-                    {locale === "uk"
-                      ? "Raw monitoring знизу, редакційний summary зверху."
-                      : "Raw monitoring below, editorial summary above."}
+                    {copy.distributionNote}
                   </p>
                 </div>
 
@@ -125,10 +126,10 @@ export function PublicMediaHub({
           <div className="flex flex-wrap items-center gap-3">
             <h2 className="text-3xl font-black">{activeWindow.summaryTitle}</h2>
             <span className="rounded-full border border-white/12 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-white/48">
-              {activeWindow.itemCount} items
+              {activeWindow.itemCount} {copy.items}
             </span>
             <span className="rounded-full border border-white/12 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-white/48">
-              {activeWindow.topicCount} topics
+              {activeWindow.topicCount} {copy.topics}
             </span>
           </div>
           {activeWindow.dailyReport ? (
@@ -154,11 +155,9 @@ export function PublicMediaHub({
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.18em] text-white/42">
-                Report archive
+                {copy.reportArchive}
               </p>
-              <h2 className="mt-1 text-2xl font-black">
-                {locale === "uk" ? "Опубліковані звіти" : "Published reports"}
-              </h2>
+              <h2 className="mt-1 text-2xl font-black">{copy.publishedReports}</h2>
             </div>
             {archiveHref ? (
               <div className="flex flex-wrap gap-2">
@@ -197,7 +196,7 @@ export function PublicMediaHub({
                     {report.summaryTitle}
                   </h3>
                   <p className="mt-1 text-xs text-white/42">
-                    {report.itemCount} items · {report.sourceCount} sources
+                    {report.itemCount} {copy.items} · {report.sourceCount} {copy.sources}
                   </p>
                 </Link>
               ))}
@@ -216,7 +215,7 @@ export function PublicMediaHub({
         <div className="grid gap-6 xl:grid-cols-3">
           <section className="rounded-[2rem] border border-white/10 bg-[var(--media-hub-panel)] p-5">
             <p className="text-xs font-black uppercase tracking-[0.18em] text-white/42">
-              Desk Snapshot
+              {copy.deskSnapshot}
             </p>
             <div className="mt-3 grid gap-2">
               {activeWindow.snapshotCards.map((card) => (
@@ -227,7 +226,7 @@ export function PublicMediaHub({
 
           <section className="rounded-[2rem] border border-white/10 bg-[var(--media-hub-panel)] p-5">
             <p className="text-xs font-black uppercase tracking-[0.18em] text-white/42">
-              Pulse
+              {copy.pulse}
             </p>
             <div className="mt-3 grid gap-2">
               {activeWindow.pulseCards.map((card) => (
@@ -238,9 +237,9 @@ export function PublicMediaHub({
 
           <section className="rounded-[2rem] border border-white/10 bg-[var(--media-hub-panel)] p-5">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-2xl font-black">Topic clusters</h2>
+              <h2 className="text-2xl font-black">{copy.topicClusters}</h2>
               <span className="text-xs font-black uppercase tracking-[0.16em] text-white/38">
-                {activeWindow.topicCount} clusters
+                {activeWindow.topicCount} {copy.clusters}
               </span>
             </div>
             <div className="mt-3 grid gap-2">
@@ -264,7 +263,7 @@ export function PublicMediaHub({
       </section>
 
       <section className="mx-auto max-w-[1900px] px-5 pb-12 sm:px-8 lg:px-10">
-        <MonitoringFeed items={activeWindow.feed} />
+        <MonitoringFeed items={activeWindow.feed} locale={locale} />
       </section>
     </div>
   );
@@ -434,6 +433,46 @@ function PulseCard({ card }: { card: MediaHubWindowSnapshot["pulseCards"][number
       </div>
     </article>
   );
+}
+
+function getMediaHubCopy(locale: Locale) {
+  if (locale === "uk") {
+    return {
+      all: "Усі",
+      clusters: "кластерів",
+      daily: "День",
+      deskSnapshot: "Стан моніторингу",
+      distribution: "Розподіл",
+      distributionNote: "Моніторинг джерел знизу, редакційний звіт зверху.",
+      items: "матеріалів",
+      monthly: "Місяць",
+      publishedReports: "Опубліковані звіти",
+      pulse: "Пульс",
+      reportArchive: "Архів звітів",
+      sources: "джерел",
+      topicClusters: "Тематичні кластери",
+      topics: "тем",
+      weekly: "Тиждень",
+    };
+  }
+
+  return {
+    all: "All",
+    clusters: "clusters",
+    daily: "Daily",
+    deskSnapshot: "Desk Snapshot",
+    distribution: "Distribution",
+    distributionNote: "Raw monitoring below, editorial summary above.",
+    items: "items",
+    monthly: "Monthly",
+    publishedReports: "Published reports",
+    pulse: "Pulse",
+    reportArchive: "Report archive",
+    sources: "sources",
+    topicClusters: "Topic clusters",
+    topics: "topics",
+    weekly: "Weekly",
+  };
 }
 
 function getMediaHubTheme(profileId: MediaHubSiteProfile["id"]) {

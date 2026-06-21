@@ -95,7 +95,7 @@ const spikeUkWindows: MediaHubWindowSnapshot[] = [
     window: "day",
     label: "День",
     progressLabel: "1/1",
-    summaryTitle: "Daily AI brief",
+    summaryTitle: "Щоденний звіт MediaHub",
     summaryBody: [
       "Фокус дня зміщений у бік логістики, портового попиту та обережної реакції фермерів на зниження в експортних позиціях.",
       "У зовнішньому інформаційному шарі домінують повідомлення про темпи експорту, погодні фактори та дискусії щодо поведінки продавців на кукурудзі й пшениці.",
@@ -126,12 +126,12 @@ const spikeUkWindows: MediaHubWindowSnapshot[] = [
     snapshotCards: [
       { label: "Одеса CPT", value: "6 позицій", note: "експорт + переробка" },
       { label: "FCA Чоп", value: "1 базис", note: "експортний кордон" },
-      { label: "Релевантний шум", value: "146 items", note: "після дедуплікації" },
+      { label: "Релевантний шум", value: "146 матеріалів", note: "після дедуплікації" },
     ],
     pulseCards: [
-      { label: "Logistics", value: 9, tone: "sky", hint: "Маршрути і виконання" },
-      { label: "Pricing", value: 8, tone: "green", hint: "Рівні, спреди, корекції" },
-      { label: "Risk", value: 6, tone: "amber", hint: "Погода і policy" },
+      { label: "Логістика", value: 9, tone: "sky", hint: "Маршрути і виконання" },
+      { label: "Ціни", value: 8, tone: "green", hint: "Рівні, спреди, корекції" },
+      { label: "Ризики", value: 6, tone: "amber", hint: "Погода і policy" },
     ],
     feed: [
       {
@@ -170,7 +170,7 @@ const spikeUkWindows: MediaHubWindowSnapshot[] = [
     window: "week",
     label: "7 Днів",
     progressLabel: "7/7",
-    summaryTitle: "Weekly synthesis",
+    summaryTitle: "Тижневий звіт MediaHub",
     summaryBody: [
       "За тиждень ядро тем сконцентроване навколо портового попиту, балансу між експортом та переробкою, а також погодного ризику нового врожаю.",
       "Weekly report має збирати не просто текстовий реферат, а тематичні блоки: логістика, pricing, урожай, policy, міжнародний фон.",
@@ -196,17 +196,17 @@ const spikeUkWindows: MediaHubWindowSnapshot[] = [
       { label: "Логістика", count: 118, hint: "Відвантаження, маршрути, порти" },
       { label: "Експорт", count: 97, hint: "Попит, трейдинг, тижневий ритм" },
       { label: "Погода", count: 61, hint: "Урожайні ризики" },
-      { label: "Policy", count: 38, hint: "Регуляторний шум" },
+      { label: "Політика", count: 38, hint: "Регуляторний шум" },
     ],
     snapshotCards: [
-      { label: "Weekly focus", value: "14 themes", note: "після кластеризації" },
-      { label: "AI article", value: "1 longform", note: "blog-ready layer" },
+      { label: "Фокус тижня", value: "14 тем", note: "після кластеризації" },
+      { label: "AI стаття", value: "1 longform", note: "blog-ready layer" },
       { label: "Telegram pack", value: "3 outputs", note: "website + TG + cover" },
     ],
     pulseCards: [
-      { label: "Logistics", value: 10, tone: "sky", hint: "Тема тижня" },
-      { label: "Pricing", value: 8, tone: "green", hint: "Спреди і basis" },
-      { label: "Risk", value: 7, tone: "amber", hint: "Погода і policy" },
+      { label: "Логістика", value: 10, tone: "sky", hint: "Тема тижня" },
+      { label: "Ціни", value: 8, tone: "green", hint: "Спреди і basis" },
+      { label: "Ризики", value: 7, tone: "amber", hint: "Погода і policy" },
     ],
     feed: [
       {
@@ -235,7 +235,7 @@ const spikeUkWindows: MediaHubWindowSnapshot[] = [
     window: "month",
     label: "30 Днів",
     progressLabel: "30/30",
-    summaryTitle: "30-day intelligence brief",
+    summaryTitle: "30-денний звіт MediaHub",
     summaryBody: [
       "Місячний зріз повинен стати не архівом weekly, а окремою strategic intelligence surface: структурні зсуви в потоках, стійкі теми, найчастіше цитовані джерела та повторювані ризики.",
       "Саме тут потрібен найбільш щільний monitoring layer: сотні матеріалів, зрозуміла навігація по джерелах і візуальні патерни концентрації тем.",
@@ -264,14 +264,14 @@ const spikeUkWindows: MediaHubWindowSnapshot[] = [
       { label: "Переробка", count: 161, hint: "Внутрішній попит" },
     ],
     snapshotCards: [
-      { label: "Monitoring depth", value: "2.3k items", note: "після очистки шуму" },
-      { label: "Source footprint", value: "24 sources", note: "TG + web + files" },
-      { label: "Strategic topics", value: "22 clusters", note: "для monthly brief" },
+      { label: "Глибина моніторингу", value: "2.3k матеріалів", note: "після очистки шуму" },
+      { label: "Пул джерел", value: "24 джерела", note: "TG + web + files" },
+      { label: "Стратегічні теми", value: "22 кластери", note: "для monthly brief" },
     ],
     pulseCards: [
-      { label: "Logistics", value: 10, tone: "sky", hint: "Домінує весь місяць" },
-      { label: "Pricing", value: 9, tone: "green", hint: "Спреди і basis" },
-      { label: "Risk", value: 8, tone: "amber", hint: "Погода, policy, execution" },
+      { label: "Логістика", value: 10, tone: "sky", hint: "Домінує весь місяць" },
+      { label: "Ціни", value: 9, tone: "green", hint: "Спреди і basis" },
+      { label: "Ризики", value: 8, tone: "amber", hint: "Погода, policy, execution" },
     ],
     feed: [
       {
@@ -319,7 +319,11 @@ const spikeEnWindows: MediaHubWindowSnapshot[] = spikeUkWindows.map((window) => 
     label: translateCardLabel(card.label),
     note: translateCardNote(card.note),
   })),
-  pulseCards: window.pulseCards,
+  pulseCards: window.pulseCards.map((card) => ({
+    ...card,
+    label: translateTopicLabel(card.label),
+    hint: translateTopicHint(card.hint),
+  })),
   feed: window.feed.map((item) => ({
     ...item,
     title: translateFeedTitle(item.id),
@@ -553,16 +557,16 @@ export function getMediaHubProfile(locale: Locale, selectedWindow: MediaHubWindo
     title: "SPIKE Media Hub",
     description:
       locale === "uk"
-        ? "Живий day / 7 days / 30 days monitoring і editorial surface поверх SPIKE SPOT INDEX."
+        ? "Живий моніторинг день / 7 днів / 30 днів та редакційні звіти поверх SPIKE SPOT INDEX."
         : "A live day / 7 days / 30 days monitoring and editorial surface built above SPIKE SPOT INDEX.",
     accentClassName: "text-[var(--spike-accent)]",
     headerAccent: "#7ff348",
     sourcePolicyTitle:
-      locale === "uk" ? "Spike locale policy" : "Spike locale policy",
+      locale === "uk" ? "Єдиний пул джерел Spike" : "Unified Spike source pool",
     sourcePolicyBody:
       locale === "uk"
-        ? "Spike UK працює лише з українськими джерелами про Україну. Spike EN працює лише з англомовними джерелами про Україну."
-        : "Spike UK uses Ukrainian-language Ukraine sources only. Spike EN uses English-language Ukraine sources only.",
+        ? "Українська й англійська версії SSI використовують спільний пул українських та англомовних джерел про український аграрний ринок; відрізняється лише мова редакційного звіту."
+        : "SSI Ukrainian and English views use the same unified pool of Ukrainian and English sources about Ukraine’s agricultural market; only the editorial report language changes.",
     localePolicy: policy,
     windows: rotateWindows(windows, selectedWindow),
   };
@@ -619,6 +623,8 @@ function translateTopicLabel(value: string) {
     "Місяць": "Month",
     "Кластери": "Clusters",
     "Щотижня": "Weekly",
+    "Ціни": "Pricing",
+    "Ризики": "Risk",
     "Weekly": "Weekly",
   };
 
@@ -639,6 +645,13 @@ function translateTopicHint(value: string) {
     "Ринок збуту і темпи": "Sales channels and export tempo",
     "Погода, посіви, очікування": "Weather, crops and expectations",
     "Внутрішній попит": "Domestic demand",
+    "Маршрути і виконання": "Routes and execution",
+    "Рівні, спреди, корекції": "Levels, spreads, corrections",
+    "Погода і policy": "Weather and policy",
+    "Тема тижня": "Theme of the week",
+    "Спреди і basis": "Spreads and basis",
+    "Домінує весь місяць": "Dominates the month",
+    "Погода, policy, execution": "Weather, policy, execution",
   };
 
   return map[value] ?? value;
@@ -648,12 +661,12 @@ function translateCardLabel(value: string) {
   const map: Record<string, string> = {
     "Одеса CPT": "Odesa CPT",
     "Релевантний шум": "Relevant noise",
-    "Weekly focus": "Weekly focus",
-    "AI article": "AI article",
+    "Фокус тижня": "Weekly focus",
+    "AI стаття": "AI article",
     "Telegram pack": "Telegram pack",
-    "Monitoring depth": "Monitoring depth",
-    "Source footprint": "Source footprint",
-    "Strategic topics": "Strategic topics",
+    "Глибина моніторингу": "Monitoring depth",
+    "Пул джерел": "Source footprint",
+    "Стратегічні теми": "Strategic topics",
   };
 
   return map[value] ?? value;
