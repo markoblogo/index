@@ -79,6 +79,26 @@ async function generateOneLocale(input: {
       input: prompt,
       max_output_tokens: input.kind === "daily" ? 1700 : input.kind === "weekly" ? 3600 : 4200,
       model: input.model,
+      text: {
+        format: {
+          name: "media_hub_report",
+          schema: {
+            additionalProperties: false,
+            properties: {
+              summary: {
+                items: { type: "string" },
+                minItems: 1,
+                type: "array",
+              },
+              title: { minLength: 1, type: "string" },
+            },
+            required: ["title", "summary"],
+            type: "object",
+          },
+          strict: true,
+          type: "json_schema",
+        },
+      },
       temperature: 0.25,
     };
 
@@ -173,9 +193,14 @@ function extractResponseText(payload: unknown): string {
 
 function parseGeneratedJson(value: string, kind: MediaHubReportKind): MediaHubLocalizedReport | null {
   const trimmed = value.trim();
-  const jsonText = trimmed.startsWith("```")
+  const withoutFence = trimmed.startsWith("```")
     ? trimmed.replace(/^```(?:json)?/i, "").replace(/```$/i, "").trim()
     : trimmed;
+  const firstBrace = withoutFence.indexOf("{");
+  const lastBrace = withoutFence.lastIndexOf("}");
+  const jsonText = firstBrace >= 0 && lastBrace > firstBrace
+    ? withoutFence.slice(firstBrace, lastBrace + 1)
+    : withoutFence;
 
   try {
     const parsed = JSON.parse(jsonText) as GeneratedPayload;

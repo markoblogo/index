@@ -590,14 +590,23 @@ function buildSnapshotReportContent(input: {
   const primary = input.snapshots[0];
   const totalItems = input.snapshots.reduce((sum, snapshot) => sum + snapshot.itemCount, 0);
   const totalSources = input.snapshots.reduce((sum, snapshot) => sum + snapshot.sourceCount, 0);
+  const evidenceFallback = input.kind === "daily" && isPlatformSite()
+    ? buildPlatformDailyEvidenceFallback({
+        manualMaterials: input.manualMaterials ?? [],
+        periodEndDate: input.periodEndDate,
+        snapshots: input.snapshots,
+      })
+    : null;
   const dailyReports = input.kind === "daily"
     ? buildDailyReportViews({
         historyData: input.historyData ?? [],
         latestData: input.latestData ?? [],
         llm: input.llm,
         periodEndDate: input.periodEndDate,
-        primarySummary: primary?.summaryBody ?? [],
-        primaryTitle: primary?.summaryTitle,
+        primarySummary: evidenceFallback?.summary.length
+          ? evidenceFallback.summary
+          : primary?.summaryBody ?? [],
+        primaryTitle: evidenceFallback?.title || primary?.summaryTitle,
       })
     : undefined;
 
@@ -620,8 +629,9 @@ function buildSnapshotReportContent(input: {
     dailyReports,
     periodEndDate: input.periodEndDate,
     periodStartDate: input.periodStartDate,
-    summary: primary?.summaryBody ?? [],
+    summary: evidenceFallback?.summary.length ? evidenceFallback.summary : primary?.summaryBody ?? [],
     title:
+      evidenceFallback?.title ||
       primary?.summaryTitle ??
       `Media Hub ${input.kind} report · ${input.periodStartDate}—${input.periodEndDate}`,
     totals: {
@@ -642,6 +652,134 @@ function buildSnapshotReportContent(input: {
       window: snapshot.window,
     })),
   };
+}
+
+function buildPlatformDailyEvidenceFallback(input: {
+  manualMaterials: MediaHubManualMaterialDigest[];
+  periodEndDate: string;
+  snapshots: MediaHubWindowSnapshot[];
+}) {
+  const materialItems = input.manualMaterials
+    .filter(isReportWorthyMaterial)
+    .map(extractMaterialSignal)
+    .filter((item): item is EvidenceSignal => Boolean(item))
+    .slice(0, 18);
+  const feedItems = input.snapshots
+    .flatMap((snapshot) => snapshot.feed)
+    .filter((item) => item.title && !isWeakEvidenceText(`${item.title} ${item.summary}`))
+    .map((item) => ({
+      body: compactSentence(item.summary || item.title),
+      source: item.source,
+      tags: item.tags.join(" "),
+      title: item.title,
+    }))
+    .slice(0, 10);
+  const signals = dedupeEvidenceSignals([...materialItems, ...feedItems]).slice(0, 12);
+  if (signals.length === 0) {
+    return { summary: [], title: "" };
+  }
+
+  const sections = [
+    section("🔎 Key signals", signals.slice(0, 4)),
+    section("🌽 Grains", filterSignals(signals, /wheat|corn|maize|grain|barley|sorghum/i).slice(0, 3)),
+    section("🌱 Oilseeds and vegetable oils", filterSignals(signals, /soy|oilseed|rapeseed|canola|sunflower|palm|vegetable oil/i).slice(0, 3)),
+    section("🚢 Logistics and freight", filterSignals(signals, /freight|port|shipping|vessel|rail|truck|route|corridor|black sea|bosphorus/i).slice(0, 3)),
+    section("🌦 Crop weather and production", filterSignals(signals, /weather|crop|harvest|planting|drought|rain|forecast/i).slice(0, 3)),
+    section("⚖️ Trade policy and demand", filterSignals(signals, /export|import|tariff|tender|quota|sanction|demand|trade|policy/i).slice(0, 3)),
+  ].flat();
+
+  return {
+    summary: sections.length > 0 ? sections : section("🔎 Key signals", signals.slice(0, 6)),
+    title: `Global commodity monitoring brief - ${input.periodEndDate}`,
+  };
+}
+
+type EvidenceSignal = {
+  body: string;
+  source: string;
+  tags: string;
+  title: string;
+};
+
+function isReportWorthyMaterial(material: MediaHubManualMaterialDigest) {
+  const domain = (material.sourceDomain || "").toLowerCase();
+  const text = `${domain} ${material.summary} ${material.extractedText}`.toLowerCase();
+  if (domain.includes("wikipedia.org") || domain.includes("seedoilfreecertified.com")) {
+    return false;
+  }
+  if (domain.includes("comtradeplus.un.org") && /un comtrade release \d/i.test(text)) {
+    return false;
+  }
+  return !isWeakEvidenceText(text);
+}
+
+function isWeakEvidenceText(value: string) {
+  const text = value.toLowerCase();
+  return (
+    text.includes("the day global commodity monitoring window is led by") ||
+    text.includes("densest source contribution") ||
+    text.includes("accepted feed contains") ||
+    text.includes("seed oils list") ||
+    text.includes("what foods contain seed oils")
+  );
+}
+
+function extractMaterialSignal(material: MediaHubManualMaterialDigest): EvidenceSignal | null {
+  const raw = material.summary || material.extractedText;
+  const lines = raw
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .filter((line) => !/^(provider|source|published|url|routing|tags):/i.test(line))
+    .filter((line) => !line.startsWith("{") && !line.startsWith("["));
+  const title = lines[0] || material.originalUrl || material.sourceDomain || "";
+  const body = compactSentence(lines.slice(1).join(" ") || title);
+  if (!title || !body) {
+    return null;
+  }
+  return {
+    body,
+    source: material.sourceDomain || material.sourceType,
+    tags: raw,
+    title,
+  };
+}
+
+function compactSentence(value: string) {
+  return value
+    .replace(/\s+/g, " ")
+    .replace(/^[-•\s]+/, "")
+    .trim()
+    .slice(0, 360);
+}
+
+function dedupeEvidenceSignals(items: EvidenceSignal[]) {
+  const seen = new Set<string>();
+  const result: EvidenceSignal[] = [];
+  for (const item of items) {
+    const key = item.title.toLowerCase().replace(/[^a-z0-9а-яіїєґ]+/gi, " ").trim().slice(0, 120);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    result.push(item);
+  }
+  return result;
+}
+
+function filterSignals(items: EvidenceSignal[], pattern: RegExp) {
+  return items.filter((item) => pattern.test(`${item.title} ${item.body} ${item.tags}`));
+}
+
+function section(title: string, items: EvidenceSignal[]) {
+  if (items.length === 0) {
+    return [];
+  }
+  return [
+    title,
+    ...items.map((item) => {
+      const source = item.source ? ` (${item.source})` : "";
+      return `${item.title}: ${item.body}${source}`;
+    }),
+  ];
 }
 
 function buildDailyReportViews(input: {
