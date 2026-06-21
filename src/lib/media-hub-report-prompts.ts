@@ -90,6 +90,8 @@ export function build1d3xDailyReportPrompt(input: {
     "You write for 1D3X Media Hub. Write only in English. Scope is global grains, oilseeds, vegetable oils, physical/futures markets and logistics.",
     "Create a compact daily market/news report. 1D3X has no index section; do not include SPIKE Spot Commodity Index Ukraine.",
     "Use API/scheduled materials as primary evidence when present. The report must discuss concrete market events, not only source counts or topic names.",
+    "Ignore general trucking, LNG, crude/shadow-fleet, automotive, coal, infrastructure or finance stories unless they explicitly mention grains, oilseeds, vegetable oils, crop weather, export tenders, futures, ports/freight for agricultural commodities, or Black Sea grain flows.",
+    "Do not infer grain or oilseed impact from generic logistics or energy stories. If concrete grain/oilseed evidence is thin, use web search to find current global grain, oilseed, vegetable oil, crop-weather and trade-policy signals for the period.",
     "Do not write phrases like 'the feed contains N items', 'densest source contribution', or 'led by Logistics'. Translate monitoring evidence into market implications.",
     "Required non-empty sections in summary array. Put section headings as standalone items, followed by bullet text items without bullet symbols.",
     [
@@ -236,6 +238,7 @@ function renderSnapshotEvidence(snapshots: MediaHubWindowSnapshot[], kind: Repor
   const feedLimit = kind === "daily" ? 24 : 80;
   const feedLines = snapshots
     .flatMap((snapshot) => snapshot.feed.map((item) => ({ item, snapshot })))
+    .filter(({ item }) => scoreEvidenceText(`${item.source} ${item.title} ${item.summary} ${item.tags.join(" ")}`) > 0)
     .slice(0, feedLimit)
     .map(({ item, snapshot }, index) =>
       `${index + 1}. [${snapshot.window}] ${item.title} | ${item.source} | ${item.summary} | tags: ${item.tags.join(", ")}`,
@@ -254,16 +257,58 @@ function renderSnapshotEvidence(snapshots: MediaHubWindowSnapshot[], kind: Repor
 }
 
 function renderManualMaterials(materials: MediaHubManualMaterialDigest[]) {
-  if (materials.length === 0) {
+  const ranked = materials
+    .map((material) => ({ material, score: scoreManualMaterial(material) }))
+    .filter((item) => item.score > 0)
+    .sort((first, second) => second.score - first.score);
+
+  if (ranked.length === 0) {
     return "Additional API/manual evidence: none.";
   }
 
   return [
     "Additional API/manual evidence:",
-    ...materials.slice(0, 16).map((material, index) =>
+    ...ranked.slice(0, 24).map(({ material }, index) =>
       `${index + 1}. ${material.sourceDomain || material.originalFilename || material.originalUrl || material.id} | ${material.summary || material.extractedText.slice(0, 600)}`,
     ),
   ].join("\n");
+}
+
+function scoreManualMaterial(material: MediaHubManualMaterialDigest) {
+  const domain = (material.sourceDomain || "").toLowerCase();
+  const text = `${domain} ${material.summary} ${material.extractedText}`.toLowerCase();
+  return scoreEvidenceText(text, domain);
+}
+
+function scoreEvidenceText(text: string, domain = "") {
+  if (
+    domain.includes("wikipedia.org") ||
+    domain.includes("seedoilfreecertified.com") ||
+    /un comtrade release \d/i.test(text)
+  ) {
+    return -20;
+  }
+  if (/(4d lidar|class 8 safety|truckload market cycle|domestic transportation|lng import terminal|coking coal|ethane|lpg|shadow fleet|subsea cable|automotive)/i.test(text)) {
+    return -10;
+  }
+
+  let score = 0;
+  if (/(usda|ers\.usda|ams\.usda|brownfieldagnews|farmprogress|agriculture\.com|agweb|barchart|nasdaq|graincentral|world-grain)/i.test(domain)) {
+    score += 6;
+  }
+  if (/(wheat|corn|maize|soybean|soybeans|soy oil|soymeal|oilseed|rapeseed|canola|sunflower|palm oil|vegetable oil|grain|barley|sorghum)/i.test(text)) {
+    score += 5;
+  }
+  if (/(futures|cbot|euronext|matif|basis|tender|export|import|stocks|production|harvest|crop|weather|drought|rain|yield|usda|wasde)/i.test(text)) {
+    score += 4;
+  }
+  if (/(freight|port|vessel|shipping|rail|barge|black sea|bosphorus|danube)/i.test(text)) {
+    score += 1;
+  }
+  if (/(пшениц|кукурудз|соняшник|соя|ріпак|зерн|олій|експорт|порт|урожай)/i.test(text)) {
+    score += 5;
+  }
+  return score;
 }
 
 function renderAvoidPhrases(phrases: string[]) {
