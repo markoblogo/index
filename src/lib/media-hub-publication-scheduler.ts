@@ -15,6 +15,10 @@ import {
   getSpikeMediaHubLiveWindows,
 } from "@/lib/media-hub-monitoring";
 import type { MediaHubWindowKey, MediaHubWindowSnapshot } from "@/lib/media-hub";
+import {
+  getManualMaterialsForPeriod,
+  type MediaHubManualMaterialDigest,
+} from "@/lib/media-hub-manual-materials";
 import { isPlatformSite } from "@/lib/platform-site";
 import {
   getPublicLatestData,
@@ -55,6 +59,11 @@ type MediaHubReportContentJson = {
     provider?: string;
     skippedReason?: string;
   };
+  manualMaterialsUsed?: Array<{
+    id: string;
+    sourceDomain: string | null;
+    sourceType: string;
+  }>;
   localized?: Partial<Record<Locale, MediaHubLocalizedReport>>;
   periodEndDate: string;
   periodStartDate: string;
@@ -290,7 +299,10 @@ export async function publishMediaHubSnapshotReport(
     content.title,
     contentHash,
     JSON.stringify(content),
-    JSON.stringify(snapshots),
+    JSON.stringify({
+      manualMaterials,
+      snapshots,
+    }),
   );
 
   revalidatePath("/media-hub");
@@ -439,9 +451,21 @@ async function buildTransientMediaHubSnapshotReport(
   const primarySnapshot = snapshots[0];
   const tenantId = isPlatformSite() ? "1d3x" : getActiveIndexConfig().id;
   const latestData = tenantId === "spike-ua" ? await getPublicLatestData() : [];
+  const manualMaterials = await getManualMaterialsForPeriod({
+    kind,
+    periodEndDate,
+    periodStartDate,
+    tenantId,
+  });
+  const avoidPhrases = await getPreviousReportAvoidPhrases({
+    kind,
+    tenantId,
+  });
   const llm = await generateMediaHubLlmReports({
+    avoidPhrases,
     kind,
     latestData,
+    manualMaterials,
     periodEndDate,
     periodStartDate,
     snapshots,
@@ -450,6 +474,7 @@ async function buildTransientMediaHubSnapshotReport(
   const content = buildSnapshotReportContent({
     kind,
     llm,
+    manualMaterials,
     periodEndDate,
     periodStartDate,
     snapshots,
@@ -502,6 +527,7 @@ async function sendTelegramMessages(
 function buildSnapshotReportContent(input: {
   kind: Exclude<MediaHubPublicationKind, "none">;
   llm?: Awaited<ReturnType<typeof generateMediaHubLlmReports>>;
+  manualMaterials?: MediaHubManualMaterialDigest[];
   periodEndDate: string;
   periodStartDate: string;
   snapshots: MediaHubWindowSnapshot[];
@@ -520,6 +546,11 @@ function buildSnapshotReportContent(input: {
           skippedReason: input.llm.skippedReason,
         }
       : undefined,
+    manualMaterialsUsed: input.manualMaterials?.map((material) => ({
+      id: material.id,
+      sourceDomain: material.sourceDomain,
+      sourceType: material.sourceType,
+    })) ?? [],
     localized: input.llm?.localized,
     periodEndDate: input.periodEndDate,
     periodStartDate: input.periodStartDate,
@@ -600,6 +631,10 @@ function buildMediaHubTelegramText(input: {
   }
 
   lines.push(
+    "",
+    input.tenant === "platform"
+      ? "<b>1D3X</b>\nhttps://1d3x.com/"
+      : "<b>Spike Spot Index</b>\nhttps://spike.1d3x.com/",
     "",
     isUk
       ? "<i>AI-assisted Media Hub digest на базі опублікованих індексів, підключених джерел і редакторських фільтрів. Не є торговою рекомендацією.</i>"
@@ -682,6 +717,17 @@ function parseMediaHubReportContent(value: unknown): MediaHubReportContentJson |
         }
       : undefined,
     localized,
+    manualMaterialsUsed: Array.isArray(candidate.manualMaterialsUsed)
+      ? candidate.manualMaterialsUsed
+          .filter((item): item is { id?: unknown; sourceDomain?: unknown; sourceType?: unknown } =>
+            Boolean(item) && typeof item === "object",
+          )
+          .map((item) => ({
+            id: String(item.id ?? ""),
+            sourceDomain: item.sourceDomain ? String(item.sourceDomain) : null,
+            sourceType: String(item.sourceType ?? ""),
+          }))
+      : [],
     periodEndDate: String(candidate.periodEndDate ?? ""),
     periodStartDate: String(candidate.periodStartDate ?? ""),
     summary: toStringArray(candidate.summary),
@@ -815,6 +861,44 @@ export async function getMediaHubReportArchive(input: {
       summaryTitle: localized?.title || content.title,
     }];
   });
+}
+
+async function getPreviousReportAvoidPhrases(input: {
+  kind: Exclude<MediaHubPublicationKind, "none">;
+  tenantId: string;
+}) {
+  if (!hasDatabaseUrl() || input.kind === "daily") {
+    return [];
+  }
+
+  await ensureMediaHubReportStorage();
+
+  const rows = await db.$queryRawUnsafe<MediaHubReportRow[]>(
+    `
+      SELECT *
+      FROM "MediaHubReport"
+      WHERE "tenantId" = $1
+        AND "kind" = $2
+        AND "status" = 'published'
+      ORDER BY "periodEnd" DESC
+      LIMIT 4
+    `,
+    input.tenantId,
+    input.kind,
+  );
+
+  return [...new Set(rows.flatMap((row) => {
+    const content = parseMediaHubReportContent(row.contentJson);
+    const lines = [
+      ...(content?.summary ?? []),
+      ...(content?.localized?.uk?.summary ?? []),
+      ...(content?.localized?.en?.summary ?? []),
+    ];
+
+    return lines
+      .map((line) => line.replace(/^[•\-\s]+/, "").trim().slice(0, 90))
+      .filter((line) => line.length >= 24);
+  }))].slice(0, 30);
 }
 
 function normalizeMediaHubKind(value: unknown): Exclude<MediaHubPublicationKind, "none"> {

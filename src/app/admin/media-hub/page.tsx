@@ -34,7 +34,7 @@ export default async function AdminMediaHubPage() {
         </p>
       </header>
 
-      <section className="grid gap-4 xl:grid-cols-4">
+      <section className="grid gap-4 xl:grid-cols-5">
         <HubCard
           cta="Open daily"
           description={`Collected posts window, daily summary controls and live monitoring. ${overview.daily.itemCount} included posts right now.`}
@@ -62,6 +62,13 @@ export default async function AdminMediaHubPage() {
           href="/admin/media-hub/sources"
           label="Live now"
           title="Sources"
+        />
+        <HubCard
+          cta="Open materials"
+          description="Telegram/admin intake for links and files used in next weekly or monthly Media Hub reports."
+          href="/admin/media-hub/materials"
+          label="New"
+          title="Materials"
         />
       </section>
 

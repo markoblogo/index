@@ -2,6 +2,8 @@ import "server-only";
 
 import type { Locale } from "@/lib/i18n";
 import type { MediaHubWindowSnapshot } from "@/lib/media-hub";
+import type { MediaHubManualMaterialDigest } from "@/lib/media-hub-manual-materials";
+import { buildMediaHubReportPrompt } from "@/lib/media-hub-report-prompts";
 import type { PublicLatestItem } from "@/lib/public-api-data";
 
 type MediaHubReportKind = "daily" | "weekly" | "monthly";
@@ -20,6 +22,8 @@ type GeneratedPayload = {
 export async function generateMediaHubLlmReports(input: {
   kind: MediaHubReportKind;
   latestData: PublicLatestItem[];
+  manualMaterials?: MediaHubManualMaterialDigest[];
+  avoidPhrases?: string[];
   periodEndDate: string;
   periodStartDate: string;
   snapshots: MediaHubWindowSnapshot[];
@@ -58,6 +62,8 @@ async function generateOneLocale(input: {
   apiKey: string;
   kind: MediaHubReportKind;
   latestData: PublicLatestItem[];
+  manualMaterials?: MediaHubManualMaterialDigest[];
+  avoidPhrases?: string[];
   locale: Locale;
   model: string;
   periodEndDate: string;
@@ -70,7 +76,7 @@ async function generateOneLocale(input: {
   try {
     const requestBody: Record<string, unknown> = {
       input: prompt,
-      max_output_tokens: input.kind === "daily" ? 900 : 1800,
+      max_output_tokens: input.kind === "daily" ? 900 : input.kind === "weekly" ? 3600 : 4200,
       model: input.model,
       temperature: 0.25,
     };
@@ -117,78 +123,17 @@ async function generateOneLocale(input: {
 }
 
 function buildPrompt(input: {
+  avoidPhrases?: string[];
   kind: MediaHubReportKind;
   latestData: PublicLatestItem[];
   locale: Locale;
+  manualMaterials?: MediaHubManualMaterialDigest[];
   periodEndDate: string;
   periodStartDate: string;
   snapshots: MediaHubWindowSnapshot[];
   tenant: MediaHubTenant;
 }) {
-  const isUk = input.locale === "uk";
-  const tenantInstruction =
-    input.tenant === "spike"
-      ? isUk
-        ? "You write for SPIKE SPOT INDEX Ukraine. Use all monitored Ukrainian and English materials, but write only in Ukrainian. Connect the narrative to today's SPIKE index values and visible price dynamics when index data is provided."
-        : "You write for SPIKE SPOT INDEX Ukraine. Use all monitored Ukrainian and English materials, but write only in English. The market scope is Ukraine. Connect the narrative to today's SPIKE index values and visible price dynamics when index data is provided."
-      : "You write for 1D3X Media Hub. Use global commodity, grain/oilseed, logistics, policy and weather context. Write only in English.";
-  const reportInstruction =
-    input.kind === "daily"
-      ? "Create a compact daily market intelligence report. Focus only on concrete changes, trends, events and watch points. Do not list empty sections."
-      : input.kind === "weekly"
-        ? [
-            "Create a full weekly market intelligence report, not a recap of the last daily note.",
-            "Cover the full week with: SPIKE weekly price moves, Ukraine export/logistics flow, oilseeds/processing, Black Sea/shipping risks, and relevant global grain/oilseed/policy/weather drivers.",
-            "Use web search context for current weekly industry events when monitored items are thin.",
-            "Use only sections with real information. No empty headings, no generic filler, no invented facts.",
-          ].join(" ")
-        : [
-            "Create a monthly market intelligence report with recurring themes and concrete source-backed developments.",
-            "Use web search context for global and Ukrainian commodity, logistics, policy and weather developments when monitored items are thin.",
-          ].join(" ");
-  const indexLines = input.latestData
-    .filter((item) => item.valueUsdPerMt !== null)
-    .slice(0, 18)
-    .map((item) => {
-      const name = isUk ? item.commodityNameUk : item.commodityNameEn;
-      return `${name} (${item.commodityCode}, ${item.basis}): ${item.valueUsdPerMt} USD/t, daily change ${item.changeAbs ?? "n/a"}`;
-    });
-  const feedLines = input.snapshots
-    .flatMap((snapshot) => snapshot.feed.map((item) => ({
-      item,
-      snapshot,
-    })))
-    .slice(0, input.kind === "daily" ? 22 : 55)
-    .map(({ item, snapshot }, index) =>
-      `${index + 1}. [${snapshot.window}] ${item.title} | ${item.source} | ${item.summary} | tags: ${item.tags.join(", ")}`,
-    );
-  const topicLines = input.snapshots
-    .flatMap((snapshot) => snapshot.topTopics)
-    .slice(0, 18)
-    .map((topic) => `${topic.label}: ${topic.count} — ${topic.hint}`);
-
-  return [
-    tenantInstruction,
-    reportInstruction,
-    `Period: ${input.periodStartDate} to ${input.periodEndDate}. Report kind: ${input.kind}.`,
-    "Return strict JSON only. Shape: {\"title\":\"...\",\"summary\":[\"paragraph or bullet\",\"...\"]}.",
-    input.kind === "daily"
-      ? "Rules: 4-7 summary items. Be factual and concise. Do not mention lack of data as a section. Do not invent prices, deals, forecasts, or causes. Not trading advice."
-      : "Rules: 7-10 substantial summary items. Every item must add weekly context. Include price dynamics, logistics/shipping, Ukraine export flow, global commodity drivers and watch points when supported. Do not mention lack of data as a section. Do not invent prices, deals, forecasts, or causes. Not trading advice.",
-    "Use monitored items as context, but do not output a source list, monitoring-feed list, or raw topic-cluster list. Write the report itself, not the evidence log.",
-    isUk
-      ? "Ukrainian style: clear business Ukrainian, no Russian, no English section titles unless source names require it."
-      : "English style: concise editorial market note, no boilerplate.",
-    "",
-    "Index data:",
-    indexLines.length > 0 ? indexLines.join("\n") : "No index data provided.",
-    "",
-    "Topic clusters:",
-    topicLines.length > 0 ? topicLines.join("\n") : "No topic clusters.",
-    "",
-    "Monitoring items:",
-    feedLines.length > 0 ? feedLines.join("\n") : "No monitoring items.",
-  ].join("\n");
+  return buildMediaHubReportPrompt(input);
 }
 
 function extractResponseText(payload: unknown): string {
