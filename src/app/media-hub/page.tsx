@@ -8,7 +8,9 @@ import {
 } from "@/lib/media-hub";
 import {
   getLatestPublishedMediaHubReportSummary,
+  getMediaHubReportArchive,
   getMediaHubPublicationPlan,
+  type MediaHubPublicationKind,
 } from "@/lib/media-hub-publication-scheduler";
 import { get1d3xRssWindows } from "@/lib/media-hub-rss";
 import { isPlatformSite } from "@/lib/platform-site";
@@ -16,7 +18,7 @@ import { isPlatformSite } from "@/lib/platform-site";
 export const revalidate = 3600;
 
 type PlatformMediaHubPageProps = {
-  searchParams: Promise<{ window?: string }>;
+  searchParams: Promise<{ date?: string; kind?: string; window?: string }>;
 };
 
 export default async function PlatformMediaHubPage({
@@ -27,16 +29,28 @@ export default async function PlatformMediaHubPage({
   }
 
   const search = await searchParams;
-  const [liveWindows, publishedSummary] = await Promise.all([
+  const requestedKind = search.kind ? normalizeKind(search.kind) : undefined;
+  const requestedWindow = search.window ? normalizeWindow(search.window) : undefined;
+  const requestedDate = normalizeDate(search.date);
+  const summaryKind = requestedKind ?? (requestedWindow ? windowToKind(requestedWindow) : undefined);
+  const [liveWindows, publishedSummary, archive] = await Promise.all([
     get1d3xRssWindows(),
     getLatestPublishedMediaHubReportSummary({
-      kind: search.window ? windowToKind(normalizeWindow(search.window)) : undefined,
+      kind: summaryKind,
+      locale: "en",
+      periodEndDate: requestedDate,
+      tenantId: "1d3x",
+    }),
+    getMediaHubReportArchive({
+      kind: summaryKind,
       locale: "en",
       tenantId: "1d3x",
     }),
   ]);
-  const selectedWindow = search.window
-    ? normalizeWindow(search.window)
+  const selectedWindow = requestedWindow
+    ? requestedWindow
+    : requestedKind
+      ? kindToWindow(requestedKind)
     : kindToWindow(publishedSummary?.kind ?? getMediaHubPublicationPlan().kind);
   const profile = getMediaHubProfile("en", selectedWindow);
   const active = liveWindows.find((window) => window.window === selectedWindow) ?? liveWindows[0];
@@ -54,6 +68,14 @@ export default async function PlatformMediaHubPage({
     <PlatformShell>
       <PublicMediaHub
         locale="en"
+        archive={archive}
+        archiveHref={(filter) => {
+          const params = new URLSearchParams();
+          if (filter.kind) params.set("kind", filter.kind);
+          if (filter.date) params.set("date", filter.date);
+          const query = params.toString();
+          return query ? `/media-hub?${query}` : "/media-hub";
+        }}
         profile={mergedProfile}
         selectedWindow={selectedWindow}
         windowHref={(window) => `/media-hub?window=${window}`}
@@ -70,13 +92,21 @@ function windowToKind(window: MediaHubWindowKey) {
   return window === "week" ? "weekly" : window === "month" ? "monthly" : "daily";
 }
 
+function normalizeKind(value: string): Exclude<MediaHubPublicationKind, "none"> {
+  return value === "weekly" || value === "monthly" ? value : "daily";
+}
+
+function normalizeDate(value: string | undefined) {
+  return value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : undefined;
+}
+
 function kindToWindow(kind: string | undefined): MediaHubWindowKey {
   return kind === "weekly" ? "week" : kind === "monthly" ? "month" : "day";
 }
 
 function applyPublishedSummary(
   window: MediaHubWindowSnapshot,
-  summary: { kind?: string; summaryBody: string[]; summaryTitle: string } | null,
+  summary: { kind?: string; periodEndDate?: string; summaryBody: string[]; summaryTitle: string } | null,
 ): MediaHubWindowSnapshot {
   if (!summary?.summaryBody.length) {
     return window;

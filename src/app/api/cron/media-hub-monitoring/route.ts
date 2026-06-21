@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { get1d3xRssWindows } from "@/lib/media-hub-rss";
 import { getSpikeMediaHubLiveWindows } from "@/lib/media-hub-monitoring";
+import { getMediaHubMonitoringPlan } from "@/lib/media-hub-publication-scheduler";
 import { isPlatformSite } from "@/lib/platform-site";
 import { isCronRequestAuthorized } from "@/lib/cron-auth";
 import type { MediaHubWindowSnapshot } from "@/lib/media-hub";
@@ -21,6 +22,16 @@ export async function GET(request: Request) {
     !isCronRequestAuthorized(request, secrets)
   ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const plan = getMediaHubMonitoringPlan();
+  if (!plan.allowed) {
+    return NextResponse.json({
+      ...plan,
+      skippedReason: plan.reason,
+      status: "skipped",
+      triggeredAt: new Date().toISOString(),
+    });
   }
 
   if (isPlatformSite()) {

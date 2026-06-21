@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import type { Locale } from "@/lib/i18n";
+import type { MediaHubReportArchiveItem } from "@/lib/media-hub-publication-scheduler";
 import type {
   MediaHubSiteProfile,
   MediaHubSnapshotCard,
@@ -11,11 +12,18 @@ import { DistributionChart } from "./distribution-chart";
 import { MonitoringFeed } from "./monitoring-feed";
 
 export function PublicMediaHub({
+  archive = [],
+  archiveHref,
   locale,
   profile,
   selectedWindow,
   windowHref,
 }: {
+  archive?: MediaHubReportArchiveItem[];
+  archiveHref?: (filter: {
+    date?: string;
+    kind?: MediaHubReportArchiveItem["kind"];
+  }) => string;
   locale: Locale;
   profile: MediaHubSiteProfile;
   selectedWindow: MediaHubWindowKey;
@@ -25,6 +33,15 @@ export function PublicMediaHub({
     profile.windows.find((window) => window.window === selectedWindow) ?? profile.windows[0];
   const totalDistribution = activeWindow.distribution.reduce((sum, item) => sum + item.value, 0);
   const theme = getMediaHubTheme(profile.id);
+  const archiveFilters: Array<{
+    kind?: MediaHubReportArchiveItem["kind"];
+    label: string;
+  }> = [
+    { label: locale === "uk" ? "Усі" : "All" },
+    { kind: "daily", label: locale === "uk" ? "День" : "Daily" },
+    { kind: "weekly", label: locale === "uk" ? "Тиждень" : "Weekly" },
+    { kind: "monthly", label: locale === "uk" ? "Місяць" : "Monthly" },
+  ];
 
   return (
     <div
@@ -123,6 +140,63 @@ export function PublicMediaHub({
         </article>
       </section>
 
+      {archive.length > 0 ? (
+        <section className="mx-auto max-w-[1900px] px-5 pb-8 sm:px-8 lg:px-10">
+          <div className="rounded-[2rem] border border-white/10 bg-[var(--media-hub-panel)] p-5">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-white/42">
+                  Report archive
+                </p>
+                <h2 className="mt-1 text-2xl font-black">
+                  {locale === "uk" ? "Опубліковані звіти" : "Published reports"}
+                </h2>
+              </div>
+              {archiveHref ? (
+                <div className="flex flex-wrap gap-2">
+                  {archiveFilters.map((filter) => (
+                    <Link
+                      className="rounded-full border border-white/12 px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-white/62 hover:border-[color:var(--media-hub-accent)] hover:text-white"
+                      href={archiveHref({ kind: filter.kind })}
+                      key={filter.label}
+                    >
+                      {filter.label}
+                    </Link>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+            <div className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+              {archive.slice(0, 12).map((report) => (
+                <Link
+                  className="rounded-[1rem] border border-white/10 bg-[var(--media-hub-card)] px-3 py-2.5 transition hover:border-[color:var(--media-hub-accent)]"
+                  href={archiveHref?.({
+                    date: report.periodEndDate,
+                    kind: report.kind,
+                  }) ?? "#"}
+                  key={`${report.kind}-${report.periodEndDate}`}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-xs font-black uppercase tracking-[0.14em] text-[var(--media-hub-accent)]">
+                      {report.kind}
+                    </span>
+                    <span className="text-xs font-black text-white/46">
+                      {formatArchivePeriod(report)}
+                    </span>
+                  </div>
+                  <h3 className="mt-1 truncate text-sm font-bold text-white/78">
+                    {report.summaryTitle}
+                  </h3>
+                  <p className="mt-1 text-xs text-white/42">
+                    {report.itemCount} items · {report.sourceCount} sources
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      ) : null}
+
       <section className="mx-auto max-w-[1900px] px-5 pb-8 sm:px-8 lg:px-10">
         <div className="grid gap-6 xl:grid-cols-3">
           <section className="rounded-[2rem] border border-white/10 bg-[var(--media-hub-panel)] p-5">
@@ -179,6 +253,14 @@ export function PublicMediaHub({
       </section>
     </div>
   );
+}
+
+function formatArchivePeriod(report: MediaHubReportArchiveItem) {
+  if (report.kind === "daily") {
+    return report.periodEndDate;
+  }
+
+  return `${report.periodStartDate} — ${report.periodEndDate}`;
 }
 
 function SnapshotCard({ card }: { card: MediaHubSnapshotCard }) {

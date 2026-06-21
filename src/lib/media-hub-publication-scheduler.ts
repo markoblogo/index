@@ -28,6 +28,7 @@ export type MediaHubPublicationPlan = {
   date: string;
   kind: MediaHubPublicationKind;
   reason: string;
+  timezone: string;
 };
 
 type MediaHubReportRow = {
@@ -78,14 +79,35 @@ type MediaHubReportContentJson = {
   }>;
 };
 
-export function getMediaHubPublicationPlan(date = formatKyivDate()): MediaHubPublicationPlan {
+export type MediaHubMonitoringPlan = {
+  allowed: boolean;
+  date: string;
+  reason: string;
+  timezone: string;
+};
+
+export type MediaHubReportArchiveItem = {
+  itemCount: number;
+  kind: Exclude<MediaHubPublicationKind, "none">;
+  periodEndDate: string;
+  periodStartDate: string;
+  sourceCount: number;
+  summaryTitle: string;
+};
+
+const DEFAULT_MEDIA_HUB_TIMEZONE = "Europe/Paris";
+const DEFAULT_MEDIA_HUB_REPORT_TIME = "17:00";
+
+export function getMediaHubPublicationPlan(date = getParisLocalDate()): MediaHubPublicationPlan {
   const weekday = getIsoWeekday(date);
+  const timezone = getMediaHubTimezone();
 
   if (weekday >= 1 && weekday <= 5) {
     return {
       date,
       kind: "daily",
       reason: "weekday_daily_slot",
+      timezone,
     };
   }
 
@@ -94,6 +116,7 @@ export function getMediaHubPublicationPlan(date = formatKyivDate()): MediaHubPub
       date,
       kind: "none",
       reason: "no_publication_on_sunday",
+      timezone,
     };
   }
 
@@ -102,6 +125,7 @@ export function getMediaHubPublicationPlan(date = formatKyivDate()): MediaHubPub
       date,
       kind: "monthly",
       reason: "fourth_saturday_monthly_replaces_weekly",
+      timezone,
     };
   }
 
@@ -109,7 +133,28 @@ export function getMediaHubPublicationPlan(date = formatKyivDate()): MediaHubPub
     date,
     kind: "weekly",
     reason: "saturday_weekly_slot",
+    timezone,
   };
+}
+
+export function getMediaHubMonitoringPlan(now: Date = new Date()): MediaHubMonitoringPlan {
+  const date = getParisLocalDate(now);
+  const weekday = getIsoWeekday(date);
+  return {
+    allowed: weekday >= 1 && weekday <= 5,
+    date,
+    reason: weekday >= 1 && weekday <= 5
+      ? "weekday_monitoring_allowed"
+      : "media_hub_monitoring_disabled_on_weekends",
+    timezone: getMediaHubTimezone(),
+  };
+}
+
+export function isMediaHubPublicationDue(now: Date = new Date()) {
+  const parts = getParisLocalTimeParts(now);
+  const [hour, minute] = getMediaHubReportTime().split(":").map(Number);
+  const plan = getMediaHubPublicationPlan(parts.date);
+  return plan.kind !== "none" && parts.hour === hour && parts.minute === minute;
 }
 
 export async function runDueMediaHubPublication(options: {
@@ -124,13 +169,11 @@ export async function runDueMediaHubPublication(options: {
 
   if (kind === "daily") {
     const report = await publishMediaHubSnapshotReport("daily", plan.date);
-    const telegram = isPlatformSite()
-      ? { skippedReason: "platform_daily_telegram_not_configured", status: "skipped" as const }
-      : await sendMediaHubReportTelegram("daily", plan.date, {
-          audience: "spike",
-          force: options.forceTelegram,
-          locale: "uk",
-        });
+    const telegram = await sendMediaHubReportTelegram("daily", plan.date, {
+      audience: isPlatformSite() ? "platform" : "spike",
+      force: options.forceTelegram,
+      locale: isPlatformSite() ? "en" : "uk",
+    });
 
     return {
       plan: { ...plan, kind },
@@ -292,14 +335,19 @@ export async function sendMediaHubReportTelegram(
   const chatId =
     options.audience === "platform"
       ? process.env.ID3X_MEDIA_HUB_TELEGRAM_CHAT_ID ??
+        process.env.MEDIA_HUB_TELEGRAM_CHAT_ID ??
         process.env.SPIKE_WEEKLY_REPORT_TELEGRAM_CHAT_ID ??
         process.env.SPIKE_AI_TELEGRAM_CHAT_ID ??
         process.env.INDEX_TELEGRAM_SMOKE_CHAT_ID
       : kind === "daily"
-        ? process.env.SPIKE_AI_TELEGRAM_CHAT_ID ??
+        ? process.env.SPIKE_MEDIA_HUB_TELEGRAM_CHAT_ID ??
+          process.env.MEDIA_HUB_TELEGRAM_CHAT_ID ??
+          process.env.SPIKE_AI_TELEGRAM_CHAT_ID ??
           process.env.SPIKE_WEEKLY_REPORT_TELEGRAM_CHAT_ID ??
           process.env.INDEX_TELEGRAM_SMOKE_CHAT_ID
-        : process.env.SPIKE_WEEKLY_REPORT_TELEGRAM_CHAT_ID ??
+        : process.env.SPIKE_MEDIA_HUB_TELEGRAM_CHAT_ID ??
+          process.env.MEDIA_HUB_TELEGRAM_CHAT_ID ??
+          process.env.SPIKE_WEEKLY_REPORT_TELEGRAM_CHAT_ID ??
           process.env.SPIKE_AI_TELEGRAM_CHAT_ID ??
           process.env.INDEX_TELEGRAM_SMOKE_CHAT_ID;
 
@@ -336,7 +384,7 @@ export async function sendMediaHubReportTelegram(
       tenant: options.audience,
     }),
   );
-  const sent = await sendTelegramMessages(botToken, chatId, messages);
+  const sent = await sendTelegramMessages(botToken, normalizeMediaHubTelegramChatId(chatId), messages);
   if (sent.status === "failed") {
     return sent;
   }
@@ -661,6 +709,7 @@ function parseMediaHubReportContent(value: unknown): MediaHubReportContentJson |
 export async function getLatestPublishedMediaHubReportSummary(input: {
   kind?: Exclude<MediaHubPublicationKind, "none">;
   locale: Locale;
+  periodEndDate?: string;
   tenantId?: string;
 }) {
   if (!hasDatabaseUrl()) {
@@ -676,6 +725,7 @@ export async function getLatestPublishedMediaHubReportSummary(input: {
       FROM "MediaHubReport"
       WHERE "tenantId" = $1
         AND ($2::text IS NULL OR "kind" = $2)
+        AND ($3::date IS NULL OR "periodEnd" = $3::date)
         AND "status" = 'published'
       ORDER BY
         "periodEnd" DESC,
@@ -689,6 +739,7 @@ export async function getLatestPublishedMediaHubReportSummary(input: {
     `,
     tenantId,
     input.kind ?? null,
+    input.periodEndDate ?? null,
   );
   const content = parseMediaHubReportContent(rows[0]?.contentJson);
   if (!content) {
@@ -711,6 +762,59 @@ export async function getLatestPublishedMediaHubReportSummary(input: {
     summaryBody: content.summary,
     summaryTitle: content.title,
   };
+}
+
+export async function getMediaHubReportArchive(input: {
+  kind?: Exclude<MediaHubPublicationKind, "none">;
+  limit?: number;
+  locale: Locale;
+  tenantId?: string;
+}) {
+  if (!hasDatabaseUrl()) {
+    return [];
+  }
+
+  await ensureMediaHubReportStorage();
+
+  const tenantId = input.tenantId ?? (isPlatformSite() ? "1d3x" : getActiveIndexConfig().id);
+  const rows = await db.$queryRawUnsafe<MediaHubReportRow[]>(
+    `
+      SELECT *
+      FROM "MediaHubReport"
+      WHERE "tenantId" = $1
+        AND ($2::text IS NULL OR "kind" = $2)
+        AND "status" = 'published'
+      ORDER BY
+        "periodEnd" DESC,
+        CASE "kind"
+          WHEN 'monthly' THEN 3
+          WHEN 'weekly' THEN 2
+          WHEN 'daily' THEN 1
+          ELSE 0
+        END DESC
+      LIMIT $3
+    `,
+    tenantId,
+    input.kind ?? null,
+    input.limit ?? 36,
+  );
+
+  return rows.flatMap((row): MediaHubReportArchiveItem[] => {
+    const content = parseMediaHubReportContent(row.contentJson);
+    if (!content) {
+      return [];
+    }
+    const localized = content.localized?.[input.locale];
+
+    return [{
+      itemCount: content.totals.items,
+      kind: content.kind,
+      periodEndDate: content.periodEndDate,
+      periodStartDate: content.periodStartDate,
+      sourceCount: content.totals.sources,
+      summaryTitle: localized?.title || content.title,
+    }];
+  });
 }
 
 function normalizeMediaHubKind(value: unknown): Exclude<MediaHubPublicationKind, "none"> {
@@ -891,6 +995,10 @@ async function ensureMediaHubReportStorage() {
     CREATE INDEX IF NOT EXISTS "MediaHubReport_tenant_kind_status_idx"
     ON "MediaHubReport"("tenantId", "kind", "status", "periodEnd" DESC)
   `);
+  await db.$executeRawUnsafe(`
+    CREATE INDEX IF NOT EXISTS "MediaHubReport_tenant_periodEnd_idx"
+    ON "MediaHubReport"("tenantId", "periodEnd" DESC)
+  `);
 }
 
 async function getMediaHubReport(
@@ -1007,18 +1115,61 @@ async function sendMonthlyMediaHubTelegram(content: ReturnType<typeof buildMonth
   return [payload.result?.message_id ?? 0].filter(Boolean);
 }
 
-function formatKyivDate() {
+export function getMediaHubTimezone() {
+  const configured = process.env.MEDIA_HUB_TIMEZONE?.trim();
+  return configured || DEFAULT_MEDIA_HUB_TIMEZONE;
+}
+
+export function getMediaHubReportTime() {
+  const configured = process.env.MEDIA_HUB_REPORT_TIME?.trim();
+  return configured && /^\d{2}:\d{2}$/.test(configured)
+    ? configured
+    : DEFAULT_MEDIA_HUB_REPORT_TIME;
+}
+
+export function getParisLocalDate(now: Date = new Date()) {
   const formatter = new Intl.DateTimeFormat("en-CA", {
     day: "2-digit",
     month: "2-digit",
-    timeZone: "Europe/Kyiv",
+    timeZone: getMediaHubTimezone(),
     year: "numeric",
   });
-  const parts = formatter.formatToParts(new Date());
+  const parts = formatter.formatToParts(now);
   const year = parts.find((part) => part.type === "year")?.value ?? "1970";
   const month = parts.find((part) => part.type === "month")?.value ?? "01";
   const day = parts.find((part) => part.type === "day")?.value ?? "01";
   return `${year}-${month}-${day}`;
+}
+
+function getParisLocalTimeParts(now: Date) {
+  const formatter = new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    hour: "2-digit",
+    hourCycle: "h23",
+    minute: "2-digit",
+    month: "2-digit",
+    timeZone: getMediaHubTimezone(),
+    year: "numeric",
+  });
+  const parts = formatter.formatToParts(now);
+  const year = parts.find((part) => part.type === "year")?.value ?? "1970";
+  const month = parts.find((part) => part.type === "month")?.value ?? "01";
+  const day = parts.find((part) => part.type === "day")?.value ?? "01";
+
+  return {
+    date: `${year}-${month}-${day}`,
+    hour: Number(parts.find((part) => part.type === "hour")?.value ?? "0"),
+    minute: Number(parts.find((part) => part.type === "minute")?.value ?? "0"),
+  };
+}
+
+export function normalizeMediaHubTelegramChatId(value: string) {
+  const trimmed = value.trim();
+  if (/^\d{10,}$/.test(trimmed)) {
+    return `-100${trimmed}`;
+  }
+
+  return trimmed;
 }
 
 function getIsoWeekday(date: string) {

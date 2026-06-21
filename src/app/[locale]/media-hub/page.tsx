@@ -10,14 +10,16 @@ import {
 } from "@/lib/media-hub";
 import {
   getLatestPublishedMediaHubReportSummary,
+  getMediaHubReportArchive,
   getMediaHubPublicationPlan,
+  type MediaHubPublicationKind,
 } from "@/lib/media-hub-publication-scheduler";
 
 export const revalidate = 3600;
 
 type MediaHubPageProps = {
   params: Promise<{ locale: Locale }>;
-  searchParams: Promise<{ window?: string }>;
+  searchParams: Promise<{ date?: string; kind?: string; window?: string }>;
 };
 
 export default async function MediaHubPage({
@@ -31,16 +33,28 @@ export default async function MediaHubPage({
     redirect(`/${locale}/analytics`);
   }
 
-  const [liveWindows, publishedSummary] = await Promise.all([
+  const requestedKind = search.kind ? normalizeKind(search.kind) : undefined;
+  const requestedWindow = search.window ? normalizeWindow(search.window) : undefined;
+  const requestedDate = normalizeDate(search.date);
+  const summaryKind = requestedKind ?? (requestedWindow ? windowToKind(requestedWindow) : undefined);
+  const [liveWindows, publishedSummary, archive] = await Promise.all([
     getSpikeMediaHubLiveWindows(locale),
     getLatestPublishedMediaHubReportSummary({
-      kind: search.window ? windowToKind(normalizeWindow(search.window)) : undefined,
+      kind: summaryKind,
+      locale,
+      periodEndDate: requestedDate,
+      tenantId: "spike-ua",
+    }),
+    getMediaHubReportArchive({
+      kind: summaryKind,
       locale,
       tenantId: "spike-ua",
     }),
   ]);
-  const selectedWindow = search.window
-    ? normalizeWindow(search.window)
+  const selectedWindow = requestedWindow
+    ? requestedWindow
+    : requestedKind
+      ? kindToWindow(requestedKind)
     : kindToWindow(publishedSummary?.kind ?? getMediaHubPublicationPlan().kind);
   const profile = getMediaHubProfile(locale, selectedWindow);
   const active = liveWindows.find((window) => window.window === selectedWindow) ?? liveWindows[0];
@@ -54,6 +68,14 @@ export default async function MediaHubPage({
   return (
     <PublicMediaHub
       locale={locale}
+      archive={archive}
+      archiveHref={(filter) => {
+        const params = new URLSearchParams();
+        if (filter.kind) params.set("kind", filter.kind);
+        if (filter.date) params.set("date", filter.date);
+        const query = params.toString();
+        return query ? `/${locale}/media-hub?${query}` : `/${locale}/media-hub`;
+      }}
       profile={mergedProfile}
       selectedWindow={selectedWindow}
       windowHref={(window) => `/${locale}/media-hub?window=${window}`}
@@ -67,6 +89,14 @@ function normalizeWindow(value: string | undefined): MediaHubWindowKey {
 
 function windowToKind(window: MediaHubWindowKey) {
   return window === "week" ? "weekly" : window === "month" ? "monthly" : "daily";
+}
+
+function normalizeKind(value: string): Exclude<MediaHubPublicationKind, "none"> {
+  return value === "weekly" || value === "monthly" ? value : "daily";
+}
+
+function normalizeDate(value: string | undefined) {
+  return value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : undefined;
 }
 
 function kindToWindow(kind: string | undefined): MediaHubWindowKey {

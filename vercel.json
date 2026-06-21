@@ -38,31 +38,19 @@
     },
     {
       "path": "/api/cron/media-hub-monitoring",
-      "schedule": "0 15 * * *"
+      "schedule": "0 15 * * 1-5"
+    },
+    {
+      "path": "/api/cron/media-hub-monitoring",
+      "schedule": "0 16 * * 1-5"
     },
     {
       "path": "/api/cron/media-hub-publish",
-      "schedule": "10 16 * * 1-5"
+      "schedule": "0 15 * * 1-6"
     },
     {
       "path": "/api/cron/media-hub-publish",
-      "schedule": "40 16 * * 1-5"
-    },
-    {
-      "path": "/api/cron/media-hub-publish",
-      "schedule": "0 12 * * 6"
-    },
-    {
-      "path": "/api/cron/media-hub-publish",
-      "schedule": "30 12 * * 6"
-    },
-    {
-      "path": "/api/cron/media-hub-publish",
-      "schedule": "0 13 * * 6"
-    },
-    {
-      "path": "/api/cron/media-hub-publish",
-      "schedule": "30 13 * * 6"
+      "schedule": "0 16 * * 1-6"
     }
   ]
 }
