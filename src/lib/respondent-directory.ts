@@ -1022,6 +1022,49 @@ export async function regenerateRespondentTemporaryPasswordData(
   });
 }
 
+export async function resendRespondentOnboardingData(respondentId: string) {
+  if (!hasDatabaseUrl()) {
+    return;
+  }
+
+  const respondent = await db.respondent.findUnique({
+    include: {
+      authAccount: true,
+      contacts: {
+        orderBy: [{ primary: "desc" }, { createdAt: "asc" }],
+        where: { active: true },
+      },
+    },
+    where: { id: respondentId },
+  });
+
+  const contact = respondent?.contacts[0];
+  const auth = respondent?.authAccount;
+
+  if (!respondent || !contact || !auth) {
+    return;
+  }
+
+  await sendRespondentOnboarding({
+    auth: {
+      loginEmail: auth.loginEmail,
+      temporaryPassword: auth.temporaryPassword,
+    },
+    contact: {
+      email: contact.email,
+      id: contact.id,
+      name: contact.name,
+      preferredLocale: normalizeContactLocale(contact.preferredLocale),
+      telegramChatId: contact.telegramChatId,
+      telegramUsername: contact.telegramUsername,
+    },
+    respondent: {
+      id: respondent.id,
+      legalName: respondent.legalName,
+    },
+  });
+}
+
 export function addRespondentDirectoryEntry(input: {
   collectionMode: RespondentCollectionMode;
   companyName: string;

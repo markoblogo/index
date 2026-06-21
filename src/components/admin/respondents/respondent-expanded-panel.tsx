@@ -95,6 +95,7 @@ export function RespondentExpandedPanel({
       <RespondentAuthPanel
         regeneratePasswordAction={actions.regeneratePasswordAction}
         respondent={respondent}
+        resendOnboardingAction={actions.resendOnboardingAction}
         updateAuthAction={actions.updateAuthAction}
       />
     </div>
@@ -329,10 +330,12 @@ function AddContactForm({
 function RespondentAuthPanel({
   regeneratePasswordAction,
   respondent,
+  resendOnboardingAction,
   updateAuthAction,
 }: {
   regeneratePasswordAction: (formData: FormData) => Promise<void>;
   respondent: RespondentDirectoryEntry;
+  resendOnboardingAction: (formData: FormData) => Promise<void>;
   updateAuthAction: (formData: FormData) => Promise<void>;
 }) {
   return (
@@ -379,6 +382,12 @@ function RespondentAuthPanel({
           <input name="respondentId" type="hidden" value={respondent.id} />
           <button className="border border-black bg-uga-dark px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-white">
             Regenerate temporary password
+          </button>
+        </form>
+        <form action={resendOnboardingAction} className="mt-2">
+          <input name="respondentId" type="hidden" value={respondent.id} />
+          <button className="border border-black/35 bg-white px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-black">
+            Resend onboarding email
           </button>
         </form>
       </div>

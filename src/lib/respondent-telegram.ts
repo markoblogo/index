@@ -5,7 +5,7 @@ import { syncIndexPositionDirectory } from "@/lib/position-directory-sync";
 
 type TelegramTrigger = "manual" | "scheduled" | "smoke";
 
-export type TelegramReminderLevel = "initial" | "reminder_17" | "final_18";
+export type TelegramReminderLevel = "initial" | "reminder_18" | "final_19";
 
 export type TelegramRecipient = {
   chatId: string;
@@ -195,10 +195,37 @@ export function getKyivReminderLevel(
     return null;
   }
 
-  if (hour === "16") return "initial";
-  if (hour === "17") return "reminder_17";
-  if (hour === "18") return "final_18";
+  const schedule = getRespondentTelegramScheduleHours();
+
+  if (hour === schedule.initial) return "initial";
+  if (hour === schedule.firstReminder) return "reminder_18";
+  if (hour === schedule.finalReminder) return "final_19";
   return null;
+}
+
+function getRespondentTelegramScheduleHours() {
+  if (getActiveIndexConfig().id !== "spike-ua") {
+    return {
+      finalReminder: "18",
+      firstReminder: "17",
+      initial: "16",
+    };
+  }
+
+  const [firstReminder = "18", finalReminder = "19"] = (
+    process.env.SPIKE_RESPONDENT_TELEGRAM_REMINDER_HOURS ?? "18,19"
+  )
+    .split(",")
+    .map((value) => value.trim().padStart(2, "0"))
+    .filter(Boolean);
+
+  return {
+    finalReminder,
+    firstReminder,
+    initial: (process.env.SPIKE_RESPONDENT_TELEGRAM_INITIAL_HOUR ?? "17")
+      .trim()
+      .padStart(2, "0"),
+  };
 }
 
 async function filterScheduledRecipients(
@@ -541,19 +568,19 @@ function getTelegramText(
   const indexName = getActiveIndexConfig().name;
 
   if (recipient.locale === "en") {
-    if (reminderLevel === "reminder_17") {
+    if (reminderLevel === "reminder_18") {
       return `Reminder: please submit today's ${indexName} prices for ${recipient.companyName}.`;
     }
-    if (reminderLevel === "final_18") {
+    if (reminderLevel === "final_19") {
       return `Final reminder: please submit today's prices now, otherwise they may not be included in today's index calculation.`;
     }
     return `Please submit today's ${indexName} prices for ${recipient.companyName}.`;
   }
 
-  if (reminderLevel === "reminder_17") {
+  if (reminderLevel === "reminder_18") {
     return `Нагадуємо: будь ласка, внесіть сьогоднішні ціни для ${indexName} (${recipient.companyName}).`;
   }
-  if (reminderLevel === "final_18") {
+  if (reminderLevel === "final_19") {
     return "Фінальне нагадування: внесіть ціни зараз, інакше вони можуть не потрапити до сьогоднішнього розрахунку індексу.";
   }
   return `Будь ласка, внесіть сьогоднішні ціни для ${indexName} (${recipient.companyName}).`;

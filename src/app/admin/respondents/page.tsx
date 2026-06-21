@@ -11,6 +11,7 @@ import {
   getRespondentDirectoryData,
   getRespondentEmailScheduleData,
   regenerateRespondentTemporaryPasswordData,
+  resendRespondentOnboardingData,
   updateRespondentEmailScheduleData,
   updateRespondentContactData,
   updateRespondentAuthAccountData,
@@ -73,6 +74,7 @@ type PageActions = {
   deleteContactAction: (formData: FormData) => Promise<void>;
   deleteRespondentAction: (formData: FormData) => Promise<void>;
   regeneratePasswordAction: (formData: FormData) => Promise<void>;
+  resendOnboardingAction: (formData: FormData) => Promise<void>;
   updateAuthAction: (formData: FormData) => Promise<void>;
   updateContactAction: (formData: FormData) => Promise<void>;
   updateRespondentAction: (formData: FormData) => Promise<void>;
@@ -98,6 +100,7 @@ export default async function AdminRespondentsPage() {
     deleteContactAction,
     deleteRespondentAction,
     regeneratePasswordAction,
+    resendOnboardingAction,
     updateAuthAction,
     updateContactAction,
     updateRespondentAction,
@@ -261,6 +264,13 @@ async function regeneratePasswordAction(formData: FormData) {
   await regenerateRespondentTemporaryPasswordData(
     readFormString(formData, "respondentId"),
   );
+  revalidateRespondentPages();
+}
+
+async function resendOnboardingAction(formData: FormData) {
+  "use server";
+  await requireDemoRole("admin");
+  await resendRespondentOnboardingData(readFormString(formData, "respondentId"));
   revalidateRespondentPages();
 }
 

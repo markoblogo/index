@@ -23,22 +23,44 @@ describe("buildTelegramSubmissionConfirmationText", () => {
 });
 
 describe("getKyivReminderLevel", () => {
-  it("returns the initial Kyiv slot at 16:00", () => {
+  it("keeps the legacy UGA initial Kyiv slot at 16:00", () => {
     expect(getKyivReminderLevel(new Date("2026-06-03T13:05:00.000Z"))).toBe(
       "initial",
     );
   });
 
-  it("returns the first reminder slot at 17:00", () => {
+  it("keeps the legacy UGA first reminder slot at 17:00", () => {
     expect(getKyivReminderLevel(new Date("2026-06-03T14:05:00.000Z"))).toBe(
-      "reminder_17",
+      "reminder_18",
     );
   });
 
-  it("returns the final reminder slot at 18:00", () => {
+  it("keeps the legacy UGA final reminder slot at 18:00", () => {
     expect(getKyivReminderLevel(new Date("2026-06-03T15:05:00.000Z"))).toBe(
-      "final_18",
+      "final_19",
     );
+  });
+
+  it("uses the SSI initial slot at 17:00 Kyiv or later", () => {
+    const previousTenant = process.env.INDEX_TENANT;
+    process.env.INDEX_TENANT = "spike-ua";
+
+    expect(getKyivReminderLevel(new Date("2026-06-03T13:05:00.000Z"))).toBeNull();
+    expect(getKyivReminderLevel(new Date("2026-06-03T14:05:00.000Z"))).toBe(
+      "initial",
+    );
+    expect(getKyivReminderLevel(new Date("2026-06-03T15:05:00.000Z"))).toBe(
+      "reminder_18",
+    );
+    expect(getKyivReminderLevel(new Date("2026-06-03T16:05:00.000Z"))).toBe(
+      "final_19",
+    );
+
+    if (previousTenant) {
+      process.env.INDEX_TENANT = previousTenant;
+    } else {
+      delete process.env.INDEX_TENANT;
+    }
   });
 
   it("skips weekends", () => {

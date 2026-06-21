@@ -34,9 +34,11 @@ export async function GET(request: Request) {
 }
 
 function parseReminderLevel(value: string | null) {
-  if (value === "initial" || value === "reminder_17" || value === "final_18") {
+  if (value === "initial" || value === "reminder_18" || value === "final_19") {
     return value;
   }
+  if (value === "reminder_17") return "reminder_18";
+  if (value === "final_18") return "final_19";
 
   return undefined;
 }

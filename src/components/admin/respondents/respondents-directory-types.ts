@@ -11,6 +11,7 @@ export type RespondentDirectoryActions = {
   deleteContactAction: (formData: FormData) => Promise<void>;
   deleteRespondentAction: (formData: FormData) => Promise<void>;
   regeneratePasswordAction: (formData: FormData) => Promise<void>;
+  resendOnboardingAction: (formData: FormData) => Promise<void>;
   updateAuthAction: (formData: FormData) => Promise<void>;
   updateContactAction: (formData: FormData) => Promise<void>;
   updateRespondentAction: (formData: FormData) => Promise<void>;

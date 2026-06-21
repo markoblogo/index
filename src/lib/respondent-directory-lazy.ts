@@ -48,6 +48,13 @@ export async function regenerateRespondentTemporaryPasswordData(
   return loadedModule.regenerateRespondentTemporaryPasswordData(...args);
 }
 
+export async function resendRespondentOnboardingData(
+  ...args: Parameters<RespondentDirectoryModule["resendRespondentOnboardingData"]>
+) {
+  const loadedModule = await loadRespondentDirectoryModule();
+  return loadedModule.resendRespondentOnboardingData(...args);
+}
+
 export async function addRespondentContactData(
   ...args: Parameters<RespondentDirectoryModule["addRespondentContactData"]>
 ) {

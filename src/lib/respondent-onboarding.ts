@@ -1,3 +1,4 @@
+import { createHash, randomBytes } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { db, hasDatabaseUrl } from "@/lib/db";
 import { SITE_CONFIG } from "@/lib/constants";
@@ -83,41 +84,50 @@ export async function handleRespondentTelegramStart(update: unknown) {
 
   const chatId = String(message.chat.id);
   const username = normalizeTelegramUsername(message.from?.username ?? null);
+  const startPayload = extractStartPayload(message.text);
   const token = getRespondentTelegramBotToken();
 
   if (!token) {
     return { ok: true, skippedReason: "telegram_bot_token_missing" };
   }
 
-  const contact = await db.respondentContact.findFirst({
-    include: {
-      respondent: {
+  const tokenContact = startPayload
+    ? await resolveRespondentTelegramStartToken({
+        chatId,
+        token: startPayload,
+        username,
+      })
+    : null;
+  const contact = startPayload
+    ? tokenContact
+    : await db.respondentContact.findFirst({
         include: {
-          authAccount: true,
+          respondent: {
+            include: {
+              authAccount: true,
+            },
+          },
         },
-      },
-    },
-    where: {
-      active: true,
-      respondent: {
-        active: true,
-        status: "active",
-      },
-      OR: [
-        { telegramChatId: chatId },
-        username ? { telegramUsername: username } : undefined,
-      ].filter(Boolean) as Array<
-        | { telegramChatId: string }
-        | { telegramUsername: string }
-      >,
-    },
-  });
+        where: {
+          active: true,
+          respondent: {
+            active: true,
+            status: "active",
+          },
+          OR: [
+            { telegramChatId: chatId },
+            username ? { telegramUsername: username } : undefined,
+          ].filter(Boolean) as Array<
+            | { telegramChatId: string }
+            | { telegramUsername: string }
+          >,
+        },
+      });
 
   if (!contact) {
     await sendTelegramText({
       chatId,
-      text:
-        "Ваш Telegram ще не прив'язаний до респондента SPIKE SPOT INDEX. Зверніться до менеджера проєкту, щоб завершити підключення.",
+      text: buildTelegramUnmatchedText(),
       token,
     });
     return { ok: true, skippedReason: "contact_not_found" };
@@ -134,6 +144,7 @@ export async function handleRespondentTelegramStart(update: unknown) {
   }
 
   const wasUnlinked = !contact.telegramChatId;
+  const alreadyLinkedToSameChat = contact.telegramChatId === chatId;
 
   const updatedContact = await db.respondentContact.update({
     where: { id: contact.id },
@@ -156,13 +167,16 @@ export async function handleRespondentTelegramStart(update: unknown) {
     locale: updatedContact.preferredLocale === "en" ? "en" : "uk",
     respondentId: updatedContact.respondentId,
   });
-  const welcomeText = buildTelegramStartText({
-    companyName: updatedContact.respondent.legalName,
-    locale: updatedContact.preferredLocale === "en" ? "en" : "uk",
-  });
+  const welcomeText = alreadyLinkedToSameChat
+    ? buildSpikeTelegramAlreadyLinkedText({
+        companyName: updatedContact.respondent.legalName,
+      })
+    : buildTelegramStartText({
+        companyName: updatedContact.respondent.legalName,
+        locale: updatedContact.preferredLocale === "en" ? "en" : "uk",
+      });
   const sendResult = await sendTelegramText({
-    buttonLabel:
-      updatedContact.preferredLocale === "en" ? "Open price form" : "Відкрити форму цін",
+    buttonLabel: "Відкрити форму цін",
     chatId,
     log: {
       contactId: updatedContact.id,
@@ -196,6 +210,7 @@ export async function handleRespondentTelegramStart(update: unknown) {
         contactId: updatedContact.id,
         messageId: sendResult.providerId ?? null,
         username: username ?? null,
+        viaToken: Boolean(tokenContact),
       },
       beforeJson: Prisma.JsonNull,
       entityId: updatedContact.respondentId,
@@ -223,14 +238,34 @@ async function sendRespondentOnboardingEmail({
   const apiKey = process.env.RESEND_API_KEY;
 
   if (!apiKey) {
+    await db.respondentEmailDelivery.create({
+      data: {
+        contactId: contact.id,
+        email: contact.email,
+        error: "RESEND_API_KEY is not configured",
+        providerId: null,
+        respondentId: respondent.id,
+        status: "skipped_no_email_provider",
+        subject:
+          SITE_CONFIG.tenantId === "spike-ua"
+            ? "Ваш доступ респондента до SPIKE SPOT INDEX"
+            : `${SITE_CONFIG.name} respondent access`,
+        trigger: "respondent_onboarding_email",
+      },
+    });
     return "skipped_no_email_provider";
   }
 
+  const telegramLink = await createRespondentTelegramLinkToken({
+    contactId: contact.id,
+    respondentId: respondent.id,
+  });
   const message = buildOnboardingEmailMessage({
     companyName: respondent.legalName,
     locale: contact.preferredLocale,
     loginEmail: auth.loginEmail,
     recipientName: contact.name,
+    telegramDeepLink: telegramLink.deepLink,
     temporaryPassword: auth.temporaryPassword ?? "",
   });
   const response = await fetch("https://api.resend.com/emails", {
@@ -267,12 +302,32 @@ async function sendRespondentOnboardingEmail({
       trigger: "respondent_onboarding_email",
     },
   });
+  await db.auditLog.create({
+    data: {
+      action:
+        status === "sent"
+          ? "respondent.onboarding_email_sent"
+          : "respondent.onboarding_email_failed",
+      afterJson: {
+        contactId: contact.id,
+        email: contact.email,
+        providerId: payload.id ?? null,
+        status,
+      },
+      beforeJson: Prisma.JsonNull,
+      entityId: respondent.id,
+      entityType: "Respondent",
+      summary:
+        status === "sent"
+          ? `Sent respondent onboarding email for ${respondent.legalName}.`
+          : `Failed respondent onboarding email for ${respondent.legalName}.`,
+    },
+  });
 
   return status;
 }
 
 async function sendRespondentLinkedTelegramWelcome({
-  auth,
   contact,
   respondent,
 }: {
@@ -286,14 +341,18 @@ async function sendRespondentLinkedTelegramWelcome({
     return "pending_start";
   }
 
-  const text = buildLinkedTelegramWelcomeText({
-    locale: contact.preferredLocale,
-    loginEmail: auth.loginEmail,
-    temporaryPassword: auth.temporaryPassword ?? "",
+  const surveyUrl = await createRespondentTelegramSurveyUrl({
+    chatId: contact.telegramChatId,
+    contactId: contact.id,
+    locale: contact.preferredLocale === "en" ? "en" : "uk",
+    respondentId: respondent.id,
   });
-
+  const text = buildTelegramStartText({
+    companyName: respondent.legalName,
+    locale: contact.preferredLocale,
+  });
   const result = await sendTelegramText({
-    buttonLabel: contact.preferredLocale === "en" ? "Open login" : "Відкрити вхід",
+    buttonLabel: "Відкрити форму цін",
     chatId: contact.telegramChatId,
     log: {
       contactId: contact.id,
@@ -303,7 +362,7 @@ async function sendRespondentLinkedTelegramWelcome({
     },
     text,
     token,
-    url: `${getSiteUrl()}/login`,
+    webAppUrl: surveyUrl,
   });
 
   return result.status;
@@ -314,16 +373,31 @@ function buildOnboardingEmailMessage({
   locale,
   loginEmail,
   recipientName,
+  telegramDeepLink,
   temporaryPassword,
 }: {
   companyName: string;
   locale: "uk" | "en";
   loginEmail: string;
   recipientName: string;
+  telegramDeepLink?: string;
   temporaryPassword: string;
 }) {
   const loginUrl = `${getSiteUrl()}/login`;
   const botHandle = getTelegramBotHandle();
+
+  if (SITE_CONFIG.tenantId === "spike-ua") {
+    return buildSpikeRespondentOnboardingEmailMessage({
+      botHandle,
+      companyName,
+      loginEmail,
+      loginUrl,
+      publicProjectUrl: getSpikePublicProjectUrl(),
+      recipientName,
+      telegramDeepLink: telegramDeepLink ?? getTelegramBotUrl(),
+      temporaryPassword,
+    });
+  }
 
   if (locale === "en") {
     const text = [
@@ -368,36 +442,6 @@ function buildOnboardingEmailMessage({
   };
 }
 
-function buildLinkedTelegramWelcomeText({
-  locale,
-  loginEmail,
-  temporaryPassword,
-}: {
-  locale: "uk" | "en";
-  loginEmail: string;
-  temporaryPassword: string;
-}) {
-  if (locale === "en") {
-    return [
-      `${SITE_CONFIG.name}: your respondent account is ready.`,
-      "",
-      `Login: ${loginEmail}`,
-      `Temporary password: ${temporaryPassword}`,
-      "",
-      "Open the site, sign in, set your permanent password, then use /start here for your first submission.",
-    ].join("\n");
-  }
-
-  return [
-    `${SITE_CONFIG.name}: ваш доступ респондента готовий.`,
-    "",
-    `Логін: ${loginEmail}`,
-    `Тимчасовий пароль: ${temporaryPassword}`,
-    "",
-    "Зайдіть на сайт, встановіть свій постійний пароль, а потім натисніть /start тут для першого заповнення.",
-  ].join("\n");
-}
-
 function buildTelegramStartText({
   companyName,
   locale,
@@ -405,6 +449,10 @@ function buildTelegramStartText({
   companyName: string;
   locale: "uk" | "en";
 }) {
+  if (SITE_CONFIG.tenantId === "spike-ua") {
+    return buildSpikeTelegramStartText({ companyName });
+  }
+
   if (locale === "en") {
     return [
       `You are connected to ${SITE_CONFIG.name} for ${companyName}.`,
@@ -418,6 +466,242 @@ function buildTelegramStartText({
     "",
     "Відкрийте персональну форму і зробіть перше щоденне подання цін. Починаючи з наступного робочого дня, нагадування в Telegram приходитимуть сюди автоматично.",
   ].join("\n");
+}
+
+export function buildSpikeRespondentOnboardingEmailMessage({
+  botHandle,
+  companyName,
+  loginEmail,
+  loginUrl,
+  publicProjectUrl,
+  recipientName,
+  telegramDeepLink,
+  temporaryPassword,
+}: {
+  botHandle: string;
+  companyName: string;
+  loginEmail: string;
+  loginUrl: string;
+  publicProjectUrl: string;
+  recipientName: string;
+  telegramDeepLink: string;
+  temporaryPassword: string;
+}) {
+  const subject = "Ваш доступ респондента до SPIKE SPOT INDEX";
+  const text = [
+    `Вітаємо, ${recipientName}.`,
+    "",
+    "Дякуємо за готовність долучитися до SPIKE SPOT INDEX — незалежного бенчмарку спотових цін аграрного ринку України.",
+    "",
+    `Для компанії ${companyName} створено доступ респондента.`,
+    "",
+    "Дані для входу:",
+    `Сайт: ${loginUrl}`,
+    `Логін: ${loginEmail}`,
+    `Тимчасовий пароль: ${temporaryPassword}`,
+    "",
+    "Що потрібно зробити:",
+    "1. Увійти на сайт і встановити постійний пароль.",
+    `2. Підключити Telegram-бота: ${botHandle}`,
+    "3. Натиснути Start або скористатися персональним посиланням з цього листа.",
+    "4. З понеділка по п’ятницю після 17:00 бот надсилатиме коротку форму для внесення цін.",
+    "5. Щодня витрачати близько 1 хвилини, щоб вказати своє бачення справедливої спотової ціни.",
+    "",
+    "Ваш внесок допомагає формувати прозорий ринковий бенчмарк, який стане основою для розвитку інструментів управління ціновими ризиками та підвищить прозорість ринку для всіх його учасників.",
+    "",
+    "Детальніше про проєкт:",
+    publicProjectUrl,
+    "",
+    "Якщо виникнуть питання, просто відповідайте на цей лист.",
+    "",
+    "Команда SPIKE SPOT INDEX",
+    "https://spike.1d3x.com/",
+  ].join("\n");
+  const html = [
+    `<p>Вітаємо, ${escapeHtml(recipientName)}.</p>`,
+    "<p>Дякуємо за готовність долучитися до <strong>SPIKE SPOT INDEX</strong> — незалежного бенчмарку спотових цін аграрного ринку України.</p>",
+    `<p>Для компанії <strong>${escapeHtml(companyName)}</strong> створено доступ респондента.</p>`,
+    '<div style="border:1px solid #d7dde8;border-radius:12px;padding:16px;margin:18px 0;background:#f7f9fc">',
+    "<p><strong>Дані для входу</strong></p>",
+    `<p>Сайт: <a href="${escapeHtml(loginUrl)}">${escapeHtml(loginUrl)}</a><br />`,
+    `Логін: <strong>${escapeHtml(loginEmail)}</strong><br />`,
+    `Тимчасовий пароль: <strong>${escapeHtml(temporaryPassword)}</strong></p>`,
+    "</div>",
+    "<p><strong>Що потрібно зробити:</strong></p>",
+    "<ol>",
+    "<li>Увійти на сайт і встановити постійний пароль.</li>",
+    `<li>Підключити Telegram-бота: ${escapeHtml(botHandle)}.</li>`,
+    "<li>Натиснути Start або скористатися персональним посиланням з цього листа.</li>",
+    "<li>З понеділка по п’ятницю після 17:00 бот надсилатиме коротку форму для внесення цін.</li>",
+    "<li>Щодня витрачати близько 1 хвилини, щоб вказати своє бачення справедливої спотової ціни.</li>",
+    "</ol>",
+    '<p style="margin:20px 0">',
+    `<a href="${escapeHtml(loginUrl)}" style="display:inline-block;margin:0 10px 10px 0;padding:12px 16px;border-radius:10px;background:#111827;color:#ffffff;text-decoration:none">Увійти на сайт</a>`,
+    `<a href="${escapeHtml(telegramDeepLink)}" style="display:inline-block;margin:0 10px 10px 0;padding:12px 16px;border-radius:10px;background:#33ff33;color:#06110a;text-decoration:none">Підключити Telegram</a>`,
+    "</p>",
+    "<p>Ваш внесок допомагає формувати прозорий ринковий бенчмарк, який стане основою для розвитку інструментів управління ціновими ризиками та підвищить прозорість ринку для всіх його учасників.</p>",
+    `<p>Детальніше про проєкт:<br /><a href="${escapeHtml(publicProjectUrl)}">${escapeHtml(publicProjectUrl)}</a></p>`,
+    "<p>Якщо виникнуть питання, просто відповідайте на цей лист.</p>",
+    '<p>Команда SPIKE SPOT INDEX<br /><a href="https://spike.1d3x.com/">https://spike.1d3x.com/</a></p>',
+  ].join("");
+
+  return { html, subject, text };
+}
+
+export function buildSpikeTelegramStartText({ companyName }: { companyName: string }) {
+  return [
+    `Вітаємо! Telegram підключено до SPIKE SPOT INDEX для ${companyName}.`,
+    "",
+    "SPIKE SPOT INDEX — незалежний бенчмарк спотових цін аграрного ринку України.",
+    "",
+    "Що буде далі:",
+    "✅ З понеділка по п’ятницю після 17:00 бот надсилатиме персональну форму для внесення цін.",
+    "✅ Заповнення займає близько 1 хвилини.",
+    "✅ Вкажіть своє бачення справедливої спотової ціни за доступними позиціями.",
+    "✅ За потреби ви зможете повернутися до форми та оновити дані до фінального розрахунку дня.",
+    "",
+    "Ваш внесок допомагає формувати прозорий ринковий бенчмарк і підвищувати прозорість аграрного ринку України.",
+    "",
+    "Натисніть кнопку нижче, щоб відкрити першу форму.",
+    "",
+    "Детальніше про проєкт:",
+    getSpikePublicProjectUrl(),
+  ].join("\n");
+}
+
+export function buildSpikeTelegramAlreadyLinkedText({ companyName }: { companyName: string }) {
+  return [
+    `Ви вже підключені до SPIKE SPOT INDEX для ${companyName}.`,
+    "Натисніть кнопку нижче, щоб відкрити форму цін.",
+  ].join("\n");
+}
+
+export function buildSpikeTelegramUnmatchedText() {
+  return "Вітаємо! Щоб підключити Telegram до SPIKE SPOT INDEX, скористайтеся персональним посиланням з onboarding-листа або повідомте менеджеру ваш Telegram username/ID.";
+}
+
+function buildTelegramUnmatchedText() {
+  if (SITE_CONFIG.tenantId === "spike-ua") {
+    return buildSpikeTelegramUnmatchedText();
+  }
+
+  return "Ваш Telegram ще не прив'язаний до респондента. Зверніться до менеджера проєкту, щоб завершити підключення.";
+}
+
+export function buildRespondentTelegramDeepLink(token: string) {
+  return `${getTelegramBotUrl()}?start=${encodeURIComponent(token)}`;
+}
+
+export function hashRespondentTelegramLinkToken(token: string) {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+export function createRespondentTelegramLinkTokenValue() {
+  return randomBytes(32).toString("base64url");
+}
+
+async function createRespondentTelegramLinkToken({
+  contactId,
+  respondentId,
+}: {
+  contactId: string;
+  respondentId: string;
+}) {
+  const rawToken = createRespondentTelegramLinkTokenValue();
+  const tokenHash = hashRespondentTelegramLinkToken(rawToken);
+  const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 14);
+  const tenantId = getActiveIndexConfig().id;
+
+  await db.respondentTelegramLinkToken.create({
+    data: {
+      contactId,
+      expiresAt,
+      respondentId,
+      tenantId,
+      tokenHash,
+    },
+  });
+  await db.auditLog.create({
+    data: {
+      action: "respondent.telegram_link_token_created",
+      afterJson: {
+        contactId,
+        expiresAt: expiresAt.toISOString(),
+        tenantId,
+      },
+      beforeJson: Prisma.JsonNull,
+      entityId: respondentId,
+      entityType: "Respondent",
+      summary: "Created respondent Telegram link token.",
+    },
+  });
+
+  return {
+    deepLink: buildRespondentTelegramDeepLink(rawToken),
+  };
+}
+
+async function resolveRespondentTelegramStartToken({
+  chatId,
+  token,
+  username,
+}: {
+  chatId: string;
+  token: string;
+  username: string | null;
+}) {
+  const tokenHash = hashRespondentTelegramLinkToken(token);
+  const linkToken = await db.respondentTelegramLinkToken.findUnique({
+    include: {
+      contact: {
+        include: {
+          respondent: {
+            include: {
+              authAccount: true,
+            },
+          },
+        },
+      },
+    },
+    where: { tokenHash },
+  });
+
+  if (!linkToken || linkToken.expiresAt.getTime() < Date.now()) {
+    return null;
+  }
+
+  const contact = linkToken.contact;
+
+  if (!contact.active || !contact.respondent.active || contact.respondent.status !== "active") {
+    return null;
+  }
+
+  if (linkToken.usedAt && contact.telegramChatId !== chatId) {
+    return null;
+  }
+
+  if (!linkToken.usedAt) {
+    await db.respondentTelegramLinkToken.update({
+      where: { id: linkToken.id },
+      data: { usedAt: new Date() },
+    });
+    await db.auditLog.create({
+      data: {
+        action: "respondent.telegram_link_token_used",
+        afterJson: {
+          chatId,
+          contactId: contact.id,
+          username: username ?? null,
+        },
+        beforeJson: Prisma.JsonNull,
+        entityId: contact.respondentId,
+        entityType: "Respondent",
+        summary: "Used respondent Telegram link token.",
+      },
+    });
+  }
+
+  return contact;
 }
 
 async function sendTelegramText({
@@ -512,6 +796,16 @@ function extractTelegramMessage(update: unknown) {
   return record.message ?? record.edited_message ?? null;
 }
 
+function extractStartPayload(text: string | undefined) {
+  const parts = text?.trim().split(/\s+/) ?? [];
+
+  if (parts[0] !== "/start" || !parts[1]) {
+    return null;
+  }
+
+  return parts[1];
+}
+
 type TelegramInboundMessage = {
   chat: { id: number | string };
   from?: { username?: string };
@@ -520,13 +814,17 @@ type TelegramInboundMessage = {
 
 function getOnboardingSender() {
   return SITE_CONFIG.tenantId === "spike-ua"
-    ? process.env.SPIKE_ADMIN_INVITE_SENDER ?? "SPIKE SPOT INDEX <onboarding@resend.dev>"
+    ? process.env.SPIKE_RESPONDENT_ONBOARDING_SENDER ??
+        process.env.SPIKE_ADMIN_INVITE_SENDER ??
+        "SPIKE SPOT INDEX <onboarding@resend.dev>"
     : "UGA Index <onboarding@resend.dev>";
 }
 
 function getOnboardingReplyTo() {
   return SITE_CONFIG.tenantId === "spike-ua"
-    ? process.env.SPIKE_ADMIN_INVITE_REPLY_TO || "info@spike.broker"
+    ? process.env.SPIKE_RESPONDENT_ONBOARDING_REPLY_TO ||
+        process.env.SPIKE_ADMIN_INVITE_REPLY_TO ||
+        "info@spike.broker"
     : "inbox@uga.ua";
 }
 
@@ -536,6 +834,22 @@ function getSiteUrl() {
 
 function getTelegramBotHandle() {
   return SITE_CONFIG.tenantId === "spike-ua" ? "@spike_spot_bot" : "@uga_index_bot";
+}
+
+function getTelegramBotUrl() {
+  return getActiveIndexConfig().id === "spike-ua"
+    ? "https://t.me/spike_spot_bot"
+    : "https://t.me/uga_index_bot";
+}
+
+function getSpikePublicProjectUrl() {
+  const siteUrl = getSiteUrl();
+
+  if (siteUrl.includes("localhost")) {
+    return "https://spike.1d3x.com/uk";
+  }
+
+  return `${siteUrl}/uk`;
 }
 
 function normalizeTelegramUsername(value: string | null | undefined) {

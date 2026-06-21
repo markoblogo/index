@@ -126,6 +126,7 @@ model RespondentContact {
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
   respondent    Respondent  @relation(fields: [respondentId], references: [id], onDelete: Cascade)
+  telegramLinkTokens RespondentTelegramLinkToken[]
 
   @@index([respondentId, primary, active])
 }
@@ -190,6 +191,23 @@ model RespondentSurveyToken {
   respondent   Respondent  @relation(fields: [respondentId], references: [id], onDelete: Cascade)
 
   @@index([respondentId, expiresAt])
+}
+
+model RespondentTelegramLinkToken {
+  id           String      @id @default(cuid())
+  tokenHash    String      @unique
+  respondentId String
+  contactId    String
+  tenantId     String
+  expiresAt    DateTime
+  usedAt       DateTime?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  contact      RespondentContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([contactId])
+  @@index([respondentId])
+  @@index([expiresAt])
 }
 
 model Basket {
