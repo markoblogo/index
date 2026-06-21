@@ -283,8 +283,12 @@ export async function sendMediaHubReportTelegram(
     : null;
 
   const botToken =
-    process.env.SPIKE_TELEGRAM_BOT_TOKEN ??
-    process.env.INDEX_TELEGRAM_BOT_TOKEN;
+    options.audience === "platform"
+      ? process.env.ID3X_TELEGRAM_BOT_TOKEN ??
+        process.env.SPIKE_TELEGRAM_BOT_TOKEN ??
+        process.env.INDEX_TELEGRAM_BOT_TOKEN
+      : process.env.SPIKE_TELEGRAM_BOT_TOKEN ??
+        process.env.INDEX_TELEGRAM_BOT_TOKEN;
   const chatId =
     options.audience === "platform"
       ? process.env.ID3X_MEDIA_HUB_TELEGRAM_CHAT_ID ??
