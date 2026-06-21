@@ -720,14 +720,15 @@ function parseMediaHubReportContent(value: unknown): MediaHubReportContentJson |
     localized,
     manualMaterialsUsed: Array.isArray(candidate.manualMaterialsUsed)
       ? candidate.manualMaterialsUsed
-          .filter((item): item is { id?: unknown; sourceDomain?: unknown; sourceType?: unknown } =>
-            Boolean(item) && typeof item === "object",
-          )
-          .map((item) => ({
-            id: String(item.id ?? ""),
-            sourceDomain: item.sourceDomain ? String(item.sourceDomain) : null,
-            sourceType: String(item.sourceType ?? ""),
-          }))
+          .filter((item) => Boolean(item) && typeof item === "object")
+          .map((item) => {
+            const record = item as Record<string, unknown>;
+            return {
+              id: String(record.id ?? ""),
+              sourceDomain: record.sourceDomain ? String(record.sourceDomain) : null,
+              sourceType: String(record.sourceType ?? ""),
+            };
+          })
       : [],
     periodEndDate: String(candidate.periodEndDate ?? ""),
     periodStartDate: String(candidate.periodStartDate ?? ""),
