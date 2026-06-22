@@ -121,6 +121,7 @@ export async function autoPublishSpikeDailyIndices(
   });
 
   if (existingPublishedCount > 0 && !options.replaceExisting) {
+    await ensureDailyMediaHubPublication(date);
     return { date, published: 0, skippedReason: "already_published" };
   }
 
@@ -331,11 +332,7 @@ export async function autoPublishSpikeDailyIndices(
       : null;
 
   if (published > 0) {
-    await publishMediaHubSnapshotReport("daily", date);
-    await sendMediaHubReportTelegram("daily", date, {
-      audience: "spike",
-      locale: "uk",
-    });
+    await ensureDailyMediaHubPublication(date);
   }
 
   return {
@@ -344,6 +341,14 @@ export async function autoPublishSpikeDailyIndices(
     published,
     skippedReason: published > 0 ? null : "no_publishable_positions",
   };
+}
+
+async function ensureDailyMediaHubPublication(date: string) {
+  await publishMediaHubSnapshotReport("daily", date);
+  await sendMediaHubReportTelegram("daily", date, {
+    audience: "spike",
+    locale: "uk",
+  });
 }
 
 export function buildAutoPublishPlan({

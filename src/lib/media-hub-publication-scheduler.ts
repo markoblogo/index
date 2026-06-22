@@ -122,8 +122,9 @@ export type MediaHubReportSummary = {
   summaryTitle: string;
 };
 
-const DEFAULT_MEDIA_HUB_TIMEZONE = "Europe/Paris";
-const DEFAULT_MEDIA_HUB_REPORT_TIME = "17:00";
+const DEFAULT_MEDIA_HUB_TIMEZONE = "Europe/Kyiv";
+const DEFAULT_MEDIA_HUB_DAILY_REPORT_TIME = "19:10";
+const DEFAULT_MEDIA_HUB_WEEKLY_REPORT_TIME = "15:00";
 
 export function getMediaHubPublicationPlan(date = getParisLocalDate()): MediaHubPublicationPlan {
   const weekday = getIsoWeekday(date);
@@ -179,8 +180,8 @@ export function getMediaHubMonitoringPlan(now: Date = new Date()): MediaHubMonit
 
 export function isMediaHubPublicationDue(now: Date = new Date()) {
   const parts = getParisLocalTimeParts(now);
-  const [hour, minute] = getMediaHubReportTime().split(":").map(Number);
   const plan = getMediaHubPublicationPlan(parts.date);
+  const [hour, minute] = getMediaHubReportTime(plan.kind).split(":").map(Number);
   return plan.kind !== "none" && parts.hour === hour && parts.minute === minute;
 }
 
@@ -1486,15 +1487,22 @@ async function sendMonthlyMediaHubTelegram(content: ReturnType<typeof buildMonth
 }
 
 export function getMediaHubTimezone() {
-  const configured = process.env.MEDIA_HUB_TIMEZONE?.trim();
+  const configured = process.env.MEDIA_HUB_SCHEDULE_TIMEZONE?.trim();
   return configured || DEFAULT_MEDIA_HUB_TIMEZONE;
 }
 
-export function getMediaHubReportTime() {
-  const configured = process.env.MEDIA_HUB_REPORT_TIME?.trim();
+export function getMediaHubReportTime(kind: MediaHubPublicationKind = "daily") {
+  const configured =
+    kind === "daily"
+      ? process.env.MEDIA_HUB_DAILY_REPORT_TIME?.trim()
+      : process.env.MEDIA_HUB_WEEKLY_REPORT_TIME?.trim();
+  const fallback =
+    kind === "daily"
+      ? DEFAULT_MEDIA_HUB_DAILY_REPORT_TIME
+      : DEFAULT_MEDIA_HUB_WEEKLY_REPORT_TIME;
   return configured && /^\d{2}:\d{2}$/.test(configured)
     ? configured
-    : DEFAULT_MEDIA_HUB_REPORT_TIME;
+    : fallback;
 }
 
 export function getParisLocalDate(now: Date = new Date()) {

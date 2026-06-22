@@ -6,7 +6,13 @@ vi.mock("@/lib/db", () => ({
   hasDatabaseUrl: () => false,
 }));
 vi.mock("@/lib/index-platform", () => ({
-  getActiveIndexConfig: () => ({ id: "spike-ua" }),
+  getActiveIndexConfig: () => ({
+    commodities: [],
+    deliveryBases: [{ code: "CPT_ODESSA", basketCode: "EXPORT" }],
+    id: "spike-ua",
+    legalName: { en: "Spike", uk: "Spike" },
+    respondents: [],
+  }),
 }));
 vi.mock("@/lib/platform-site", () => ({
   isPlatformSite: () => false,
@@ -21,8 +27,9 @@ import {
 
 describe("media hub publication scheduler", () => {
   beforeEach(() => {
-    vi.stubEnv("MEDIA_HUB_TIMEZONE", "Europe/Paris");
-    vi.stubEnv("MEDIA_HUB_REPORT_TIME", "17:00");
+    vi.stubEnv("MEDIA_HUB_SCHEDULE_TIMEZONE", "Europe/Kyiv");
+    vi.stubEnv("MEDIA_HUB_DAILY_REPORT_TIME", "19:10");
+    vi.stubEnv("MEDIA_HUB_WEEKLY_REPORT_TIME", "15:00");
   });
 
   afterEach(() => {
@@ -33,7 +40,7 @@ describe("media hub publication scheduler", () => {
     expect(getMediaHubPublicationPlan("2026-06-19")).toMatchObject({
       kind: "daily",
       reason: "weekday_daily_slot",
-      timezone: "Europe/Paris",
+      timezone: "Europe/Kyiv",
     });
     expect(getMediaHubPublicationPlan("2026-06-20")).toMatchObject({
       kind: "weekly",
@@ -49,7 +56,7 @@ describe("media hub publication scheduler", () => {
     });
   });
 
-  it("runs monitoring only on business days in Europe/Paris", () => {
+  it("runs monitoring only on business days in the MediaHub schedule timezone", () => {
     expect(getMediaHubMonitoringPlan(new Date("2026-06-19T12:00:00.000Z"))).toMatchObject({
       allowed: true,
       date: "2026-06-19",
@@ -60,10 +67,16 @@ describe("media hub publication scheduler", () => {
     });
   });
 
-  it("uses 17:00 Europe/Paris across daylight-saving time changes", () => {
-    expect(isMediaHubPublicationDue(new Date("2026-06-22T15:00:00.000Z"))).toBe(true);
-    expect(isMediaHubPublicationDue(new Date("2026-01-05T16:00:00.000Z"))).toBe(true);
-    expect(isMediaHubPublicationDue(new Date("2026-06-21T15:00:00.000Z"))).toBe(false);
+  it("runs weekday daily reports after the 19:00 Kyiv index publication slot", () => {
+    expect(isMediaHubPublicationDue(new Date("2026-06-22T16:10:00.000Z"))).toBe(true);
+    expect(isMediaHubPublicationDue(new Date("2026-01-05T17:10:00.000Z"))).toBe(true);
+    expect(isMediaHubPublicationDue(new Date("2026-06-22T16:00:00.000Z"))).toBe(false);
+  });
+
+  it("runs Saturday weekly/monthly reports at 15:00 Kyiv", () => {
+    expect(isMediaHubPublicationDue(new Date("2026-06-20T12:00:00.000Z"))).toBe(true);
+    expect(isMediaHubPublicationDue(new Date("2026-01-10T13:00:00.000Z"))).toBe(true);
+    expect(isMediaHubPublicationDue(new Date("2026-06-21T12:00:00.000Z"))).toBe(false);
   });
 
   it("normalizes Telegram peer ids to supergroup chat ids", () => {

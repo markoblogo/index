@@ -1,13 +1,10 @@
 import { allowMockFallback, db, hasDatabaseUrl } from "@/lib/db";
 import { getLatestDemoPublishedIndices } from "@/lib/demo-published-index-store";
-import { getDemoSubmission } from "@/lib/demo-submission-store";
 import { getActiveIndexConfig } from "@/lib/index-platform";
-import { buildLiveSubmissionValues } from "@/lib/live-submission-values";
 import {
   commodities,
   indexUpdatedAt,
   latestQuotes,
-  respondents,
   type Commodity,
   type CommodityId,
   type LatestQuote,
@@ -138,9 +135,9 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
 
   const activeRespondentCount = await getActiveRespondentCountData();
   const today = todayKyivDate();
-  const visibleTradeDate =
+  const candidateVisibleTradeDate =
     activeIndex.id === "spike-ua" ? getSpikePublicVisibleTradeDate() : today;
-  const visibleTradeDateAtMidnightUtc = dateToUtcDate(visibleTradeDate);
+  const candidateVisibleTradeDateAtMidnightUtc = dateToUtcDate(candidateVisibleTradeDate);
   const [bases, baskets] = await Promise.all([
     db.deliveryBasis.findMany({
       where: { code: { in: getConfiguredDeliveryBasisCodes(activeIndex) } },
@@ -197,6 +194,27 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
       ),
   );
   const basisIds = [...new Set([...basisByCommodityId.values()].map((basis) => basis.id))];
+  const basketIds = [
+    ...new Set([...basketByCommodityId.values()].map((basket) => basket.id)),
+  ];
+  const latestVisiblePublished =
+    activeIndex.id === "spike-ua"
+      ? await db.publishedIndex.findFirst({
+          orderBy: { tradeDate: "desc" },
+          where: {
+            basketId: { in: basketIds },
+            deliveryBasisId: { in: basisIds },
+            status: "published",
+            tradeDate: { lte: candidateVisibleTradeDateAtMidnightUtc },
+          },
+        })
+      : null;
+  const visibleTradeDate =
+    activeIndex.id === "spike-ua"
+      ? (latestVisiblePublished?.tradeDate.toISOString().slice(0, 10) ??
+        candidateVisibleTradeDate)
+      : candidateVisibleTradeDate;
+  const visibleTradeDateAtMidnightUtc = dateToUtcDate(visibleTradeDate);
   const published = await Promise.all(
     dbCommodities.map((commodity) => {
       const basisConfig = getDeliveryBasisConfigForCommodityCode(
@@ -403,14 +421,9 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
     commodities: publicCommodities,
     latestQuotes: publicLatestQuotes,
     updatedAt:
-      [
-        ...published
+      published
         .filter((index): index is NonNullable<typeof index> => Boolean(index))
-        .map((index) => index.publishedAt),
-        ...submissionFallbackByCommodityId.values(),
-        ...latestSubmissionFallbackByCommodityId.values(),
-      ]
-        .map((item) => item instanceof Date ? item : item.updatedAt)
+        .map((index) => index.publishedAt)
         .sort((first, second) => second.getTime() - first.getTime())[0]
         ?.toISOString() ?? indexUpdatedAt,
   };
@@ -514,16 +527,4 @@ function todayKyivDate() {
 
 function dateToUtcDate(date: string) {
   return new Date(`${date}T00:00:00.000Z`);
-}
-
-function calculatePercentChange(latest: number, previous: number) {
-  if (!Number.isFinite(previous) || previous === 0) {
-    return 0;
-  }
-
-  return Math.round(((latest - previous) / previous) * 1000) / 10;
-}
-
-function roundToOneDecimal(value: number) {
-  return Math.round(value * 10) / 10;
 }
