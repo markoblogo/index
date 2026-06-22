@@ -304,7 +304,7 @@ async function getDatabaseHistoryData(): Promise<PublicHistoryItem[]> {
   const rows = await db.publishedIndex.findMany({
     include: { commodity: true },
     orderBy: [{ tradeDate: "desc" }, { commodity: { sortOrder: "asc" } }],
-    take: 365,
+    take: activeIndex.id === "spike-ua" ? 5000 : 365,
     where: {
       deliveryBasisId: { in: basisIds },
       basketId: { in: basketIds },
