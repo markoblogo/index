@@ -742,18 +742,48 @@ export async function addRespondentDirectoryEntryData(
       where: { email: loginEmail },
       update: {
         active: input.status === "active",
+        lastGeneratedAt: new Date(),
         name: `${input.companyName.trim()} respondent`,
+        passwordSetupStatus: "temporary",
         respondentId: id,
         role: "respondent",
+        temporaryPassword,
       },
       create: {
         active: input.status === "active",
         email: loginEmail,
+        lastGeneratedAt: new Date(),
         name: `${input.companyName.trim()} respondent`,
+        passwordSetupStatus: "temporary",
         respondentId: id,
         role: "respondent",
+        temporaryPassword,
       },
     });
+
+    const activeBaskets = await tx.basket.findMany({
+      select: { id: true },
+      where: { active: true },
+    });
+
+    await Promise.all(
+      activeBaskets.map((basket) =>
+        tx.basketRespondent.upsert({
+          where: {
+            basketId_respondentId: {
+              basketId: basket.id,
+              respondentId: id,
+            },
+          },
+          update: { active: input.status === "active" },
+          create: {
+            active: input.status === "active",
+            basketId: basket.id,
+            respondentId: id,
+          },
+        }),
+      ),
+    );
 
     onboardingContext = {
       auth: {
