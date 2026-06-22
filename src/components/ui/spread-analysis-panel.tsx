@@ -380,8 +380,6 @@ function getPaddedRange(min: number, max: number) {
 }
 
 function toChartPoints(values: number[], min: number, max: number) {
-  const range = Math.max(max - min, 1);
-
   return values
     .map((value, index) => {
       const { x, y } = getChartPointPosition(

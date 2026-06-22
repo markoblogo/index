@@ -53,7 +53,7 @@ const ScenarioModelPanelAsync = nextDynamic(
     loading: () => (
       <div className="border border-black bg-white p-4">
         <p className="text-xs font-black uppercase tracking-[0.18em] text-black/40">
-          Loading scenario model...
+          Loading AI market read...
         </p>
       </div>
     ),
@@ -953,14 +953,14 @@ function getAnalyticsCopy(locale: Locale) {
       accessText:
         "Аналітична панель доступна як preview для SPIKE SPOT INDEX. Розширена історія, API-доступ і комерційні аналітичні зрізи можуть бути оформлені як окремі рівні доступу після запуску.",
       heroBody:
-        "Порівнюйте динаміку спотових позицій, аналізуйте експортні та переробні базиси, відстежуйте волатильність і досліджуйте AI-assisted аналітичні сценарії на основі опублікованих даних SPIKE SPOT INDEX.",
+        "Порівнюйте динаміку спотових позицій, аналізуйте експортні та переробні базиси, відстежуйте волатильність і досліджуйте AI-assisted market read на основі опублікованих даних SPIKE SPOT INDEX.",
       heroTitle: "Аналітика SPIKE SPOT INDEX",
       scenarioBody:
-        "AI-assisted analytics layer перетворює дані SPIKE SPOT INDEX на структурований ринковий контекст. Він аналізує опублікований рух індексу, короткостроковий імпульс, волатильність, цінові діапазони та поведінку спредів, а потім генерує аналітичні нотатки, які допомагають зрозуміти, що змінилося і де ринок потребує більшої уваги. AI scenario outputs базуються на історичному русі індексу, recent momentum і позиційній волатильності. Вони створені для market exploration, а не для прогнозування. AI layer не генерує офіційні значення індексу, не має доступу до індивідуальних подань респондентів і не надає торгових порад. Офіційні значення залишаються методологічними та locked після публікації.",
+        "Публічний AI Market Read перетворює архів SPIKE SPOT INDEX на короткий ринковий висновок: режим ринку, поточний імпульс, відхилення від нормального діапазону, volatility та поведінку спредів. Це демонструє, як AI може читати накопичені дані і пояснювати рух опублікованого benchmark без доступу до індивідуальних подань респондентів.",
       scenarioDisclaimer:
-        "AI-assisted outputs є лише аналітичними previews. Вони не є інвестиційною порадою, торговою рекомендацією або гарантованим прогнозом.",
+        "AI-assisted outputs пояснюють уже опубліковані дані. Вони не є інвестиційною порадою, торговою рекомендацією або прогнозом майбутніх цін.",
       scenarioEyebrow: "AI-assisted analytics",
-      scenarioTitle: "AI-assisted market intelligence",
+      scenarioTitle: "AI Market Intelligence Lab",
       spreadDescription:
         "Відносні спреди показують, як експортні та переробні позиції рухаються одна відносно одної.",
       spreadTitle: "Спреди та премії між позиціями",
@@ -1116,29 +1116,23 @@ function getAnalyticsCopy(locale: Locale) {
     accessText:
       "The analytics dashboard is available as a preview for SPIKE SPOT INDEX. Extended history, API access and commercial analytics views can be introduced as separate access levels after launch.",
     heroBody:
-      "Compare spot-position dynamics, review export and processing bases, track volatility and explore AI-assisted analytical scenarios based on published SPIKE SPOT INDEX data.",
+      "Compare spot-position dynamics, review export and processing bases, track volatility and explore an AI-assisted market read based on published SPIKE SPOT INDEX data.",
     heroTitle: "SPIKE SPOT INDEX analytics",
     historyDescription:
-      locale === "uk"
-        ? "Для основних позицій SPIKE підключено архів опублікованих значень індексу з 01.09.2025; він використовується для довших графіків, спредів, volatility та аналітики руху."
-        : "For core SPIKE positions, the archive of published index values is connected from 2025-09-01 and is used for longer charts, spread views, volatility and movement analytics.",
+      "For core SPIKE positions, the archive of published index values is connected from 2025-09-01 and is used for longer charts, spread views, volatility and movement analytics.",
     historyPublicLimit:
-      locale === "uk"
-        ? "Таблиця останніх публікацій залишається компактною, а графіки й аналітичні зрізи можуть використовувати підключений архів основних позицій з 01.09.2025."
-        : "The recent-publications table stays compact, while charts and analytical views can use the connected core-position archive from 2025-09-01.",
+      "The recent-publications table stays compact, while charts and analytical views can use the connected core-position archive from 2025-09-01.",
     scenarioBody:
-      "The AI-assisted analytics layer turns SPIKE SPOT INDEX data into structured market context. It reviews published index movement, short-term momentum, volatility, price ranges and spread behaviour, then generates analytical notes that help users understand what changed and where the market may require closer attention. AI scenario outputs are based on historical index movement, recent momentum and position-specific volatility. They are designed for market exploration, not prediction. The AI layer does not generate official index values, does not access individual respondent submissions and does not provide trading advice. Official values remain methodology-based and locked after publication.",
+      "The public AI Market Read turns the SPIKE SPOT INDEX archive into a concise market interpretation: regime, current impulse, deviation from the normal range, volatility and spread behaviour. It shows how AI can read accumulated benchmark data and explain published market movement without accessing individual respondent submissions.",
     scenarioDisclaimer:
-      "AI-assisted outputs are analytical previews only. They are not investment advice, trading recommendations or guaranteed forecasts.",
+      "AI-assisted outputs explain already published data. They are not investment advice, trading recommendations or forecasts of future prices.",
     scenarioEyebrow: "AI-assisted analytics",
-    scenarioTitle: "AI-assisted market intelligence",
+    scenarioTitle: "AI Market Intelligence Lab",
     spreadDescription:
       "Relative spreads help show how export and processing positions move against each other.",
     spreadTitle: "Position spreads and premiums",
     trendDescription:
-      locale === "uk"
-        ? "Аналітичний preview для опублікованих позицій SPIKE SPOT INDEX, включно з підключеним архівом основних позицій з 01.09.2025."
-        : "Analytics preview for published SPIKE SPOT INDEX positions, including the connected core-position archive from 2025-09-01.",
+      "Analytics preview for published SPIKE SPOT INDEX positions, including the connected core-position archive from 2025-09-01.",
     trendTitle: "Index dynamics by position",
   };
 }
