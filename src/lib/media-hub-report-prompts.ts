@@ -163,7 +163,7 @@ function noHallucinationRules() {
   return [
     "No-hallucination rules:",
     "Do not invent prices, volumes, sources, dates, destinations or causes.",
-    "If data is unavailable, omit the item or explicitly say data is unavailable.",
+    "If data is unavailable, omit the item completely. Never write that data is unavailable, absent, missing or not published.",
     "Do not write trading recommendations.",
     "Do not copy long passages from sources.",
     "Use concise professional commodity-market language.",
@@ -219,7 +219,7 @@ function commonJsonRules(input: {
     input.kind === "daily"
       ? "Use section headings plus concise bullet-text items; keep the full summary under 28 array items."
       : "Use substantial sectioned summary items. Omit empty sections completely.",
-    "Paraphrase source materials. Do not copy long copyrighted text. If data is missing, omit it or write data unavailable.",
+    "Paraphrase source materials. Do not copy long copyrighted text. If data is missing, omit that item or section completely.",
   ].join("\n");
 }
 

@@ -266,13 +266,14 @@ function parseGeneratedJson(value: string, kind: MediaHubReportKind): MediaHubLo
   try {
     const parsed = JSON.parse(jsonText) as GeneratedPayload;
     const title = typeof parsed.title === "string" ? parsed.title.trim() : "";
-    const summary = Array.isArray(parsed.summary)
+    const rawSummary = Array.isArray(parsed.summary)
       ? parsed.summary
           .filter((item): item is string => typeof item === "string")
           .map((item) => item.trim())
           .filter(Boolean)
           .slice(0, kind === "daily" ? 40 : 120)
       : [];
+    const summary = sanitizeGeneratedSummary(rawSummary);
 
     if (!title || !isUsableGeneratedSummary(summary, kind)) {
       return null;
@@ -284,14 +285,41 @@ function parseGeneratedJson(value: string, kind: MediaHubReportKind): MediaHubLo
   }
 }
 
+function sanitizeGeneratedSummary(summary: string[]) {
+  const result: string[] = [];
+  let pendingHeading: string | null = null;
+
+  for (const line of summary) {
+    const normalized = normalizeGeneratedLine(line);
+    if (!normalized || isUnavailablePlaceholder(normalized)) {
+      continue;
+    }
+
+    if (isSectionHeadingOnly(normalized)) {
+      if (pendingHeading) {
+        continue;
+      }
+      pendingHeading = line;
+      continue;
+    }
+
+    if (pendingHeading) {
+      result.push(pendingHeading);
+      pendingHeading = null;
+    }
+    result.push(line);
+  }
+
+  return result;
+}
+
 function isUsableGeneratedSummary(summary: string[], kind: MediaHubReportKind) {
   const minNarrativeItems = kind === "daily" ? 3 : 8;
   const narrativeItems = summary.filter((item) => {
     const normalized = normalizeGeneratedLine(item);
     if (!normalized) return false;
     if (isSectionHeadingOnly(normalized)) return false;
-    if (/^data unavailable\b/i.test(normalized)) return false;
-    if (/^no (specific|concrete|source-backed)\b/i.test(normalized)) return false;
+    if (isUnavailablePlaceholder(normalized)) return false;
     return normalized.split(/\s+/).length >= 7;
   });
   return narrativeItems.length >= minNarrativeItems;
@@ -302,6 +330,20 @@ function normalizeGeneratedLine(value: string) {
     .replace(/^[^\p{L}\p{N}]+/u, "")
     .replace(/[^\p{L}\p{N}\s/&-]+$/gu, "")
     .trim();
+}
+
+function isUnavailablePlaceholder(value: string) {
+  return [
+    /\bdata (is )?(unavailable|absent|missing|not available)\b/i,
+    /\bno (specific|concrete|source-backed|current|material|relevant)\b/i,
+    /\bnot (available|published|reported|disclosed)\b/i,
+    /\binsufficient (data|evidence|information)\b/i,
+    /\bдані (відсутні|недоступні|не оприлюднені|не публікувалися|не надані)\b/i,
+    /\bінформац(ія|ії) (відсутня|недоступна|не оприлюднена)\b/i,
+    /\bнемає (даних|інформації|публікацій|сигналів)\b/i,
+    /\bвідсутні (дані|конкретні|релевантні|опубліковані)\b/i,
+    /\bn\/a\b/i,
+  ].some((pattern) => pattern.test(value));
 }
 
 function isSectionHeadingOnly(value: string) {
