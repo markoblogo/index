@@ -205,8 +205,12 @@ export function SpreadAnalysisPanel({
                   style={{ left: `${hoveredPosition.x}%` }}
                 />
                 <div
-                  className="pointer-events-none absolute z-10 -translate-x-1/2 rounded-full border border-uga-green bg-white px-2.5 py-1 text-xs font-black text-[#07100c] shadow-lg shadow-black/35"
+                  className="pointer-events-none absolute z-10 -translate-x-1/2 rounded-full border px-2.5 py-1 text-xs font-black shadow-lg"
                   style={{
+                    backgroundColor: "#f8f8f2",
+                    borderColor: "var(--color-green)",
+                    boxShadow: "0 10px 24px rgba(0, 0, 0, 0.45)",
+                    color: "#07100c",
                     left: `${Math.min(Math.max(hoveredPosition.x, 8), 92)}%`,
                     top: `${Math.max(hoveredPosition.y - 13, 2)}%`,
                   }}
