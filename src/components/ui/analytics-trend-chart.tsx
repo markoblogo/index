@@ -43,6 +43,7 @@ export function AnalyticsTrendChart({
   );
   const [period, setPeriod] = useState<(typeof periodOptions)[number]["value"]>(30);
   const [hoverPoint, setHoverPoint] = useState<TrendHoverPoint | null>(null);
+  const [legendExpanded, setLegendExpanded] = useState(false);
 
   const series = useMemo(() => {
     return commodities
@@ -65,6 +66,12 @@ export function AnalyticsTrendChart({
   const maxValue = Math.max(...visibleValues);
   const paddedRange = getPaddedRange(minValue, maxValue);
   const hasVisibleSeries = series.some((item) => item.points.length > 0);
+  const legendLimit = 4;
+  const visibleLegendItems =
+    legendExpanded || commodities.length <= legendLimit
+      ? commodities
+      : commodities.slice(0, legendLimit);
+  const hiddenLegendCount = Math.max(commodities.length - visibleLegendItems.length, 0);
 
   function toggleCommodity(commodityId: CommodityId) {
     setSelectedIds((current) => {
@@ -87,7 +94,7 @@ export function AnalyticsTrendChart({
     const bounds = event.currentTarget.getBoundingClientRect();
     const pointerX = ((event.clientX - bounds.left) / bounds.width) * 100;
     const pointerY = ((event.clientY - bounds.top) / bounds.height) * 100;
-    const nearest = findNearestPoint({
+    const nearest = findHoverSlice({
       max: paddedRange.max,
       min: paddedRange.min,
       pointerX,
@@ -138,36 +145,50 @@ export function AnalyticsTrendChart({
                 y1="14"
                 y2="88"
               />
-              <circle
-                cx={hoverPoint.x}
-                cy={hoverPoint.y}
-                fill={hoverPoint.color}
-                r="1.7"
-                stroke="#f7f7ef"
-                strokeWidth="0.7"
-                vectorEffect="non-scaling-stroke"
-              />
+              {hoverPoint.entries.map((entry) => (
+                <circle
+                  cx={entry.x}
+                  cy={entry.y}
+                  fill={entry.color}
+                  key={entry.commodity.id}
+                  r="1.55"
+                  stroke="#f7f7ef"
+                  strokeWidth="0.65"
+                  vectorEffect="non-scaling-stroke"
+                />
+              ))}
             </g>
           ) : null}
         </svg>
         {hoverPoint ? (
-          <>
-            <div
-              className="pointer-events-none absolute z-10 -translate-x-1/2 rounded-full border border-white/20 bg-[#f7f7ef] px-2.5 py-1 text-xs font-black text-[#07100c] shadow-lg shadow-black/35"
-              style={{
-                left: `${Math.min(Math.max(hoverPoint.x, 8), 92)}%`,
-                top: `${Math.max(hoverPoint.y - 12, 2)}%`,
-              }}
-            >
-              {hoverPoint.value.toFixed(0)} USD/t
-            </div>
-            <div
-              className="pointer-events-none absolute bottom-0 z-10 -translate-x-1/2 text-xs font-black uppercase tracking-[0.12em] text-white/70"
-              style={{ left: `${Math.min(Math.max(hoverPoint.x, 8), 92)}%` }}
-            >
+          <div
+            className="pointer-events-none absolute z-10 min-w-40 -translate-x-1/2 rounded-2xl border border-white/30 bg-[#f7f7ef] px-3 py-2 text-[#07100c] shadow-xl shadow-black/40"
+            style={{
+              left: `${Math.min(Math.max(hoverPoint.x, 12), 88)}%`,
+              top: `${Math.max(hoverPoint.y - 20, 2)}%`,
+            }}
+          >
+            <p className="text-[0.62rem] font-black uppercase tracking-[0.14em] text-black/50">
               {formatHoverDate(hoverPoint.date, locale)}
+            </p>
+            <div className="mt-1.5 space-y-1">
+              {hoverPoint.entries.map((entry) => (
+                <div
+                  className="grid grid-cols-[0.55rem_1fr_auto] items-center gap-1.5 text-[0.66rem] font-black uppercase leading-tight"
+                  key={entry.commodity.id}
+                >
+                  <span
+                    className="h-2 w-2 rounded-full"
+                    style={{ backgroundColor: entry.color }}
+                  />
+                  <span className="max-w-28 truncate text-black/70">
+                    {entry.commodity.shortName?.[locale] ?? entry.commodity.name[locale]}
+                  </span>
+                  <span>{entry.value.toFixed(0)} USD/t</span>
+                </div>
+              ))}
             </div>
-          </>
+          </div>
         ) : null}
         <div className="pointer-events-none absolute right-0 top-1 text-right text-[0.65rem] font-black uppercase leading-4 text-white/58">
           <p>{paddedRange.max.toFixed(0)} USD/t</p>
@@ -175,39 +196,58 @@ export function AnalyticsTrendChart({
         </div>
       </div>
 
-      <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-        <div className="flex flex-wrap gap-2">
-          {commodities.map((commodity, index) => {
+      <div className="mt-3 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-wrap gap-1.5">
+          {visibleLegendItems.map((commodity) => {
             const active = selectedIds.includes(commodity.id);
+            const colorIndex = commodities.findIndex((item) => item.id === commodity.id);
 
             return (
               <button
                 aria-pressed={active}
-                className={`inline-flex items-center gap-2 border px-2.5 py-1.5 text-xs font-black uppercase transition ${
+                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.64rem] font-black uppercase tracking-[0.03em] transition ${
                   active
-                    ? "border-black bg-white text-black"
+                    ? "border-black/70 bg-white text-black"
                     : "border-black/15 bg-transparent text-black/35 grayscale hover:border-black/35 hover:text-black/55"
                 }`}
                 key={commodity.id}
                 onClick={() => toggleCommodity(commodity.id)}
+                title={commodity.name[locale]}
                 type="button"
               >
                 <span
                   className={
                     active
-                      ? "h-2.5 w-2.5 border border-black"
-                      : "h-2.5 w-2.5 border border-black/20 bg-[#d7d7d7]"
+                      ? "h-2 w-2 rounded-full border border-black/40"
+                      : "h-2 w-2 rounded-full border border-black/20 bg-[#d7d7d7]"
                   }
                   style={
                     active
-                      ? { backgroundColor: chartColors[index % chartColors.length] }
+                      ? { backgroundColor: chartColors[colorIndex % chartColors.length] }
                       : undefined
                   }
                 />
-                {commodity.name[locale]}
+                <span className="max-w-36 truncate">
+                  {commodity.shortName?.[locale] ?? commodity.name[locale]}
+                </span>
               </button>
             );
           })}
+          {hiddenLegendCount > 0 || legendExpanded ? (
+            <button
+              className="inline-flex items-center rounded-full border border-black/20 px-2.5 py-1 text-[0.64rem] font-black uppercase text-black/50 transition hover:border-black/45 hover:text-black"
+              onClick={() => setLegendExpanded((current) => !current)}
+              type="button"
+            >
+              {legendExpanded
+                ? locale === "uk"
+                  ? "менше"
+                  : "less"
+                : locale === "uk"
+                  ? `+${hiddenLegendCount} ще`
+                  : `+${hiddenLegendCount} more`}
+            </button>
+          ) : null}
         </div>
 
         <div className="flex flex-wrap justify-start gap-1.5 lg:justify-end">
@@ -216,7 +256,7 @@ export function AnalyticsTrendChart({
 
             return (
               <button
-                className={`border px-2.5 py-1.5 text-[0.68rem] font-black uppercase transition ${
+                className={`rounded-full border px-2.5 py-1 text-[0.64rem] font-black uppercase transition ${
                   active
                     ? "border-black bg-uga-dark text-white"
                     : "border-black/25 bg-white text-black/50 hover:border-black hover:text-black"
@@ -242,7 +282,15 @@ type TrendSeries = {
 };
 
 type TrendHoverPoint = {
+  date: string;
+  entries: TrendHoverEntry[];
+  x: number;
+  y: number;
+};
+
+type TrendHoverEntry = {
   color: string;
+  commodity: Commodity;
   date: string;
   value: number;
   x: number;
@@ -274,7 +322,7 @@ function toChartPoints(values: number[], min: number, max: number) {
     .join(" ");
 }
 
-function findNearestPoint({
+function findHoverSlice({
   max,
   min,
   pointerX,
@@ -287,66 +335,97 @@ function findNearestPoint({
   pointerY: number;
   series: TrendSeries[];
 }): TrendHoverPoint | null {
-  let nearest: (TrendHoverPoint & { distance: number }) | null = null;
+  const referenceSeries = [...series]
+    .filter((item) => item.points.length > 0)
+    .sort((a, b) => b.points.length - a.points.length)[0];
 
-  for (const item of series) {
-    const candidateIndexes = getCandidateIndexes(pointerX, item.points.length);
-
-    for (const index of candidateIndexes) {
-      const point = item.points[index];
-
-      if (!point) {
-        continue;
-      }
-
-      const coordinate = getChartCoordinate({
-        index,
-        length: item.points.length,
-        max,
-        min,
-        value: point.value,
-      });
-      const distance =
-        Math.abs(coordinate.x - pointerX) * 0.45 +
-        Math.abs(coordinate.y - pointerY);
-
-      if (!nearest || distance < nearest.distance) {
-        nearest = {
-          color: item.color,
-          date: point.date,
-          distance,
-          value: point.value,
-          x: coordinate.x,
-          y: coordinate.y,
-        };
-      }
-    }
-  }
-
-  if (!nearest) {
+  if (!referenceSeries) {
     return null;
   }
 
+  const referenceIndex =
+    referenceSeries.points.length <= 1
+      ? 0
+      : Math.round(
+          (Math.min(Math.max(pointerX, 0), 100) / 100) *
+            (referenceSeries.points.length - 1),
+        );
+  const referencePoint = referenceSeries.points[referenceIndex];
+
+  if (!referencePoint) {
+    return null;
+  }
+
+  const referenceCoordinate = getChartCoordinate({
+    index: referenceIndex,
+    length: referenceSeries.points.length,
+    max,
+    min,
+    value: referencePoint.value,
+  });
+  const entries = series.flatMap((item) => {
+    const pointIndex = item.points.findIndex((point) => point.date === referencePoint.date);
+    const index =
+      pointIndex >= 0 ? pointIndex : getNearestDateIndex(item.points, referencePoint.date);
+    const point = item.points[index];
+
+    if (!point) {
+      return [];
+    }
+
+    const coordinate = getChartCoordinate({
+      index,
+      length: item.points.length,
+      max,
+      min,
+      value: point.value,
+    });
+
+    return [
+      {
+        color: item.color,
+        commodity: item.commodity,
+        date: point.date,
+        value: point.value,
+        x: coordinate.x,
+        y: coordinate.y,
+      },
+    ];
+  });
+
+  if (entries.length === 0) {
+    return null;
+  }
+
+  const anchor = entries.reduce((closest, entry) => {
+    const closestDistance = Math.abs(closest.y - pointerY);
+    const entryDistance = Math.abs(entry.y - pointerY);
+    return entryDistance < closestDistance ? entry : closest;
+  }, entries[0]);
+
   return {
-    color: nearest.color,
-    date: nearest.date,
-    value: nearest.value,
-    x: nearest.x,
-    y: nearest.y,
+    date: referencePoint.date,
+    entries: entries.sort((a, b) => b.value - a.value),
+    x: referenceCoordinate.x,
+    y: anchor.y,
   };
 }
 
-function getCandidateIndexes(pointerX: number, length: number) {
-  if (length <= 1) {
-    return [0];
-  }
+function getNearestDateIndex(points: AnalyticsTrendPoint[], date: string) {
+  const target = new Date(`${date}T00:00:00Z`).getTime();
+  let nearest = 0;
+  let distance = Number.POSITIVE_INFINITY;
 
-  const centerIndex = Math.round(
-    (Math.min(Math.max(pointerX, 0), 100) / 100) * (length - 1),
-  );
-  return [centerIndex - 1, centerIndex, centerIndex + 1].filter(
-    (index) => index >= 0 && index < length,
-  );
+  points.forEach((point, index) => {
+    const currentDistance = Math.abs(new Date(`${point.date}T00:00:00Z`).getTime() - target);
+
+    if (currentDistance < distance) {
+      nearest = index;
+      distance = currentDistance;
+    }
+  });
+
+  return nearest;
 }
 
 function getChartCoordinate({
