@@ -76,6 +76,22 @@ const SpreadAnalysisPanelAsync = nextDynamic(
   },
 );
 
+const GroupedMarketAnalyticsPanelAsync = nextDynamic(
+  () =>
+    import("@/components/ui/grouped-market-analytics-panel").then(
+      (module) => module.GroupedMarketAnalyticsPanel,
+    ),
+  {
+    loading: () => (
+      <section className="border border-black bg-white p-4">
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-black/40">
+          Loading grouped analytics...
+        </p>
+      </section>
+    ),
+  },
+);
+
 const VolatilityRangePanelAsync = nextDynamic(
   () =>
     import("@/components/ui/volatility-range-panel").then(
@@ -156,28 +172,36 @@ export default async function AnalyticsPage({
               >
                 <MovementSummary history={history} locale={locale} />
               </AnalyticsPanel>
-              <div className="grid gap-5 xl:grid-cols-2">
-                <AnalyticsPanel
-                  description={copy.trendDescription}
-                  title={copy.trendTitle}
-                >
-                  <AnalyticsTrendChartAsync
-                    commodities={commodities}
-                    history={history}
-                    locale={locale}
-                  />
-                </AnalyticsPanel>
-                <AnalyticsPanel
-                  description={copy.volatilityDescription}
-                  title={copy.volatilityTitle}
-                >
-                  <VolatilityRangePanelAsync
-                    commodities={commodities}
-                    history={history}
-                    locale={locale}
-                  />
-                </AnalyticsPanel>
-              </div>
+              {isSpike ? (
+                <GroupedMarketAnalyticsPanelAsync
+                  commodities={commodities}
+                  history={history}
+                  locale={locale}
+                />
+              ) : (
+                <div className="grid gap-5 xl:grid-cols-2">
+                  <AnalyticsPanel
+                    description={copy.trendDescription}
+                    title={copy.trendTitle}
+                  >
+                    <AnalyticsTrendChartAsync
+                      commodities={commodities}
+                      history={history}
+                      locale={locale}
+                    />
+                  </AnalyticsPanel>
+                  <AnalyticsPanel
+                    description={copy.volatilityDescription}
+                    title={copy.volatilityTitle}
+                  >
+                    <VolatilityRangePanelAsync
+                      commodities={commodities}
+                      history={history}
+                      locale={locale}
+                    />
+                  </AnalyticsPanel>
+                </div>
+              )}
             </div>
           </section>
 
