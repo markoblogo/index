@@ -1118,6 +1118,14 @@ function getAnalyticsCopy(locale: Locale) {
     heroBody:
       "Compare spot-position dynamics, review export and processing bases, track volatility and explore AI-assisted analytical scenarios based on published SPIKE SPOT INDEX data.",
     heroTitle: "SPIKE SPOT INDEX analytics",
+    historyDescription:
+      locale === "uk"
+        ? "Для основних позицій SPIKE підключено архів опублікованих значень індексу з 01.09.2025; він використовується для довших графіків, спредів, volatility та аналітики руху."
+        : "For core SPIKE positions, the archive of published index values is connected from 2025-09-01 and is used for longer charts, spread views, volatility and movement analytics.",
+    historyPublicLimit:
+      locale === "uk"
+        ? "Таблиця останніх публікацій залишається компактною, а графіки й аналітичні зрізи можуть використовувати підключений архів основних позицій з 01.09.2025."
+        : "The recent-publications table stays compact, while charts and analytical views can use the connected core-position archive from 2025-09-01.",
     scenarioBody:
       "The AI-assisted analytics layer turns SPIKE SPOT INDEX data into structured market context. It reviews published index movement, short-term momentum, volatility, price ranges and spread behaviour, then generates analytical notes that help users understand what changed and where the market may require closer attention. AI scenario outputs are based on historical index movement, recent momentum and position-specific volatility. They are designed for market exploration, not prediction. The AI layer does not generate official index values, does not access individual respondent submissions and does not provide trading advice. Official values remain methodology-based and locked after publication.",
     scenarioDisclaimer:
@@ -1128,7 +1136,9 @@ function getAnalyticsCopy(locale: Locale) {
       "Relative spreads help show how export and processing positions move against each other.",
     spreadTitle: "Position spreads and premiums",
     trendDescription:
-      "30-day analytics preview history for published SPIKE SPOT INDEX positions.",
+      locale === "uk"
+        ? "Аналітичний preview для опублікованих позицій SPIKE SPOT INDEX, включно з підключеним архівом основних позицій з 01.09.2025."
+        : "Analytics preview for published SPIKE SPOT INDEX positions, including the connected core-position archive from 2025-09-01.",
     trendTitle: "Index dynamics by position",
   };
 }
