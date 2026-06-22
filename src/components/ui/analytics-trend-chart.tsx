@@ -162,29 +162,29 @@ export function AnalyticsTrendChart({
         </svg>
         {hoverPoint ? (
           <div
-            className="pointer-events-none absolute z-10 min-w-40 -translate-x-1/2 rounded-2xl border border-white/30 bg-[#f7f7ef] px-3 py-2 text-[#07100c] shadow-xl shadow-black/40"
+            className="pointer-events-none absolute z-10 w-[min(15rem,78vw)] -translate-x-1/2 rounded-xl border border-uga-green/60 bg-[#061007]/95 px-2.5 py-2 text-white shadow-xl shadow-black/50 backdrop-blur"
             style={{
               left: `${Math.min(Math.max(hoverPoint.x, 12), 88)}%`,
-              top: `${Math.max(hoverPoint.y - 20, 2)}%`,
+              top: `${Math.max(hoverPoint.y - 18, 2)}%`,
             }}
           >
-            <p className="text-[0.62rem] font-black uppercase tracking-[0.14em] text-black/50">
+            <p className="text-[0.58rem] font-black uppercase tracking-[0.16em] text-uga-green">
               {formatHoverDate(hoverPoint.date, locale)}
             </p>
-            <div className="mt-1.5 space-y-1">
+            <div className="mt-1.5 grid gap-1">
               {hoverPoint.entries.map((entry) => (
                 <div
-                  className="grid grid-cols-[0.55rem_1fr_auto] items-center gap-1.5 text-[0.66rem] font-black uppercase leading-tight"
+                  className="grid grid-cols-[0.5rem_minmax(0,1fr)_auto] items-center gap-1.5 text-[0.58rem] font-black uppercase leading-tight"
                   key={entry.commodity.id}
                 >
                   <span
-                    className="h-2 w-2 rounded-full"
+                    className="h-2 w-2 rounded-full ring-1 ring-white/35"
                     style={{ backgroundColor: entry.color }}
                   />
-                  <span className="max-w-28 truncate text-black/70">
+                  <span className="truncate text-white/74">
                     {entry.commodity.shortName?.[locale] ?? entry.commodity.name[locale]}
                   </span>
-                  <span>{entry.value.toFixed(0)} USD/t</span>
+                  <span className="text-white">{entry.value.toFixed(0)} USD/t</span>
                 </div>
               ))}
             </div>
@@ -205,10 +205,10 @@ export function AnalyticsTrendChart({
             return (
               <button
                 aria-pressed={active}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.64rem] font-black uppercase tracking-[0.03em] transition ${
+                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.62rem] font-black uppercase tracking-[0.03em] transition ${
                   active
-                    ? "border-black/70 bg-white text-black"
-                    : "border-black/15 bg-transparent text-black/35 grayscale hover:border-black/35 hover:text-black/55"
+                    ? "border-white/18 bg-[#07120b] text-white shadow-[inset_0_0_0_1px_rgba(57,255,20,0.14)]"
+                    : "border-white/10 bg-transparent text-white/32 grayscale hover:border-white/25 hover:text-white/58"
                 }`}
                 key={commodity.id}
                 onClick={() => toggleCommodity(commodity.id)}
@@ -218,8 +218,8 @@ export function AnalyticsTrendChart({
                 <span
                   className={
                     active
-                      ? "h-2 w-2 rounded-full border border-black/40"
-                      : "h-2 w-2 rounded-full border border-black/20 bg-[#d7d7d7]"
+                      ? "h-2.5 w-2.5 rounded-[0.2rem] border border-white/35"
+                      : "h-2.5 w-2.5 rounded-[0.2rem] border border-white/20 bg-white/25"
                   }
                   style={
                     active

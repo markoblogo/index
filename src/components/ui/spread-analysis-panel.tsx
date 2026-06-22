@@ -302,14 +302,27 @@ function buildSpreadSeries(history: SpreadPointSource[]) {
   }
 
   const result: Record<string, Array<{ date: string; value: number }>> = {};
+  const sortedEntries = Array.from(byDate.entries()).sort((a, b) =>
+    a[0].localeCompare(b[0]),
+  );
 
   for (const spread of spreadDefinitions) {
-    result[spread.id] = Array.from(byDate.entries())
-      .map(([date, values]) => ({
+    let latestFirst: number | undefined;
+    let latestSecond: number | undefined;
+
+    result[spread.id] = sortedEntries.flatMap(([date, values]) => {
+      latestFirst = values.get(spread.a) ?? latestFirst;
+      latestSecond = values.get(spread.b) ?? latestSecond;
+
+      if (latestFirst === undefined || latestSecond === undefined) {
+        return [];
+      }
+
+      return [{
         date,
-        value: roundOne((values.get(spread.a) ?? 0) - (values.get(spread.b) ?? 0)),
-      }))
-      .sort((a, b) => a.date.localeCompare(b.date));
+        value: roundOne(latestFirst - latestSecond),
+      }];
+    });
   }
 
   return result;

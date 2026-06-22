@@ -349,23 +349,26 @@ function buildSpreadSeries(history: ScenarioSourcePoint[], spread: SpreadDefinit
     byDate.set(point.date, values);
   }
 
-  return Array.from(byDate.entries())
-    .flatMap(([date, values]) => {
-      const first = values.get(spread.a);
-      const second = values.get(spread.b);
+  let latestFirst: number | undefined;
+  let latestSecond: number | undefined;
 
-      if (first === undefined || second === undefined) {
+  return Array.from(byDate.entries())
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .flatMap(([date, values]) => {
+      latestFirst = values.get(spread.a) ?? latestFirst;
+      latestSecond = values.get(spread.b) ?? latestSecond;
+
+      if (latestFirst === undefined || latestSecond === undefined) {
         return [];
       }
 
       return [
         {
           date,
-          value: roundOne(first - second),
+          value: roundOne(latestFirst - latestSecond),
         },
       ];
-    })
-    .sort((a, b) => a.date.localeCompare(b.date));
+    });
 }
 
 function buildMarketRead(
