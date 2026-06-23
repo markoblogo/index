@@ -195,7 +195,7 @@ export default async function AnalyticsPage({
                 <a
                   className={`rounded-full border border-black px-3 py-1.5 text-xs font-black uppercase tracking-[0.08em] transition ${
                     isActive
-                      ? "bg-uga-mist border-black/55 text-black"
+                      ? "border-black/55 bg-uga-mist !text-[#050505]"
                       : "bg-white text-black hover:bg-[#eff0b0]"
                   }`}
                   href={windowUrl}
@@ -885,19 +885,22 @@ function getAnnualCommodityVolatility(
       return pointDate >= oneYearAgo && pointDate <= latest;
     });
 
-  const absoluteChanges = commodityHistory
-    .map((point) => Math.abs(point.percentChange))
-    .filter((value) => Number.isFinite(value));
+  const prices = commodityHistory
+    .map((point) => point.value)
+    .filter((value) => Number.isFinite(value) && value > 0);
 
-  if (absoluteChanges.length === 0) {
+  if (prices.length === 0) {
     return null;
   }
 
-  const avg =
-    absoluteChanges.reduce((sum, value) => sum + value, 0) /
-    absoluteChanges.length;
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
 
-  return roundOne(avg);
+  if (min <= 0) {
+    return null;
+  }
+
+  return ((max - min) / min) * 100;
 }
 
 function normalizeVolatilityWindow(value: string | undefined): VolatilityWindow {
@@ -969,19 +972,6 @@ function formatShortDate(date: string, locale: Locale) {
     day: "numeric",
     month: "short",
   }).format(new Date(`${date}T00:00:00Z`));
-}
-
-function standardDeviation(values: number[]) {
-  if (values.length === 0) {
-    return 0;
-  }
-
-  const average = values.reduce((sum, value) => sum + value, 0) / values.length;
-  const variance =
-    values.reduce((sum, value) => sum + (value - average) ** 2, 0) /
-    values.length;
-
-  return Math.sqrt(variance);
 }
 
 type AnalyticsCopy = ReturnType<typeof getAnalyticsCopy>;

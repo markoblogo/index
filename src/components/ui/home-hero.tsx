@@ -273,7 +273,7 @@ function SpikeHomeHero({
                   <button
                     className={`rounded-full border px-4 py-2 text-xs font-black uppercase tracking-[0.14em] transition ${
                       active
-                        ? "border-[var(--spike-accent)] bg-[var(--spike-accent)] text-black"
+                        ? "border-[var(--spike-accent)] bg-[var(--spike-accent)] !text-[#050505]"
                         : "border-white/18 bg-black/18 text-white/72 hover:border-white/38 hover:text-white"
                     }`}
                     key={category.id}

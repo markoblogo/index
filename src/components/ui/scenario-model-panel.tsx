@@ -131,7 +131,7 @@ export function ScenarioModelPanel({
               {text.description}
             </p>
           </div>
-          <span className="rounded-full border border-black bg-uga-green px-3 py-1 text-[0.65rem] font-black uppercase tracking-[0.12em] text-black">
+          <span className="rounded-full border border-black bg-uga-green px-3 py-1 text-[0.65rem] font-black uppercase tracking-[0.12em] !text-[#050505]">
             {read.confidence}
           </span>
         </div>

@@ -173,7 +173,7 @@ export function AnalyticsTrendChart({
           <div className="mt-1.5 grid gap-1">
             {hoverPoint.entries.map((entry) => (
               <div
-                className="grid grid-cols-[0.55rem_auto_auto] items-center gap-1.5 text-[0.58rem] font-black uppercase leading-tight"
+                className="grid grid-cols-[0.55rem_minmax(8rem,1fr)_7rem] items-center gap-1.5 text-[0.58rem] font-black uppercase leading-tight"
                 key={entry.commodity.id}
               >
                 <span
@@ -183,7 +183,9 @@ export function AnalyticsTrendChart({
                 <span className="max-w-36 truncate text-white/74">
                   {entry.commodity.shortName?.[locale] ?? entry.commodity.name[locale]}
                 </span>
-                <span className="text-white">{entry.value.toFixed(0)} USD/t</span>
+                <span className="text-left tabular-nums text-white">
+                  {entry.value.toFixed(0)} USD/t
+                </span>
               </div>
             ))}
           </div>

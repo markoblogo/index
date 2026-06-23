@@ -155,7 +155,7 @@ export function GroupedMarketAnalyticsPanel({
                   aria-pressed={active}
                   className={`rounded-full border px-3 py-2 text-xs font-black uppercase tracking-[0.08em] transition ${
                     active
-                      ? "border-uga-green bg-uga-green text-black"
+                      ? "border-uga-green bg-uga-green !text-[#050505]"
                       : "border-white/25 bg-transparent text-white/60 hover:border-white/50 hover:text-white"
                   }`}
                   key={group.id}
