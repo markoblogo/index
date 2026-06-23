@@ -43,7 +43,11 @@ export type AutoPublishResult = {
 
 export async function autoPublishSpikeDailyIndices(
   date = formatDateKyiv(),
-  options: { replaceExisting?: boolean } = {},
+  options: {
+    generateAiBrief?: boolean;
+    publishMediaHub?: boolean;
+    replaceExisting?: boolean;
+  } = {},
 ): Promise<AutoPublishResult> {
   const activeIndex = getActiveIndexConfig();
 
@@ -121,7 +125,9 @@ export async function autoPublishSpikeDailyIndices(
   });
 
   if (existingPublishedCount > 0 && !options.replaceExisting) {
-    await ensureDailyMediaHubPublication(date);
+    if (options.publishMediaHub !== false) {
+      await ensureDailyMediaHubPublication(date);
+    }
     return { date, published: 0, skippedReason: "already_published" };
   }
 
@@ -324,14 +330,14 @@ export async function autoPublishSpikeDailyIndices(
   revalidatePath("/api/public/history");
 
   const aiBrief =
-    published > 0
+    published > 0 && options.generateAiBrief !== false
       ? await generateAndStoreDailyAiMarketBriefs({
           date,
           source: "auto_publish",
         })
       : null;
 
-  if (published > 0) {
+  if (published > 0 && options.publishMediaHub !== false) {
     await ensureDailyMediaHubPublication(date);
   }
 

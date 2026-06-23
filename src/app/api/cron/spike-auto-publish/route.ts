@@ -67,7 +67,11 @@ export async function GET(request: Request) {
       }
     }
 
-    const result = await autoPublishSpikeDailyIndices(targetDate, { replaceExisting });
+    const result = await autoPublishSpikeDailyIndices(targetDate, {
+      generateAiBrief: url.searchParams.get("brief") === "1",
+      publishMediaHub: url.searchParams.get("mediaHub") === "1",
+      replaceExisting,
+    });
     results.push({
       ...result,
       monitorImport,
