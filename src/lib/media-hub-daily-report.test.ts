@@ -39,6 +39,7 @@ import {
   buildSsiDailyReportView,
   renderDailyNewsTelegramSection,
   renderSsiDailyIndexTelegramSection,
+  renderSsiDailyNewsTelegramSection,
 } from "@/lib/media-hub-daily-report";
 import {
   build1d3xDailyReportPrompt,
@@ -146,6 +147,34 @@ describe("media hub daily report formatting", () => {
     expect(report.newsSection.themes.map((theme) => theme.title)).toContain("🚚 Логістика та експорт");
     expect(telegram.indexOf("SPIKE Spot Commodity Index Ukraine"))
       .toBeLessThan(telegram.indexOf("🔎 Головні сигнали"));
+    expect(telegram).not.toContain("↳");
+  });
+
+  it("renders SSI daily Telegram news as a compact price-focused digest", () => {
+    const report = buildSsiDailyReportView({
+      historyData: [],
+      latestData: [latest({ changeAbs: -2, valueUsdPerMt: 216.5 })],
+      locale: "uk",
+      localizedSummary: [
+        "🔎 Головні сигнали",
+        "Кукурудза отримала підтримку від активних експортних програм експортерів.",
+        "В ЄС тривають зміни в регулюванні геномно редагованих культур.",
+        "🌾 Ринок зернових",
+        "Пшеничний комплекс продовжив корекцію напередодні збору нового врожаю.",
+        "🚚 Логістика та експорт",
+        "Портові маршрути залишались у фокусі моніторингу.",
+        "⚖️ Політика, регулювання та торгівля",
+        "Обговорюється створення окремого Міністерства аграрної політики.",
+      ],
+      periodEndDate: "2026-06-22",
+    });
+    const telegram = renderSsiDailyNewsTelegramSection(report.newsSection).join("\n");
+
+    expect(telegram).toContain("Кукурудза отримала підтримку");
+    expect(telegram).toContain("Пшеничний комплекс");
+    expect(telegram).not.toContain("Логістика");
+    expect(telegram).not.toContain("регулюванні геномно");
+    expect(telegram).not.toContain("Міністерства");
   });
 
   it("builds 1D3X daily content without an SSI index section", () => {

@@ -30,6 +30,7 @@ import {
   build1d3xDailyReportView,
   buildSsiDailyReportView,
   renderDailyNewsTelegramSection,
+  renderSsiDailyNewsTelegramSection,
   renderSsiDailyIndexTelegramSection,
   type MediaHubDailyReportView,
 } from "@/lib/media-hub-daily-report";
@@ -863,7 +864,12 @@ function buildMediaHubTelegramText(input: {
   }
 
   if (dailyReport) {
-    lines.push("", ...renderDailyNewsTelegramSection(dailyReport.newsSection));
+    lines.push(
+      "",
+      ...(input.tenant === "spike"
+        ? renderSsiDailyNewsTelegramSection(dailyReport.newsSection)
+        : renderDailyNewsTelegramSection(dailyReport.newsSection)),
+    );
   } else if (primaryWindow) {
     const summary = dedupeNonEmpty(
       localized?.summary?.length

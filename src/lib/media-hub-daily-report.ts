@@ -242,7 +242,6 @@ export function renderSsiDailyIndexTelegramSection(indexSection: NonNullable<Med
         const vat = item.vatIncluded ? " в т.ч. ПДВ" : "";
         lines.push(
           `• ${escapeHtml(item.name)} - <b>${escapeHtml(formatIndexValue(item.value, item.unit))}</b>${vat} (${escapeHtml(formatIndexChange(item.dayChange, "d/d"))}; ${escapeHtml(formatIndexChange(item.previousFridayChange, "до пт"))})`,
-          `  ↳ ${escapeHtml(item.comment)}`,
         );
       }
     }
@@ -265,6 +264,50 @@ export function renderDailyNewsTelegramSection(newsSection: MediaHubDailyReportV
     lines.push(...theme.items.map((item) => `• ${escapeHtml(item)}`));
   }
   return lines;
+}
+
+export function renderSsiDailyNewsTelegramSection(newsSection: MediaHubDailyReportView["newsSection"]) {
+  const allowedThemes = new Set<DailyNewsThemeId>([
+    "key_signals",
+    "grains",
+    "oilseeds",
+    "processing",
+  ]);
+  const lines = [`<b>${escapeHtml(newsSection.title)}</b>`];
+  const renderedThemes = newsSection.themes
+    .filter((theme) => allowedThemes.has(theme.id))
+    .map((theme) => ({
+      ...theme,
+      items: theme.items
+        .filter(isSsiDailyTelegramRelevant)
+        .slice(0, theme.id === "key_signals" ? 3 : 2),
+    }))
+    .filter((theme) => theme.items.length > 0);
+
+  for (const theme of renderedThemes) {
+    lines.push("", `<b>${escapeHtml(theme.title)}</b>`);
+    lines.push(...theme.items.map((item) => `• ${escapeHtml(item)}`));
+  }
+
+  if (renderedThemes.length > 0) {
+    return lines;
+  }
+
+  const fallback = newsSection.themes
+    .flatMap((theme) => theme.items)
+    .filter(isSsiDailyTelegramRelevant)
+    .slice(0, 4);
+
+  if (fallback.length === 0) {
+    return [];
+  }
+
+  return [
+    ...lines,
+    "",
+    "<b>🔎 Головні сигнали</b>",
+    ...fallback.map((item) => `• ${escapeHtml(item)}`),
+  ];
 }
 
 export function escapeHtml(value: string) {
@@ -349,6 +392,17 @@ function isKnownThemeHeading(value: string, titles: Record<DailyNewsThemeId, str
 
 function isUnavailablePlaceholder(value: string) {
   return /(^|\b)(data unavailable|дані недоступні|немає даних|no concrete|no specific|not available|n\/a)\b/i.test(value);
+}
+
+function isSsiDailyTelegramRelevant(value: string) {
+  const normalized = value.toLowerCase();
+  const hasMarketAnchor =
+    /цін|індекс|usd|долар|зерн|пшен|кукурудз|олій|соняш|со[яї]|ріпак|перероб|експорт|попит|пропози|продав|покуп|корекц|підтрим|тиск|стабіль/i.test(value);
+  const isBroadContextOnly =
+    /міністерств|євроінтеграц|регулюван|геномн|політик|закон|логістик|маршрут|портов|міжнародн|світов|босфор|проток/i.test(normalized) &&
+    !/цін|індекс|пшен|кукурудз|соняш|со[яї]|ріпак|перероб/i.test(normalized);
+
+  return hasMarketAnchor && !isBroadContextOnly;
 }
 
 function getSsiIndexGroupId(
