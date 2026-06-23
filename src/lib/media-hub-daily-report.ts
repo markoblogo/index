@@ -56,9 +56,9 @@ export type MediaHubDailyReportView = {
 };
 
 const SSI_GROUPS: Array<Omit<SsiDailyIndexGroup, "items">> = [
-  { id: "all_season", title: "ALL SEASON", subtitle: "основні індекси" },
-  { id: "seasonal", title: "SEASONAL", subtitle: "сезонні індекси" },
-  { id: "processing", title: "PROCESSING", subtitle: "переробка" },
+  { id: "all_season", title: "GRAINS EXPORT", subtitle: "основні індекси" },
+  { id: "seasonal", title: "OILSEEDS EXPORT", subtitle: "сезонні індекси" },
+  { id: "processing", title: "OILSEEDS CRUSH", subtitle: "переробка" },
 ];
 
 const UK_DAILY_THEME_TITLES: Record<DailyNewsThemeId, string> = {
@@ -102,14 +102,16 @@ export function buildSsiDailyReportView(input: {
       date: input.periodEndDate,
       groups: indexGroups,
       notes: [
-        "Ціни вказані для поставки протягом 30 днів, якщо інше не зазначено в індексі.",
+        "Ціни вказані для поставки протягом 30 днів.",
         "Паритет - це відображення цін заводів із різних регіонів України, приведених до єдиного базису CPT Одеса з урахуванням логістичних витрат.",
       ],
       title: "SPIKE Spot Commodity Index Ukraine",
     },
     newsSection: {
       themes: buildDailyNewsThemes(input.localizedSummary, input.locale, "spike"),
-      title: input.localizedTitle || `Щоденний аграрний огляд SPIKE SPOT INDEX Україна - ${formatHumanDate(input.periodEndDate, "uk")}`,
+      title:
+        input.localizedTitle ||
+        `Щоденний огляд ринку зернових та олійних культур України - ${formatHumanDate(input.periodEndDate, "uk")}`,
     },
   };
 }

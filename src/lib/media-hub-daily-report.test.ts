@@ -140,9 +140,9 @@ describe("media hub daily report formatting", () => {
     ].join("\n");
 
     expect(report.indexSection?.groups.map((group) => group.title)).toEqual([
-      "ALL SEASON",
-      "SEASONAL",
-      "PROCESSING",
+      "GRAINS EXPORT",
+      "OILSEEDS EXPORT",
+      "OILSEEDS CRUSH",
     ]);
     expect(report.newsSection.themes.map((theme) => theme.title)).toContain("🚚 Логістика та експорт");
     expect(telegram.indexOf("SPIKE Spot Commodity Index Ukraine"))
