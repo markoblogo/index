@@ -1,5 +1,6 @@
 import { revalidatePath } from "next/cache";
 import dynamicImport from "next/dynamic";
+import { ManualHelpCard } from "@/components/manual/manual-ui";
 import { SITE_CONFIG } from "@/lib/constants";
 import { requireDemoRole } from "@/lib/demo-auth";
 import {
@@ -22,6 +23,7 @@ import {
 } from "@/lib/respondent-directory-lazy";
 import { sendRespondentSurveyEmails } from "@/lib/respondent-email";
 import { sendRespondentTelegramNotifications } from "@/lib/respondent-telegram";
+import { getSsiHelpBlock } from "@/lib/ssi-manual-content";
 
 const RespondentsDirectoryAsync = dynamicImport(
   () =>
@@ -129,6 +131,9 @@ export default async function AdminRespondentsPage() {
           </div>
         </div>
       </div>
+      {isSpike ? (
+        <ManualHelpCard help={getSsiHelpBlock("adminRespondents")} />
+      ) : null}
 
       <RespondentsDirectoryAsync actions={actions} respondents={respondents} />
 

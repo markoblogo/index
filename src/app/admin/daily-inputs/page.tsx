@@ -1,3 +1,4 @@
+import { ManualHelpCard } from "@/components/manual/manual-ui";
 import { requireDemoRole } from "@/lib/demo-auth";
 import {
   getDailyInputData,
@@ -7,6 +8,7 @@ import {
 } from "@/lib/admin-daily-inputs";
 import { unlockTodayPublishedIndices } from "@/lib/admin-publication-lock";
 import { SITE_CONFIG } from "@/lib/constants";
+import { getSsiHelpBlock } from "@/lib/ssi-manual-content";
 
 type DailyInputsPageProps = {
   searchParams: Promise<{
@@ -178,6 +180,8 @@ export default async function DailyInputsPage({
           </div>
         ) : null}
       </div>
+
+      {isSpike ? <ManualHelpCard help={getSsiHelpBlock("adminDailyInput")} /> : null}
 
       <form action={save} className="grid gap-5">
         <input name="date" type="hidden" value={date} />

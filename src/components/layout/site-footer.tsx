@@ -13,9 +13,15 @@ export function SiteFooter({ locale }: { locale: Locale }) {
     { href: `/${locale}/about`, label: dict.nav.about },
     { href: `/${locale}/methodology`, label: dict.nav.methodology },
     { href: `/${locale}/analytics`, label: dict.nav.analytics },
+    ...(isSpike
+      ? [{ href: `/${locale}/media-hub`, label: "MediaHub" }]
+      : []),
     { href: `/${locale}/subscription`, label: dict.nav.subscription },
     ...(isSpike
-      ? [{ href: `/${locale}/blog`, label: locale === "uk" ? "Блог" : "Blog" }]
+      ? [
+          { href: `/${locale}/blog`, label: locale === "uk" ? "Блог" : "Blog" },
+          { href: `/${locale}/manual`, label: locale === "uk" ? "Мануал" : "Manual" },
+        ]
       : []),
   ];
   const legalItems = [
@@ -37,7 +43,7 @@ export function SiteFooter({ locale }: { locale: Locale }) {
     return (
       <footer className="border-t border-black bg-uga-dark text-white">
         <div className="mx-auto max-w-[1900px] px-6 py-4 text-sm text-white/70 lg:px-8">
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-[1.45fr_0.8fr_1.45fr_1.2fr_1fr] lg:items-start">
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-[1.35fr_1.05fr_1.25fr_1fr] lg:items-start">
             <section>
               <h2 className="whitespace-nowrap text-sm font-black uppercase tracking-normal text-white">
                 {SITE_CONFIG.name}
@@ -56,7 +62,7 @@ export function SiteFooter({ locale }: { locale: Locale }) {
                 {dict.footer.navigationTitle}
               </h2>
               <nav
-                className="mt-2 grid gap-1"
+                className="mt-2 grid grid-cols-2 gap-x-5 gap-y-1"
                 aria-label={dict.footer.navigationTitle}
               >
                 {navItems.map((item) => (
@@ -73,24 +79,15 @@ export function SiteFooter({ locale }: { locale: Locale }) {
 
             <section>
               <h2 className="text-[0.68rem] font-black uppercase tracking-[0.18em] text-white">
-                {dict.footer.contactsTitle}
+                {locale === "uk" ? "Контакти" : "Contacts"}
               </h2>
-              <div className="mt-2 text-sm leading-5">
-                <p className="font-black text-white/80">
-                  {dict.footer.addressTitle}
-                </p>
-                {activeIndex.contacts.address[locale].map((line) => (
-                  <p key={line}>{line}</p>
-                ))}
-              </div>
-            </section>
-
-            <section>
-              <div className="grid gap-2 text-sm leading-5">
+              <div className="mt-2 grid gap-2 text-sm leading-5">
                 <div>
-                  <p className="font-black text-white/80">
-                    {dict.footer.phonesTitle}
-                  </p>
+                  {activeIndex.contacts.address[locale].map((line) => (
+                    <p key={line}>{line}</p>
+                  ))}
+                </div>
+                <div>
                   {activeIndex.contacts.phones.map((phone) => (
                     <a
                       className="block transition hover:text-uga-lime"
@@ -100,18 +97,13 @@ export function SiteFooter({ locale }: { locale: Locale }) {
                       {phone}
                     </a>
                   ))}
-                </div>
-                <p>
-                  <span className="font-black text-white/80">
-                    {dict.footer.emailTitle}
-                  </span>{" "}
                   <a
-                    className="transition hover:text-uga-lime"
+                    className="block transition hover:text-uga-lime"
                     href={`mailto:${activeIndex.contacts.email}`}
                   >
                     {activeIndex.contacts.email}
                   </a>
-                </p>
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {activeIndex.contacts.social.map((social) => (
                     <FooterSocialLink social={social} key={social.label} />

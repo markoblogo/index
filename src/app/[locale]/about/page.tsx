@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 
 import { SITE_CONFIG } from "@/lib/constants";
 import { getDictionary, type Locale } from "@/lib/i18n";
@@ -531,6 +532,8 @@ function SpikeAboutAiLayer({ locale }: { locale: Locale }) {
           eyebrow: "Analytics + MediaHub",
           title:
             "Index analytics і MediaHub над перевіреними даними",
+          manualCta: "Відкрити manual",
+          mediaHubCta: "Відкрити MediaHub",
         }
       : {
           body: [
@@ -541,6 +544,8 @@ function SpikeAboutAiLayer({ locale }: { locale: Locale }) {
           ],
           card: "Official values remain methodology-based. AI is used to explain published index movement and to generate MediaHub reports, not to generate or adjust the index itself.",
           eyebrow: "Analytics + MediaHub",
+          manualCta: "Open manual",
+          mediaHubCta: "Open MediaHub",
           title: "Index analytics and MediaHub above verified data",
         };
 
@@ -564,6 +569,20 @@ function SpikeAboutAiLayer({ locale }: { locale: Locale }) {
           <p className="rounded-[1.15rem] border border-[var(--spike-accent)]/70 bg-[#f8f8f2] p-5 text-sm font-black leading-6 text-[#050505]">
             {copy.card}
           </p>
+          <div className="flex flex-wrap gap-3">
+            <Link
+              className="rounded-full bg-[var(--spike-accent)] px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-[#050505] transition hover:bg-white"
+              href={`/${locale}/manual`}
+            >
+              {copy.manualCta}
+            </Link>
+            <Link
+              className="rounded-full border border-white/14 px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-white/72 transition hover:border-[var(--spike-accent)] hover:text-[var(--spike-accent)]"
+              href={`/${locale}/media-hub`}
+            >
+              {copy.mediaHubCta}
+            </Link>
+          </div>
         </div>
       </div>
     </section>

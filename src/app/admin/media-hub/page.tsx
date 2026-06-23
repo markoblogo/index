@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { ManualHelpCard } from "@/components/manual/manual-ui";
 import { requireDemoRole } from "@/lib/demo-auth";
 import { getMediaHubConfig, isMediaHubEnabled } from "@/lib/media-hub";
 import { getMediaHubOverviewStats } from "@/lib/media-hub-monitoring";
+import { getSsiHelpBlock } from "@/lib/ssi-manual-content";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -33,6 +35,8 @@ export default async function AdminMediaHubPage() {
           intelligence module.
         </p>
       </header>
+
+      <ManualHelpCard dark help={getSsiHelpBlock("adminMediaHub")} />
 
       <section className="grid gap-4 xl:grid-cols-5">
         <HubCard

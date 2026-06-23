@@ -68,12 +68,12 @@ UGA-specific features:
 Spike-specific features:
 
 - SPIKE SPOT INDEX brand and visual system;
-- 13 public positions grouped into `Grains Export`, `Processors`, and
-  `Seasonal Export`;
+- 13 public positions grouped into `Grains Export`, `Oilseeds Export`, and
+  `Oilseeds Crush`;
 - Grains Export: corn CPT Port, corn FCA Chop, wheat 11.5% CPT Port, feed wheat
   CPT Port;
-- Processors: sunflower, GMO soybean, non-GMO rapeseed;
-- Seasonal Export: GMO soybean CPT Port/FCA Chop, non-GMO soybean CPT
+- Oilseeds Crush: sunflower, GMO soybean, non-GMO rapeseed;
+- Oilseeds Export: GMO soybean CPT Port/FCA Chop, non-GMO soybean CPT
   Port/FCA Chop, non-GMO rapeseed CPT Port/FCA Chop;
 - CPT Port / CPT parity Odesa / FCA Chop export, processing and border basis
   language with category switching on the public Spike homepage;
@@ -84,6 +84,8 @@ Spike-specific features:
 - SSI MediaHub: unified Ukrainian/English source pool, Ukrainian and English
   public localizations, and Ukrainian Telegram distribution;
 - public blog with mixed-language posts and language filtering;
+- SSI public manual at `/uk/manual` and `/en/manual`, plus admin manual at
+  `/admin/manual`;
 - Supabase PostgreSQL production database.
 
 ## Product Status
@@ -168,9 +170,20 @@ Spike currently uses a hybrid real/demo model:
 Scheduled Spike processes:
 
 - MN7R import: `/api/cron/mn7r-monitor-prices`;
-- respondent Telegram notifications: `/api/cron/respondent-telegram`;
+- respondent Telegram notifications: `/api/cron/respondent-telegram`
+  (`16:00` Kyiv initial request, `17:00` Kyiv reminder for SSI);
 - auto-publish: `/api/cron/spike-auto-publish`;
 - admin invite/onboarding helper: `/api/cron/spike-admin-invites`.
+
+SSI manual maintenance rule:
+
+- update `src/lib/ssi-manual-content.ts` whenever SSI functionality, naming,
+  UI, schedules, publication logic, respondent workflow, MediaHub behavior or
+  admin operations change;
+- update contextual help blocks in the same commit when the affected screen has
+  a manual/help entry;
+- public user/respondent behavior belongs in the public manual, operator
+  behavior belongs in the admin manual.
 
 Scheduled UGA processes:
 

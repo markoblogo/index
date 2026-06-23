@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { CSSProperties } from "react";
+import { ManualHelpCard } from "@/components/manual/manual-ui";
 import type { Locale } from "@/lib/i18n";
 import type { DailyNewsTheme, SsiDailyIndexGroup } from "@/lib/media-hub-daily-report";
 import type { MediaHubReportArchiveItem } from "@/lib/media-hub-publication-scheduler";
@@ -9,6 +10,7 @@ import type {
   MediaHubWindowKey,
   MediaHubWindowSnapshot,
 } from "@/lib/media-hub";
+import { getSsiHelpBlock } from "@/lib/ssi-manual-content";
 import { DistributionChart } from "./distribution-chart";
 import { MonitoringFeed } from "./monitoring-feed";
 
@@ -152,6 +154,12 @@ export function PublicMediaHub({
           )}
         </article>
       </section>
+
+      {profile.id === "spike" ? (
+        <section className="mx-auto max-w-[1900px] px-5 pb-8 sm:px-8 lg:px-10">
+          <ManualHelpCard dark help={getSsiHelpBlock("mediaHub", locale)} />
+        </section>
+      ) : null}
 
       <section className="mx-auto max-w-[1900px] px-5 pb-8 sm:px-8 lg:px-10">
         <div className="rounded-[2rem] border border-white/10 bg-[var(--media-hub-panel)] p-5">
