@@ -17,6 +17,10 @@
       "schedule": "0 15 * * 1-5"
     },
     {
+      "path": "/api/cron/respondent-telegram",
+      "schedule": "0 16 * * 1-5"
+    },
+    {
       "path": "/api/cron/mn7r-monitor-prices",
       "schedule": "0 14 * * 1-5"
     },
