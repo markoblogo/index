@@ -17,15 +17,15 @@ export default async function MethodologyPage({
   return (
     <>
       <section className="border-b border-black bg-white">
-        <div className="mx-auto grid max-w-7xl gap-8 px-6 py-10 lg:grid-cols-[0.78fr_1.22fr] lg:px-8 lg:py-14">
+        <div className="mx-auto grid max-w-7xl gap-5 px-6 py-7 lg:grid-cols-[0.58fr_1.42fr] lg:items-end lg:px-8 lg:py-9">
           <p className="text-xs font-black uppercase tracking-[0.18em] text-uga-green">
             {dict.methodology.label}
           </p>
           <div>
-            <h1 className="max-w-4xl text-4xl font-black uppercase leading-[0.98] tracking-normal text-black sm:text-5xl lg:text-6xl">
+            <h1 className="max-w-4xl text-4xl font-black uppercase leading-[0.98] tracking-normal text-black sm:text-5xl lg:text-[3.35rem]">
               {dict.methodology.title}
             </h1>
-            <p className="mt-5 max-w-4xl text-base font-semibold leading-7 text-black/70 sm:text-lg">
+            <p className="mt-4 max-w-4xl text-sm font-semibold leading-6 text-black/70 sm:text-base">
               {dict.methodology.description}
             </p>
           </div>
@@ -196,17 +196,17 @@ function SpikeMethodologyPage({
   return (
     <main className="spike-static-page overflow-hidden bg-[#050505] text-[#f8f8f2]">
       <section className="border-b border-white/10 [background:var(--spike-hero-bg)]">
-        <div className="mx-auto grid max-w-[1900px] gap-7 px-6 py-8 lg:grid-cols-[0.52fr_0.48fr] lg:px-8 lg:py-10">
+        <div className="mx-auto grid max-w-[1900px] gap-5 px-6 py-7 lg:grid-cols-[0.6fr_0.4fr] lg:items-end lg:px-8 lg:py-9">
           <div>
             <p className="text-sm font-black uppercase tracking-[0.24em] text-[var(--spike-accent)]">
               {dict.methodology.label}
             </p>
-            <h1 className="mt-4 max-w-5xl text-[clamp(1.85rem,3.75vw,3.95rem)] font-black uppercase leading-[0.96] tracking-normal text-white">
+            <h1 className="mt-3 max-w-5xl text-[clamp(1.85rem,3.55vw,3.55rem)] font-black uppercase leading-[0.96] tracking-normal text-white">
               {dict.methodology.title}
             </h1>
           </div>
-          <div className="self-end rounded-[1.4rem] border border-white/18 bg-black/35 p-5 backdrop-blur">
-            <p className="text-base font-semibold leading-7 text-white/70">
+          <div className="self-end border-l border-white/18 pl-5">
+            <p className="text-sm font-semibold leading-6 text-white/70 sm:text-base">
               {dict.methodology.description}
             </p>
           </div>

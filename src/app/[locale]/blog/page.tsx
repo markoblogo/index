@@ -72,6 +72,8 @@ export default async function BlogPage({ params, searchParams }: BlogPageProps) 
 
     return matchesLanguage && matchesTag && matchesSearch;
   });
+  const featuredPost = posts[0] ?? null;
+  const listingPosts = featuredPost ? posts.slice(1) : posts;
 
   return (
     <section className="spike-blog-page min-h-screen bg-[var(--spike-hero-bg)] text-[#f8f8f2]">
@@ -116,6 +118,26 @@ export default async function BlogPage({ params, searchParams }: BlogPageProps) 
             <p className="text-[0.68rem] font-black uppercase tracking-[0.18em] text-white/48">
               {labels.tagCloud}
             </p>
+            <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+              <div className="rounded-[0.8rem] border border-white/12 px-2 py-2">
+                <p className="text-lg font-black text-white">{languageCounts.all}</p>
+                <p className="text-[0.6rem] font-black uppercase tracking-[0.1em] text-white/38">
+                  {labels.languageAll}
+                </p>
+              </div>
+              <div className="rounded-[0.8rem] border border-white/12 px-2 py-2">
+                <p className="text-lg font-black text-white">{languageCounts.uk}</p>
+                <p className="text-[0.6rem] font-black uppercase tracking-[0.1em] text-white/38">
+                  {labels.languageUk}
+                </p>
+              </div>
+              <div className="rounded-[0.8rem] border border-white/12 px-2 py-2">
+                <p className="text-lg font-black text-white">{languageCounts.en}</p>
+                <p className="text-[0.6rem] font-black uppercase tracking-[0.1em] text-white/38">
+                  {labels.languageEn}
+                </p>
+              </div>
+            </div>
             <div className="mt-4 flex flex-wrap gap-2">
               <TagLink
                 active={!selectedTag}
@@ -189,34 +211,43 @@ export default async function BlogPage({ params, searchParams }: BlogPageProps) 
             </div>
 
             {posts.length > 0 ? (
-              <div className="grid gap-5 xl:grid-cols-2">
-                {posts.map((post) => (
-                  <article
-                    className="group overflow-hidden rounded-[1.25rem] border border-white/18 bg-[#050505]/84 shadow-2xl shadow-black/20 transition hover:-translate-y-1 hover:border-[var(--spike-accent)]"
-                    key={post.slug}
-                  >
-                    <Link href={`/${locale}/blog/${post.slug}`}>
-                      <div className="relative aspect-[1672/941] overflow-hidden border-b border-white/12">
+              <div className="grid gap-5">
+                {featuredPost ? (
+                  <article className="group overflow-hidden rounded-[1.25rem] border border-[var(--spike-accent)] bg-[#050505]/84 shadow-2xl shadow-black/20 transition hover:-translate-y-1">
+                    <Link
+                      className="grid gap-0 xl:grid-cols-[0.95fr_1.05fr]"
+                      href={`/${locale}/blog/${featuredPost.slug}`}
+                    >
+                      <div className="relative aspect-[1672/941] overflow-hidden border-b border-white/12 xl:border-b-0 xl:border-r">
                         <Image
-                          alt={post.title}
+                          alt={featuredPost.title}
                           className="h-full w-full object-cover object-top transition duration-500 group-hover:scale-[1.03]"
                           height={941}
-                          sizes="(min-width: 1536px) 720px, (min-width: 1280px) 560px, 100vw"
-                          src={post.coverImage}
+                          sizes="(min-width: 1280px) 760px, 100vw"
+                          src={featuredPost.coverImage}
                           width={1672}
                         />
                         <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#050505]/52 to-transparent" />
                       </div>
-                      <div className="grid gap-4 p-5">
+                      <div className="grid content-center gap-4 p-5">
+                        <p className="text-[0.68rem] font-black uppercase tracking-[0.18em] text-[var(--spike-accent)]">
+                          {labels.featured}
+                        </p>
                         <div className="flex flex-wrap gap-3 text-[0.68rem] font-black uppercase tracking-[0.16em] text-white/45">
-                          <span className="text-[var(--spike-accent)]">
-                            {post.language.toUpperCase()}
+                          <span>{featuredPost.language.toUpperCase()}</span>
+                          <span>{formatDate(featuredPost.publishedAt, locale)}</span>
+                          <span>
+                            {featuredPost.readingMinutes} {labels.minutes}
                           </span>
-                          <span>{formatDate(post.publishedAt, locale)}</span>
-                          <span>{post.readingMinutes} {labels.minutes}</span>
                         </div>
+                        <h2 className="text-3xl font-black uppercase leading-[0.98] text-white transition group-hover:text-[var(--spike-accent)]">
+                          {featuredPost.title}
+                        </h2>
+                        <p className="text-sm font-semibold leading-6 text-white/64">
+                          {featuredPost.excerpt}
+                        </p>
                         <div className="flex flex-wrap gap-2">
-                          {post.tags.slice(0, 3).map((tag) => (
+                          {featuredPost.tags.slice(0, 4).map((tag) => (
                             <span
                               className="rounded-full border border-white/16 bg-white/7 px-3 py-1 text-[0.64rem] font-black uppercase tracking-[0.12em] text-white/58"
                               key={tag}
@@ -225,19 +256,63 @@ export default async function BlogPage({ params, searchParams }: BlogPageProps) 
                             </span>
                           ))}
                         </div>
-                        <h2 className="text-2xl font-black uppercase leading-[0.98] text-white transition group-hover:text-[var(--spike-accent)]">
-                          {post.title}
-                        </h2>
-                        <p className="text-sm font-semibold leading-6 text-white/64">
-                          {post.excerpt}
-                        </p>
-                        <span className="w-fit rounded-full bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-[#050505] transition group-hover:bg-[var(--spike-accent)]">
-                          {labels.read}
-                        </span>
                       </div>
                     </Link>
                   </article>
-                ))}
+                ) : null}
+
+                <div className="grid gap-5 xl:grid-cols-2">
+                  {listingPosts.map((post) => (
+                    <article
+                      className="group overflow-hidden rounded-[1.25rem] border border-white/18 bg-[#050505]/84 shadow-2xl shadow-black/20 transition hover:-translate-y-1 hover:border-[var(--spike-accent)]"
+                      key={post.slug}
+                    >
+                      <Link href={`/${locale}/blog/${post.slug}`}>
+                        <div className="relative aspect-[1672/941] overflow-hidden border-b border-white/12">
+                          <Image
+                            alt={post.title}
+                            className="h-full w-full object-cover object-top transition duration-500 group-hover:scale-[1.03]"
+                            height={941}
+                            sizes="(min-width: 1536px) 720px, (min-width: 1280px) 560px, 100vw"
+                            src={post.coverImage}
+                            width={1672}
+                          />
+                          <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#050505]/52 to-transparent" />
+                        </div>
+                        <div className="grid gap-4 p-5">
+                          <div className="flex flex-wrap gap-3 text-[0.68rem] font-black uppercase tracking-[0.16em] text-white/45">
+                            <span className="text-[var(--spike-accent)]">
+                              {post.language.toUpperCase()}
+                            </span>
+                            <span>{formatDate(post.publishedAt, locale)}</span>
+                            <span>
+                              {post.readingMinutes} {labels.minutes}
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {post.tags.slice(0, 3).map((tag) => (
+                              <span
+                                className="rounded-full border border-white/16 bg-white/7 px-3 py-1 text-[0.64rem] font-black uppercase tracking-[0.12em] text-white/58"
+                                key={tag}
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                          <h2 className="text-2xl font-black uppercase leading-[0.98] text-white transition group-hover:text-[var(--spike-accent)]">
+                            {post.title}
+                          </h2>
+                          <p className="text-sm font-semibold leading-6 text-white/64">
+                            {post.excerpt}
+                          </p>
+                          <span className="w-fit rounded-full bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-[#050505] transition group-hover:bg-[var(--spike-accent)]">
+                            {labels.read}
+                          </span>
+                        </div>
+                      </Link>
+                    </article>
+                  ))}
+                </div>
               </div>
             ) : (
               <div className="rounded-[1.25rem] border border-white/18 bg-[#050505]/84 p-8 text-sm font-semibold text-white/64">

@@ -276,16 +276,22 @@ function SpikeHomeHero({
             </p>
           </div>
 
-          <div className="group flex min-h-[34rem] gap-3 overflow-x-auto pb-2 pt-1 [scrollbar-width:none] sm:gap-4 lg:min-h-[36rem] xl:overflow-visible">
-            {filteredCommodities.map((commodity) => (
-              <SpikeCommodityCard
-                commodity={commodity}
-                fxRates={fxRates}
-                key={commodity.id}
-                locale={locale}
-                officialLabel={copy.officialLabel}
-              />
-            ))}
+          <div className="relative">
+            <div className="pointer-events-none absolute inset-y-1 right-0 z-20 w-16 bg-gradient-to-l from-[#5052f5] via-[#5052f5]/86 to-transparent xl:hidden" />
+            <div className="pointer-events-none absolute bottom-4 right-3 z-30 rounded-full border border-white/18 bg-black/55 px-3 py-1 text-[0.58rem] font-black uppercase tracking-[0.14em] text-white/70 shadow-xl shadow-black/35 xl:hidden">
+              {locale === "uk" ? "гортайте" : "scroll"}
+            </div>
+            <div className="group flex min-h-[34rem] snap-x snap-mandatory gap-3 overflow-x-auto pb-2 pt-1 [scrollbar-width:thin] sm:gap-4 lg:min-h-[36rem] xl:overflow-visible">
+              {filteredCommodities.map((commodity) => (
+                <SpikeCommodityCard
+                  commodity={commodity}
+                  fxRates={fxRates}
+                  key={commodity.id}
+                  locale={locale}
+                  officialLabel={copy.officialLabel}
+                />
+              ))}
+            </div>
           </div>
         </div>
 
@@ -395,7 +401,7 @@ function SpikeCommodityCard({
 
   return (
     <article
-      className={`relative grid min-w-[15.5rem] flex-[1_1_0] grid-rows-[10.75rem_8.75rem_4rem_1fr] overflow-hidden rounded-[1.65rem] border border-white/10 bg-[#050505] p-4 text-[#f8f8f2] transition-[flex-grow,transform,border-color] duration-500 ease-out hover:flex-[1.55_1_0] hover:-translate-y-1 sm:min-w-[16.25rem] lg:min-w-0 xl:p-5 ${tone.border}`}
+      className={`relative grid min-w-[15.5rem] flex-[1_1_0] snap-start grid-rows-[10.75rem_8.75rem_4rem_1fr] overflow-hidden rounded-[1.65rem] border border-white/10 bg-[#050505] p-4 text-[#f8f8f2] transition-[flex-grow,transform,border-color] duration-500 ease-out hover:flex-[1.55_1_0] hover:-translate-y-1 sm:min-w-[16.25rem] lg:min-w-0 xl:p-5 ${tone.border}`}
     >
       <div
         aria-hidden="true"

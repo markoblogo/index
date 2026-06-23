@@ -143,69 +143,85 @@ export default async function AnalyticsPage({
       }
     >
       <section className="border-b border-black bg-white">
-        <div className="mx-auto max-w-7xl px-6 py-10 lg:px-8 lg:py-14">
-          <div>
+        <div className="mx-auto grid max-w-7xl gap-5 px-6 py-7 lg:grid-cols-[minmax(0,0.95fr)_minmax(18rem,0.55fr)] lg:items-end lg:px-8 lg:py-9">
+          <div className="min-w-0">
             <p className="text-xs font-black uppercase tracking-[0.18em] text-uga-green">
               {copy.heroEyebrow}
             </p>
-            <h1 className="mt-5 max-w-4xl text-4xl font-black uppercase leading-[0.98] tracking-normal text-black sm:text-5xl lg:text-6xl">
+            <h1 className="mt-3 max-w-4xl text-4xl font-black uppercase leading-[0.98] tracking-normal text-black sm:text-5xl lg:text-[3.35rem]">
               {copy.heroTitle}
             </h1>
-            <p className="mt-5 max-w-3xl text-base font-semibold leading-7 text-black/70 sm:text-lg">
+            <p className="mt-4 max-w-3xl text-sm font-semibold leading-6 text-black/70 sm:text-base">
               {copy.heroBody}
             </p>
+          </div>
+          <div className="grid gap-2 border border-black bg-uga-mist p-3">
+            {copy.workbenchLinks.map((link) => (
+              <a
+                className="grid grid-cols-[1fr_auto] items-center gap-3 border border-black bg-white px-3 py-2 text-xs font-black uppercase tracking-[0.08em] text-black transition hover:bg-uga-lime"
+                href={link.href}
+                key={link.label}
+              >
+                <span>{link.label}</span>
+                <span aria-hidden="true">↘</span>
+              </a>
+            ))}
           </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-6 py-10 lg:px-8">
+      <section className="mx-auto max-w-7xl px-6 py-6 lg:px-8 lg:py-7">
         <KpiStrip items={snapshot} />
       </section>
 
       {hasHistory ? (
         <>
-          <section className="border-y border-black bg-uga-mist">
-            <div className="mx-auto grid max-w-7xl gap-5 px-6 py-12 lg:px-8 lg:py-14">
+          <section className="border-y border-black bg-uga-mist" id="movement">
+            <div className="mx-auto grid max-w-7xl gap-5 px-6 py-8 lg:px-8 lg:py-10">
               <AnalyticsPanel
                 description={copy.movementDescription}
                 title={copy.movementTitle}
               >
                 <MovementSummary history={history} locale={locale} />
               </AnalyticsPanel>
-              {isSpike ? (
-                <GroupedMarketAnalyticsPanelAsync
-                  commodities={commodities}
-                  history={history}
-                  locale={locale}
-                />
-              ) : (
-                <div className="grid gap-5 xl:grid-cols-2">
-                  <AnalyticsPanel
-                    description={copy.trendDescription}
-                    title={copy.trendTitle}
-                  >
-                    <AnalyticsTrendChartAsync
-                      commodities={commodities}
-                      history={history}
-                      locale={locale}
-                    />
-                  </AnalyticsPanel>
-                  <AnalyticsPanel
-                    description={copy.volatilityDescription}
-                    title={copy.volatilityTitle}
-                  >
-                    <VolatilityRangePanelAsync
-                      commodities={commodities}
-                      history={history}
-                      locale={locale}
-                    />
-                  </AnalyticsPanel>
-                </div>
-              )}
+              <div id="groups">
+                {isSpike ? (
+                  <GroupedMarketAnalyticsPanelAsync
+                    commodities={commodities}
+                    history={history}
+                    locale={locale}
+                  />
+                ) : (
+                  <div className="grid gap-5 xl:grid-cols-2">
+                    <AnalyticsPanel
+                      description={copy.trendDescription}
+                      title={copy.trendTitle}
+                    >
+                      <AnalyticsTrendChartAsync
+                        commodities={commodities}
+                        history={history}
+                        locale={locale}
+                      />
+                    </AnalyticsPanel>
+                    <AnalyticsPanel
+                      description={copy.volatilityDescription}
+                      title={copy.volatilityTitle}
+                    >
+                      <VolatilityRangePanelAsync
+                        commodities={commodities}
+                        history={history}
+                        locale={locale}
+                      />
+                    </AnalyticsPanel>
+                  </div>
+                )}
+              </div>
             </div>
           </section>
 
-          <SpreadAnalysisPanelAsync history={history} locale={locale} />
+          <div id="spreads">
+            <SpreadAnalysisPanelAsync history={history} locale={locale} />
+          </div>
         </>
       ) : (
         <section className="border-y border-black bg-uga-mist">
@@ -961,6 +977,11 @@ function getAnalyticsCopy(locale: Locale) {
       volatilityRange: "Діапазон волатильності",
       volatilityTitle: "Волатильність і ціновий діапазон",
       weekUnit: "періодів",
+      workbenchLinks: [
+        { href: "#movement", label: "Цінові зміни" },
+        { href: "#groups", label: "Групова аналітика" },
+        { href: "#spreads", label: "Спреди" },
+      ],
     };
 
     if (activeIndex.id !== "spike-ua") {
@@ -1126,6 +1147,11 @@ function getAnalyticsCopy(locale: Locale) {
     volatilityRange: "Volatility range",
     volatilityTitle: "Volatility and price range",
     weekUnit: "periods",
+    workbenchLinks: [
+      { href: "#movement", label: "Price changes" },
+      { href: "#groups", label: "Grouped analytics" },
+      { href: "#spreads", label: "Spreads" },
+    ],
   };
 
   if (activeIndex.id !== "spike-ua") {

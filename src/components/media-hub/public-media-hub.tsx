@@ -121,6 +121,47 @@ export function PublicMediaHub({
         </div>
       </section>
 
+      <section className="mx-auto max-w-[1900px] px-5 pt-6 sm:px-8 lg:px-10">
+        <div className="grid gap-4 rounded-[1.35rem] border border-white/10 bg-[var(--media-hub-panel)] p-4 shadow-[0_24px_70px_rgba(0,0,0,0.22)] lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-[var(--media-hub-accent)]">
+              {copy.commandCenter}
+            </p>
+            <h2 className="mt-1 text-2xl font-black">{activeWindow.summaryTitle}</h2>
+            <p className="mt-2 text-sm font-semibold leading-6 text-white/58">
+              {activeWindow.itemCount} {copy.items} · {activeWindow.topicCount}{" "}
+              {copy.topics} · {activeWindow.sourceCount} {copy.sources}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2 lg:justify-end">
+            {profile.windows.map((window) => (
+              <Link
+                className={`rounded-full border px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] transition ${
+                  window.window === selectedWindow
+                    ? "border-[color:var(--media-hub-accent)] bg-[var(--media-hub-accent)] text-[var(--media-hub-accent-ink)]"
+                    : "border-white/12 text-white/56 hover:border-white/30 hover:text-white"
+                }`}
+                href={windowHref(window.window)}
+                key={window.window}
+              >
+                {window.label}
+              </Link>
+            ))}
+            {archiveHref
+              ? archiveFilters.map((filter) => (
+                  <Link
+                    className="rounded-full border border-white/12 px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-white/56 transition hover:border-[color:var(--media-hub-accent)] hover:text-white"
+                    href={archiveHref({ kind: filter.kind })}
+                    key={`archive-${filter.label}`}
+                  >
+                    {filter.label}
+                  </Link>
+                ))
+              : null}
+          </div>
+        </div>
+      </section>
+
       <section className="mx-auto max-w-[1900px] px-5 py-8 sm:px-8 lg:px-10">
         <article className="rounded-[2rem] border border-white/10 bg-[var(--media-hub-panel)] p-6">
           <div className="flex flex-wrap items-center gap-3">
@@ -130,6 +171,9 @@ export function PublicMediaHub({
             </span>
             <span className="rounded-full border border-white/12 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-white/48">
               {activeWindow.topicCount} {copy.topics}
+            </span>
+            <span className="rounded-full border border-white/12 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-white/48">
+              {activeWindow.sourceCount} {copy.sources}
             </span>
           </div>
           {activeWindow.dailyReport ? (
@@ -440,6 +484,7 @@ function getMediaHubCopy(locale: Locale) {
     return {
       all: "Усі",
       clusters: "кластерів",
+      commandCenter: "Панель звіту",
       daily: "День",
       deskSnapshot: "Стан моніторингу",
       distribution: "Розподіл",
@@ -457,9 +502,10 @@ function getMediaHubCopy(locale: Locale) {
   }
 
   return {
-    all: "All",
-    clusters: "clusters",
-    daily: "Daily",
+      all: "All",
+      clusters: "clusters",
+      commandCenter: "Report panel",
+      daily: "Daily",
     deskSnapshot: "Desk Snapshot",
     distribution: "Distribution",
     distributionNote: "Raw monitoring below, editorial summary above.",
