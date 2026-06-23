@@ -38,17 +38,21 @@ export function SiteFooter({ locale }: { locale: Locale }) {
       label: locale === "uk" ? "Розкриття ризиків" : "Risk Disclosure",
     },
   ];
+  const footerNavColumns = [
+    navItems.slice(0, Math.ceil(navItems.length / 2)),
+    navItems.slice(Math.ceil(navItems.length / 2)),
+  ];
 
   if (isSpike) {
     return (
       <footer className="border-t border-black bg-uga-dark text-white">
-        <div className="mx-auto max-w-[1900px] px-6 py-4 text-sm text-white/70 lg:px-8">
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-[1.35fr_1.05fr_1.25fr_1fr] lg:items-start">
-            <section>
-              <h2 className="whitespace-nowrap text-sm font-black uppercase tracking-normal text-white">
+        <div className="mx-auto max-w-[1900px] px-6 py-7 text-sm text-white/70 lg:px-9">
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-[minmax(22rem,1.25fr)_minmax(20rem,1fr)_minmax(14rem,0.86fr)_minmax(18rem,1fr)] lg:items-start lg:gap-12">
+            <section className="max-w-[34rem]">
+              <h2 className="text-sm font-black uppercase tracking-[0.02em] text-white">
                 {SITE_CONFIG.name}
               </h2>
-              <p className="mt-3 max-w-md text-xs leading-5 text-white/45">
+              <p className="mt-4 max-w-[30rem] text-xs leading-6 text-white/42">
                 {dict.footer.disclaimer}
                 <br />
                 {locale === "uk"
@@ -58,39 +62,43 @@ export function SiteFooter({ locale }: { locale: Locale }) {
             </section>
 
             <section>
-              <h2 className="text-[0.68rem] font-black uppercase tracking-[0.18em] text-white">
+              <h2 className="text-[0.68rem] font-black uppercase tracking-[0.28em] text-white">
                 {dict.footer.navigationTitle}
               </h2>
               <nav
-                className="mt-2 grid grid-cols-2 gap-x-5 gap-y-1"
+                className="mt-4 grid grid-cols-2 gap-x-8"
                 aria-label={dict.footer.navigationTitle}
               >
-                {navItems.map((item) => (
-                  <Link
-                    className="w-fit text-sm font-semibold leading-5 text-white/68 transition hover:text-uga-lime"
-                    href={item.href}
-                    key={item.href}
-                  >
-                    {item.label}
-                  </Link>
+                {footerNavColumns.map((column, index) => (
+                  <div className="grid content-start gap-2.5" key={index}>
+                    {column.map((item) => (
+                      <Link
+                        className="w-fit text-sm font-bold leading-[1.2] text-white/64 transition hover:text-uga-lime"
+                        href={item.href}
+                        key={item.href}
+                      >
+                        {item.label}
+                      </Link>
+                    ))}
+                  </div>
                 ))}
               </nav>
             </section>
 
             <section>
-              <h2 className="text-[0.68rem] font-black uppercase tracking-[0.18em] text-white">
+              <h2 className="text-[0.68rem] font-black uppercase tracking-[0.28em] text-white">
                 {locale === "uk" ? "Контакти" : "Contacts"}
               </h2>
-              <div className="mt-2 grid gap-2 text-sm leading-5">
-                <div>
+              <div className="mt-4 grid gap-3 text-sm leading-6">
+                <div className="text-white/64">
                   {activeIndex.contacts.address[locale].map((line) => (
                     <p key={line}>{line}</p>
                   ))}
                 </div>
-                <div>
+                <div className="grid gap-0.5">
                   {activeIndex.contacts.phones.map((phone) => (
                     <a
-                      className="block transition hover:text-uga-lime"
+                      className="block font-semibold text-white/66 transition hover:text-uga-lime"
                       href={`tel:${phone.replace(/[^\d+]/g, "")}`}
                       key={phone}
                     >
@@ -98,13 +106,13 @@ export function SiteFooter({ locale }: { locale: Locale }) {
                     </a>
                   ))}
                   <a
-                    className="block transition hover:text-uga-lime"
+                    className="block font-semibold text-white/66 transition hover:text-uga-lime"
                     href={`mailto:${activeIndex.contacts.email}`}
                   >
                     {activeIndex.contacts.email}
                   </a>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 pt-1">
                   {activeIndex.contacts.social.map((social) => (
                     <FooterSocialLink social={social} key={social.label} />
                   ))}
@@ -113,16 +121,16 @@ export function SiteFooter({ locale }: { locale: Locale }) {
             </section>
 
             <section>
-              <h2 className="text-[0.68rem] font-black uppercase tracking-[0.18em] text-white">
+              <h2 className="text-[0.68rem] font-black uppercase tracking-[0.28em] text-white">
                 {locale === "uk" ? "Правові документи" : "Legal"}
               </h2>
               <nav
-                className="mt-2 grid gap-1"
+                className="mt-4 grid content-start gap-2.5"
                 aria-label={locale === "uk" ? "Правові документи" : "Legal"}
               >
                 {legalItems.map((item) => (
                   <Link
-                    className="w-fit text-sm font-semibold leading-5 text-white/68 transition hover:text-uga-lime"
+                    className="w-fit text-sm font-bold leading-[1.2] text-white/64 transition hover:text-uga-lime"
                     href={item.href}
                     key={item.href}
                   >
