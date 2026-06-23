@@ -278,7 +278,7 @@ export async function ingestMediaHubLinkMaterial(input: {
     return buildResult(input.tenantId, input.kind, "failed", "File exceeds Media Hub material size limit.");
   }
 
-  const extraction = extractMaterialContent({
+  const extraction = await extractMaterialContent({
     bytes,
     filename: basename(new URL(canonicalUrl).pathname) || undefined,
     mimeType: contentType,
@@ -311,7 +311,7 @@ export async function ingestMediaHubFileMaterial(input: {
     return buildResult(input.tenantId, input.kind, "failed", "File exceeds Media Hub material size limit.");
   }
 
-  const extraction = extractMaterialContent(input);
+  const extraction = await extractMaterialContent(input);
   return storeManualMaterial({
     ...input,
     contentBytes: input.bytes,
@@ -699,24 +699,38 @@ async function storeManualMaterialAssets(input: {
       asset.visualSummary ?? null,
       asset.confidence ?? null,
       JSON.stringify(asset.metadata ?? {}),
-      asset.bytes ?? null,
+      getPersistedAssetBytes(asset),
     );
   }
 }
 
-function extractMaterialContent(input: {
+function getPersistedAssetBytes(asset: ExtractedMaterialAssetDraft) {
+  if (!asset.bytes) {
+    return null;
+  }
+  if (asset.assetType === "original") {
+    return asset.bytes;
+  }
+  if (asset.assetType === "preview_image") {
+    return shouldStorePreviewBytes(asset.bytes) ? asset.bytes : null;
+  }
+  return null;
+}
+
+async function extractMaterialContent(input: {
   bytes: Buffer;
   filename?: string;
   mimeType: string;
-}): ExtractedMaterialContent {
+}): Promise<ExtractedMaterialContent> {
   const mimeType = input.mimeType.toLowerCase();
   const filename = input.filename?.toLowerCase() ?? "";
   if (mimeType.startsWith("image/")) {
-    return {
+    return enhanceVisualAssets({
       assets: [
         {
           assetType: "preview_image",
           byteSize: input.bytes.length,
+          bytes: input.bytes,
           confidence: 0.35,
           metadata: { filename, parser: "image-preview" },
           mimeType,
@@ -736,7 +750,7 @@ function extractMaterialContent(input: {
       extractedTables: [],
       extractedText: "",
       extractionStatus: "partial_visual_pending",
-    };
+    });
   }
   if (!isAllowedMaterialType(mimeType, filename)) {
     return {
@@ -770,7 +784,7 @@ function extractMaterialContent(input: {
   if (mimeType.includes("pdf") || filename.endsWith(".pdf")) {
     const pdf = extractPdfContent(input.bytes, input.filename ?? filename);
     const text = pdf.text;
-    return {
+    return enhanceVisualAssets({
       assets: [
         ...buildTextAssets(text, pdf.parser === "pdftotext" ? "PDF text extracted with pdftotext." : "PDF text extracted with fallback parser."),
         ...pdf.previewAssets,
@@ -779,7 +793,7 @@ function extractMaterialContent(input: {
       extractedTables: [],
       extractedText: text.slice(0, MAX_EXTRACTED_TEXT_CHARS),
       extractionStatus: text.length > 120 || pdf.previewAssets.length > 0 ? "partial" : "unsupported",
-    };
+    });
   }
   if (filename.endsWith(".xlsx") || mimeType.includes("spreadsheetml")) {
     return {
@@ -843,6 +857,151 @@ function buildTextAssets(text: string, visualSummary: string): ExtractedMaterial
     : [];
 }
 
+async function enhanceVisualAssets(content: ExtractedMaterialContent): Promise<ExtractedMaterialContent> {
+  if (process.env.MEDIA_HUB_ENABLE_VISION_SUMMARY === "0" || !process.env.OPENAI_API_KEY) {
+    return content;
+  }
+
+  const visualAssets = content.assets
+    .filter((asset) => asset.assetType === "preview_image")
+    .filter((asset) => asset.bytes?.length && asset.mimeType?.startsWith("image/"))
+    .filter((asset) => (asset.bytes?.length ?? 0) <= getMaxVisionImageBytes())
+    .slice(0, getMaxVisionPages());
+  if (visualAssets.length === 0) {
+    return content;
+  }
+
+  const model = process.env.MEDIA_HUB_VISION_MODEL || "gpt-4o-mini";
+  for (const asset of visualAssets) {
+    const summary = await summarizeVisualAssetWithOpenAi({
+      bytes: asset.bytes as Buffer,
+      filename: String(asset.metadata?.filename ?? "material-preview"),
+      mimeType: asset.mimeType || "image/png",
+      model,
+      pageNumber: asset.pageNumber,
+    });
+    if (summary.text) {
+      asset.visualSummary = summary.text;
+      asset.confidence = 0.78;
+      asset.metadata = {
+        ...(asset.metadata ?? {}),
+        visionModel: model,
+        visionProvider: "openai",
+        visionStatus: "summarized",
+      };
+    } else if (summary.error) {
+      asset.metadata = {
+        ...(asset.metadata ?? {}),
+        visionError: summary.error,
+        visionModel: model,
+        visionProvider: "openai",
+        visionStatus: "failed",
+      };
+    }
+  }
+
+  const generatedSummaries = visualAssets
+    .filter((asset) => asset.metadata?.visionStatus === "summarized")
+    .map((asset) => ({
+      assetType: "visual_summary" as const,
+      confidence: asset.confidence,
+      metadata: {
+        derivedFrom: "preview_image",
+        pageNumber: asset.pageNumber ?? null,
+        visionModel: model,
+        visionProvider: "openai",
+      },
+      mimeType: "text/plain",
+      pageNumber: asset.pageNumber,
+      visualSummary: asset.visualSummary,
+    }));
+
+  return {
+    ...content,
+    assets: [...content.assets, ...generatedSummaries],
+    extractionStatus: content.extractionStatus === "unsupported" ? "partial_visual" : content.extractionStatus,
+  };
+}
+
+async function summarizeVisualAssetWithOpenAi(input: {
+  bytes: Buffer;
+  filename: string;
+  mimeType: string;
+  model: string;
+  pageNumber?: number;
+}) {
+  try {
+    const response = await fetch("https://api.openai.com/v1/responses", {
+      body: JSON.stringify({
+        input: [{
+          content: [
+            {
+              text: [
+                "Summarize this visual material for commodity market intelligence.",
+                "Focus on tables, charts, maps, commodity names, prices, volumes, dates, routes, weather and trade-policy facts.",
+                "Ignore branding/layout unless it changes interpretation.",
+                "Return 3-5 concise evidence bullets in plain text. Do not invent values.",
+                `File: ${input.filename}${input.pageNumber ? ` page ${input.pageNumber}` : ""}.`,
+              ].join(" "),
+              type: "input_text",
+            },
+            {
+              detail: "low",
+              image_url: `data:${input.mimeType};base64,${input.bytes.toString("base64")}`,
+              type: "input_image",
+            },
+          ],
+          role: "user",
+        }],
+        max_output_tokens: 450,
+        model: input.model,
+        temperature: 0.1,
+      }),
+      headers: {
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+    });
+    if (!response.ok) {
+      return { error: `openai_${response.status}` };
+    }
+    const payload = await response.json();
+    const text = extractOpenAiResponseText(payload)
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 1200);
+    return text ? { text } : { error: "openai_empty" };
+  } catch (error) {
+    return { error: sanitizeVisionError(error) };
+  }
+}
+
+function extractOpenAiResponseText(payload: unknown): string {
+  if (!payload || typeof payload !== "object") {
+    return "";
+  }
+  const response = payload as {
+    output?: Array<{
+      content?: Array<{ text?: string | { value?: string }; value?: string }>;
+    }>;
+    output_text?: string;
+  };
+  if (typeof response.output_text === "string") {
+    return response.output_text;
+  }
+  return response.output
+    ?.flatMap((item) => item.content ?? [])
+    .map((content) => {
+      if (typeof content.text === "string") return content.text;
+      if (typeof content.text?.value === "string") return content.text.value;
+      if (typeof content.value === "string") return content.value;
+      return "";
+    })
+    .filter(Boolean)
+    .join("\n") ?? "";
+}
+
 function extractPdfContent(bytes: Buffer, filename: string) {
   const tmp = mkdtempSync(join(tmpdir(), "media-hub-pdf-"));
   const pdfPath = join(tmp, sanitizeFilename(filename || "material.pdf"));
@@ -897,7 +1056,7 @@ function tryRenderPdfPreviewAssets(pdfPath: string): ExtractedMaterialAssetDraft
         return {
           assetType: "preview_image",
           byteSize: bytes.length,
-          bytes: shouldStorePreviewBytes(bytes) ? bytes : undefined,
+          bytes,
           confidence: 0.5,
           metadata: { filename: name, parser: "pdftoppm" },
           mimeType: "image/png",
@@ -934,6 +1093,22 @@ function shouldStorePreviewBytes(bytes: Buffer) {
     return false;
   }
   return bytes.length <= 750 * 1024;
+}
+
+function getMaxVisionImageBytes() {
+  const configured = Number(process.env.MEDIA_HUB_VISION_IMAGE_MAX_MB ?? 5);
+  return Math.max(1, Math.min(12, configured || 5)) * 1024 * 1024;
+}
+
+function getMaxVisionPages() {
+  const configured = Number(process.env.MEDIA_HUB_VISION_MAX_PAGES ?? 3);
+  return Math.max(1, Math.min(6, configured || 3));
+}
+
+function sanitizeVisionError(error: unknown) {
+  return error instanceof Error
+    ? error.message.replace(/sk-[A-Za-z0-9_-]+/g, "sk-***").slice(0, 160)
+    : "unknown_vision_error";
 }
 
 function getMaxOriginalDbBytes() {

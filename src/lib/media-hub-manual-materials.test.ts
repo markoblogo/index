@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/db", () => ({
@@ -35,6 +35,12 @@ const {
   inferCorporateTelegramTenants,
   normalizeTelegramBotApiChatId,
 } = __mediaHubCorporateTelegramTestHooks;
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  delete process.env.OPENAI_API_KEY;
+  delete process.env.MEDIA_HUB_ENABLE_VISION_SUMMARY;
+});
 
 describe("media hub manual materials", () => {
   it("routes hashtags to SSI, 1D3X, or both tenants", () => {
@@ -90,8 +96,8 @@ describe("media hub manual materials", () => {
     });
   });
 
-  it("creates visual assets for image materials", () => {
-    const extraction = extractMaterialContent({
+  it("creates visual assets for image materials", async () => {
+    const extraction = await extractMaterialContent({
       bytes: Buffer.from("fake-image"),
       filename: "chart.png",
       mimeType: "image/png",
@@ -100,6 +106,25 @@ describe("media hub manual materials", () => {
     expect(extraction.extractionStatus).toBe("partial_visual_pending");
     expect(extraction.assets.map((asset) => asset.assetType)).toContain("preview_image");
     expect(extraction.assets.map((asset) => asset.assetType)).toContain("visual_summary");
+  });
+
+  it("adds OpenAI vision summaries to visual assets when enabled", async () => {
+    process.env.OPENAI_API_KEY = "sk-test";
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      output_text: "• Wheat table shows higher export offers. • Corn route map highlights port congestion.",
+    }), { status: 200 })));
+
+    const extraction = await extractMaterialContent({
+      bytes: Buffer.from("fake-image"),
+      filename: "chart.png",
+      mimeType: "image/png",
+    });
+
+    expect(fetch).toHaveBeenCalledWith("https://api.openai.com/v1/responses", expect.any(Object));
+    expect(extraction.assets.some((asset) =>
+      asset.assetType === "visual_summary" &&
+      asset.visualSummary?.includes("Wheat table"),
+    )).toBe(true);
   });
 });
 
@@ -220,7 +245,7 @@ describe("media hub report prompts", () => {
           mimeType: "image/png",
           pageNumber: 1,
           storagePath: "mediahub://preview/page-1.png",
-          visualSummary: "PDF page 1 preview generated for visual review.",
+          visualSummary: "Wheat export tender table and corn weather chart are visible on PDF page 1.",
         }],
         extractedFacts: [],
         extractedTables: [],

@@ -292,14 +292,20 @@ function renderVisualEvidence(materials: MediaHubManualMaterialDigest[]) {
       material.assets
         .filter((asset) => asset.assetType === "preview_image" || asset.assetType === "visual_summary")
         .filter((asset) => asset.visualSummary || asset.extractedText)
-        .slice(0, 3)
         .map((asset) => {
           const label = material.originalFilename || material.sourceDomain || material.originalUrl || material.id;
           const page = asset.pageNumber ? ` page ${asset.pageNumber}` : "";
           const confidence = typeof asset.confidence === "number" ? ` confidence ${asset.confidence.toFixed(2)}` : "";
-          return `Visual evidence: ${label}${page}${confidence} | ${asset.visualSummary || asset.extractedText}`;
+          const evidence = asset.visualSummary || asset.extractedText;
+          return {
+            line: `Visual evidence: ${label}${page}${confidence} | ${evidence}`,
+            score: scoreEvidenceText(`${label} ${evidence}`),
+          };
         }),
     )
+    .filter((item) => item.score > 0)
+    .sort((first, second) => second.score - first.score)
+    .map((item) => item.line)
     .slice(0, 12);
 
   return visualLines.length > 0
@@ -309,7 +315,10 @@ function renderVisualEvidence(materials: MediaHubManualMaterialDigest[]) {
 
 function scoreManualMaterial(material: MediaHubManualMaterialDigest) {
   const domain = (material.sourceDomain || "").toLowerCase();
-  const text = `${domain} ${material.summary} ${material.extractedText}`.toLowerCase();
+  const visualText = material.assets
+    .map((asset) => `${asset.visualSummary} ${asset.extractedText}`)
+    .join(" ");
+  const text = `${domain} ${material.summary} ${material.extractedText} ${visualText}`.toLowerCase();
   return scoreEvidenceText(text, domain);
 }
 

@@ -54,6 +54,10 @@ original/preview asset and a visual-summary slot; full OCR/vision extraction can
 be added later without changing the material flow. Prefer PDF, table files, or
 links when exact numbers must be parsed automatically.
 
+If `OPENAI_API_KEY` is configured, Media Hub also generates real vision summaries
+for image uploads and PDF preview pages. This is optional: failed or missing
+vision generation never blocks ingestion.
+
 ## Admin fallback
 
 If Telegram upload is inconvenient, add materials manually at:
@@ -85,7 +89,20 @@ The admin page supports:
 - Report prompts receive ranked text snippets plus compact visual evidence
   summaries, not full raw files.
 - The current implementation is not a visual vector index. Pixel/tile retrieval
-  over large archives is the next step after this MVP.
+  over large archives is the next step after this MVP. Current retrieval ranks
+  extracted text and visual summaries lexically before sending evidence to the
+  report prompt.
+
+Vision-related environment variables:
+
+- `OPENAI_API_KEY` - enables OpenAI vision summaries.
+- `MEDIA_HUB_VISION_MODEL` - optional model override, defaults to `gpt-4o-mini`.
+- `MEDIA_HUB_ENABLE_VISION_SUMMARY=0` - disables vision calls.
+- `MEDIA_HUB_VISION_MAX_PAGES` - max PDF/image pages summarized per material,
+  default `3`.
+- `MEDIA_HUB_VISION_IMAGE_MAX_MB` - max image bytes sent to vision, default `5`.
+- `MEDIA_HUB_STORE_PREVIEW_BYTES=0` - keeps preview metadata/summaries without
+  storing preview binary bytes.
 
 ## Corporate Media Hub sources
 
