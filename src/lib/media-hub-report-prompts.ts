@@ -51,11 +51,7 @@ export function buildSsiDailyReportPrompt(input: {
           "🔎 Головні сигнали",
           "🌾 Ринок зернових",
           "🌻 Олійні та продукти переробки",
-          "🚚 Логістика та експорт",
-          "🌦 Урожай, погода та виробництво",
-          "⚖️ Політика, регулювання та торгівля",
           "🏭 Переробка, попит та внутрішній ринок",
-          "🌍 Міжнародний контекст",
         ].join("\n")
       : [
           "🔎 Key signals",
@@ -67,7 +63,8 @@ export function buildSsiDailyReportPrompt(input: {
           "🏭 Processing and domestic demand",
           "🌍 International context",
         ].join("\n"),
-    "Omit thematic sections that have no concrete source-backed facts. Keep daily shorter than weekly.",
+    "Omit thematic sections that have no concrete source-backed facts. Keep daily shorter than weekly and prioritize price movement + drivers.",
+    "For this daily report include only sections that have market-relevant facts and avoid logistics/policy/global digressions unless directly impacting Ukraine prices.",
     noHallucinationRules(),
     commonJsonRules(input),
     renderIndexData(input.latestData, isUk),

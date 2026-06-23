@@ -333,10 +333,10 @@ export function buildDailyNewsThemes(
 
   const primary: DailyNewsThemeId[] = tenant === "platform"
     ? ["key_signals", "grains", "oilseeds", "logistics", "crop_weather", "policy", "regional"]
-    : ["key_signals", "grains", "oilseeds", "logistics", "crop_weather", "policy", "processing", "international"];
+    : ["key_signals", "grains", "oilseeds", "processing"];
   const keySignals = normalized
     .filter((line) => !isKnownThemeHeading(line, titles))
-    .slice(0, tenant === "platform" ? 5 : 7);
+    .slice(0, 6);
   return primary
     .map((id, index) => ({
       id,
