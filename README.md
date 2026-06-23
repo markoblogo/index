@@ -413,6 +413,9 @@ It is separate from index analytics:
   spreads;
 - MediaHub monitors market news, Telegram channels, API/search providers, RSS
   feeds and editor-submitted links/files;
+- uploaded PDFs/images/files are decomposed into `MediaHubManualMaterialAsset`
+  rows: original material, extracted text, preview image slots and visual
+  summaries for report grounding/admin review;
 - daily reports are published on business days;
 - weekly reports replace daily reports on weekly publication days;
 - monthly reports replace weekly reports on monthly publication days;

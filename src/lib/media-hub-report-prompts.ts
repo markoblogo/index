@@ -127,7 +127,7 @@ export function buildSsiWeeklyMonthlyPrompt(input: {
     "You write for Spike Spot Index, not Spike Brokers. Write in Ukrainian unless explicitly asked otherwise.",
     `Create a professional ${reportLabel} Commodity & Logistics Market report for the Ukrainian grains and oilseeds market.`,
     "Brand footer must be exactly: Spike Spot Index / https://spike.1d3x.com/",
-    "Do not write: Spike Brokers – Ваш торговий партнер.",
+    "Do not write the old Spike Brokers partner footer.",
     "No trading recommendations. No invented index values, futures prices, export volumes, destinations, dates or sources.",
     "Avoid generic phrases: ринок перебуває під тиском; залишається стабільним; демонструє зростання; свідчить про; формує баланс; нівелює.",
     input.kind === "monthly"
@@ -271,6 +271,7 @@ function renderManualMaterials(materials: MediaHubManualMaterialDigest[]) {
     ...ranked.slice(0, 24).map(({ material }, index) =>
       `${index + 1}. ${material.sourceDomain || material.originalFilename || material.originalUrl || material.id} | ${formatMaterialEvidence(material)}`,
     ),
+    ...renderVisualEvidence(ranked.map(({ material }) => material)),
   ].join("\n");
 }
 
@@ -283,6 +284,27 @@ function formatMaterialEvidence(material: MediaHubManualMaterialDigest) {
     .filter((line) => !/^(provider|source|published|url|routing|tags):/i.test(line))
     .filter((line) => !line.startsWith("{") && !line.startsWith("["));
   return (lines.join(" ") || source).replace(/\s+/g, " ").slice(0, 700);
+}
+
+function renderVisualEvidence(materials: MediaHubManualMaterialDigest[]) {
+  const visualLines = materials
+    .flatMap((material) =>
+      material.assets
+        .filter((asset) => asset.assetType === "preview_image" || asset.assetType === "visual_summary")
+        .filter((asset) => asset.visualSummary || asset.extractedText)
+        .slice(0, 3)
+        .map((asset) => {
+          const label = material.originalFilename || material.sourceDomain || material.originalUrl || material.id;
+          const page = asset.pageNumber ? ` page ${asset.pageNumber}` : "";
+          const confidence = typeof asset.confidence === "number" ? ` confidence ${asset.confidence.toFixed(2)}` : "";
+          return `Visual evidence: ${label}${page}${confidence} | ${asset.visualSummary || asset.extractedText}`;
+        }),
+    )
+    .slice(0, 12);
+
+  return visualLines.length > 0
+    ? ["Visual/file evidence for admin review and report grounding:", ...visualLines]
+    : [];
 }
 
 function scoreManualMaterial(material: MediaHubManualMaterialDigest) {

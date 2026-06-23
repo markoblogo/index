@@ -49,7 +49,10 @@ Supported automatic extraction formats:
 - DOCX
 - TXT / HTML / MD
 
-Images and screenshots are accepted only as unsupported metadata until OCR is added. Prefer PDF, table files, or links.
+Images and screenshots are accepted as visual evidence. The MVP stores an
+original/preview asset and a visual-summary slot; full OCR/vision extraction can
+be added later without changing the material flow. Prefer PDF, table files, or
+links when exact numbers must be parsed automatically.
 
 ## Admin fallback
 
@@ -65,7 +68,8 @@ The admin page supports:
 - intended use: daily, weekly, monthly, or source candidate;
 - URL ingestion;
 - file upload;
-- recent-materials audit with tenant, status, source type, received time and report usage.
+- recent-materials audit with tenant, status, source type, received time,
+  report usage and generated file assets.
 
 ## Processing rules
 
@@ -74,7 +78,14 @@ The admin page supports:
 - A file and caption are processed together, so tags in the caption are enough.
 - Duplicates are skipped by content hash or canonical URL for the same reporting window.
 - Unknown links are stored as source candidates or manual materials depending on tag/context.
-- Materials are used by Media Hub report generation through the persisted `MediaHubManualMaterial` table.
+- Materials are used by Media Hub report generation through the persisted
+  `MediaHubManualMaterial` table.
+- File intelligence assets are stored in `MediaHubManualMaterialAsset`:
+  `original`, `extracted_text`, `preview_image` and `visual_summary`.
+- Report prompts receive ranked text snippets plus compact visual evidence
+  summaries, not full raw files.
+- The current implementation is not a visual vector index. Pixel/tile retrieval
+  over large archives is the next step after this MVP.
 
 ## Corporate Media Hub sources
 

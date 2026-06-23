@@ -26,6 +26,7 @@ import {
 
 const {
   canonicalizeMediaHubMaterialUrl,
+  extractMaterialContent,
   extractUrlsFromText,
   getMediaHubManualMaterialPeriod,
   parseMediaHubMaterialHashtags,
@@ -87,6 +88,18 @@ describe("media hub manual materials", () => {
       reportingWeekEnd: "2026-06-19",
       reportingMonth: "2026-06",
     });
+  });
+
+  it("creates visual assets for image materials", () => {
+    const extraction = extractMaterialContent({
+      bytes: Buffer.from("fake-image"),
+      filename: "chart.png",
+      mimeType: "image/png",
+    });
+
+    expect(extraction.extractionStatus).toBe("partial_visual_pending");
+    expect(extraction.assets.map((asset) => asset.assetType)).toContain("preview_image");
+    expect(extraction.assets.map((asset) => asset.assetType)).toContain("visual_summary");
   });
 });
 
@@ -189,5 +202,49 @@ describe("media hub report prompts", () => {
     expect(prompt).toContain("Part I. Logistics & Freight");
     expect(prompt).toContain("1D3X / https://1d3x.com/");
     expect(prompt).not.toContain("SPIKE Spot Commodity Index Ukraine");
+  });
+
+  it("adds visual material evidence to report prompts", () => {
+    const prompt = buildMediaHubReportPrompt({
+      kind: "weekly",
+      latestData: [],
+      locale: "en",
+      manualMaterials: [{
+        assets: [{
+          assetType: "preview_image",
+          byteSize: 1200,
+          confidence: 0.5,
+          extractedText: "",
+          id: "asset-1",
+          metadata: {},
+          mimeType: "image/png",
+          pageNumber: 1,
+          storagePath: "mediahub://preview/page-1.png",
+          visualSummary: "PDF page 1 preview generated for visual review.",
+        }],
+        extractedFacts: [],
+        extractedTables: [],
+        extractedText: "Wheat export tender and corn weather update.",
+        extractionStatus: "partial",
+        id: "material-1",
+        kind: "weekly_material",
+        originalFilename: "weekly.pdf",
+        originalUrl: null,
+        receivedAt: new Date("2026-06-20T12:00:00Z"),
+        sourceDomain: null,
+        sourceRegistrationStatus: "none",
+        sourceType: "telegram_file",
+        summary: "Wheat export tender and corn weather update.",
+        tenantId: "1d3x",
+        usedInReportId: null,
+      }],
+      periodEndDate: "2026-06-20",
+      periodStartDate: "2026-06-15",
+      snapshots: [],
+      tenant: "platform",
+    });
+
+    expect(prompt).toContain("Visual/file evidence");
+    expect(prompt).toContain("weekly.pdf page 1");
   });
 });

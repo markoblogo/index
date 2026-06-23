@@ -1,7 +1,8 @@
 import "server-only";
 
+import { execFileSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { db, hasDatabaseUrl } from "@/lib/db";
@@ -67,7 +68,36 @@ type MaterialRow = {
   updatedAt: Date;
 };
 
+type MaterialAssetRow = {
+  assetType: string;
+  byteSize: number | null;
+  confidence: number | null;
+  createdAt: Date;
+  extractedText: string | null;
+  id: string;
+  materialId: string;
+  metadataJson: unknown;
+  mimeType: string | null;
+  pageNumber: number | null;
+  storagePath: string | null;
+  visualSummary: string | null;
+};
+
+export type MediaHubManualMaterialAssetDigest = {
+  assetType: string;
+  byteSize: number | null;
+  confidence: number | null;
+  extractedText: string;
+  id: string;
+  metadata: unknown;
+  mimeType: string | null;
+  pageNumber: number | null;
+  storagePath: string | null;
+  visualSummary: string;
+};
+
 export type MediaHubManualMaterialDigest = {
+  assets: MediaHubManualMaterialAssetDigest[];
   extractedFacts: unknown;
   extractedTables: unknown;
   extractedText: string;
@@ -85,9 +115,36 @@ export type MediaHubManualMaterialDigest = {
   usedInReportId: string | null;
 };
 
+type MaterialRowWithAssets = MaterialRow & {
+  assets: MediaHubManualMaterialAssetDigest[];
+};
+
+type ExtractedMaterialAssetDraft = {
+  assetType: "original" | "preview_image" | "extracted_text" | "visual_summary";
+  bytes?: Buffer;
+  byteSize?: number;
+  confidence?: number;
+  extractedText?: string;
+  metadata?: Record<string, unknown>;
+  mimeType?: string;
+  pageNumber?: number;
+  storagePath?: string;
+  visualSummary?: string;
+};
+
+type ExtractedMaterialContent = {
+  assets: ExtractedMaterialAssetDraft[];
+  extractedFacts: Array<Record<string, unknown>>;
+  extractedTables: Array<Record<string, unknown>>;
+  extractedText: string;
+  extractionStatus: string;
+};
+
 const MAX_EXTRACTED_TEXT_CHARS = 18_000;
 const MAX_SUMMARY_CHARS = 900;
 const DEFAULT_MAX_FILE_MB = 20;
+const DEFAULT_MAX_ORIGINAL_DB_MB = 8;
+const DEFAULT_MAX_PREVIEW_PAGES = 3;
 const ALLOWED_MIME_TYPES = new Set([
   "application/pdf",
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -162,6 +219,9 @@ export function canonicalizeMediaHubMaterialUrl(value: string) {
       }
     }
     url.hostname = url.hostname.toLowerCase().replace(/^www\./, "");
+    if (url.pathname.length > 1 && url.pathname.endsWith("/")) {
+      url.pathname = url.pathname.slice(0, -1);
+    }
     return url.toString().replace(/\/$/, "");
   } catch {
     return "";
@@ -252,19 +312,12 @@ export async function ingestMediaHubFileMaterial(input: {
   }
 
   const extraction = extractMaterialContent(input);
-  const tmp = await mkdtemp(join(tmpdir(), "media-hub-material-"));
-  const tmpPath = join(tmp, sanitizeFilename(input.filename));
-  try {
-    await writeFile(tmpPath, input.bytes);
-    return await storeManualMaterial({
-      ...input,
-      contentBytes: input.bytes,
-      extraction,
-      originalFilename: input.filename,
-    });
-  } finally {
-    await rm(tmp, { force: true, recursive: true }).catch(() => undefined);
-  }
+  return storeManualMaterial({
+    ...input,
+    contentBytes: input.bytes,
+    extraction,
+    originalFilename: input.filename,
+  });
 }
 
 export async function ingestMediaHubTextMaterial(input: {
@@ -288,6 +341,14 @@ export async function ingestMediaHubTextMaterial(input: {
     ...input,
     contentBytes: Buffer.from(text, "utf8"),
     extraction: {
+      assets: [{
+        assetType: "extracted_text",
+        byteSize: Buffer.byteLength(text, "utf8"),
+        confidence: 0.9,
+        extractedText: text.slice(0, MAX_EXTRACTED_TEXT_CHARS),
+        mimeType: "text/plain",
+        visualSummary: "Plain text material captured for report evidence.",
+      }],
       extractedFacts: extractFacts(text),
       extractedTables: [],
       extractedText: text.slice(0, MAX_EXTRACTED_TEXT_CHARS),
@@ -353,7 +414,7 @@ export async function getManualMaterialsForPeriod(input: {
         AND "reportingWeekStart" <= $3::date
         AND "reportingWeekEnd" >= $2::date
         AND "kind" IN ($4, $5, 'source_candidate')
-        AND "extractionStatus" IN ('extracted', 'partial', 'unsupported_image_ocr')
+        AND "extractionStatus" IN ('extracted', 'partial', 'unsupported_image_ocr', 'partial_visual_pending')
       ORDER BY "receivedAt" DESC
       LIMIT 32
     `,
@@ -364,23 +425,7 @@ export async function getManualMaterialsForPeriod(input: {
     fallbackKind,
   );
 
-  return rows.map((row) => ({
-    extractedFacts: row.extractedFactsJson,
-    extractedTables: row.extractedTablesJson,
-    extractedText: (row.extractedText ?? "").slice(0, 4000),
-    extractionStatus: row.extractionStatus,
-    id: row.id,
-    kind: row.kind,
-    receivedAt: row.receivedAt,
-    originalFilename: row.originalFilename,
-    originalUrl: row.originalUrl,
-    sourceDomain: row.sourceDomain,
-    sourceRegistrationStatus: row.sourceRegistrationStatus,
-    sourceType: row.sourceType,
-    summary: row.summary ?? "",
-    tenantId: row.tenantId,
-    usedInReportId: row.usedInReportId,
-  }));
+  return (await attachMaterialAssets(rows)).map((row) => toMaterialDigest(row, 4000));
 }
 
 export async function listRecentMediaHubManualMaterials(tenantId?: string) {
@@ -401,23 +446,7 @@ export async function listRecentMediaHubManualMaterials(tenantId?: string) {
     tenantId ?? null,
   );
 
-  return rows.map((row) => ({
-    extractedFacts: row.extractedFactsJson,
-    extractedTables: row.extractedTablesJson,
-    extractedText: row.extractedText ?? "",
-    extractionStatus: row.extractionStatus,
-    id: row.id,
-    kind: row.kind,
-    receivedAt: row.receivedAt,
-    originalFilename: row.originalFilename,
-    originalUrl: row.originalUrl,
-    sourceDomain: row.sourceDomain,
-    sourceRegistrationStatus: row.sourceRegistrationStatus,
-    sourceType: row.sourceType,
-    summary: row.summary ?? "",
-    tenantId: row.tenantId,
-    usedInReportId: row.usedInReportId,
-  }));
+  return (await attachMaterialAssets(rows)).map((row) => toMaterialDigest(row));
 }
 
 export async function listRecentMediaHubManualMaterialsForChat(chatId: string) {
@@ -438,10 +467,15 @@ export async function listRecentMediaHubManualMaterialsForChat(chatId: string) {
     chatId,
   );
 
-  return rows.map((row) => ({
+  return (await attachMaterialAssets(rows)).map((row) => toMaterialDigest(row));
+}
+
+function toMaterialDigest(row: MaterialRowWithAssets, textLimit = MAX_EXTRACTED_TEXT_CHARS): MediaHubManualMaterialDigest {
+  return {
+    assets: row.assets,
     extractedFacts: row.extractedFactsJson,
     extractedTables: row.extractedTablesJson,
-    extractedText: row.extractedText ?? "",
+    extractedText: (row.extractedText ?? "").slice(0, textLimit),
     extractionStatus: row.extractionStatus,
     id: row.id,
     kind: row.kind,
@@ -454,13 +488,53 @@ export async function listRecentMediaHubManualMaterialsForChat(chatId: string) {
     summary: row.summary ?? "",
     tenantId: row.tenantId,
     usedInReportId: row.usedInReportId,
+  };
+}
+
+async function attachMaterialAssets(rows: MaterialRow[]): Promise<MaterialRowWithAssets[]> {
+  if (rows.length === 0) {
+    return [];
+  }
+
+  const assets = await db.$queryRawUnsafe<MaterialAssetRow[]>(
+    `
+      SELECT "id", "materialId", "assetType", "pageNumber", "storagePath",
+        "mimeType", "byteSize", "extractedText", "visualSummary", "confidence",
+        "metadataJson", "createdAt"
+      FROM "MediaHubManualMaterialAsset"
+      WHERE "materialId" = ANY($1::text[])
+      ORDER BY "materialId", "pageNumber" NULLS LAST, "createdAt" ASC
+    `,
+    rows.map((row) => row.id),
+  );
+  const byMaterial = new Map<string, MediaHubManualMaterialAssetDigest[]>();
+  for (const asset of assets) {
+    const list = byMaterial.get(asset.materialId) ?? [];
+    list.push({
+      assetType: asset.assetType,
+      byteSize: asset.byteSize,
+      confidence: asset.confidence,
+      extractedText: asset.extractedText ?? "",
+      id: asset.id,
+      metadata: asset.metadataJson,
+      mimeType: asset.mimeType,
+      pageNumber: asset.pageNumber,
+      storagePath: asset.storagePath,
+      visualSummary: asset.visualSummary ?? "",
+    });
+    byMaterial.set(asset.materialId, list);
+  }
+
+  return rows.map((row) => ({
+    ...row,
+    assets: byMaterial.get(row.id) ?? [],
   }));
 }
 
 async function storeManualMaterial(input: {
   canonicalUrl?: string;
   contentBytes: Buffer;
-  extraction: ReturnType<typeof extractMaterialContent>;
+  extraction: ExtractedMaterialContent;
   kind: MediaHubManualMaterialKind;
   mimeType?: string;
   originalFilename?: string;
@@ -554,26 +628,119 @@ async function storeManualMaterial(input: {
     getSourceRegistrationStatus(input.sourceType, input.canonicalUrl),
   );
 
+  await storeManualMaterialAssets({
+    contentBytes: input.contentBytes,
+    contentHash,
+    extraction: input.extraction,
+    materialId: id,
+    mimeType: input.mimeType,
+    originalFilename: input.originalFilename,
+  });
+
   return buildResult(input.tenantId, input.kind, input.extraction.extractionStatus, "Material ingested.", id);
+}
+
+async function storeManualMaterialAssets(input: {
+  contentBytes: Buffer;
+  contentHash: string;
+  extraction: ExtractedMaterialContent;
+  materialId: string;
+  mimeType?: string;
+  originalFilename?: string;
+}) {
+  const originalBytes = shouldStoreOriginalBytes(input.contentBytes)
+    ? input.contentBytes
+    : undefined;
+  const originalAsset: ExtractedMaterialAssetDraft = {
+    assetType: "original",
+    byteSize: input.contentBytes.length,
+    bytes: originalBytes,
+    confidence: 1,
+    metadata: {
+      contentHash: input.contentHash,
+      filename: input.originalFilename ?? null,
+      storedBytes: Boolean(originalBytes),
+    },
+    mimeType: input.mimeType ?? "application/octet-stream",
+    storagePath: `mediahub://manual-material/${input.contentHash}/${sanitizeFilename(input.originalFilename ?? "original.bin")}`,
+    visualSummary: originalBytes
+      ? "Original material stored with the manual material record."
+      : "Original material registered by content hash; binary bytes skipped by size/storage policy.",
+  };
+  const assets = [originalAsset, ...input.extraction.assets]
+    .filter((asset) =>
+      asset.assetType !== "extracted_text" ||
+      Boolean(asset.extractedText?.trim()),
+    )
+    .slice(0, 12);
+
+  for (const asset of assets) {
+    await db.$executeRawUnsafe(
+      `
+        INSERT INTO "MediaHubManualMaterialAsset" (
+          "id", "materialId", "assetType", "pageNumber", "storagePath",
+          "mimeType", "byteSize", "extractedText", "visualSummary",
+          "confidence", "metadataJson", "binaryBytes", "createdAt"
+        )
+        VALUES (
+          $1, $2, $3, $4, $5,
+          $6, $7, $8, $9,
+          $10, $11::jsonb, $12, NOW()
+        )
+      `,
+      randomUUID(),
+      input.materialId,
+      asset.assetType,
+      asset.pageNumber ?? null,
+      asset.storagePath ?? null,
+      asset.mimeType ?? null,
+      asset.byteSize ?? asset.bytes?.length ?? null,
+      asset.extractedText ?? null,
+      asset.visualSummary ?? null,
+      asset.confidence ?? null,
+      JSON.stringify(asset.metadata ?? {}),
+      asset.bytes ?? null,
+    );
+  }
 }
 
 function extractMaterialContent(input: {
   bytes: Buffer;
   filename?: string;
   mimeType: string;
-}) {
+}): ExtractedMaterialContent {
   const mimeType = input.mimeType.toLowerCase();
   const filename = input.filename?.toLowerCase() ?? "";
   if (mimeType.startsWith("image/")) {
     return {
-      extractedFacts: [{ type: "unsupported_image_ocr", filename }],
+      assets: [
+        {
+          assetType: "preview_image",
+          byteSize: input.bytes.length,
+          confidence: 0.35,
+          metadata: { filename, parser: "image-preview" },
+          mimeType,
+          pageNumber: 1,
+          visualSummary: "Image preview captured. OCR/vision summary can be added in the next processing pass.",
+        },
+        {
+          assetType: "visual_summary",
+          confidence: 0.35,
+          metadata: { filename, parser: "image-preview" },
+          mimeType: "text/plain",
+          pageNumber: 1,
+          visualSummary: "Image file received; treat it as visual evidence for admin review until OCR/vision is enabled.",
+        },
+      ],
+      extractedFacts: [{ type: "image_visual_pending", filename }],
       extractedTables: [],
       extractedText: "",
-      extractionStatus: "unsupported_image_ocr",
+      extractionStatus: "partial_visual_pending",
     };
   }
   if (!isAllowedMaterialType(mimeType, filename)) {
     return {
+      assets: [],
       extractedFacts: [{ type: "unsupported", mimeType }],
       extractedTables: [],
       extractedText: "",
@@ -583,6 +750,7 @@ function extractMaterialContent(input: {
   if (mimeType.includes("csv") || filename.endsWith(".csv")) {
     const text = decodeText(input.bytes);
     return {
+      assets: buildTextAssets(text, "CSV text/table extracted for MediaHub evidence."),
       extractedFacts: extractFacts(text),
       extractedTables: [parseCsvTable(text)],
       extractedText: text.slice(0, MAX_EXTRACTED_TEXT_CHARS),
@@ -592,6 +760,7 @@ function extractMaterialContent(input: {
   if (mimeType.includes("html") || filename.endsWith(".html") || filename.endsWith(".htm")) {
     const text = stripHtml(decodeText(input.bytes));
     return {
+      assets: buildTextAssets(text, "HTML text extracted for MediaHub evidence."),
       extractedFacts: extractFacts(text),
       extractedTables: [],
       extractedText: text.slice(0, MAX_EXTRACTED_TEXT_CHARS),
@@ -599,16 +768,28 @@ function extractMaterialContent(input: {
     };
   }
   if (mimeType.includes("pdf") || filename.endsWith(".pdf")) {
-    const text = extractPdfText(input.bytes);
+    const pdf = extractPdfContent(input.bytes, input.filename ?? filename);
+    const text = pdf.text;
     return {
+      assets: [
+        ...buildTextAssets(text, pdf.parser === "pdftotext" ? "PDF text extracted with pdftotext." : "PDF text extracted with fallback parser."),
+        ...pdf.previewAssets,
+      ],
       extractedFacts: extractFacts(text),
       extractedTables: [],
       extractedText: text.slice(0, MAX_EXTRACTED_TEXT_CHARS),
-      extractionStatus: text.length > 120 ? "partial" : "unsupported",
+      extractionStatus: text.length > 120 || pdf.previewAssets.length > 0 ? "partial" : "unsupported",
     };
   }
   if (filename.endsWith(".xlsx") || mimeType.includes("spreadsheetml")) {
     return {
+      assets: [{
+        assetType: "visual_summary",
+        confidence: 0.4,
+        metadata: { filename, parser: "xlsx-metadata" },
+        mimeType: "text/plain",
+        visualSummary: "XLSX received. Binary table parsing is pending; use uploaded file metadata as admin evidence.",
+      }],
       extractedFacts: [{ type: "xlsx_metadata", filename }],
       extractedTables: [{
         header: [],
@@ -623,6 +804,13 @@ function extractMaterialContent(input: {
   }
   if (filename.endsWith(".docx") || mimeType.includes("wordprocessingml")) {
     return {
+      assets: [{
+        assetType: "visual_summary",
+        confidence: 0.4,
+        metadata: { filename, parser: "docx-metadata" },
+        mimeType: "text/plain",
+        visualSummary: "DOCX received. Text extraction is pending; use uploaded file metadata as admin evidence.",
+      }],
       extractedFacts: [{ type: "docx_metadata", filename }],
       extractedTables: [],
       extractedText: `DOCX received: ${input.filename ?? "uploaded file"}`,
@@ -632,11 +820,130 @@ function extractMaterialContent(input: {
 
   const text = decodeText(input.bytes);
   return {
+    assets: buildTextAssets(text, "Text extracted for MediaHub evidence."),
     extractedFacts: extractFacts(text),
     extractedTables: [],
     extractedText: text.slice(0, MAX_EXTRACTED_TEXT_CHARS),
     extractionStatus: text.trim() ? "extracted" : "unsupported",
   };
+}
+
+function buildTextAssets(text: string, visualSummary: string): ExtractedMaterialAssetDraft[] {
+  const extractedText = text.slice(0, MAX_EXTRACTED_TEXT_CHARS);
+  return extractedText.trim()
+    ? [{
+        assetType: "extracted_text",
+        byteSize: Buffer.byteLength(extractedText, "utf8"),
+        confidence: 0.85,
+        extractedText,
+        metadata: { parser: "text" },
+        mimeType: "text/plain",
+        visualSummary,
+      }]
+    : [];
+}
+
+function extractPdfContent(bytes: Buffer, filename: string) {
+  const tmp = mkdtempSync(join(tmpdir(), "media-hub-pdf-"));
+  const pdfPath = join(tmp, sanitizeFilename(filename || "material.pdf"));
+  try {
+    writeFileSync(pdfPath, bytes);
+    const textResult = tryExtractPdfTextWithPoppler(pdfPath);
+    const previewAssets = tryRenderPdfPreviewAssets(pdfPath);
+    return {
+      parser: textResult ? "pdftotext" : "fallback",
+      previewAssets,
+      text: (textResult || extractPdfText(bytes)).slice(0, MAX_EXTRACTED_TEXT_CHARS),
+    };
+  } finally {
+    rmSync(tmp, { force: true, recursive: true });
+  }
+}
+
+function tryExtractPdfTextWithPoppler(pdfPath: string) {
+  if (!commandExists("pdftotext")) {
+    return "";
+  }
+  try {
+    const output = execFileSync("pdftotext", ["-layout", "-enc", "UTF-8", pdfPath, "-"], {
+      maxBuffer: 4 * 1024 * 1024,
+      timeout: 8000,
+    }).toString("utf8");
+    return output.replace(/\s+\n/g, "\n").replace(/\n{4,}/g, "\n\n").trim();
+  } catch {
+    return "";
+  }
+}
+
+function tryRenderPdfPreviewAssets(pdfPath: string): ExtractedMaterialAssetDraft[] {
+  if (process.env.MEDIA_HUB_ENABLE_PDF_PREVIEWS === "0" || !commandExists("pdftoppm")) {
+    return [];
+  }
+  const prefix = join(mkdtempSync(join(tmpdir(), "media-hub-pdf-preview-")), "page");
+  const previewDir = prefix.replace(/\/page$/, "");
+  try {
+    const maxPages = getMaxPreviewPages();
+    execFileSync("pdftoppm", ["-f", "1", "-l", String(maxPages), "-png", "-r", "96", pdfPath, prefix], {
+      maxBuffer: 512 * 1024,
+      timeout: 8000,
+    });
+    return readdirSync(previewDir)
+      .filter((name) => name.endsWith(".png"))
+      .sort()
+      .slice(0, maxPages)
+      .map((name, index) => {
+        const path = join(previewDir, name);
+        const bytes = readFileSync(path);
+        return {
+          assetType: "preview_image",
+          byteSize: bytes.length,
+          bytes: shouldStorePreviewBytes(bytes) ? bytes : undefined,
+          confidence: 0.5,
+          metadata: { filename: name, parser: "pdftoppm" },
+          mimeType: "image/png",
+          pageNumber: index + 1,
+          storagePath: `mediahub://preview/${name}`,
+          visualSummary: `PDF page ${index + 1} preview generated for visual review; OCR/vision summary can be added in a later pass.`,
+        };
+      });
+  } catch {
+    return [];
+  } finally {
+    rmSync(previewDir, { force: true, recursive: true });
+  }
+}
+
+function commandExists(command: string) {
+  try {
+    execFileSync("sh", ["-lc", `command -v ${command}`], { stdio: "ignore", timeout: 1000 });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function shouldStoreOriginalBytes(bytes: Buffer) {
+  if (process.env.MEDIA_HUB_STORE_ORIGINAL_BYTES === "0") {
+    return false;
+  }
+  return bytes.length <= getMaxOriginalDbBytes();
+}
+
+function shouldStorePreviewBytes(bytes: Buffer) {
+  if (process.env.MEDIA_HUB_STORE_PREVIEW_BYTES === "0") {
+    return false;
+  }
+  return bytes.length <= 750 * 1024;
+}
+
+function getMaxOriginalDbBytes() {
+  const configured = Number(process.env.MEDIA_HUB_ORIGINAL_DB_MAX_MB ?? DEFAULT_MAX_ORIGINAL_DB_MB);
+  return Math.max(1, Math.min(20, configured || DEFAULT_MAX_ORIGINAL_DB_MB)) * 1024 * 1024;
+}
+
+function getMaxPreviewPages() {
+  const configured = Number(process.env.MEDIA_HUB_PDF_PREVIEW_PAGES ?? DEFAULT_MAX_PREVIEW_PAGES);
+  return Math.max(1, Math.min(6, configured || DEFAULT_MAX_PREVIEW_PAGES));
 }
 
 async function ensureMediaHubManualMaterialStorage() {
@@ -695,6 +1002,28 @@ async function ensureMediaHubManualMaterialStorage() {
   await db.$executeRawUnsafe(`
     CREATE INDEX IF NOT EXISTS "MediaHubManualMaterial_used_report_idx"
     ON "MediaHubManualMaterial"("usedInReportId")
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "MediaHubManualMaterialAsset" (
+      "id" TEXT NOT NULL,
+      "materialId" TEXT NOT NULL,
+      "assetType" TEXT NOT NULL,
+      "pageNumber" INTEGER,
+      "storagePath" TEXT,
+      "mimeType" TEXT,
+      "byteSize" INTEGER,
+      "extractedText" TEXT,
+      "visualSummary" TEXT,
+      "confidence" DOUBLE PRECISION,
+      "metadataJson" JSONB NOT NULL DEFAULT '{}'::jsonb,
+      "binaryBytes" BYTEA,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "MediaHubManualMaterialAsset_pkey" PRIMARY KEY ("id")
+    )
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE INDEX IF NOT EXISTS "MediaHubManualMaterialAsset_material_idx"
+    ON "MediaHubManualMaterialAsset"("materialId", "assetType", "pageNumber")
   `);
 }
 
@@ -852,6 +1181,7 @@ function buildResult(
 
 export const __mediaHubManualMaterialTestHooks = {
   canonicalizeMediaHubMaterialUrl,
+  extractMaterialContent,
   extractUrlsFromText,
   getMediaHubManualMaterialPeriod,
   parseMediaHubMaterialHashtags,

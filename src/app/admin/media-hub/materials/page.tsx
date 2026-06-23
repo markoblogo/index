@@ -83,8 +83,8 @@ export default async function AdminMediaHubMaterialsPage() {
             <p className="font-bold text-white">Default rule</p>
             <p className="mt-2">
               If report type is not specified in Telegram, material is routed
-              to weekly by default. Screenshots are metadata-only unless OCR is
-              added later.
+              to weekly by default. PDFs and images now create file assets:
+              original, extracted text, preview pages and visual-summary slots.
             </p>
           </div>
         </div>
@@ -165,6 +165,29 @@ export default async function AdminMediaHubMaterialsPage() {
               <p className="mt-2 line-clamp-3 text-sm leading-6 text-white/62">
                 {material.summary || "No extracted summary yet."}
               </p>
+              {material.assets.length > 0 ? (
+                <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                  {material.assets.slice(0, 6).map((asset) => (
+                    <div
+                      className="rounded-xl border border-white/10 bg-white/[0.025] p-3 text-xs text-white/56"
+                      key={asset.id}
+                    >
+                      <div className="flex items-center justify-between gap-2 font-bold uppercase tracking-[0.12em] text-white/70">
+                        <span>{asset.assetType.replace("_", " ")}</span>
+                        <span>{asset.pageNumber ? `p.${asset.pageNumber}` : ""}</span>
+                      </div>
+                      <p className="mt-2 line-clamp-2 leading-5">
+                        {asset.visualSummary || asset.extractedText || asset.storagePath || "Asset captured."}
+                      </p>
+                      <div className="mt-2 flex flex-wrap gap-2 text-[0.65rem] uppercase tracking-[0.12em] text-white/38">
+                        {asset.mimeType ? <span>{asset.mimeType}</span> : null}
+                        {asset.byteSize ? <span>{formatBytes(asset.byteSize)}</span> : null}
+                        {typeof asset.confidence === "number" ? <span>{Math.round(asset.confidence * 100)}%</span> : null}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
             </article>
           ))}
         </div>
@@ -190,4 +213,14 @@ function formatMaterialDate(value: Date | string) {
     return "n/a";
   }
   return date.toISOString().slice(0, 16).replace("T", " ");
+}
+
+function formatBytes(value: number) {
+  if (value >= 1024 * 1024) {
+    return `${(value / 1024 / 1024).toFixed(1)} MB`;
+  }
+  if (value >= 1024) {
+    return `${Math.round(value / 1024)} KB`;
+  }
+  return `${value} B`;
 }
