@@ -68,9 +68,9 @@ UGA-specific features:
 Spike-specific features:
 
 - SPIKE SPOT INDEX brand and visual system;
-- 13 public positions grouped into `All Seasons`, `Processors`, and
+- 13 public positions grouped into `Grains Export`, `Processors`, and
   `Seasonal Export`;
-- All Seasons: corn CPT Port, corn FCA Chop, wheat 11.5% CPT Port, feed wheat
+- Grains Export: corn CPT Port, corn FCA Chop, wheat 11.5% CPT Port, feed wheat
   CPT Port;
 - Processors: sunflower, GMO soybean, non-GMO rapeseed;
 - Seasonal Export: GMO soybean CPT Port/FCA Chop, non-GMO soybean CPT

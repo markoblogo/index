@@ -269,7 +269,7 @@ function formatCategoryLabel(category: string, locale: SurveyLocale) {
     return locale === "uk" ? "Oilseeds Export" : "Oilseeds Export";
   }
 
-  return locale === "uk" ? "All Seasons" : "All Seasons";
+  return locale === "uk" ? "Grains Export" : "Grains Export";
 }
 
 function CloseButton() {

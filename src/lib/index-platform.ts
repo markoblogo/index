@@ -690,11 +690,11 @@ export function getSpikeCommodityCategories(locale: Locale) {
   return [
     {
       id: "all-seasons" as const,
-      label: locale === "uk" ? "All Seasons" : "All Seasons",
+      label: locale === "uk" ? "Grains Export" : "Grains Export",
       description:
         locale === "uk"
-          ? "Базові індекси, що публікуються протягом усього року."
-          : "Core indices published throughout the year.",
+          ? "Зернові експортні індекси CPT Port та FCA Чоп."
+          : "Grain export indices across CPT Port and FCA Chop bases.",
     },
     {
       id: "processors" as const,

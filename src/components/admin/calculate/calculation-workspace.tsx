@@ -380,5 +380,5 @@ function formatCategoryBadge(category: string) {
     return "Oilseeds Export";
   }
 
-  return "All Seasons";
+  return "Grains Export";
 }

@@ -34,7 +34,7 @@ export default async function DailyInputsPage({
   const commodityGroups = [
     {
       key: "all-seasons",
-      label: "All Seasons",
+      label: "Grains Export",
       description: "Core indices shown by default on the public site.",
       commodities: data.commodities.filter(
         (commodity) => commodity.category === "all-seasons",
@@ -348,7 +348,7 @@ function formatCategoryBadge(category: string) {
     return "Oilseeds Export";
   }
 
-  return "All Seasons";
+  return "Grains Export";
 }
 
 function MatrixCell({

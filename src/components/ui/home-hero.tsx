@@ -225,8 +225,8 @@ function SpikeHomeHero({
             <div>
               <p className="text-xs font-black uppercase tracking-[0.28em] text-white/60">
                 {locale === "uk"
-                  ? "All Seasons / Oilseeds crush / Oilseeds Export / Chop Export"
-                  : "All Seasons / Oilseeds crush / Oilseeds Export / Chop Export"}
+                  ? "Grains Export / Oilseeds crush / Oilseeds Export / Chop Export"
+                  : "Grains Export / Oilseeds crush / Oilseeds Export / Chop Export"}
               </p>
               <p className="mt-1 text-sm font-semibold leading-5 text-white/65">
                 {activeIndex.home.officialNotice[locale]}
@@ -441,7 +441,7 @@ function SpikeCommodityCard({
               ? "Oilseeds crush"
               : commodity.category === "seasonal-export"
                 ? "Oilseeds Export"
-                : "All Seasons"}
+                : "Grains Export"}
           </p>
           <span
             className={`rounded-full bg-white/10 px-2 py-1 text-[0.66rem] font-black ${tone.chip}`}

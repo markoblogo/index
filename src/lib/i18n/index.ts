@@ -796,11 +796,11 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
           "SPIKE SPOT INDEX - спотовий бенчмарк цін для українського аграрного ринку.",
       boardTitle: "SPIKE SPOT INDEX / Спотові ціни",
       boardDescription:
-        "Ринковий бенчмарк у USD/т, поділений на All Seasons, Oilseeds crush та Oilseeds Export, що публікується після щоденної перевірки даних партнерів.",
+        "Ринковий бенчмарк у USD/т, поділений на Grains Export, Oilseeds crush та Oilseeds Export, що публікується після щоденної перевірки даних партнерів.",
         heroSubtitle:
           "Спотовий бенчмарк цін для українського аграрного ринку.",
       heroMeta:
-        "All Seasons · Oilseeds crush · Oilseeds Export · USD/т · щоденна публікація",
+        "Grains Export · Oilseeds crush · Oilseeds Export · USD/т · щоденна публікація",
         heroAttribution:
           "Публікується Spike Brokers. Дані: партнери ринку. Технологія: Cropto/MN7R.",
         heroAttributionShort: "Spike Brokers · партнери ринку · Cropto/MN7R",
@@ -819,13 +819,13 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
           "SPIKE SPOT INDEX - це окрема індексна платформа ",
         descriptionLinkText: "Spike Brokers",
       descriptionAfterLink:
-        " для щоденної публікації агрегованих спотових цін у категоріях All Seasons, Oilseeds crush та Oilseeds Export. Індекс створений, щоб дати ринку прозорий і порівнюваний орієнтир для позицій CPT Port, FCA Чоп та CPT parity Одеса.",
+        " для щоденної публікації агрегованих спотових цін у категоріях Grains Export, Oilseeds crush та Oilseeds Export. Індекс створений, щоб дати ринку прозорий і порівнюваний орієнтир для позицій CPT Port, FCA Чоп та CPT parity Одеса.",
         ugaHref: "https://spike.broker/",
         whyTitle: "Операційний ціновий орієнтир для угод, логістики та переробки",
         whyBody: [
           "Український аграрний ринок щодня реагує на попит експортерів, переробників, логістику, портову інфраструктуру, валюту, фрахт і якісні параметри продукції. Для роботи з такими потоками учасникам потрібен спільний орієнтир, прив'язаний до реальних торгових базисів.",
           "SPIKE SPOT INDEX агрегує ринкові оцінки партнерів Spike Brokers і перетворює їх на зіставні значення для публікації. Індекс не розкриває індивідуальні подання компаній, а показує очищений агрегований результат.",
-        "Платформа поділена на All Seasons, Oilseeds crush та Oilseeds Export. Для переробних позицій публічні значення відображаються з ПДВ, а експортні та прикордонні позиції подаються відповідно до ринкової практики без ПДВ.",
+        "Платформа поділена на Grains Export, Oilseeds crush та Oilseeds Export. Для переробних позицій публічні значення відображаються з ПДВ, а експортні та прикордонні позиції подаються відповідно до ринкової практики без ПДВ.",
         ],
         whyFeatures: [
           {
@@ -882,7 +882,7 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
         coreNarrative: [
           "Індекс розраховується на основі щоденних цінових оцінок, які надає визначена група партнерів-респондентів Spike Brokers. Кожне подане значення має відображати справедливий ринковий рівень на кінець торгового дня для відповідної культури та базису.",
           "MN7R Monitor підключений як окремий автоматизований респондент. Щоденно о 17:00 за Києвом система імпортує актуальні цінові індикатори Monitor і матчить їх за товаром, базисом поставки та перетином періоду поставки. Запис з Monitor враховується лише тоді, коли його період поставки перекриває поточне 30-денне вікно щонайменше на 10 днів.",
-          "Якщо для однієї позиції SPIKE є декілька відповідних індикаторів Monitor, система розраховує їх середнє арифметичне і використовує його як цінову відповідь респондента Monitor. Публічна структура поділена на All Seasons, Oilseeds crush та Oilseeds Export. Для базових і сезонних експортних позицій використовуються CPT Port або FCA Чоп, а для переробки — CPT parity Одеса.",
+          "Якщо для однієї позиції SPIKE є декілька відповідних індикаторів Monitor, система розраховує їх середнє арифметичне і використовує його як цінову відповідь респондента Monitor. Публічна структура поділена на Grains Export, Oilseeds crush та Oilseeds Export. Для базових і сезонних експортних позицій використовуються CPT Port або FCA Чоп, а для переробки — CPT parity Одеса.",
           "Ціни проходять валідацію відносно медіани вибірки. Значення, що відхиляються від медіани більш ніж на +/-2%, виключаються як потенційні викиди. Після очищення вибірки індекс розраховується як середнє арифметичне валідних цін. Корзина може бути опублікована лише тоді, коли після фільтрації залишається щонайменше 5 валідних значень респондентів.",
           "До публікації значення можуть перевірятися, уточнюватися та мати декілька версій. Після публікації фінальне значення фіксується. Система зберігає зміни, перерахунки та події публікації в журналі аудиту. У публічній частині методології вказуються типи респондентів, але не назви окремих компаній.",
         ],
@@ -963,11 +963,11 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
         "SPIKE SPOT INDEX is a spot price benchmark for the Ukrainian agricultural market.",
     boardTitle: "SPIKE SPOT INDEX / Spot Pricing",
       boardDescription:
-        "USD/t market benchmark grouped into All Seasons, Oilseeds crush and Oilseeds Export, published after daily partner-data review.",
+        "USD/t market benchmark grouped into Grains Export, Oilseeds crush and Oilseeds Export, published after daily partner-data review.",
       heroSubtitle:
         "Spot price benchmark for the Ukrainian agricultural market.",
       heroMeta:
-        "All Seasons · Oilseeds crush · Oilseeds Export · USD/t · daily publication",
+        "Grains Export · Oilseeds crush · Oilseeds Export · USD/t · daily publication",
       heroAttribution:
         "Published by Spike Brokers. Data: market partners. Technology: Cropto/MN7R.",
       heroAttributionShort: "Spike Brokers · market partners · Cropto/MN7R",
@@ -985,13 +985,13 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
         "SPIKE SPOT INDEX is a dedicated index platform by ",
       descriptionLinkText: "Spike Brokers",
     descriptionAfterLink:
-      " for publishing daily aggregated spot prices across All Seasons, Oilseeds crush and Oilseeds Export positions. The index gives the market a transparent and comparable reference for CPT Port, FCA Chop and CPT parity Odesa levels.",
+      " for publishing daily aggregated spot prices across Grains Export, Oilseeds crush and Oilseeds Export positions. The index gives the market a transparent and comparable reference for CPT Port, FCA Chop and CPT parity Odesa levels.",
       ugaHref: "https://spike.broker/en/",
       whyTitle: "An operational price reference for trade, logistics and processing",
       whyBody: [
         "Ukraine's agricultural market reacts daily to exporter and processor demand, logistics, port infrastructure, currency, freight and product quality. Market participants need a shared reference linked to executable trading bases.",
         "SPIKE SPOT INDEX aggregates market assessments from Spike Brokers partners and turns them into comparable public values. The index does not disclose individual company submissions; it shows a cleaned aggregated result.",
-      "The platform is structured into All Seasons, Oilseeds crush and Oilseeds Export. Processing positions are shown VAT-included, while export and border positions are displayed VAT-excluded according to market convention.",
+      "The platform is structured into Grains Export, Oilseeds crush and Oilseeds Export. Processing positions are shown VAT-included, while export and border positions are displayed VAT-excluded according to market convention.",
       ],
       whyFeatures: [
         {
@@ -1052,7 +1052,7 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
       coreNarrative: [
         "The index is calculated from daily price assessments submitted by a defined group of Spike Brokers respondent partners. Each submitted value should reflect a fair end-of-day market level for the relevant commodity and basis.",
         "MN7R Monitor is connected as a separate automated respondent. Every weekday at 17:00 Kyiv, SPIKE imports current Monitor price indicators and matches them by commodity, delivery basis and delivery-period overlap. A Monitor record is eligible only when its delivery period overlaps the current 30-day window by at least 10 days.",
-        "If several Monitor indicators match one SPIKE position, the system calculates their arithmetic average and stores it as the Monitor respondent value for that position. The public structure is split into All Seasons, Oilseeds crush and Oilseeds Export. Core and seasonal export positions use CPT Port or FCA Chop bases, while processing positions use CPT parity Odesa.",
+        "If several Monitor indicators match one SPIKE position, the system calculates their arithmetic average and stores it as the Monitor respondent value for that position. The public structure is split into Grains Export, Oilseeds crush and Oilseeds Export. Core and seasonal export positions use CPT Port or FCA Chop bases, while processing positions use CPT parity Odesa.",
         "Prices are validated by sample median. Values deviating from the median by more than +/-2% are excluded as potential outliers. The final index value is the arithmetic average of the cleaned sample. A basket is publishable only when at least 5 valid respondent prices remain after filtering.",
         "Before publication, values can be reviewed, corrected and versioned. After publication, the final value is locked. The system records changes, recalculations and publication events in an audit log. Public methodology identifies respondent types, but not company names.",
       ],
