@@ -45,8 +45,11 @@ export async function GET(request: Request) {
     : [...new Set([getPreviousBusinessDate(date), date])];
   const shouldImportMonitor = url.searchParams.get("import") === "1";
   const replaceExisting = url.searchParams.get("replace") === "1";
+  const shouldSyncSources = url.searchParams.get("sync") === "1";
 
-  const sourceSync = await syncTelegramWorkspaceResources("daily");
+  const sourceSync = shouldSyncSources
+    ? await syncTelegramWorkspaceResources("daily")
+    : { skippedReason: "source_sync_not_requested", status: "skipped" as const };
   const results: CronPublishResult[] = [];
 
   for (const targetDate of targetDates) {
