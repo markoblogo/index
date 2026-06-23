@@ -36,12 +36,6 @@ export default async function SubscriptionPage({
         </div>
       </section>
 
-      {isSpike ? (
-        <section className="mx-auto max-w-7xl px-6 py-7 lg:px-8">
-          <AccessTracks copy={copy} />
-        </section>
-      ) : null}
-
       {isSpike ? <RespondentBlock locale={locale} /> : null}
 
       <section className="mx-auto max-w-7xl px-6 py-10 lg:px-8">
@@ -114,47 +108,6 @@ function AiSubscriptionBlock({ locale }: { locale: Locale }) {
         </div>
       </div>
     </section>
-  );
-}
-
-function AccessTracks({ copy }: { copy: SubscriptionCopy }) {
-  return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      {copy.accessTracks.map((track) => (
-        <article
-          className="grid min-h-[16rem] border border-black bg-white p-5"
-          key={track.title}
-        >
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-uga-green">
-              {track.eyebrow}
-            </p>
-            <h2 className="mt-3 text-2xl font-black uppercase leading-none text-black">
-              {track.title}
-            </h2>
-            <p className="mt-3 text-sm font-semibold leading-6 text-black/62">
-              {track.body}
-            </p>
-            <div className="mt-4 grid gap-2 sm:grid-cols-3">
-              {track.facts.map((fact) => (
-                <div className="border border-black px-3 py-2" key={fact.label}>
-                  <p className="text-lg font-black leading-none text-black">{fact.value}</p>
-                  <p className="mt-1 text-[0.62rem] font-black uppercase tracking-[0.1em] text-black/45">
-                    {fact.label}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-          <a
-            className="mt-5 inline-flex w-fit self-end rounded-full border border-black bg-black px-5 py-2.5 text-xs font-black uppercase tracking-[0.12em] text-white transition hover:bg-uga-green hover:text-black"
-            href={track.href}
-          >
-            {track.cta}
-          </a>
-        </article>
-      ))}
-    </div>
   );
 }
 
@@ -399,32 +352,6 @@ function getSubscriptionCopy(locale: Locale) {
       accessText:
         "Аналітична панель доступна безкоштовно протягом першого року роботи UGA Index. З 15.06.2027 розширена аналітика та API-доступ плануються у форматі платної підписки.",
       accessTitle: "Попередній доступ до аналітики",
-      accessTracks: [
-        {
-          body: "Підключення компанії до щоденного цінового фіду, щоб benchmark будувався на реальних ринкових котируваннях.",
-          cta: "Перейти до онбордингу",
-          eyebrow: "Респонденти",
-          facts: [
-            { label: "канал", value: "Telegram" },
-            { label: "частота", value: "щодня" },
-            { label: "статус", value: "партнер" },
-          ],
-          href: "#respondent-track",
-          title: "Стати респондентом",
-        },
-        {
-          body: "Доступ до історії індексу, таблиць, спредів, volatility views, експорту даних і майбутніх API-рівнів.",
-          cta: "Дивитись доступ",
-          eyebrow: "Аналітика",
-          facts: [
-            { label: "історія", value: "1 рік" },
-            { label: "API", value: "план" },
-            { label: "AI", value: "preview" },
-          ],
-          href: "#analytics-track",
-          title: "Отримати analytics/API access",
-        },
-      ],
       apiBullets: [
         "Історія опублікованих індексів",
         "Аналітика трендів за культурами",
@@ -479,32 +406,6 @@ function getSubscriptionCopy(locale: Locale) {
       ),
       accessText:
         "Аналітична панель доступна як preview для SPIKE SPOT INDEX. Розширена історія, API-доступ і комерційні аналітичні зрізи можуть бути оформлені як окремі рівні доступу після запуску.",
-      accessTracks: [
-        {
-          body: "Підключіть компанію до щоденного Telegram price feed, щоб індекс спирався на регулярні ринкові котирування.",
-          cta: "Онбординг респондента",
-          eyebrow: "Респонденти",
-          facts: [
-            { label: "канал", value: "Telegram" },
-            { label: "формат", value: "ціни" },
-            { label: "доступ", value: "партнер" },
-          ],
-          href: "#respondent-track",
-          title: "Стати респондентом SSI",
-        },
-        {
-          body: "Розширена історія, спреди, volatility views, MediaHub reports і майбутні API endpoints для робочої аналітики.",
-          cta: "Модель доступу",
-          eyebrow: "Аналітика/API",
-          facts: [
-            { label: "історія", value: "повна" },
-            { label: "API", value: "план" },
-            { label: "AI", value: "preview" },
-          ],
-          href: "#analytics-track",
-          title: "Отримати доступ до даних",
-        },
-      ],
       apiBullets: [
         "Історія опублікованих індексів",
         "Аналітика трендів за культурами",
@@ -564,32 +465,6 @@ function getSubscriptionCopy(locale: Locale) {
     accessText:
       "The analytics dashboard is available free of charge during the first year of UGA Index operation. From 15.06.2027, extended analytics and API access are planned to move to a paid subscription model.",
     accessTitle: "Analytics access preview",
-    accessTracks: [
-      {
-        body: "Connect the company to the daily price feed so the benchmark is built on regular market quotes.",
-        cta: "Go to onboarding",
-        eyebrow: "Respondents",
-        facts: [
-          { label: "channel", value: "Telegram" },
-          { label: "frequency", value: "daily" },
-          { label: "status", value: "partner" },
-        ],
-        href: "#respondent-track",
-        title: "Become a respondent",
-      },
-      {
-        body: "Access index history, tables, spreads, volatility views, data export and future API levels.",
-        cta: "View access",
-        eyebrow: "Analytics",
-        facts: [
-          { label: "history", value: "1 year" },
-          { label: "API", value: "planned" },
-          { label: "AI", value: "preview" },
-        ],
-        href: "#analytics-track",
-        title: "Get analytics / API access",
-      },
-    ],
     apiBullets: [
       "Published index history",
       "Commodity trend analytics",
@@ -642,32 +517,6 @@ function getSubscriptionCopy(locale: Locale) {
     ),
     accessText:
       "The analytics dashboard is available as a preview for SPIKE SPOT INDEX. Extended history, API access and commercial analytics views can be introduced as separate access levels after launch.",
-    accessTracks: [
-      {
-        body: "Connect your company to the daily Telegram price feed so the index reflects regular market quotes.",
-        cta: "Respondent onboarding",
-        eyebrow: "Respondents",
-        facts: [
-          { label: "channel", value: "Telegram" },
-          { label: "format", value: "prices" },
-          { label: "access", value: "partner" },
-        ],
-        href: "#respondent-track",
-        title: "Become an SSI respondent",
-      },
-      {
-        body: "Extended history, spreads, volatility views, MediaHub reports and future API endpoints for working analytics.",
-        cta: "Access model",
-        eyebrow: "Analytics/API",
-        facts: [
-          { label: "history", value: "full" },
-          { label: "API", value: "planned" },
-          { label: "AI", value: "preview" },
-        ],
-        href: "#analytics-track",
-        title: "Get data access",
-      },
-    ],
     apiBullets: [
       "Published index history",
       "Commodity trend analytics",
