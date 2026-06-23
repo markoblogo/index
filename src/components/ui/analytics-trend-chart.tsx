@@ -160,42 +160,35 @@ export function AnalyticsTrendChart({
             </g>
           ) : null}
         </svg>
-        {hoverPoint ? (
-          <div
-            className="pointer-events-none absolute z-10 w-[min(15rem,78vw)] -translate-x-1/2 rounded-xl border border-uga-green/60 bg-[#061007]/95 px-2.5 py-2 text-white shadow-xl shadow-black/50 backdrop-blur"
-            style={{
-              left: `${Math.min(Math.max(hoverPoint.x, 12), 88)}%`,
-              top: `${Math.max(hoverPoint.y - 18, 2)}%`,
-            }}
-          >
-            <p className="text-[0.58rem] font-black uppercase tracking-[0.16em] text-uga-green">
-              {formatHoverDate(hoverPoint.date, locale)}
-            </p>
-            <div className="mt-1.5 grid gap-1">
-              {hoverPoint.entries.map((entry) => (
-                <div
-                  className="grid grid-cols-[0.5rem_minmax(0,1fr)_auto] items-center gap-1.5 text-[0.58rem] font-black uppercase leading-tight"
-                  key={entry.commodity.id}
-                >
-                  <span
-                    className="h-2 w-2 rounded-full ring-1 ring-white/35"
-                    style={{ backgroundColor: entry.color }}
-                  />
-                  <span className="truncate text-white/74">
-                    {entry.commodity.shortName?.[locale] ?? entry.commodity.name[locale]}
-                  </span>
-                  <span className="text-white">{entry.value.toFixed(0)} USD/t</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : null}
         <div className="pointer-events-none absolute right-0 top-1 text-right text-[0.65rem] font-black uppercase leading-4 text-white/58">
           <p>{paddedRange.max.toFixed(0)} USD/t</p>
           <p className="mt-[13.9rem]">{paddedRange.min.toFixed(0)} USD/t</p>
         </div>
       </div>
-
+      {hoverPoint ? (
+        <div className="mt-2 rounded-lg border border-uga-green/40 bg-[#07120b] p-2 shadow-sm shadow-black/30">
+          <p className="text-[0.62rem] font-black uppercase tracking-[0.16em] text-uga-green">
+            {formatHoverDate(hoverPoint.date, locale)}
+          </p>
+          <div className="mt-1.5 grid gap-1">
+            {hoverPoint.entries.map((entry) => (
+              <div
+                className="grid grid-cols-[0.55rem_auto_auto] items-center gap-1.5 text-[0.58rem] font-black uppercase leading-tight"
+                key={entry.commodity.id}
+              >
+                <span
+                  className="h-2 w-2 rounded-full ring-1 ring-white/35"
+                  style={{ backgroundColor: entry.color }}
+                />
+                <span className="max-w-36 truncate text-white/74">
+                  {entry.commodity.shortName?.[locale] ?? entry.commodity.name[locale]}
+                </span>
+                <span className="text-white">{entry.value.toFixed(0)} USD/t</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
       <div className="mt-3 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap gap-1.5">
           {visibleLegendItems.map((commodity) => {

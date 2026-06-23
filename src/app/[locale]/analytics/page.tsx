@@ -195,7 +195,7 @@ export default async function AnalyticsPage({
                 <a
                   className={`rounded-full border border-black px-3 py-1.5 text-xs font-black uppercase tracking-[0.08em] transition ${
                     isActive
-                      ? "bg-black text-white"
+                      ? "bg-uga-mist border-black/55 text-black"
                       : "bg-white text-black hover:bg-[#eff0b0]"
                   }`}
                   href={windowUrl}
