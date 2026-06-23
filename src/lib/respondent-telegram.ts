@@ -199,7 +199,7 @@ export function getKyivReminderLevel(
 
   if (hour === schedule.initial) return "initial";
   if (hour === schedule.firstReminder) return "reminder_18";
-  if (hour === schedule.finalReminder) return "final_19";
+  if (schedule.finalReminder && hour === schedule.finalReminder) return "final_19";
   return null;
 }
 
@@ -212,17 +212,17 @@ function getRespondentTelegramScheduleHours() {
     };
   }
 
-  const [firstReminder = "18", finalReminder = "19"] = (
-    process.env.SPIKE_RESPONDENT_TELEGRAM_REMINDER_HOURS ?? "18,19"
+  const [firstReminder = "17", finalReminder] = (
+    process.env.SPIKE_RESPONDENT_TELEGRAM_REMINDER_HOURS ?? "17"
   )
     .split(",")
     .map((value) => value.trim().padStart(2, "0"))
     .filter(Boolean);
 
   return {
-    finalReminder,
+    finalReminder: finalReminder ?? null,
     firstReminder,
-    initial: (process.env.SPIKE_RESPONDENT_TELEGRAM_INITIAL_HOUR ?? "17")
+    initial: (process.env.SPIKE_RESPONDENT_TELEGRAM_INITIAL_HOUR ?? "16")
       .trim()
       .padStart(2, "0"),
   };

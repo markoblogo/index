@@ -41,20 +41,19 @@ describe("getKyivReminderLevel", () => {
     );
   });
 
-  it("uses the SSI initial slot at 17:00 Kyiv or later", () => {
+  it("uses only two SSI Telegram slots before publication", () => {
     const previousTenant = process.env.INDEX_TENANT;
     process.env.INDEX_TENANT = "spike-ua";
 
-    expect(getKyivReminderLevel(new Date("2026-06-03T13:05:00.000Z"))).toBeNull();
-    expect(getKyivReminderLevel(new Date("2026-06-03T14:05:00.000Z"))).toBe(
+    expect(getKyivReminderLevel(new Date("2026-06-03T12:05:00.000Z"))).toBeNull();
+    expect(getKyivReminderLevel(new Date("2026-06-03T13:05:00.000Z"))).toBe(
       "initial",
     );
-    expect(getKyivReminderLevel(new Date("2026-06-03T15:05:00.000Z"))).toBe(
+    expect(getKyivReminderLevel(new Date("2026-06-03T14:05:00.000Z"))).toBe(
       "reminder_18",
     );
-    expect(getKyivReminderLevel(new Date("2026-06-03T16:05:00.000Z"))).toBe(
-      "final_19",
-    );
+    expect(getKyivReminderLevel(new Date("2026-06-03T15:05:00.000Z"))).toBeNull();
+    expect(getKyivReminderLevel(new Date("2026-06-03T16:05:00.000Z"))).toBeNull();
 
     if (previousTenant) {
       process.env.INDEX_TENANT = previousTenant;
