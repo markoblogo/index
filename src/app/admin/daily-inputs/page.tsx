@@ -43,7 +43,7 @@ export default async function DailyInputsPage({
     },
     {
       key: "processors",
-      label: "Processors",
+      label: "Oilseeds crush",
       description: "Domestic processing-market positions with VAT-inclusive logic.",
       commodities: data.commodities.filter(
         (commodity) => commodity.category === "processors",
@@ -52,7 +52,7 @@ export default async function DailyInputsPage({
     },
     {
       key: "seasonal-export",
-      label: "Seasonal Export",
+      label: "Oilseeds Export",
       description: "Seasonal export positions that expand the matrix during active trade periods.",
       commodities: data.commodities.filter(
         (commodity) => commodity.category === "seasonal-export",
@@ -341,11 +341,11 @@ export default async function DailyInputsPage({
 
 function formatCategoryBadge(category: string) {
   if (category === "processors") {
-    return "Processors";
+    return "Oilseeds crush";
   }
 
   if (category === "seasonal-export") {
-    return "Seasonal Export";
+    return "Oilseeds Export";
   }
 
   return "All Seasons";

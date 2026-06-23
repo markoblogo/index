@@ -73,13 +73,13 @@ const labels = {
     lockedSubmitted: `Submitted values are locked and already transferred to ${isSpike ? "Spike Brokers" : "UGA"}.`,
     intro:
       isSpike
-        ? "Submit today's SPIKE spot price indicatives by category: All Seasons, Processors and Seasonal Export. Individual submissions are used for index calculation and are not published publicly."
+        ? "Submit today's SPIKE spot price indicatives by category: All Seasons, Oilseeds crush and Oilseeds Export. Individual submissions are used for index calculation and are not published publicly."
         : "Submit today’s CPT UA Black Sea price indicatives for your company. Individual submissions are used for index calculation and are not published publicly.",
     notPublished: "Not published",
     price: "Price",
     priceHintLines: [
-      "All Seasons and Seasonal Export: USD/t, excl. VAT",
-      "Processors: USD/t, incl. VAT",
+      "All Seasons and Oilseeds Export: USD/t, excl. VAT",
+      "Oilseeds crush: USD/t, incl. VAT",
       "Use the exact basis shown under each position",
     ],
     publication: "Publication",
@@ -118,13 +118,13 @@ const labels = {
     lockedSubmitted: `Подані значення зафіксовані та вже передані ${isSpike ? "Spike Brokers" : "в УЗА"}.`,
     intro:
       isSpike
-        ? "Подайте сьогоднішні спотові цінові індикативи SPIKE за категоріями All Seasons, Processors та Seasonal Export. Індивідуальні значення використовуються для розрахунку індексу і не публікуються відкрито."
+        ? "Подайте сьогоднішні спотові цінові індикативи SPIKE за категоріями All Seasons, Oilseeds crush та Oilseeds Export. Індивідуальні значення використовуються для розрахунку індексу і не публікуються відкрито."
         : "Подайте сьогоднішні цінові індикативи CPT UA Black Sea від вашої компанії. Індивідуальні значення використовуються для розрахунку індексу і не публікуються відкрито.",
     notPublished: "Не опубліковано",
     price: "Ціна",
     priceHintLines: [
-      "All Seasons та Seasonal Export: USD/т, без ПДВ",
-      "Processors: USD/т, з ПДВ",
+      "All Seasons та Oilseeds Export: USD/т, без ПДВ",
+      "Oilseeds crush: USD/т, з ПДВ",
       "Орієнтуйтеся на точний базис під кожною позицією",
     ],
     publication: "Публікація",

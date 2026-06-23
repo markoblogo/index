@@ -698,7 +698,7 @@ export function getSpikeCommodityCategories(locale: Locale) {
     },
     {
       id: "processors" as const,
-      label: locale === "uk" ? "Processors" : "Processors",
+      label: locale === "uk" ? "Oilseeds crush" : "Oilseeds crush",
       description:
         locale === "uk"
           ? "Переробка: soybean 37 pro, GMO; Sunflower Seeds 48% dry oil; Rapeseed 48% dry oil, NON-GMO. USD/t incl. VAT."
@@ -706,7 +706,7 @@ export function getSpikeCommodityCategories(locale: Locale) {
     },
     {
       id: "seasonal-export" as const,
-      label: locale === "uk" ? "Seasonal Export" : "Seasonal Export",
+      label: locale === "uk" ? "Oilseeds Export" : "Oilseeds Export",
       description:
         locale === "uk"
           ? "Сезонні експортні позиції сої та ріпаку."

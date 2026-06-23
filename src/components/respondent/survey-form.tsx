@@ -262,11 +262,11 @@ export function RespondentSurveyForm({
 
 function formatCategoryLabel(category: string, locale: SurveyLocale) {
   if (category === "processors") {
-    return locale === "uk" ? "Processors" : "Processors";
+    return locale === "uk" ? "Oilseeds crush" : "Oilseeds crush";
   }
 
   if (category === "seasonal-export") {
-    return locale === "uk" ? "Seasonal Export" : "Seasonal Export";
+    return locale === "uk" ? "Oilseeds Export" : "Oilseeds Export";
   }
 
   return locale === "uk" ? "All Seasons" : "All Seasons";

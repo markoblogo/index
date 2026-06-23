@@ -373,11 +373,11 @@ function formatUsd(value: number | null) {
 
 function formatCategoryBadge(category: string) {
   if (category === "processors") {
-    return "Processors";
+    return "Oilseeds crush";
   }
 
   if (category === "seasonal-export") {
-    return "Seasonal Export";
+    return "Oilseeds Export";
   }
 
   return "All Seasons";

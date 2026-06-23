@@ -15,6 +15,8 @@ import {
 } from "@/lib/index-platform";
 import type { Commodity } from "@/lib/mock-data";
 
+type SpikeCommodityView = SpikeCommodityCategory | "chop-export";
+
 type HomeHeroProps = {
   commodities: Commodity[];
   fxRates: FxRates;
@@ -166,17 +168,29 @@ function SpikeHomeHero({
 }: HomeHeroProps) {
   const activeIndex = getActiveIndexConfig();
   const [selectedCategory, setSelectedCategory] =
-    useState<SpikeCommodityCategory>("all-seasons");
+    useState<SpikeCommodityView>("all-seasons");
   const copy = getHeroCopy(locale);
-  const categories = getSpikeCommodityCategories(locale);
+  const categories = [
+    ...getSpikeCommodityCategories(locale),
+    {
+      id: "chop-export" as const,
+      label: "Chop Export",
+      description:
+        locale === "uk"
+          ? "Прикордонні експортні індекси на базисі FCA Чоп."
+          : "Border export indices on FCA Chop basis.",
+    },
+  ];
   const facts = [
     { label: "index", value: "live" },
     ...activeIndex.home.facts[locale],
   ];
   const filteredCommodities = useMemo(
     () =>
-      commodities.filter(
-        (commodity) => (commodity.category ?? "all-seasons") === selectedCategory,
+      commodities.filter((commodity) =>
+        selectedCategory === "chop-export"
+          ? isChopExportCommodity(commodity)
+          : (commodity.category ?? "all-seasons") === selectedCategory,
       ),
     [commodities, selectedCategory],
   );
@@ -211,8 +225,8 @@ function SpikeHomeHero({
             <div>
               <p className="text-xs font-black uppercase tracking-[0.28em] text-white/60">
                 {locale === "uk"
-                  ? "All Seasons / Processors / Seasonal Export"
-                  : "All Seasons / Processors / Seasonal Export"}
+                  ? "All Seasons / Oilseeds crush / Oilseeds Export / Chop Export"
+                  : "All Seasons / Oilseeds crush / Oilseeds Export / Chop Export"}
               </p>
               <p className="mt-1 text-sm font-semibold leading-5 text-white/65">
                 {activeIndex.home.officialNotice[locale]}
@@ -324,6 +338,17 @@ function SpikeHeroTitle() {
   );
 }
 
+function isChopExportCommodity(commodity: Commodity) {
+  return (
+    commodity.id.includes("fca-chop") ||
+    commodity.detailMetrics?.some((metric) =>
+      Object.values(metric.value).some((value) =>
+        value.toLowerCase().includes("chop"),
+      ),
+    ) === true
+  );
+}
+
 function SpikeCommodityCard({
   commodity,
   fxRates,
@@ -413,9 +438,9 @@ function SpikeCommodityCard({
             className={`text-[0.68rem] font-black uppercase tracking-[0.24em] ${tone.label}`}
           >
             {commodity.category === "processors"
-              ? "Processors"
+              ? "Oilseeds crush"
               : commodity.category === "seasonal-export"
-                ? "Seasonal Export"
+                ? "Oilseeds Export"
                 : "All Seasons"}
           </p>
           <span
