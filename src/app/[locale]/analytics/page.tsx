@@ -108,6 +108,9 @@ const VolatilityRangePanelAsync = nextDynamic(
   },
 );
 
+const VOLATILITY_WINDOWS = [90, 180, 365] as const;
+type VolatilityWindow = (typeof VOLATILITY_WINDOWS)[number];
+
 const profileByCommodity: Partial<
   Record<CommodityId, { drift: number; volatility: number; phase: number }>
 > = {
@@ -119,17 +122,25 @@ const profileByCommodity: Partial<
 
 export default async function AnalyticsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: Locale }>;
+  searchParams: Promise<{ volatilityWindow?: string }>;
 }) {
-  const { locale } = await params;
+  const [{ locale }, queryParams] = await Promise.all([params, searchParams]);
   const copy = getAnalyticsCopy(locale);
+  const volatilityWindow = normalizeVolatilityWindow(queryParams.volatilityWindow);
   const fxRatesPromise = getFxRates();
   const respondentCountPromise = getActiveRespondentCountData();
   const activeRespondentCount = await respondentCountPromise;
   const history = await getAnalyticsHistory(activeRespondentCount);
   const fxRates = await fxRatesPromise;
-  const snapshot = buildMarketSnapshot(history, locale, activeRespondentCount);
+  const snapshot = buildMarketSnapshot(
+    history,
+    locale,
+    activeRespondentCount,
+    volatilityWindow,
+  );
   const tableRows = selectRecentPublishedRows(history, 3);
   const isSpike = getActiveIndexConfig().id === "spike-ua";
   const hasHistory = history.length > 0;
@@ -171,6 +182,31 @@ export default async function AnalyticsPage({
       </section>
 
       <section className="mx-auto max-w-7xl px-6 py-6 lg:px-8 lg:py-7">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs font-black uppercase tracking-[0.14em] text-black/55">
+            {copy.volatilityWindowLabel}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {VOLATILITY_WINDOWS.map((windowDays) => {
+              const isActive = windowDays === volatilityWindow;
+              const windowUrl = `?volatilityWindow=${windowDays}`;
+              const label = `${windowDays} ${copy.daysLabel}`;
+              return (
+                <a
+                  className={`rounded-full border border-black px-3 py-1.5 text-xs font-black uppercase tracking-[0.08em] transition ${
+                    isActive
+                      ? "bg-black text-white"
+                      : "bg-white text-black hover:bg-[#eff0b0]"
+                  }`}
+                  href={windowUrl}
+                  key={windowDays}
+                >
+                  {label}
+                </a>
+                );
+            })}
+          </div>
+        </div>
         <KpiStrip items={snapshot} />
       </section>
 
@@ -655,47 +691,40 @@ function buildMarketSnapshot(
   history: AnalyticsPoint[],
   locale: Locale,
   activeRespondentCount: number,
+  volatilityWindow: VolatilityWindow,
 ) {
   const latestRows = commodities
     .map((commodity) => getCommodityHistory(history, commodity.id).at(-1))
     .filter(Boolean) as AnalyticsPoint[];
-  const monthlyRows = latestRows.map((row) => {
-    const commodityHistory = getCommodityHistory(history, row.commodityId);
-    const previousMonthlyPoint = getPointBack(commodityHistory, 31);
-    return {
-      commodity: getCommodity(row.commodityId),
-      change: roundOne(row.value - previousMonthlyPoint.value),
-      volatility: standardDeviation(
-        commodityHistory.slice(-30).map((point) => point.percentChange),
-      ),
-    };
-  });
+  const copy = getAnalyticsCopy(locale);
 
-  if (monthlyRows.length === 0) {
-    const copy = getAnalyticsCopy(locale);
-
+  if (latestRows.length === 0) {
     return [
       {
-        label: copy.highestWeeklyGain,
-        meta: copy.noRealDataMeta,
+        label: copy.annualVolatilitySoybean,
+        meta: copyAnnualVolatilityMeta(locale, volatilityWindow),
         value: "n/a",
       },
       {
-        label: copy.largestWeeklyDecline,
-        meta: copy.noRealDataMeta,
+        label: copy.annualVolatilityRapeseed,
+        meta: copyAnnualVolatilityMeta(locale, volatilityWindow),
         value: "n/a",
       },
       {
-        label: copy.mostVolatileCommodity,
-        meta: copy.noRealDataMeta,
+        label: copy.annualVolatilitySunflower,
+        meta: copyAnnualVolatilityMeta(locale, volatilityWindow),
         value: "n/a",
       },
       {
-        label: copy.latestPublication,
-        meta: SITE_CONFIG.defaultDeliveryBasis,
+        label: copy.annualVolatilityCorn,
+        meta: copyAnnualVolatilityMeta(locale, volatilityWindow),
         value: "n/a",
       },
-      { label: copy.volatilityRange, meta: copy.last30DaysMeta, value: "n/a" },
+      {
+        label: copy.annualVolatilityWheat,
+        meta: copyAnnualVolatilityMeta(locale, volatilityWindow),
+        value: "n/a",
+      },
       {
         label: copy.respondentCoverage,
         meta: copy.currentBasket,
@@ -704,61 +733,181 @@ function buildMarketSnapshot(
     ];
   }
 
-  const highestGain = monthlyRows.reduce((max, row) =>
-    row.change > max.change ? row : max,
-  );
-  const largestDecline = monthlyRows.reduce((min, row) =>
-    row.change < min.change ? row : min,
-  );
-  const mostVolatile = monthlyRows.reduce((max, row) =>
-    row.volatility > max.volatility ? row : max,
-  );
-  const copy = getAnalyticsCopy(locale);
-  const volatilityValues = monthlyRows.map((row) => row.volatility);
-  const minVolatility = Math.min(...volatilityValues).toFixed(2);
-  const maxVolatility = Math.max(...volatilityValues).toFixed(2);
+  const commodityGroups = [
+    {
+      key: "soybean",
+      ids: commodities.filter((commodity) => commodity.id.includes("soybean")).map(
+        (commodity) => commodity.id,
+      ),
+    },
+    {
+      key: "rapeseed",
+      ids: commodities.filter((commodity) => commodity.id.includes("rapeseed")).map(
+        (commodity) => commodity.id,
+      ),
+    },
+    {
+      key: "sunflower",
+      ids: commodities
+        .filter((commodity) => commodity.id.includes("sunflower"))
+        .map((commodity) => commodity.id),
+    },
+    {
+      key: "corn",
+      ids: commodities
+        .filter((commodity) => commodity.id.includes("corn"))
+        .map((commodity) => commodity.id),
+    },
+    {
+      key: "wheat11",
+      ids: commodities
+        .filter((commodity) => commodity.id.includes("wheat"))
+        .map((commodity) => commodity.id),
+    },
+  ];
+
   const latestDate = latestRows
     .map((row) => row.date)
     .sort((first, second) => second.localeCompare(first))[0];
-  const updatedAt = new Intl.DateTimeFormat(
-    locale === "uk" ? "uk-UA" : "en-US",
-    {
-      dateStyle: "medium",
-    },
-  ).format(new Date(`${latestDate}T00:00:00.000Z`));
+
+  const annualVolatilityCards = commodityGroups
+    .map((group) => {
+      const row = getAnnualCommodityVolatility(
+        history,
+        group.ids,
+        latestDate,
+        volatilityWindow,
+      );
+      const label = getCommodityGroupLabel(group.key, locale);
+
+      return {
+        label,
+        meta: copyAnnualVolatilityMeta(locale, volatilityWindow),
+        value: row === null ? "n/a" : `${row.toFixed(2)}%`,
+      };
+    });
+
+  if (annualVolatilityCards.every((item) => item.value === "n/a")) {
+    return [
+      {
+        label: copy.annualVolatilitySoybean,
+        meta: copyAnnualVolatilityMeta(locale, volatilityWindow),
+        value: "n/a",
+      },
+      {
+        label: copy.annualVolatilityRapeseed,
+        meta: copyAnnualVolatilityMeta(locale, volatilityWindow),
+        value: "n/a",
+      },
+      {
+        label: copy.annualVolatilitySunflower,
+        meta: copyAnnualVolatilityMeta(locale, volatilityWindow),
+        value: "n/a",
+      },
+      {
+        label: copy.annualVolatilityCorn,
+        meta: copyAnnualVolatilityMeta(locale, volatilityWindow),
+        value: "n/a",
+      },
+      {
+        label: copy.annualVolatilityWheat,
+        meta: copyAnnualVolatilityMeta(locale, volatilityWindow),
+        value: "n/a",
+      },
+      {
+        label: copy.respondentCoverage,
+        meta: copy.currentBasket,
+        value: String(activeRespondentCount),
+      },
+    ];
+  }
 
   return [
-    {
-      label: copy.highestWeeklyGain,
-      meta: highestGain.commodity.name[locale],
-      value: `${formatSigned(highestGain.change)} USD/t`,
-    },
-    {
-      label: copy.largestWeeklyDecline,
-      meta: largestDecline.commodity.name[locale],
-      value: `${formatSigned(largestDecline.change)} USD/t`,
-    },
-    {
-      label: copy.mostVolatileCommodity,
-      meta: mostVolatile.commodity.name[locale],
-      value: mostVolatile.volatility.toFixed(2) + "%",
-    },
-    {
-      label: copy.latestPublication,
-      meta: SITE_CONFIG.defaultDeliveryBasis,
-      value: updatedAt,
-    },
-    {
-      label: copy.volatilityRange,
-      meta: copy.last30DaysMeta,
-      value: `${minVolatility}-${maxVolatility}%`,
-    },
+    ...annualVolatilityCards,
     {
       label: copy.respondentCoverage,
       meta: copy.currentBasket,
       value: String(activeRespondentCount),
     },
   ];
+}
+
+function getCommodityGroupLabel(key: string, locale: Locale) {
+  const copy = getAnalyticsCopy(locale);
+
+  if (key === "soybean") {
+    return copy.annualVolatilitySoybean;
+  }
+
+  if (key === "rapeseed") {
+    return copy.annualVolatilityRapeseed;
+  }
+
+  if (key === "sunflower") {
+    return copy.annualVolatilitySunflower;
+  }
+
+  if (key === "corn") {
+    return copy.annualVolatilityCorn;
+  }
+
+  return copy.annualVolatilityWheat;
+}
+
+function copyAnnualVolatilityMeta(locale: Locale, volatilityWindow: VolatilityWindow) {
+  const map: Record<VolatilityWindow, string> = {
+    90: locale === "uk" ? "90 днів" : "90 days",
+    180: locale === "uk" ? "180 днів" : "180 days",
+    365: locale === "uk" ? "365 днів" : "365 days",
+  };
+
+  return map[volatilityWindow];
+}
+
+function getAnnualCommodityVolatility(
+  history: AnalyticsPoint[],
+  commodityIds: string[],
+  latestDate: string,
+  volatilityWindow: VolatilityWindow,
+) {
+  if (commodityIds.length === 0 || latestDate.length === 0) {
+    return null;
+  }
+
+  const latest = new Date(`${latestDate}T00:00:00.000Z`);
+  const oneYearAgo = new Date(latest);
+  oneYearAgo.setUTCDate(latest.getUTCDate() - volatilityWindow);
+
+  const commodityHistory = history
+    .filter((point) => commodityIds.includes(point.commodityId))
+    .filter((point) => {
+      const pointDate = new Date(`${point.date}T00:00:00.000Z`);
+      return pointDate >= oneYearAgo && pointDate <= latest;
+    });
+
+  const absoluteChanges = commodityHistory
+    .map((point) => Math.abs(point.percentChange))
+    .filter((value) => Number.isFinite(value));
+
+  if (absoluteChanges.length === 0) {
+    return null;
+  }
+
+  const avg =
+    absoluteChanges.reduce((sum, value) => sum + value, 0) /
+    absoluteChanges.length;
+
+  return roundOne(avg);
+}
+
+function normalizeVolatilityWindow(value: string | undefined): VolatilityWindow {
+  const parsed = Number.parseInt(value ?? "", 10);
+
+  if (!Number.isNaN(parsed) && VOLATILITY_WINDOWS.includes(parsed as VolatilityWindow)) {
+    return parsed as VolatilityWindow;
+  }
+
+  return 365;
 }
 
 function getCommodityHistory(
@@ -912,6 +1061,13 @@ function getAnalyticsCopy(locale: Locale) {
         "Порівнюйте динаміку індексів, аналізуйте структуру ринку, відстежуйте волатильність і переглядайте аналітичні сценарії для українських експортних цін на зернові та олійні культури.",
       heroEyebrow: "Аналітика",
       heroTitle: "Аналітика значень UGA Index",
+      annualVolatilitySoybean: "Річна волатильність сої",
+      annualVolatilityRapeseed: "Річна волатильність ріпаку",
+      annualVolatilitySunflower: "Річна волатильність соняшнику",
+      annualVolatilityCorn: "Річна волатильність кукурудзи",
+      annualVolatilityWheat: "Річна волатильність пшениці 11,5",
+      daysLabel: "днів",
+      volatilityWindowLabel: "Вікно річної волатильності",
       highestWeeklyGain: "Найбільше місячне зростання",
       historyActions: ["Повна історія", "Export CSV", "API access"],
       historyDescription:
@@ -1082,7 +1238,14 @@ function getAnalyticsCopy(locale: Locale) {
       "Compare index dynamics, review market structure, track volatility and explore analytical scenarios for Ukrainian grain and oilseed export prices.",
     heroEyebrow: "Analytics",
     heroTitle: "Commodity intelligence for UGA Index values",
-    highestWeeklyGain: "Highest monthly gain",
+      annualVolatilitySoybean: "Annual soybean volatility",
+      annualVolatilityRapeseed: "Annual rapeseed volatility",
+      annualVolatilitySunflower: "Annual sunflower volatility",
+      annualVolatilityCorn: "Annual corn volatility",
+      annualVolatilityWheat: "Annual wheat 11.5 volatility",
+      daysLabel: "days",
+      volatilityWindowLabel: "Annual volatility window",
+      highestWeeklyGain: "Highest monthly gain",
     historyActions: ["View full history", "Export CSV", "API access"],
     historyDescription:
       "The public block shows only the last three publication days. The full archive remains stored in the system for long-term analytics, but is not exposed publicly.",
