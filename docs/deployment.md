@@ -67,11 +67,15 @@ ALLOWED_EMBED_ORIGINS="https://uga.ua https://www.uga.ua https://index.uga.ua ht
 DEMO_AUTH_SECRET="replace-with-a-long-random-secret"
 UGA_INDEX_RUNTIME_MODE="production"
 RESEND_API_KEY="set-in-vercel-or-local-env"
+UGA_PASSWORD_RESET_SENDER="UGA Index <security@uga.ua>"
+UGA_PASSWORD_RESET_REPLY_TO="inbox@uga.ua"
 RESPONDENT_EMAIL_CRON_SECRET="replace-with-a-long-random-cron-secret"
 CRON_SECRET="same-value-for-vercel-cron"
 ```
 
 `NEXT_PUBLIC_SITE_URL` is the canonical public URL used by embeds, metadata, and absolute public links. Change it when migrating from the development domain to the final domain.
+
+`UGA_PASSWORD_RESET_SENDER` and `UGA_PASSWORD_RESET_REPLY_TO` control the sender identity for admin/respondent password reset emails. If they are omitted, the app falls back to `UGA Index <onboarding@resend.dev>` and `inbox@uga.ua`.
 
 `ALLOWED_EMBED_ORIGINS` controls the `frame-ancestors` policy for `/embed/*`. Add the final domain or partner domains here during migration.
 

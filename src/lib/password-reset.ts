@@ -58,7 +58,7 @@ export async function requestPasswordReset(
       data: {
         email: normalizedLogin,
         expiresAt,
-        locale,
+        locale: target.locale,
         respondentId:
           target.role === "respondent" ? target.sessionUser.respondentId ?? null : null,
         role: target.role,
@@ -68,11 +68,36 @@ export async function requestPasswordReset(
     });
   });
 
-  await sendPasswordResetEmail({
+  const delivery = await sendPasswordResetEmail({
     email: normalizedLogin,
-    locale,
+    locale: target.locale,
     resetUrl: `${getSiteUrl()}/reset-password?token=${encodeURIComponent(token)}`,
     role: target.role,
+  });
+
+  await db.auditLog.create({
+    data: {
+      action:
+        delivery.status === "sent"
+          ? "auth.password_reset_email_sent"
+          : "auth.password_reset_email_failed",
+      actorRole: target.role,
+      actorUserId: target.sessionUser.userId,
+      afterJson: {
+        email: normalizedLogin,
+        providerId: delivery.providerId ?? null,
+        role: target.role,
+        status: delivery.status,
+        ...(delivery.error ? { error: delivery.error } : {}),
+      },
+      beforeJson: Prisma.JsonNull,
+      entityId: target.sessionUser.userId,
+      entityType: "User",
+      summary:
+        delivery.status === "sent"
+          ? `Password reset email sent to ${normalizedLogin}.`
+          : `Password reset email failed for ${normalizedLogin}.`,
+    },
   });
 
   return { status: "accepted" as const };
@@ -283,7 +308,7 @@ async function findPasswordResetTarget(
   };
 }
 
-async function sendPasswordResetEmail({
+export async function sendPasswordResetEmail({
   email,
   locale,
   resetUrl,
@@ -297,7 +322,10 @@ async function sendPasswordResetEmail({
   const apiKey = process.env.RESEND_API_KEY;
 
   if (!apiKey) {
-    return;
+    return {
+      error: "RESEND_API_KEY is not configured",
+      status: "skipped_no_email_provider" as const,
+    };
   }
 
   const subject =
@@ -338,37 +366,66 @@ async function sendPasswordResetEmail({
     )
     .join("");
 
-  await fetch("https://api.resend.com/emails", {
-    body: JSON.stringify({
-      from: getSender(),
-      html,
-      reply_to: getReplyTo(),
-      subject,
-      text,
-      to: [email],
-    }),
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    method: "POST",
-  }).catch(() => null);
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      body: JSON.stringify({
+        from: getPasswordResetSender(),
+        html,
+        reply_to: getPasswordResetReplyTo(),
+        subject,
+        text,
+        to: [email],
+      }),
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+    });
+    const payload = (await response.json().catch(() => ({}))) as {
+      id?: string;
+      message?: string;
+      name?: string;
+    };
+
+    if (!response.ok) {
+      return {
+        error: payload.message ?? payload.name ?? response.statusText,
+        providerId: payload.id,
+        status: "failed" as const,
+      };
+    }
+
+    return {
+      providerId: payload.id,
+      status: "sent" as const,
+    };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Unknown send error",
+      status: "failed" as const,
+    };
+  }
 }
 
 function getSiteUrl() {
   return (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
 }
 
-function getSender() {
+export function getPasswordResetSender() {
   return SITE_CONFIG.tenantId === "spike-ua"
     ? process.env.SPIKE_ADMIN_INVITE_SENDER ?? "SPIKE SPOT INDEX <onboarding@resend.dev>"
-    : "UGA Index <onboarding@resend.dev>";
+    : process.env.UGA_PASSWORD_RESET_SENDER ??
+        process.env.UGA_AUTH_EMAIL_SENDER ??
+        "UGA Index <onboarding@resend.dev>";
 }
 
-function getReplyTo() {
+export function getPasswordResetReplyTo() {
   return SITE_CONFIG.tenantId === "spike-ua"
     ? process.env.SPIKE_ADMIN_INVITE_REPLY_TO || "info@spike.broker"
-    : "inbox@uga.ua";
+    : process.env.UGA_PASSWORD_RESET_REPLY_TO ||
+        process.env.UGA_AUTH_EMAIL_REPLY_TO ||
+        "inbox@uga.ua";
 }
 
 function escapeHtml(value: string) {

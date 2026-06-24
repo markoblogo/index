@@ -571,7 +571,7 @@ function SpikeAboutAiLayer({ locale }: { locale: Locale }) {
           </p>
           <div className="flex flex-wrap gap-3">
             <Link
-              className="rounded-full bg-[var(--spike-accent)] px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-[#050505] transition hover:bg-white"
+              className="rounded-full bg-[var(--spike-accent)] px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-black transition hover:bg-white hover:text-black"
               href={`/${locale}/manual`}
             >
               {copy.manualCta}
