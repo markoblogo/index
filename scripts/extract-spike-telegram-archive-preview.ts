@@ -3,6 +3,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { promisify } from "node:util";
+import * as XLSX from "xlsx";
 
 const execFileAsync = promisify(execFile);
 
@@ -38,9 +39,19 @@ type PreviewRow = {
   rawContext: string;
 };
 
+type ImageReviewRow = {
+  source: string;
+  sourceMessageId: string;
+  sourceDate: string;
+  mediaPath: string;
+  ocrStatus: string;
+  ocrText: string;
+};
+
 const RAW_ROOT = path.join(process.cwd(), "data", "spike-historical", "raw", "telegram");
 const PREVIEW_ROOT = path.join(process.cwd(), "data", "spike-historical", "preview");
 const PREVIEW_CSV = path.join(PREVIEW_ROOT, "archive_preview.csv");
+const PREVIEW_XLSX = path.join(PREVIEW_ROOT, "ssi_historical_price_audit.xlsx");
 const OCR_ROOT = path.join(PREVIEW_ROOT, "ocr");
 
 const SPIKE_COMMODITY_MAP: Record<string, string> = {
@@ -274,6 +285,9 @@ async function extractImageRows(message: RawMessage, options: { skipOcr: boolean
   if (message.source.handle === "SoftComTrading") {
     return extractSoftRows(message, ocr);
   }
+  if (message.source.handle === "soufflet_negoce") {
+    return extractSouffletRows(message, ocr);
+  }
   return [];
 }
 
@@ -341,6 +355,37 @@ function extractSoftRows(message: RawMessage, ocr: string): PreviewRow[] {
       }));
     });
     rowIndex += 1;
+  }
+  return rows;
+}
+
+function extractSouffletRows(message: RawMessage, ocr: string): PreviewRow[] {
+  const reportDate = message.telegram.date.slice(0, 10);
+  const rows: PreviewRow[] = [];
+  const rowPatterns: Array<{ commodity: string; basis: string; regex: RegExp }> = [
+    { commodity: "wheat_12_5pro", basis: "Чорноморськ port", regex: /12[,.]5%?\s*pro\s*wheat.*?(\d{2,4})/i },
+    { commodity: "wheat_11_5pro", basis: "Чорноморськ port", regex: /11[,.]5%?\s*pro\s*wheat.*?(\d{2,4})/i },
+    { commodity: "wheat_feed", basis: "Чорноморськ port", regex: /feed\s*wheat.*?(\d{2,4})/i },
+    { commodity: "corn", basis: "Чорноморськ port", regex: /\bCorn\b.*?(\d{2,4})/i },
+  ];
+  for (const pattern of rowPatterns) {
+    const match = ocr.match(pattern.regex);
+    if (!match?.[1]) continue;
+    const value = Number(match[1]);
+    if (!Number.isFinite(value) || value < 50 || value > 1000) continue;
+    rows.push(baseImageRow(message, {
+      reportDate,
+      rawCommodity: pattern.commodity,
+      rawBasis: pattern.basis,
+      rawDeliveryPeriod: "spot_or_front_month_unverified",
+      rawPriceText: match[1],
+      priceLow: value,
+      priceHigh: value,
+      priceMid: value,
+      currency: "USD",
+      confidence: "0.30",
+      rawContext: truncateText(match[0], 240),
+    }));
   }
   return rows;
 }
@@ -447,13 +492,206 @@ async function writeCsv(rows: PreviewRow[]) {
   await writeFile(PREVIEW_CSV, `${output}\n`, "utf8");
 }
 
+function buildNormalizedRows(rows: PreviewRow[]) {
+  return rows.map((row) => {
+    const mapping = mapHistoricalRow(row);
+    return {
+      ...row,
+      normalizedCommodityId: mapping.commodityId,
+      normalizedBasisId: mapping.basisId,
+      normalizedUseStatus: mapping.useStatus,
+      normalizedNote: mapping.note,
+    };
+  });
+}
+
+function mapHistoricalRow(row: PreviewRow) {
+  const rawCommodity = row.rawCommodity.toLowerCase();
+  const rawBasis = row.rawBasis.toLowerCase();
+  const isPortProxy =
+    /одеса|південний|чорномор|chernomorsk|chornomorsk|port|tbt/i.test(row.rawBasis);
+  const isUkraineBasis = /україна|одеса|південний|чорномор|tbt|port/i.test(row.rawBasis);
+
+  if (/barley/i.test(row.rawCommodity)) {
+    return {
+      commodityId: "",
+      basisId: "",
+      useStatus: "ignored",
+      note: "Barley is collected in raw archive only; partners confirmed it is not needed for SSI import now.",
+    };
+  }
+  if (!isUkraineBasis) {
+    return {
+      commodityId: "",
+      basisId: "",
+      useStatus: "raw_only",
+      note: "Foreign/non-SSI basis retained only as external reference.",
+    };
+  }
+  if (rawCommodity.includes("wheat 3") || rawCommodity.includes("пшениця 3") || rawCommodity.includes("wheat_11_5pro")) {
+    return {
+      commodityId: "wheat_11_5pro",
+      basisId: isPortProxy ? "port_proxy_cpt" : "",
+      useStatus: "mapped_candidate",
+      note: "Partner rule: wheat 3 class maps to SSI wheat 11.5pro; port/DAP is historical CPT Port proxy.",
+    };
+  }
+  if (
+    rawCommodity.includes("wheat 4") ||
+    rawCommodity.includes("пшениця 4") ||
+    rawCommodity.includes("feed") ||
+    rawCommodity.includes("wheat_feed")
+  ) {
+    return {
+      commodityId: "wheat_feed",
+      basisId: isPortProxy ? "port_proxy_cpt" : "",
+      useStatus: "mapped_candidate",
+      note: "Partner rule: wheat 4/feed wheat maps to SSI feed wheat; port/DAP is historical CPT Port proxy.",
+    };
+  }
+  if (rawCommodity.includes("corn") || rawCommodity.includes("кукурудза")) {
+    return {
+      commodityId: "corn",
+      basisId: isPortProxy ? "port_proxy_cpt" : "",
+      useStatus: "mapped_candidate",
+      note: "Partner rule: DAP Odesa/Pivdennyi/Chornomorsk is historical CPT Port proxy.",
+    };
+  }
+  if (rawCommodity.includes("sunflower")) {
+    return {
+      commodityId: "sunflower",
+      basisId: "oilseeds_crush_proxy",
+      useStatus: "mapped_candidate",
+      note: "Sunflower retained as historical crush/plant proxy; VAT flag should be reviewed.",
+    };
+  }
+  if (rawCommodity.includes("rapeseed")) {
+    return {
+      commodityId: "rapeseed_non_gmo",
+      basisId: isPortProxy ? "port_proxy_cpt" : "",
+      useStatus: "mapped_candidate",
+      note: "Rapeseed retained as candidate only; NON-GMO and basis should be reviewed.",
+    };
+  }
+  if (rawCommodity.includes("soybean_gmo")) {
+    return {
+      commodityId: "soybean_gmo",
+      basisId: isPortProxy ? "port_proxy_cpt" : "",
+      useStatus: "mapped_candidate",
+      note: "Soybean GMO candidate; basis and spot month should be reviewed.",
+    };
+  }
+  if (rawCommodity.includes("soybean_non_gmo")) {
+    return {
+      commodityId: "soybean_non_gmo",
+      basisId: isPortProxy ? "port_proxy_cpt" : "",
+      useStatus: "mapped_candidate",
+      note: "Soybean NON-GMO candidate; basis and spot month should be reviewed.",
+    };
+  }
+  return {
+    commodityId: "",
+    basisId: "",
+    useStatus: "raw_only",
+    note: "No confirmed SSI mapping yet.",
+  };
+}
+
+async function writeWorkbook(rows: PreviewRow[], imageReviewRows: ImageReviewRow[]) {
+  const normalized = buildNormalizedRows(rows);
+  const lowConfidence = normalized.filter((row) => Number(row.confidence) < 0.6 || row.normalizedUseStatus !== "mapped_candidate");
+  const ignored = normalized.filter((row) => row.normalizedUseStatus === "ignored");
+  const workbook = XLSX.utils.book_new();
+  appendSheet(workbook, "raw_extracted", rows);
+  appendSheet(workbook, "normalized_candidates", normalized.filter((row) => row.normalizedUseStatus === "mapped_candidate"));
+  appendSheet(workbook, "low_confidence_review", lowConfidence);
+  appendSheet(workbook, "ignored", ignored);
+  appendSheet(workbook, "source_coverage", buildCoverageRows(rows));
+  appendSheet(workbook, "mapping_rules", buildMappingRuleRows());
+  appendSheet(workbook, "image_review", imageReviewRows);
+  XLSX.writeFile(workbook, PREVIEW_XLSX, { compression: true });
+}
+
+function appendSheet(workbook: XLSX.WorkBook, name: string, data: unknown[]) {
+  const sheet = XLSX.utils.json_to_sheet(data.length ? data : [{ note: "No rows" }]);
+  XLSX.utils.book_append_sheet(workbook, sheet, name.slice(0, 31));
+}
+
+function buildCoverageRows(rows: PreviewRow[]) {
+  const grouped = new Map<string, { source: string; rows: number; dates: Set<string>; commodities: Set<string>; minDate: string; maxDate: string }>();
+  for (const row of rows) {
+    const current = grouped.get(row.source) ?? {
+      source: row.source,
+      rows: 0,
+      dates: new Set<string>(),
+      commodities: new Set<string>(),
+      minDate: row.reportDate,
+      maxDate: row.reportDate,
+    };
+    current.rows += 1;
+    current.dates.add(row.reportDate);
+    current.commodities.add(row.rawCommodity);
+    if (row.reportDate < current.minDate) current.minDate = row.reportDate;
+    if (row.reportDate > current.maxDate) current.maxDate = row.reportDate;
+    grouped.set(row.source, current);
+  }
+  return [...grouped.values()].map((row) => ({
+    source: row.source,
+    rows: row.rows,
+    observedDates: row.dates.size,
+    commodities: [...row.commodities].sort().join(", "),
+    minDate: row.minDate,
+    maxDate: row.maxDate,
+  }));
+}
+
+function buildMappingRuleRows() {
+  return [
+    {
+      rule: "DAP Odesa/Pivdennyi/Chornomorsk",
+      mapping: "Historical proxy for SSI CPT Port",
+      status: "partner_confirmed",
+    },
+    {
+      rule: "Wheat 3 / Пшениця 3 кл",
+      mapping: "SSI Wheat 11.5pro",
+      status: "partner_confirmed",
+    },
+    {
+      rule: "Wheat 4 / Пшениця 4 кл / feed wheat",
+      mapping: "SSI Feed wheat",
+      status: "partner_confirmed",
+    },
+    {
+      rule: "Barley",
+      mapping: "Do not import now; raw archive only",
+      status: "partner_confirmed",
+    },
+    {
+      rule: "Delivery month",
+      mapping: "Use spot/front month matching publication date or next month",
+      status: "partner_confirmed_for_next_normalizer_pass",
+    },
+    {
+      rule: "Pre-Sep 2025 data",
+      mapping: "Reconstructed historical price archive, not official SPIKE index",
+      status: "partner_confirmed",
+    },
+  ];
+}
+
+function truncateText(value: string, max = 3000) {
+  return value.length > max ? `${value.slice(0, max)}…` : value;
+}
+
 async function main() {
   const options = parseArgs();
   await mkdir(PREVIEW_ROOT, { recursive: true });
   const handles = options.source
     ? options.source.split(",").map((source) => source.trim())
-    : ["spike_brokers", "kernelprices", "SoftComTrading"];
+    : ["spike_brokers", "kernelprices", "SoftComTrading", "soufflet_negoce"];
   const allRows: PreviewRow[] = [];
+  const imageReviewRows: ImageReviewRow[] = [];
 
   for (const handle of handles) {
     const messagesPath = path.join(RAW_ROOT, handle, "messages.jsonl");
@@ -464,20 +702,39 @@ async function main() {
         allRows.push(...extractSpikeTextRows(message));
       } else if (message.hasMedia) {
         try {
+          const ocrText = message.mediaPath ? await getOcrText(message, options.skipOcr) : "";
+          imageReviewRows.push({
+            source: message.source.handle,
+            sourceMessageId: String(message.telegram.id),
+            sourceDate: message.telegram.date,
+            mediaPath: message.mediaPath ?? "",
+            ocrStatus: ocrText.trim() ? "ok" : "empty",
+            ocrText: truncateText(ocrText),
+          });
           allRows.push(...(await extractImageRows(message, { skipOcr: options.skipOcr })));
         } catch (error) {
           console.warn("[extract-image-failed]", handle, message.telegram.id, error instanceof Error ? error.message : error);
+          imageReviewRows.push({
+            source: message.source.handle,
+            sourceMessageId: String(message.telegram.id),
+            sourceDate: message.telegram.date,
+            mediaPath: message.mediaPath ?? "",
+            ocrStatus: `failed: ${error instanceof Error ? error.message : String(error)}`.slice(0, 500),
+            ocrText: "",
+          });
         }
       }
     }
   }
 
   await writeCsv(allRows);
+  await writeWorkbook(allRows, imageReviewRows);
   const summary = summarizeRows(allRows);
   await writeFile(path.join(PREVIEW_ROOT, "archive_preview_summary.json"), `${JSON.stringify(summary, null, 2)}\n`, "utf8");
   console.table(summary.bySource);
   console.log("[extract] rows:", allRows.length);
   console.log("[extract] csv:", PREVIEW_CSV);
+  console.log("[extract] xlsx:", PREVIEW_XLSX);
 }
 
 function summarizeRows(rows: PreviewRow[]) {

@@ -32,6 +32,12 @@ const SOURCES: SourceConfig[] = [
     label: "Zaria Trade prices",
     kind: "image_prices",
   },
+  {
+    handle: "soufflet_negoce",
+    peerId: "1167873094",
+    label: "Soufflet Negoce in Ukraine",
+    kind: "image_prices",
+  },
 ];
 
 const DEFAULT_FROM = "2020-01-01";
