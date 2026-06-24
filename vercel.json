@@ -21,19 +21,19 @@
       "schedule": "30 15 * * 1-5"
     },
     {
-      "path": "/api/cron/mn7r-monitor-prices",
+      "path": "/api/cron/mn7r-monitor-prices-window-14",
       "schedule": "0 14 * * 1-5"
     },
     {
-      "path": "/api/cron/mn7r-monitor-prices",
+      "path": "/api/cron/mn7r-monitor-prices-window-15",
       "schedule": "0 15 * * 1-5"
     },
     {
-      "path": "/api/cron/spike-auto-publish",
+      "path": "/api/cron/spike-auto-publish-window-16",
       "schedule": "0 16 * * 1-5"
     },
     {
-      "path": "/api/cron/spike-auto-publish",
+      "path": "/api/cron/spike-auto-publish-window-17",
       "schedule": "0 17 * * 1-5"
     },
     {
@@ -41,27 +41,27 @@
       "schedule": "30 16 * * 1-5"
     },
     {
-      "path": "/api/cron/media-hub-monitoring",
+      "path": "/api/cron/media-hub-monitoring-window-15",
       "schedule": "0 15 * * 1-5"
     },
     {
-      "path": "/api/cron/media-hub-monitoring",
+      "path": "/api/cron/media-hub-monitoring-window-16",
       "schedule": "0 16 * * 1-5"
     },
     {
-      "path": "/api/cron/media-hub-publish",
+      "path": "/api/cron/media-hub-publish-weekday-16",
       "schedule": "10 16 * * 1-5"
     },
     {
-      "path": "/api/cron/media-hub-publish",
+      "path": "/api/cron/media-hub-publish-weekday-17",
       "schedule": "10 17 * * 1-5"
     },
     {
-      "path": "/api/cron/media-hub-publish",
+      "path": "/api/cron/media-hub-publish-saturday-12",
       "schedule": "0 12 * * 6"
     },
     {
-      "path": "/api/cron/media-hub-publish",
+      "path": "/api/cron/media-hub-publish-saturday-13",
       "schedule": "0 13 * * 6"
     }
   ]
