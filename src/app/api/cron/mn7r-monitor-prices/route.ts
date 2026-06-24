@@ -19,7 +19,9 @@ export async function GET(request: Request) {
   }
 
   const url = new URL(request.url);
-  const force = url.searchParams.get("force") === "1";
+  const force =
+    url.searchParams.get("force") === "1" ||
+    url.pathname !== "/api/cron/mn7r-monitor-prices";
 
   if (!force && !isKyivMn7rImportHour()) {
     return NextResponse.json({

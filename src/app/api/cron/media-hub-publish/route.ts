@@ -28,7 +28,7 @@ export async function GET(request: Request) {
   const date = url.searchParams.get("date") ?? undefined;
   const forceKind = normalizeKind(url.searchParams.get("kind"));
   const forceTelegram = url.searchParams.get("resend") === "1";
-  const forced = Boolean(date || forceKind);
+  const forced = Boolean(date || forceKind || url.pathname !== "/api/cron/media-hub-publish");
 
   if (!forced && !isMediaHubPublicationDue()) {
     const plan = getMediaHubPublicationPlan();
