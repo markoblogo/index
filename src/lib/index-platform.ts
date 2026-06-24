@@ -618,7 +618,7 @@ export const INDEX_CONFIGS: Record<IndexTenantId, IndexConfig> = {
       },
       officialNotice: {
         uk: "Офіційні значення публікуються у USD/т. Для внутрішніх переробних індексів ціна включає ПДВ.",
-        en: "Official values are published in USD/t. Internal processing indices are shown VAT-included.",
+        en: "Official values are published in USD/t. OILSEEDS CRUSH indices are shown VAT-included.",
       },
       footerDemo: { uk: "Платформа:", en: "Platform for" },
       partnersLine: {
