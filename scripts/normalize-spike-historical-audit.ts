@@ -92,8 +92,8 @@ async function main() {
 
 function normalizeRow(row: PreviewRow): NormalizedRow | null {
   const price = Number(row.priceMid);
-  if (!Number.isFinite(price) || price < 50 || price > 1000) {
-    return excluded(row, "invalid_or_out_of_range_price");
+  if (!Number.isFinite(price)) {
+    return excluded(row, "invalid_price");
   }
   if (row.currency !== "USD") {
     return manual(row, "non_usd_price_kept_for_review");
@@ -102,6 +102,9 @@ function normalizeRow(row: PreviewRow): NormalizedRow | null {
   const commodity = mapCommodity(row);
   if (!commodity.id) {
     return excluded(row, commodity.reason ?? "no_confirmed_commodity_mapping");
+  }
+  if (!passesPlausiblePriceRange(commodity.id, price)) {
+    return excluded(row, "price_outside_plausible_range_for_commodity", commodity);
   }
 
   const basis = mapBasis(row);
@@ -131,6 +134,16 @@ function normalizeRow(row: PreviewRow): NormalizedRow | null {
     auditReason: "mapped_by_partner_rules_pending_broker_audit",
     importReadiness: "ready_after_audit",
   };
+}
+
+function passesPlausiblePriceRange(commodityId: string, price: number) {
+  if (["corn", "wheat_11_5pro", "wheat_feed"].includes(commodityId)) {
+    return price >= 100 && price <= 400;
+  }
+  if (["sunflower", "rapeseed_non_gmo", "soybean_gmo", "soybean_non_gmo"].includes(commodityId)) {
+    return price >= 250 && price <= 1000;
+  }
+  return price >= 100 && price <= 1000;
 }
 
 function mapCommodity(row: PreviewRow) {
