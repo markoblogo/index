@@ -364,6 +364,14 @@ body[data-index="spike"] .brand-logo {
   color: #f8f8f2;
 }
 
+.spike-static-page .spike-contrast-cta {
+  color: #050505 !important;
+}
+
+.spike-static-page .spike-contrast-cta:hover {
+  color: #050505 !important;
+}
+
 .spike-static-page .text-black\/38,
 .spike-static-page .text-black\/60,
 .spike-static-page .text-black\/62,
