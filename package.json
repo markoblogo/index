@@ -19,6 +19,7 @@
     "deploy:spike": "node scripts/verify-vercel-project.mjs --project spike-ua-index && node scripts/check-deploy-worktree.mjs && node scripts/deploy-vercel-project.mjs --project spike-ua-index --profile spike-ua-index",
     "deploy:guard": "node scripts/verify-vercel-project.mjs",
     "telegram:webhook:respondent": "node scripts/configure-respondent-telegram-webhook.mjs",
+    "archive:telegram:collect": "tsx scripts/collect-spike-telegram-archive.ts",
     "sync:uga-from-spike": "tsx scripts/sync-uga-from-spike.ts",
     "provision:uga-admin": "node scripts/provision-uga-admin.mjs",
     "audit:respondent": "tsx scripts/respondent-telegram-audit.ts"
@@ -32,7 +33,8 @@
     "next": "^15.3.0",
     "pg": "^8.20.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "telegram": "^2.26.22"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",

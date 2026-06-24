@@ -9,4 +9,8 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 .DS_Store
+tsconfig.tsbuildinfo
 .vercel
+.local/
+data/spike-historical/raw/
+data/spike-historical/preview/
