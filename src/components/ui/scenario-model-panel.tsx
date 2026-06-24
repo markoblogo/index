@@ -314,9 +314,8 @@ export function ScenarioModelPanel({
 
       <style jsx>{`
         .market-line {
-          stroke-dasharray: 220;
-          stroke-dashoffset: 220;
-          animation: market-draw 1.7s ease-out forwards;
+          opacity: 0;
+          animation: market-line-in 0.6s ease-out forwards;
         }
 
         .market-band {
@@ -324,9 +323,9 @@ export function ScenarioModelPanel({
           animation: market-band 1s ease-out 0.45s forwards;
         }
 
-        @keyframes market-draw {
+        @keyframes market-line-in {
           to {
-            stroke-dashoffset: 0;
+            opacity: 1;
           }
         }
 
