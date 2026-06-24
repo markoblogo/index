@@ -40,6 +40,13 @@ export async function handleRespondentTelegramCron(
     respondentId: url.searchParams.get("respondentId") ?? undefined,
     trigger,
   });
+  console.info("respondent_telegram_cron_result", {
+    delivered: result.delivered.length,
+    reminderLevel: requestedLevel ?? null,
+    skippedReason: result.skippedReason,
+    statuses: summarizeStatuses(result.delivered),
+    trigger,
+  });
 
   return NextResponse.json({
     ...result,
@@ -56,4 +63,11 @@ function parseReminderLevel(value: string | null): TelegramReminderLevel | undef
   if (value === "final_18") return "final_19";
 
   return undefined;
+}
+
+function summarizeStatuses(delivered: Array<{ status: string }>) {
+  return delivered.reduce<Record<string, number>>((acc, item) => {
+    acc[item.status] = (acc[item.status] ?? 0) + 1;
+    return acc;
+  }, {});
 }
