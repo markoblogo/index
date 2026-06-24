@@ -3,5 +3,5 @@ import { handleRespondentTelegramCron } from "@/lib/respondent-telegram-cron-rou
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
-  return handleRespondentTelegramCron(request);
+  return handleRespondentTelegramCron(request, { reminderLevel: "initial" });
 }

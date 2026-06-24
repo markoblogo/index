@@ -3,7 +3,7 @@ import { db, hasDatabaseUrl } from "@/lib/db";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import { syncIndexPositionDirectory } from "@/lib/position-directory-sync";
 
-type TelegramTrigger = "manual" | "scheduled" | "smoke";
+export type TelegramTrigger = "manual" | "scheduled" | "smoke";
 
 export type TelegramReminderLevel = "initial" | "reminder_18" | "final_19";
 

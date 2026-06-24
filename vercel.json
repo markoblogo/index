@@ -5,16 +5,20 @@
       "schedule": "30 14 * * 1-5"
     },
     {
-      "path": "/api/cron/respondent-telegram",
+      "path": "/api/cron/respondent-telegram-window-13",
       "schedule": "0 13 * * 1-5"
     },
     {
-      "path": "/api/cron/respondent-telegram",
+      "path": "/api/cron/respondent-telegram-window-14",
       "schedule": "0 14 * * 1-5"
     },
     {
-      "path": "/api/cron/respondent-telegram",
+      "path": "/api/cron/respondent-telegram-window-15",
       "schedule": "0 15 * * 1-5"
+    },
+    {
+      "path": "/api/cron/respondent-telegram-watchdog",
+      "schedule": "30 15 * * 1-5"
     },
     {
       "path": "/api/cron/mn7r-monitor-prices",
