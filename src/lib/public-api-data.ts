@@ -56,6 +56,10 @@ const mockCommodityIdByCode: Record<string, CommodityId> = Object.fromEntries(
   ]),
 ) as Record<string, CommodityId>;
 
+function formatPublicChangeAbs(value: number) {
+  return activeIndex.id === "spike-ua" ? Math.round(value) : roundOne(value);
+}
+
 export async function getPublicLatestData() {
   if (!hasDatabaseUrl()) {
     if (!allowMockFallback()) {
@@ -127,7 +131,7 @@ function getMockHistoryData(): PublicHistoryItem[] {
   return commodities.flatMap((commodity) =>
     weeklySeries[commodity.id].map((value, index, values) => {
       const previousValue = values[index - 1] ?? value;
-      const changeAbs = roundOne(value - previousValue);
+      const changeAbs = formatPublicChangeAbs(value - previousValue);
       const basisConfig = getDeliveryBasisConfigForCommodityCode(
         commodity.code,
         activeIndex,
@@ -263,8 +267,9 @@ async function getDatabaseLatestData(): Promise<PublicLatestItem[]> {
         basis: basisConfig.name,
         valueUsdPerMt:
           displayFallback?.value ?? published?.valueUsdPerMt.toNumber() ?? null,
-        changeAbs:
+        changeAbs: formatPublicChangeAbs(
           fallbackChange?.changeAbs ?? published?.changeAbsUsdPerMt?.toNumber() ?? 0,
+        ),
         changePct: fallbackChange?.changePct ?? published?.changePct?.toNumber() ?? 0,
         respondents: displayFallback?.rawCount ?? activeRespondentCount,
       };
@@ -337,7 +342,7 @@ async function getDatabaseHistoryData(): Promise<PublicHistoryItem[]> {
       basis: getDeliveryBasisConfigForCommodityCode(row.commodity.code, activeIndex)
         .name,
       valueUsdPerMt: row.valueUsdPerMt.toNumber(),
-      changeAbs: row.changeAbsUsdPerMt?.toNumber() ?? 0,
+      changeAbs: formatPublicChangeAbs(row.changeAbsUsdPerMt?.toNumber() ?? 0),
       changePct: row.changePct?.toNumber() ?? 0,
       respondents: activeRespondentCount,
       status: "published",

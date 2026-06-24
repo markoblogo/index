@@ -256,8 +256,13 @@ export async function saveRespondentSurvey(
     });
   }
   if (isSpike && intent === "submitted" && date === todayInputDate()) {
-    await autoPublishSpikeDailyIndices(date, { replaceExisting: true }).catch((error) => {
-      console.error("Respondent submission saved, but auto-publish failed.", error);
+    await autoPublishSpikeDailyIndices(date, {
+      existingPublishedOnly: true,
+      generateAiBrief: false,
+      publishMediaHub: false,
+      replaceExisting: true,
+    }).catch((error) => {
+      console.error("Respondent submission saved, but silent index refresh failed.", error);
     });
   }
 

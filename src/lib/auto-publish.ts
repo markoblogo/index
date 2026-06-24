@@ -44,6 +44,7 @@ export type AutoPublishResult = {
 export async function autoPublishSpikeDailyIndices(
   date = formatDateKyiv(),
   options: {
+    existingPublishedOnly?: boolean;
     generateAiBrief?: boolean;
     publishMediaHub?: boolean;
     replaceExisting?: boolean;
@@ -123,6 +124,10 @@ export async function autoPublishSpikeDailyIndices(
       tradeDate,
     },
   });
+
+  if (options.existingPublishedOnly && existingPublishedCount === 0) {
+    return { date, published: 0, skippedReason: "not_yet_published" };
+  }
 
   if (existingPublishedCount > 0 && !options.replaceExisting) {
     if (options.publishMediaHub !== false) {

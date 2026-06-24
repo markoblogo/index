@@ -42,6 +42,10 @@ const mockCommodityByCode = new Map(
   ]),
 );
 
+function formatPublicChangeAbs(value: number) {
+  return activeIndex.id === "spike-ua" ? Math.round(value) : roundOne(value);
+}
+
 export async function getPublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
   if (!hasDatabaseUrl()) {
     if (!allowMockFallback()) {
@@ -327,7 +331,7 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
         publishedIndex?.tradeDate.toISOString().slice(0, 10) ??
         latestPublishedDate;
       const aiComment = buildCardAiComment({
-        dayChange: change.changeAbs,
+        dayChange: formatPublicChangeAbs(change.changeAbs),
         history,
         latest,
         latestDate,
@@ -339,7 +343,7 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
         code: commodity.code,
         name: { uk: commodity.nameUk, en: commodity.nameEn },
         latest,
-        absoluteChange: change.changeAbs,
+        absoluteChange: formatPublicChangeAbs(change.changeAbs),
         percentChange: change.changePct,
         sparkline: buildRealSparkline(history, latest),
         aiComment,
@@ -349,7 +353,7 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
     const latest = publishedIndex.valueUsdPerMt.toNumber();
     const latestDate = publishedIndex.tradeDate.toISOString().slice(0, 10);
     const aiComment = buildCardAiComment({
-      dayChange: publishedIndex.changeAbsUsdPerMt?.toNumber() ?? 0,
+      dayChange: formatPublicChangeAbs(publishedIndex.changeAbsUsdPerMt?.toNumber() ?? 0),
       history,
       latest,
       latestDate,
@@ -361,7 +365,7 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
       code: commodity.code,
       name: { uk: commodity.nameUk, en: commodity.nameEn },
       latest,
-      absoluteChange: publishedIndex.changeAbsUsdPerMt?.toNumber() ?? 0,
+      absoluteChange: formatPublicChangeAbs(publishedIndex.changeAbsUsdPerMt?.toNumber() ?? 0),
       percentChange: publishedIndex.changePct?.toNumber() ?? 0,
       sparkline: buildRealSparkline(history, latest),
       aiComment,
@@ -399,7 +403,7 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
         basis: basisConfig.name,
         date: displayFallback?.date ?? latestPublishedDate,
         price: displayFallback?.value ?? null,
-        absoluteChange: change.changeAbs,
+        absoluteChange: formatPublicChangeAbs(change.changeAbs),
         percentChange: change.changePct,
         respondents: displayFallback?.rawCount ?? activeRespondentCount,
       };
@@ -411,7 +415,7 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
       date: publishedIndex.tradeDate.toISOString().slice(0, 10),
       basis: basisConfig.name,
       price: publishedIndex.valueUsdPerMt.toNumber(),
-      absoluteChange: publishedIndex.changeAbsUsdPerMt?.toNumber() ?? 0,
+      absoluteChange: formatPublicChangeAbs(publishedIndex.changeAbsUsdPerMt?.toNumber() ?? 0),
       percentChange: publishedIndex.changePct?.toNumber() ?? 0,
       respondents: activeRespondentCount,
     };
