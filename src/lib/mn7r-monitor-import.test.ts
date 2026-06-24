@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  buildMn7rRawRecordDiagnostics,
   formatDateKyiv,
   importMn7rMonitorRespondentPrices,
   isKyivMn7rImportHour,
@@ -362,6 +363,50 @@ describe("importMn7rMonitorRespondentPrices", () => {
     });
     expect(cleared).toContain("WHT_115:mn7r_no_matching_records");
     expect(cleared).toContain("SUNFLOWER:mn7r_no_matching_records");
+  });
+
+  it("explains raw Monitor matching decisions and does not map wheat 12.5 as SSI wheat 11.5", () => {
+    const payload: Mn7rPayload = {
+      source: "MN7R_MONITOR",
+      respondentCode: "MN7R_MONITOR",
+      asOfDate: "2026-06-24",
+      generatedAt: "2026-06-24T14:00:00.000Z",
+      timezone: "Europe/Kyiv",
+      methodologyVersion: "mn7r-monitor-index-v2",
+      records: [
+        {
+          title: "WHEAT 12,5PRO CPT CHORNOMORSK, UKR 01/07-31/07 @ 218$",
+          deliveryStart: "2026-07-01",
+          deliveryEnd: "2026-07-31",
+          monitorPrice: 218,
+          currency: "USD",
+          quality: "ok",
+        },
+        {
+          title: "WHEAT 11,5PRO CPT CHORNOMORSK, UKR 01/07-31/07 @ 216$",
+          deliveryStart: "2026-07-01",
+          deliveryEnd: "2026-07-31",
+          monitorPrice: 216,
+          currency: "USD",
+          quality: "ok",
+        },
+      ],
+    };
+
+    const diagnostics = buildMn7rRawRecordDiagnostics(payload);
+
+    expect(diagnostics[0]).toMatchObject({
+      decision: "skipped",
+      matchedIndexCode: null,
+      passedDeliveryWindow: true,
+      reason: "no_index_match",
+    });
+    expect(diagnostics[1]).toMatchObject({
+      decision: "matched",
+      matchedIndexCode: "WHT_115",
+      overlapDays: 23,
+      reason: "matched",
+    });
   });
 });
 

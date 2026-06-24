@@ -1,4 +1,5 @@
 import { getActiveIndexConfig } from "@/lib/index-platform";
+import { db, hasDatabaseUrl } from "@/lib/db";
 import type { RespondentPriceInput } from "@/lib/respondent-prices";
 import { getFxRates, type FxRates } from "@/lib/fx-rates";
 import {
@@ -65,6 +66,43 @@ export type Mn7rImportResult = {
   skipped: number;
 };
 
+export type Mn7rRawRecordDiagnostic = {
+  basisText: string;
+  currency: string | null;
+  decision: "matched" | "skipped";
+  deliveryEnd: string | null;
+  deliveryStart: string | null;
+  deliveryWindowEnd: string;
+  deliveryWindowStart: string;
+  matchedIndexCode: string | null;
+  monitorPrice: number | null;
+  overlapDays: number;
+  passedDeliveryWindow: boolean;
+  quality: string | null;
+  rawId: string | null;
+  rawText: string;
+  reason:
+    | "matched"
+    | "delivery_overlap_below_10_days"
+    | "matched_but_no_data"
+    | "matched_but_price_missing"
+    | "no_index_match"
+    | "position_payload";
+};
+
+export type Mn7rMonitorImportAuditView = {
+  createdAt: string;
+  date: string;
+  diagnostics: Mn7rRawRecordDiagnostic[];
+  generatedAt: string | null;
+  imported: number;
+  methodologyVersion: string | null;
+  rawCount: number;
+  skipped: number;
+  source: string;
+  updatedAt: string;
+};
+
 type FetchLike = typeof fetch;
 type ClearLike = (input: ClearRespondentPriceInput) => Promise<unknown>;
 type GetFxRatesLike = (date?: string) => Promise<FxRates>;
@@ -82,6 +120,18 @@ type NormalizedRawMatch = {
   raw: Mn7rRawRecord;
 };
 
+type NormalizedMn7rPayload = {
+  diagnostics: Mn7rRawRecordDiagnostic[];
+  missingIndexCodes: string[];
+  positions: Mn7rPosition[];
+  rawCount: number;
+  skipped: number;
+};
+
+type InternalRawDiagnostic = Mn7rRawRecordDiagnostic & {
+  raw: Mn7rRawRecord;
+};
+
 const SPIKE_MN7R_TARGETS: Mn7rTarget[] = [
   {
     indexCode: "CORN",
@@ -93,7 +143,15 @@ const SPIKE_MN7R_TARGETS: Mn7rTarget[] = [
     indexCode: "WHT_115",
     commodityKeywords: ["11.5", "11,5", "milling wheat", "пшениц", "wheat"],
     basisKeywords: ["cpt", "odesa", "одеса"],
-    excludeKeywords: ["feed", "fodder", "фураж", "parity", "паритет"],
+    excludeKeywords: [
+      "12.5",
+      "12,5",
+      "feed",
+      "fodder",
+      "фураж",
+      "parity",
+      "паритет",
+    ],
   },
   {
     indexCode: "FEED_WHT",
@@ -293,14 +351,147 @@ export async function importMn7rMonitorRespondentPrices(
     skipped += 1;
   }
 
+  await persistMn7rMonitorImportAudit({
+    diagnostics: normalizedPayload.diagnostics,
+    imported,
+    payload,
+    rawCount: normalizedPayload.rawCount,
+    skipped,
+  });
+
   return { date: payload.asOfDate, imported, skipped };
 }
 
-function normalizePayload(payload: Mn7rPayload) {
+export async function getMn7rMonitorImportAudit(
+  date: string,
+): Promise<Mn7rMonitorImportAuditView | null> {
+  if (!hasDatabaseUrl()) {
+    return null;
+  }
+
+  try {
+    await ensureMn7rMonitorImportAuditStorage();
+    const rows = await db.$queryRawUnsafe<
+      Array<{
+        createdAt: Date;
+        date: Date;
+        diagnosticsJson: unknown;
+        generatedAt: Date | null;
+        imported: number;
+        methodologyVersion: string | null;
+        rawCount: number;
+        skipped: number;
+        source: string;
+        updatedAt: Date;
+      }>
+    >(
+      `SELECT "date", "source", "generatedAt", "methodologyVersion", "rawCount", "imported", "skipped", "diagnosticsJson", "createdAt", "updatedAt"
+       FROM "Mn7rMonitorImportAudit"
+       WHERE "date" = $1::date AND "source" = 'MN7R_MONITOR'
+       LIMIT 1`,
+      date,
+    );
+    const row = rows[0];
+
+    if (!row) {
+      return null;
+    }
+
+    return {
+      createdAt: row.createdAt.toISOString(),
+      date: formatDateOnly(row.date),
+      diagnostics: Array.isArray(row.diagnosticsJson)
+        ? (row.diagnosticsJson as Mn7rRawRecordDiagnostic[])
+        : [],
+      generatedAt: row.generatedAt?.toISOString() ?? null,
+      imported: row.imported,
+      methodologyVersion: row.methodologyVersion,
+      rawCount: row.rawCount,
+      skipped: row.skipped,
+      source: row.source,
+      updatedAt: row.updatedAt.toISOString(),
+    };
+  } catch (error) {
+    console.warn("Failed to load MN7R Monitor import audit", safeErrorMessage(error));
+    return null;
+  }
+}
+
+async function persistMn7rMonitorImportAudit({
+  diagnostics,
+  imported,
+  payload,
+  rawCount,
+  skipped,
+}: {
+  diagnostics: Mn7rRawRecordDiagnostic[];
+  imported: number;
+  payload: Mn7rPayload;
+  rawCount: number;
+  skipped: number;
+}) {
+  if (!hasDatabaseUrl()) {
+    return;
+  }
+
+  try {
+    await ensureMn7rMonitorImportAuditStorage();
+    await db.$executeRawUnsafe(
+      `INSERT INTO "Mn7rMonitorImportAudit"
+        ("id", "date", "source", "generatedAt", "methodologyVersion", "rawCount", "imported", "skipped", "diagnosticsJson", "createdAt", "updatedAt")
+       VALUES ($1, $2::date, $3, $4::timestamp, $5, $6, $7, $8, $9::jsonb, NOW(), NOW())
+       ON CONFLICT ("date", "source") DO UPDATE SET
+        "generatedAt" = EXCLUDED."generatedAt",
+        "methodologyVersion" = EXCLUDED."methodologyVersion",
+        "rawCount" = EXCLUDED."rawCount",
+        "imported" = EXCLUDED."imported",
+        "skipped" = EXCLUDED."skipped",
+        "diagnosticsJson" = EXCLUDED."diagnosticsJson",
+        "updatedAt" = NOW()`,
+      `mn7r-monitor:${payload.asOfDate}`,
+      payload.asOfDate,
+      payload.source,
+      payload.generatedAt ? new Date(payload.generatedAt) : null,
+      payload.methodologyVersion,
+      rawCount,
+      imported,
+      skipped,
+      JSON.stringify(diagnostics),
+    );
+  } catch (error) {
+    console.warn("Failed to persist MN7R Monitor import audit", safeErrorMessage(error));
+  }
+}
+
+async function ensureMn7rMonitorImportAuditStorage() {
+  await db.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "Mn7rMonitorImportAudit" (
+      "id" TEXT PRIMARY KEY,
+      "date" DATE NOT NULL,
+      "source" TEXT NOT NULL DEFAULT 'MN7R_MONITOR',
+      "generatedAt" TIMESTAMP NULL,
+      "methodologyVersion" TEXT NULL,
+      "rawCount" INTEGER NOT NULL DEFAULT 0,
+      "imported" INTEGER NOT NULL DEFAULT 0,
+      "skipped" INTEGER NOT NULL DEFAULT 0,
+      "diagnosticsJson" JSONB NOT NULL,
+      "createdAt" TIMESTAMP NOT NULL DEFAULT NOW(),
+      "updatedAt" TIMESTAMP NOT NULL DEFAULT NOW()
+    )
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE UNIQUE INDEX IF NOT EXISTS "Mn7rMonitorImportAudit_date_source_key"
+      ON "Mn7rMonitorImportAudit"("date", "source")
+  `);
+}
+
+function normalizePayload(payload: Mn7rPayload): NormalizedMn7rPayload {
   if (payload.positions?.length) {
     return {
+      diagnostics: buildPositionDiagnostics(payload),
       missingIndexCodes: [] as string[],
       positions: payload.positions,
+      rawCount: payload.positions.length,
       skipped: 0,
     };
   }
@@ -309,26 +500,20 @@ function normalizePayload(payload: Mn7rPayload) {
 }
 
 function aggregateRawRecords(payload: Mn7rPayload) {
-  const rawRecords = payload.records ?? payload.items ?? [];
-  const window = buildDeliveryWindow(payload.asOfDate);
-  const matches: NormalizedRawMatch[] = [];
-  let skipped = 0;
-
-  for (const raw of rawRecords) {
-    const indexCode = matchRawRecordToIndexCode(raw);
-
-    if (!indexCode) {
-      skipped += 1;
-      continue;
-    }
-
-    if (!hasRequiredDeliveryOverlap(raw, window)) {
-      skipped += 1;
-      continue;
-    }
-
-    matches.push({ indexCode, raw });
-  }
+  const diagnostics = buildInternalRawRecordDiagnostics(payload);
+  const matches: NormalizedRawMatch[] = diagnostics
+    .filter(
+      (diagnostic) =>
+        diagnostic.matchedIndexCode &&
+        diagnostic.passedDeliveryWindow,
+    )
+    .map((diagnostic) => ({
+      indexCode: diagnostic.matchedIndexCode!,
+      raw: diagnostic.raw,
+    }));
+  let skipped = diagnostics.filter(
+    (diagnostic) => diagnostic.decision === "skipped",
+  ).length;
 
   const positions: Mn7rPosition[] = [];
   const matchedIndexCodes = new Set<string>();
@@ -389,7 +574,105 @@ function aggregateRawRecords(payload: Mn7rPayload) {
     (indexCode) => !matchedIndexCodes.has(indexCode),
   );
 
-  return { missingIndexCodes, positions, skipped };
+  return {
+    diagnostics: diagnostics.map(stripInternalRawDiagnostic),
+    missingIndexCodes,
+    positions,
+    rawCount: diagnostics.length,
+    skipped,
+  };
+}
+
+export function buildMn7rRawRecordDiagnostics(
+  payload: Mn7rPayload,
+): Mn7rRawRecordDiagnostic[] {
+  return buildInternalRawRecordDiagnostics(payload).map(stripInternalRawDiagnostic);
+}
+
+function buildInternalRawRecordDiagnostics(payload: Mn7rPayload): InternalRawDiagnostic[] {
+  const rawRecords = payload.records ?? payload.items ?? [];
+  const window = buildDeliveryWindow(payload.asOfDate);
+
+  return rawRecords.map((raw) => {
+    const matchedIndexCode = matchRawRecordToIndexCode(raw);
+    const deliveryOverlap = calculateDeliveryOverlap(raw, window);
+    const passedDeliveryWindow = deliveryOverlap.overlapDays >= 10;
+    const noData = (raw.quality ?? "ok") === "no_data";
+    const missingPrice = raw.monitorPrice == null;
+    const decision =
+      matchedIndexCode && passedDeliveryWindow && !noData && !missingPrice
+        ? "matched"
+        : "skipped";
+    const reason: Mn7rRawRecordDiagnostic["reason"] = !matchedIndexCode
+      ? "no_index_match"
+      : !passedDeliveryWindow
+        ? "delivery_overlap_below_10_days"
+        : noData
+          ? "matched_but_no_data"
+          : missingPrice
+            ? "matched_but_price_missing"
+            : "matched";
+
+    return {
+      basisText: buildBasisText(raw),
+      currency: raw.currency ?? null,
+      decision,
+      deliveryEnd: deliveryOverlap.deliveryEnd,
+      deliveryStart: deliveryOverlap.deliveryStart,
+      deliveryWindowEnd: formatDateOnly(window.end),
+      deliveryWindowStart: formatDateOnly(window.start),
+      matchedIndexCode,
+      monitorPrice: raw.monitorPrice,
+      overlapDays: deliveryOverlap.overlapDays,
+      passedDeliveryWindow,
+      quality: raw.quality ?? null,
+      raw,
+      rawId: raw.id == null ? null : String(raw.id),
+      rawText: buildCommodityText(raw),
+      reason,
+    };
+  });
+}
+
+function buildPositionDiagnostics(payload: Mn7rPayload): Mn7rRawRecordDiagnostic[] {
+  const window = buildDeliveryWindow(payload.asOfDate);
+
+  return (payload.positions ?? []).map((position) => {
+    const noData = position.quality === "no_data";
+    const missingPrice = position.monitorPrice == null;
+    const decision = noData || missingPrice ? "skipped" : "matched";
+    const reason: Mn7rRawRecordDiagnostic["reason"] = noData
+      ? "matched_but_no_data"
+      : missingPrice
+        ? "matched_but_price_missing"
+        : "position_payload";
+
+    return {
+      basisText: position.indexCode,
+      currency: position.currency,
+      decision,
+      deliveryEnd: null,
+      deliveryStart: null,
+      deliveryWindowEnd: formatDateOnly(window.end),
+      deliveryWindowStart: formatDateOnly(window.start),
+      matchedIndexCode: position.indexCode,
+      monitorPrice: position.monitorPrice,
+      overlapDays: 30,
+      passedDeliveryWindow: true,
+      quality: position.quality,
+      rawId: null,
+      rawText: position.indexCode,
+      reason,
+    };
+  });
+}
+
+function stripInternalRawDiagnostic(
+  diagnostic: InternalRawDiagnostic,
+): Mn7rRawRecordDiagnostic {
+  const { raw, ...publicDiagnostic } = diagnostic;
+  void raw;
+  return publicDiagnostic;
 }
 
 async function getFxRatesForPayload(
@@ -518,6 +801,32 @@ function matchRawRecordToIndexCode(raw: Mn7rRawRecord) {
   })?.indexCode ?? null;
 }
 
+function buildCommodityText(raw: Mn7rRawRecord) {
+  return [
+    raw.commodity,
+    raw.product,
+    raw.itemName,
+    raw.title,
+    raw.indexCode,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+}
+
+function buildBasisText(raw: Mn7rRawRecord) {
+  return [
+    raw.basis,
+    raw.basisName,
+    raw.deliveryBasis,
+    raw.location,
+    raw.title,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+}
+
 function buildDeliveryWindow(asOfDate: string) {
   const start = parseIsoDateOnly(asOfDate);
   const end = addDays(start, 30);
@@ -525,7 +834,7 @@ function buildDeliveryWindow(asOfDate: string) {
   return { end, start };
 }
 
-function hasRequiredDeliveryOverlap(
+function calculateDeliveryOverlap(
   raw: Mn7rRawRecord,
   window: { start: Date; end: Date },
 ) {
@@ -547,11 +856,19 @@ function hasRequiredDeliveryOverlap(
     (overlapEnd.getTime() - overlapStart.getTime()) / 86_400_000,
   );
 
-  return overlapDays >= 10;
+  return {
+    deliveryEnd: formatDateOnly(rangeEnd),
+    deliveryStart: formatDateOnly(rangeStart),
+    overlapDays: Math.max(0, overlapDays),
+  };
 }
 
 function parseIsoDateOnly(value: string) {
   return new Date(`${value}T00:00:00.000Z`);
+}
+
+function formatDateOnly(date: Date) {
+  return date.toISOString().slice(0, 10);
 }
 
 function parseFlexibleDate(value: string | null) {
@@ -628,6 +945,10 @@ function normalizeText(value: string) {
     .replaceAll("-", " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function safeErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
 }
 
 export function getMn7rImportTargetCodes() {
