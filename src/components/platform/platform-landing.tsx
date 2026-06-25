@@ -175,6 +175,19 @@ export function PlatformLanding() {
               18% { opacity: .55; }
               100% { transform: translateX(135%); opacity: 0; }
             }
+            @keyframes id3x-float {
+              0% { transform: translate3d(0, 0, 0) rotate(0deg); }
+              50% { transform: translate3d(18px, -28px, 0) rotate(9deg); }
+              100% { transform: translate3d(-12px, 18px, 0) rotate(-7deg); }
+            }
+            @keyframes id3x-orbit {
+              0% { transform: rotate(0deg) translateX(12px) rotate(0deg); }
+              100% { transform: rotate(360deg) translateX(12px) rotate(-360deg); }
+            }
+            @keyframes id3x-pulse {
+              0%, 100% { opacity: .32; filter: hue-rotate(0deg); }
+              50% { opacity: .9; filter: hue-rotate(34deg); }
+            }
             @media (prefers-reduced-motion: reduce) {
               .id3x-animate { animation: none !important; }
             }
@@ -219,6 +232,13 @@ export function PlatformLanding() {
         <div className="id3x-animate absolute left-[8%] top-[18%] -z-10 h-44 w-44 rounded-full bg-[#d6ff58]/20 blur-3xl [animation:id3x-drift_13s_ease-in-out_infinite_alternate]" />
         <div className="id3x-animate absolute bottom-[12%] right-[18%] -z-10 h-60 w-60 rounded-full bg-white/10 blur-3xl [animation:id3x-drift_17s_ease-in-out_infinite_alternate-reverse]" />
         <div className="id3x-animate absolute inset-y-0 left-0 -z-10 w-1/3 bg-gradient-to-r from-transparent via-[#d6ff58]/10 to-transparent [animation:id3x-scan_9s_linear_infinite]" />
+        <div className="pointer-events-none absolute left-[6%] top-[18%] hidden h-24 w-24 rounded-[2rem] border border-[#d6ff58]/45 bg-[#d6ff58]/10 backdrop-blur-md id3x-animate [animation:id3x-float_11s_ease-in-out_infinite_alternate] md:block" />
+        <div className="pointer-events-none absolute right-[12%] top-[20%] hidden h-36 w-36 rounded-full border border-white/35 id3x-animate [animation:id3x-orbit_18s_linear_infinite] lg:block">
+          <span className="absolute left-1/2 top-[-0.35rem] h-3 w-3 rounded-full bg-[#d6ff58] shadow-[0_0_24px_rgba(214,255,88,.9)]" />
+        </div>
+        <div className="pointer-events-none absolute bottom-[10%] left-[42%] hidden h-20 w-44 rounded-full border border-white/18 bg-white/[0.06] backdrop-blur id3x-animate [animation:id3x-float_14s_ease-in-out_infinite_alternate-reverse] lg:block" />
+        <div className="pointer-events-none absolute bottom-[28%] right-[4%] h-2 w-2 rounded-full bg-[#d6ff58] shadow-[0_0_34px_16px_rgba(214,255,88,.22)] id3x-animate [animation:id3x-pulse_3.8s_ease-in-out_infinite]" />
+        <div className="pointer-events-none absolute left-[18%] top-[62%] h-1.5 w-1.5 rounded-full bg-white shadow-[0_0_28px_12px_rgba(255,255,255,.18)] id3x-animate [animation:id3x-pulse_4.5s_ease-in-out_infinite]" />
         <div className="mx-auto grid min-h-[calc(100svh-4rem)] max-w-7xl items-center gap-10 px-5 py-16 sm:px-8 lg:grid-cols-[1.08fr_0.92fr] lg:py-20">
           <div>
             <p className="max-w-xl text-xs font-black uppercase tracking-[0.32em] text-[#d6ff58]">
@@ -306,7 +326,9 @@ export function PlatformLanding() {
         </div>
       </section>
 
-      <section className="bg-[#050505] text-white">
+      <section className="relative isolate overflow-hidden bg-[#050505] text-white">
+        <div className="pointer-events-none absolute right-[6%] top-14 h-28 w-28 rounded-[2rem] border border-[#d6ff58]/30 bg-[#d6ff58]/10 id3x-animate [animation:id3x-float_12s_ease-in-out_infinite_alternate]" />
+        <div className="pointer-events-none absolute bottom-12 left-[8%] h-40 w-40 rounded-full border border-white/16 id3x-animate [animation:id3x-orbit_24s_linear_infinite]" />
         <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:py-24">
           <div className="grid gap-8 lg:grid-cols-[0.72fr_1.28fr]">
             <div>
@@ -343,6 +365,10 @@ export function PlatformLanding() {
 
       <section className="relative isolate overflow-hidden bg-[#050505] text-white">
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_72%_42%,rgba(214,255,88,0.18),transparent_28%),linear-gradient(180deg,#050505_0%,#0b120f_100%)]" />
+        <div className="pointer-events-none absolute right-[8%] top-[14%] h-24 w-24 rounded-[1.75rem] border border-[#d6ff58]/40 bg-[#d6ff58]/10 backdrop-blur id3x-animate [animation:id3x-float_10s_ease-in-out_infinite_alternate]" />
+        <div className="pointer-events-none absolute bottom-[12%] left-[10%] hidden h-32 w-32 rounded-full border border-white/20 id3x-animate [animation:id3x-orbit_20s_linear_infinite] md:block">
+          <span className="absolute right-2 top-3 h-2.5 w-2.5 rounded-full bg-white shadow-[0_0_22px_rgba(255,255,255,.8)]" />
+        </div>
         <div className="mx-auto grid max-w-7xl gap-10 px-5 py-16 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:py-24">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.28em] text-[#d6ff58]">
