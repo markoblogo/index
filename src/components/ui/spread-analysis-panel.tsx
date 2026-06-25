@@ -61,6 +61,8 @@ const chartPeriods = [
 ] as const;
 
 const rangePeriods = [30, 90, 180, 360] as const;
+const MAX_ISOLATED_SPREAD_JUMP = 30;
+const MAX_ABSOLUTE_SPREAD = 250;
 
 export function SpreadAnalysisPanel({
   history,
@@ -310,7 +312,7 @@ function buildSpreadSeries(history: SpreadPointSource[]) {
     let latestFirst: number | undefined;
     let latestSecond: number | undefined;
 
-    result[spread.id] = sortedEntries.flatMap(([date, values]) => {
+    result[spread.id] = normalizeSpreadSeries(sortedEntries.flatMap(([date, values]) => {
       latestFirst = values.get(spread.a) ?? latestFirst;
       latestSecond = values.get(spread.b) ?? latestSecond;
 
@@ -322,10 +324,37 @@ function buildSpreadSeries(history: SpreadPointSource[]) {
         date,
         value: roundOne(latestFirst - latestSecond),
       }];
-    });
+    }));
   }
 
   return result;
+}
+
+function normalizeSpreadSeries(series: Array<{ date: string; value: number }>) {
+  return series.map((point, index) => {
+    const previous = series[index - 1];
+    const next = series[index + 1];
+
+    if (!previous) {
+      return point;
+    }
+
+    const isAbsoluteOutlier = Math.abs(point.value) > MAX_ABSOLUTE_SPREAD;
+    const isIsolatedJump =
+      Boolean(next) &&
+      Math.abs(point.value - previous.value) > MAX_ISOLATED_SPREAD_JUMP &&
+      Math.abs(point.value - next.value) > MAX_ISOLATED_SPREAD_JUMP &&
+      Math.abs(previous.value - next.value) <= MAX_ISOLATED_SPREAD_JUMP;
+
+    if (isAbsoluteOutlier || isIsolatedJump) {
+      return {
+        ...point,
+        value: previous.value,
+      };
+    }
+
+    return point;
+  });
 }
 
 function PeriodButton({

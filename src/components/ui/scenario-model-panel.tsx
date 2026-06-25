@@ -46,6 +46,8 @@ type SeasonalityRead = {
 
 const periods = [30, 60, 90, 180] as const;
 const HISTORY_END_X = 82;
+const MAX_ISOLATED_SPREAD_JUMP = 30;
+const MAX_ABSOLUTE_SPREAD = 250;
 
 const spreadDefinitions: SpreadDefinition[] = [
   {
@@ -373,7 +375,7 @@ function buildSpreadSeries(history: ScenarioSourcePoint[], spread: SpreadDefinit
   let latestFirst: number | undefined;
   let latestSecond: number | undefined;
 
-  return Array.from(byDate.entries())
+  return normalizeSpreadSeries(Array.from(byDate.entries())
     .sort((a, b) => a[0].localeCompare(b[0]))
     .flatMap(([date, values]) => {
       latestFirst = values.get(spread.a) ?? latestFirst;
@@ -389,7 +391,29 @@ function buildSpreadSeries(history: ScenarioSourcePoint[], spread: SpreadDefinit
           value: roundOne(latestFirst - latestSecond),
         },
       ];
-    });
+    }));
+}
+
+function normalizeSpreadSeries(series: Array<{ date: string; value: number }>) {
+  return series.map((point, index) => {
+    const previous = series[index - 1];
+    const next = series[index + 1];
+
+    if (!previous) {
+      return point;
+    }
+
+    const isAbsoluteOutlier = Math.abs(point.value) > MAX_ABSOLUTE_SPREAD;
+    const isIsolatedJump =
+      Boolean(next) &&
+      Math.abs(point.value - previous.value) > MAX_ISOLATED_SPREAD_JUMP &&
+      Math.abs(point.value - next.value) > MAX_ISOLATED_SPREAD_JUMP &&
+      Math.abs(previous.value - next.value) <= MAX_ISOLATED_SPREAD_JUMP;
+
+    return isAbsoluteOutlier || isIsolatedJump
+      ? { ...point, value: previous.value }
+      : point;
+  });
 }
 
 function buildMarketRead(

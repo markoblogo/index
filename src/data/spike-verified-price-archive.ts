@@ -1,5 +1,6 @@
 // Generated from the verified Spike market-price archive CSV provided on 2026-06-25.
 // These rows are analytical historical price archive data, not official SPIKE index values.
+// Rows above 1000 USD/t are excluded as non-USD or input artifacts for SSI analytics.
 
 export type SpikeVerifiedPriceArchivePoint = {
   commodityId: string;
@@ -440,14 +441,13 @@ export const spikeVerifiedPriceArchive = [
   { commodityId: "wheat-115", date: "2024-07-15", rawCount: 1, valueUsdPerMt: 185.0 },
   { commodityId: "corn", date: "2024-07-17", rawCount: 1, valueUsdPerMt: 175.0 },
   { commodityId: "feed-wheat", date: "2024-07-17", rawCount: 2, valueUsdPerMt: 174.0 },
-  { commodityId: "rapeseed-export", date: "2024-07-17", rawCount: 2, valueUsdPerMt: 21250.0 },
   { commodityId: "wheat-115", date: "2024-07-17", rawCount: 2, valueUsdPerMt: 195.0 },
   { commodityId: "corn", date: "2024-07-18", rawCount: 1, valueUsdPerMt: 175.0 },
   { commodityId: "feed-wheat", date: "2024-07-18", rawCount: 1, valueUsdPerMt: 175.0 },
-  { commodityId: "rapeseed-export", date: "2024-07-18", rawCount: 4, valueUsdPerMt: 10855.0 },
+  { commodityId: "rapeseed-export", date: "2024-07-18", rawCount: 2, valueUsdPerMt: 460.0 },
   { commodityId: "wheat-115", date: "2024-07-18", rawCount: 1, valueUsdPerMt: 196.0 },
   { commodityId: "feed-wheat", date: "2024-07-19", rawCount: 3, valueUsdPerMt: 174.67 },
-  { commodityId: "rapeseed-export", date: "2024-07-19", rawCount: 4, valueUsdPerMt: 10858.25 },
+  { commodityId: "rapeseed-export", date: "2024-07-19", rawCount: 2, valueUsdPerMt: 466.5 },
   { commodityId: "sunflower", date: "2024-07-19", rawCount: 1, valueUsdPerMt: 405.0 },
   { commodityId: "wheat-115", date: "2024-07-19", rawCount: 2, valueUsdPerMt: 197.0 },
   { commodityId: "feed-wheat", date: "2024-07-22", rawCount: 4, valueUsdPerMt: 175.75 },
@@ -942,7 +942,6 @@ export const spikeVerifiedPriceArchive = [
   { commodityId: "wheat-115", date: "2025-04-08", rawCount: 2, valueUsdPerMt: 230.0 },
   { commodityId: "corn", date: "2025-04-09", rawCount: 1, valueUsdPerMt: 228.0 },
   { commodityId: "feed-wheat", date: "2025-04-09", rawCount: 1, valueUsdPerMt: 224.0 },
-  { commodityId: "sunflower", date: "2025-04-09", rawCount: 1, valueUsdPerMt: 26200.0 },
   { commodityId: "wheat-115", date: "2025-04-09", rawCount: 1, valueUsdPerMt: 225.0 },
   { commodityId: "corn", date: "2025-04-10", rawCount: 2, valueUsdPerMt: 229.5 },
   { commodityId: "feed-wheat", date: "2025-04-10", rawCount: 1, valueUsdPerMt: 224.0 },
@@ -1075,7 +1074,7 @@ export const spikeVerifiedPriceArchive = [
   { commodityId: "gmo-soybean-export", date: "2025-08-01", rawCount: 1, valueUsdPerMt: 388.0 },
   { commodityId: "non-gmo-soybean-export", date: "2025-08-01", rawCount: 1, valueUsdPerMt: 430.0 },
   { commodityId: "wheat-115", date: "2025-08-01", rawCount: 2, valueUsdPerMt: 225.0 },
-  { commodityId: "feed-wheat", date: "2025-08-04", rawCount: 5, valueUsdPerMt: 2190.0 },
+  { commodityId: "feed-wheat", date: "2025-08-04", rawCount: 4, valueUsdPerMt: 212.5 },
   { commodityId: "gmo-soybean-export", date: "2025-08-04", rawCount: 1, valueUsdPerMt: 390.0 },
   { commodityId: "rapeseed-export", date: "2025-08-04", rawCount: 2, valueUsdPerMt: 527.5 },
   { commodityId: "wheat-115", date: "2025-08-04", rawCount: 4, valueUsdPerMt: 227.0 },
@@ -1130,17 +1129,18 @@ export const spikeVerifiedPriceArchiveMeta = {
   "sourceFile": "SPIKE Price Archive - Market Price.csv",
   "source": "Spike verified market price archive",
   "officialIndex": false,
-  "rows": 1115,
-  "rawMappedRows": 2030,
+  "rows": 1113,
+  "rawMappedRows": 2022,
   "dateFrom": "2023-09-25",
   "dateTo": "2025-08-29",
+  "maxUsdPrice": 1000,
   "commodityCounts": {
     "corn": 319,
     "feed-wheat": 293,
     "gmo-soybean-export": 166,
     "non-gmo-soybean-export": 75,
-    "rapeseed-export": 28,
-    "sunflower": 63,
+    "rapeseed-export": 27,
+    "sunflower": 62,
     "wheat-115": 171
   }
 } as const;
