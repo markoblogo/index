@@ -21,6 +21,10 @@
       "schedule": "30 15 * * 1-5"
     },
     {
+      "path": "/api/cron/respondent-telegram-healthcheck",
+      "schedule": "45 15 * * 1-5"
+    },
+    {
       "path": "/api/cron/mn7r-monitor-prices-window-14",
       "schedule": "0 14 * * 1-5"
     },

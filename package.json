@@ -21,7 +21,8 @@
     "telegram:webhook:respondent": "node scripts/configure-respondent-telegram-webhook.mjs",
     "sync:uga-from-spike": "tsx scripts/sync-uga-from-spike.ts",
     "provision:uga-admin": "node scripts/provision-uga-admin.mjs",
-    "audit:respondent": "tsx scripts/respondent-telegram-audit.ts"
+    "audit:respondent": "tsx scripts/respondent-telegram-audit.ts",
+    "monitor:respondent-telegram": "tsx scripts/respondent-telegram-healthcheck.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
