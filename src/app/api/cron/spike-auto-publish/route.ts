@@ -7,6 +7,8 @@ import {
   type AutoPublishResult,
 } from "@/lib/auto-publish";
 import { importMn7rMonitorRespondentPrices } from "@/lib/mn7r-monitor-import";
+import { runDueMediaHubPublication } from "@/lib/media-hub-publication-scheduler";
+import { isPlatformSite } from "@/lib/platform-site";
 import { syncTelegramWorkspaceResources } from "@/lib/telegram-source-collector";
 
 export const dynamic = "force-dynamic";
@@ -40,12 +42,30 @@ export async function GET(request: Request) {
 
   const requestedDate = url.searchParams.get("date");
   const date = requestedDate ?? formatDateKyiv();
+
+  if (isPlatformSite()) {
+    const mediaHub = await runDueMediaHubPublication({
+      date,
+      forceKind: "daily",
+      forceTelegram: url.searchParams.get("resend") === "1",
+    });
+
+    return NextResponse.json({
+      date,
+      mediaHub,
+      skippedReason: null,
+      sourceSync: { skippedReason: "platform_media_hub_publish_only", status: "skipped" },
+      triggeredAt: new Date().toISOString(),
+    });
+  }
+
   const targetDates = requestedDate
     ? [requestedDate]
     : [...new Set([getPreviousBusinessDate(date), date])];
   const shouldImportMonitor = url.searchParams.get("import") === "1";
   const replaceExisting = url.searchParams.get("replace") === "1";
-  const shouldSyncSources = url.searchParams.get("sync") === "1";
+  const shouldSyncSources = url.searchParams.get("sync") !== "0";
+  const shouldPublishMediaHub = url.searchParams.get("mediaHub") !== "0";
 
   const sourceSync = shouldSyncSources
     ? await syncTelegramWorkspaceResources("daily")
@@ -69,7 +89,7 @@ export async function GET(request: Request) {
 
     const result = await autoPublishSpikeDailyIndices(targetDate, {
       generateAiBrief: url.searchParams.get("brief") === "1",
-      publishMediaHub: url.searchParams.get("mediaHub") === "1",
+      publishMediaHub: shouldPublishMediaHub,
       replaceExisting,
     });
     results.push({
