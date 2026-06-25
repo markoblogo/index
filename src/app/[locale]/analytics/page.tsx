@@ -110,6 +110,22 @@ const VolatilityRangePanelAsync = nextDynamic(
   },
 );
 
+const ExperimentalAnalyticsSectionAsync = nextDynamic(
+  () =>
+    import("@/components/analytics/ExperimentalAnalyticsSection").then(
+      (module) => module.ExperimentalAnalyticsSection,
+    ),
+  {
+    loading: () => (
+      <section className="border-y border-[var(--spike-accent)]/40 bg-[#050505] px-6 py-10 text-[#f8f8f2] lg:px-8">
+        <p className="mx-auto max-w-7xl text-xs font-black uppercase tracking-[0.18em] text-white/40">
+          Loading experimental analytics...
+        </p>
+      </section>
+    ),
+  },
+);
+
 const VOLATILITY_WINDOWS = [90, 180, 365] as const;
 type VolatilityWindow = (typeof VOLATILITY_WINDOWS)[number];
 
@@ -127,7 +143,7 @@ export default async function AnalyticsPage({
   searchParams,
 }: {
   params: Promise<{ locale: Locale }>;
-  searchParams: Promise<{ volatilityWindow?: string }>;
+  searchParams: Promise<{ experimentalAnalytics?: string; volatilityWindow?: string }>;
 }) {
   const [{ locale }, queryParams] = await Promise.all([params, searchParams]);
   const copy = getAnalyticsCopy(locale);
@@ -146,6 +162,11 @@ export default async function AnalyticsPage({
   const tableRows = selectRecentPublishedRows(history, 3);
   const isSpike = getActiveIndexConfig().id === "spike-ua";
   const hasHistory = history.length > 0;
+  const showExperimentalAnalytics =
+    isSpike &&
+    hasHistory &&
+    (process.env.NEXT_PUBLIC_ANALYTICS_EXPERIMENTAL_BLOCKS === "true" ||
+      queryParams.experimentalAnalytics === "1");
 
   return (
     <main
@@ -216,6 +237,16 @@ export default async function AnalyticsPage({
         </div>
         <KpiStrip items={snapshot} />
       </section>
+
+      {showExperimentalAnalytics ? (
+        <ExperimentalAnalyticsSectionAsync
+          history={history}
+          instruments={commodities.map((commodity) => ({
+            id: commodity.id,
+            label: commodity.name[locale],
+          }))}
+        />
+      ) : null}
 
       {hasHistory ? (
         <>
