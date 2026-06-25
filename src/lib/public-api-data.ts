@@ -1,5 +1,6 @@
 import { allowMockFallback, db, hasDatabaseUrl } from "@/lib/db";
 import { getActiveIndexConfig } from "@/lib/index-platform";
+import { spikeVerifiedPriceArchive } from "@/data/spike-verified-price-archive";
 import {
   commodities,
   weeklySeries,
@@ -33,7 +34,7 @@ export type PublicLatestItem = {
 };
 
 export type PublicHistoryItem = Omit<PublicLatestItem, "valueUsdPerMt"> & {
-  status: "published";
+  status: "published" | "verified_archive";
   valueUsdPerMt: number;
 };
 
@@ -317,7 +318,7 @@ async function getDatabaseHistoryData(): Promise<PublicHistoryItem[]> {
     },
   });
 
-  return rows
+  const publishedRows: PublicHistoryItem[] = rows
     .filter((row) => {
       const basisConfig = getDeliveryBasisConfigForCommodityCode(
         row.commodity.code,
@@ -347,6 +348,74 @@ async function getDatabaseHistoryData(): Promise<PublicHistoryItem[]> {
       respondents: activeRespondentCount,
       status: "published",
     }));
+
+  return activeIndex.id === "spike-ua"
+    ? mergeSpikeVerifiedArchiveHistory(publishedRows, activeRespondentCount)
+    : publishedRows;
+}
+
+function mergeSpikeVerifiedArchiveHistory(
+  publishedRows: PublicHistoryItem[],
+  activeRespondentCount: number,
+): PublicHistoryItem[] {
+  const existingKeys = new Set(
+    publishedRows.map((row) => `${row.date}:${row.commodityId}`),
+  );
+  const archiveRows = spikeVerifiedPriceArchive
+    .filter((row) => !existingKeys.has(`${row.date}:${row.commodityId}`))
+    .flatMap((row): PublicHistoryItem[] => {
+      const commodity = commodities.find((item) => item.id === row.commodityId);
+
+      if (!commodity) {
+        return [];
+      }
+
+      const basis = getDeliveryBasisConfigForCommodityCode(
+        commodity.code,
+        activeIndex,
+      ).name;
+
+      return [
+        {
+          basis,
+          changeAbs: 0,
+          changePct: 0,
+          commodityCode: commodity.code,
+          commodityId: commodity.id,
+          commodityNameEn: commodity.name.en,
+          commodityNameUk: commodity.name.uk,
+          date: row.date,
+          respondents: activeRespondentCount,
+          status: "verified_archive",
+          valueUsdPerMt: row.valueUsdPerMt,
+        },
+      ];
+    });
+
+  return recomputeHistoryChanges([...archiveRows, ...publishedRows]);
+}
+
+function recomputeHistoryChanges(rows: PublicHistoryItem[]) {
+  const previousByCommodityId = new Map<CommodityId, PublicHistoryItem>();
+
+  return rows
+    .sort((first, second) =>
+      first.date === second.date
+        ? first.commodityId.localeCompare(second.commodityId)
+        : first.date.localeCompare(second.date),
+    )
+    .map((row) => {
+      const previous = previousByCommodityId.get(row.commodityId);
+      const change = computeChange(row.valueUsdPerMt, previous?.valueUsdPerMt ?? null);
+      const next = {
+        ...row,
+        changeAbs: formatPublicChangeAbs(change.changeAbs),
+        changePct: change.changePct,
+      };
+
+      previousByCommodityId.set(row.commodityId, next);
+      return next;
+    });
 }
 
 function roundOne(value: number) {

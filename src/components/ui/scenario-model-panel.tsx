@@ -36,7 +36,16 @@ type MarketDriver = {
   value: string;
 };
 
+type SeasonalityRead = {
+  averageMove: number | null;
+  bestMove: number | null;
+  bestYear: number | null;
+  confidence: number | null;
+  lookbackYears: number;
+};
+
 const periods = [30, 60, 90, 180] as const;
+const HISTORY_END_X = 82;
 
 const spreadDefinitions: SpreadDefinition[] = [
   {
@@ -102,8 +111,8 @@ export function ScenarioModelPanel({
     [period, series],
   );
   const read = useMemo(
-    () => buildMarketRead(sample, text, mode),
-    [mode, sample, text],
+    () => buildMarketRead(series, sample, text, mode),
+    [mode, sample, series, text],
   );
   const chartValues =
     sample.length > 0
@@ -111,6 +120,12 @@ export function ScenarioModelPanel({
           point.value,
           read.normalLower,
           read.normalUpper,
+          read.seasonality.averageMove === null
+            ? point.value
+            : point.value + read.seasonality.averageMove,
+          read.seasonality.bestMove === null
+            ? point.value
+            : point.value + read.seasonality.bestMove,
         ])
       : [0, read.normalLower, read.normalUpper];
   const range = getPaddedRange(Math.min(...chartValues), Math.max(...chartValues));
@@ -243,8 +258,8 @@ export function ScenarioModelPanel({
                 <rect
                   fill="rgba(57,255,20,0.08)"
                   height="72"
-                  width={recentWindowWidth(sample.length)}
-                  x={100 - recentWindowWidth(sample.length)}
+                  width={recentWindowWidth(sample.length, HISTORY_END_X)}
+                  x={HISTORY_END_X - recentWindowWidth(sample.length, HISTORY_END_X)}
                   y="14"
                 />
                 <polygon
@@ -257,6 +272,7 @@ export function ScenarioModelPanel({
                     read.normalUpper,
                     range.min,
                     range.max,
+                    HISTORY_END_X,
                   )}
                 />
                 <polyline
@@ -266,6 +282,7 @@ export function ScenarioModelPanel({
                     sample.map((point) => point.value),
                     range.min,
                     range.max,
+                    HISTORY_END_X,
                   )}
                   stroke="var(--color-lime)"
                   strokeLinecap="round"
@@ -274,13 +291,18 @@ export function ScenarioModelPanel({
                   vectorEffect="non-scaling-stroke"
                 />
                 <circle
-                  cx="100"
+                  cx={HISTORY_END_X}
                   cy={toChartY(sample.at(-1)?.value ?? 0, range.min, range.max)}
                   fill="#f8f8f2"
                   r="1.9"
                   stroke="var(--color-lime)"
                   strokeWidth="0.8"
                   vectorEffect="non-scaling-stroke"
+                />
+                <SeasonalityProjection
+                  latest={sample.at(-1)?.value ?? 0}
+                  range={range}
+                  seasonality={read.seasonality}
                 />
               </>
             ) : null}
@@ -371,6 +393,7 @@ function buildSpreadSeries(history: ScenarioSourcePoint[], spread: SpreadDefinit
 }
 
 function buildMarketRead(
+  series: MarketSeriesPoint[],
   sample: MarketSeriesPoint[],
   text: ReturnType<typeof getCopy>,
   mode: "commodity" | "spread",
@@ -380,7 +403,6 @@ function buildMarketRead(
   const first = sample[0]?.value ?? latest;
   const monthAgo = sample.at(-31)?.value ?? first;
   const change1d = roundOne(latest - previous);
-  const changePeriod = roundOne(latest - first);
   const change30d = roundOne(latest - monthAgo);
   const values = sample.map((point) => point.value);
   const average = averageValue(values);
@@ -393,9 +415,12 @@ function buildMarketRead(
   const normalLower = average - normalBand;
   const normalUpper = average + normalBand;
   const percentile = percentileRank(values, latest);
+  const seasonality = buildSeasonalityRead(series);
   const regime = getRegime(change1d, change30d, volatility, percentile, mode, text);
   const confidence =
-    sample.length >= 90
+    seasonality.confidence !== null && seasonality.confidence >= 72
+      ? text.confidenceHigh
+      : sample.length >= 90
       ? text.confidenceHigh
       : sample.length >= 30
         ? text.confidenceNormal
@@ -411,31 +436,56 @@ function buildMarketRead(
         value: formatSigned(change1d),
       },
       {
-        body: text.periodMoveBody(sample.length),
-        label: text.periodMove,
-        tone: changePeriod > 0 ? "green" : changePeriod < 0 ? "amber" : "blue",
-        value: formatSigned(changePeriod),
+        body: text.seasonalAverageBody(seasonality.lookbackYears),
+        label: text.seasonalAverage,
+        tone:
+          (seasonality.averageMove ?? 0) > 0
+            ? "green"
+            : (seasonality.averageMove ?? 0) < 0
+              ? "amber"
+              : "blue",
+        value:
+          seasonality.averageMove === null
+            ? text.noSeasonalData
+            : formatSigned(seasonality.averageMove),
       },
       {
-        body: text.volatilityBody,
-        label: text.volatility,
-        tone: volatility > 4 ? "amber" : "lime",
-        value: `${roundOne(volatility)} USD/t`,
+        body: text.similarYearBody(seasonality.bestYear),
+        label: text.similarYear,
+        tone:
+          (seasonality.bestMove ?? 0) > 0
+            ? "green"
+            : (seasonality.bestMove ?? 0) < 0
+              ? "amber"
+              : "blue",
+        value:
+          seasonality.bestMove === null
+            ? text.noSeasonalData
+            : formatSigned(seasonality.bestMove),
       },
       {
         body: text.contextBody(mode),
-        label: text.aiContext,
+        label: text.similarity,
         tone: "blue",
-        value: `${Math.round(percentile)}%`,
+        value:
+          seasonality.confidence === null
+            ? text.noSeasonalData
+            : `${Math.round(seasonality.confidence)}%`,
       },
     ] satisfies MarketDriver[],
     latestLabel: text.latestLabel(latest),
     normalLower,
     normalUpper,
     regime: regime.title,
+    seasonality,
     summary: [
       text.summaryCurrent(latest, percentile),
-      text.summaryMonth(change30d),
+      text.summarySeasonal(seasonality.averageMove, seasonality.lookbackYears),
+      text.summarySimilarYear(
+        seasonality.bestYear,
+        seasonality.bestMove,
+        seasonality.confidence,
+      ),
       regime.body,
     ],
   };
@@ -490,6 +540,165 @@ function getRegime(
   };
 }
 
+function buildSeasonalityRead(series: MarketSeriesPoint[]): SeasonalityRead {
+  const latest = series.at(-1);
+
+  if (!latest) {
+    return {
+      averageMove: null,
+      bestMove: null,
+      bestYear: null,
+      confidence: null,
+      lookbackYears: 0,
+    };
+  }
+
+  const latestDate = new Date(`${latest.date}T00:00:00.000Z`);
+  const currentYear = latestDate.getUTCFullYear();
+  const currentDoy = getDayOfYear(latestDate);
+  const currentCurve = getWindowBeforeDay(series, currentYear, currentDoy, 30);
+  const priorYears = [...new Set(series.map((point) => getYear(point.date)))]
+    .filter((year) => year < currentYear)
+    .sort((first, second) => second - first);
+  const candidates = priorYears
+    .map((year) => {
+      const curve = getWindowBeforeDay(series, year, currentDoy, 30);
+      const move = getForwardMove(series, year, currentDoy, 30);
+      const confidence = scoreCurveSimilarity(currentCurve, curve);
+
+      return {
+        confidence,
+        move,
+        year,
+      };
+    })
+    .filter((candidate) => candidate.confidence !== null || candidate.move !== null);
+  const moveCandidates = candidates
+    .filter((candidate) => candidate.move !== null)
+    .slice(0, 3);
+  const bestCandidate = candidates
+    .filter((candidate) => candidate.confidence !== null)
+    .sort((first, second) => (second.confidence ?? 0) - (first.confidence ?? 0))[0];
+
+  return {
+    averageMove:
+      moveCandidates.length === 0
+        ? null
+        : roundOne(
+            moveCandidates.reduce((sum, candidate) => sum + (candidate.move ?? 0), 0) /
+              moveCandidates.length,
+          ),
+    bestMove:
+      bestCandidate?.move === null || bestCandidate?.move === undefined
+        ? null
+        : roundOne(bestCandidate.move),
+    bestYear: bestCandidate?.year ?? null,
+    confidence:
+      bestCandidate?.confidence === null || bestCandidate?.confidence === undefined
+        ? null
+        : Math.round(bestCandidate.confidence),
+    lookbackYears: moveCandidates.length,
+  };
+}
+
+function getWindowBeforeDay(
+  series: MarketSeriesPoint[],
+  year: number,
+  targetDoy: number,
+  lookbackDays: number,
+) {
+  return series.filter((point) => {
+    const date = new Date(`${point.date}T00:00:00.000Z`);
+
+    if (date.getUTCFullYear() !== year) {
+      return false;
+    }
+
+    const doy = getDayOfYear(date);
+    return doy >= targetDoy - lookbackDays && doy <= targetDoy;
+  });
+}
+
+function getForwardMove(
+  series: MarketSeriesPoint[],
+  year: number,
+  targetDoy: number,
+  forwardDays: number,
+) {
+  const yearPoints = series
+    .filter((point) => getYear(point.date) === year)
+    .map((point) => ({
+      ...point,
+      doy: getDayOfYear(new Date(`${point.date}T00:00:00.000Z`)),
+    }));
+  const start = getClosestPointByDoy(yearPoints, targetDoy, 10);
+  const future = getClosestPointByDoy(yearPoints, targetDoy + forwardDays, 14);
+
+  if (!start || !future) {
+    return null;
+  }
+
+  return future.value - start.value;
+}
+
+function getClosestPointByDoy(
+  points: Array<MarketSeriesPoint & { doy: number }>,
+  targetDoy: number,
+  tolerance: number,
+) {
+  return points
+    .map((point) => ({
+      distance: Math.abs(point.doy - targetDoy),
+      point,
+    }))
+    .filter((entry) => entry.distance <= tolerance)
+    .sort((first, second) => first.distance - second.distance)[0]?.point;
+}
+
+function scoreCurveSimilarity(
+  currentCurve: MarketSeriesPoint[],
+  candidateCurve: MarketSeriesPoint[],
+) {
+  if (currentCurve.length < 6 || candidateCurve.length < 6) {
+    return null;
+  }
+
+  const current = resampleNormalizedCurve(currentCurve, 16);
+  const candidate = resampleNormalizedCurve(candidateCurve, 16);
+  const mae =
+    current.reduce((sum, value, index) => sum + Math.abs(value - candidate[index]), 0) /
+    current.length;
+
+  return Math.max(0, Math.min(100, 100 - mae * 42));
+}
+
+function resampleNormalizedCurve(points: MarketSeriesPoint[], size: number) {
+  const values = points.map((point) => point.value);
+  const first = values[0] ?? 0;
+  const deltas = values.map((value) => value - first);
+  const maxAbs = Math.max(...deltas.map((value) => Math.abs(value)), 1);
+  const normalized = deltas.map((value) => value / maxAbs);
+
+  return Array.from({ length: size }, (_, index) => {
+    const rawIndex = (index / Math.max(size - 1, 1)) * Math.max(normalized.length - 1, 0);
+    const lower = Math.floor(rawIndex);
+    const upper = Math.min(Math.ceil(rawIndex), normalized.length - 1);
+    const ratio = rawIndex - lower;
+
+    return (normalized[lower] ?? 0) * (1 - ratio) + (normalized[upper] ?? 0) * ratio;
+  });
+}
+
+function getDayOfYear(date: Date) {
+  const start = Date.UTC(date.getUTCFullYear(), 0, 0);
+  const diff = date.getTime() - start;
+  return Math.floor(diff / 86_400_000);
+}
+
+function getYear(date: string) {
+  return Number.parseInt(date.slice(0, 4), 10);
+}
+
 function standardDeviation(values: number[]) {
   if (values.length === 0) {
     return 0;
@@ -530,10 +739,15 @@ function getPaddedRange(min: number, max: number) {
   };
 }
 
-function toChartPoints(values: number[], min: number, max: number) {
+function toChartPoints(
+  values: number[],
+  min: number,
+  max: number,
+  endX = 100,
+) {
   return values
     .map((value, index) => {
-      const x = values.length === 1 ? 0 : (index / (values.length - 1)) * 100;
+      const x = values.length === 1 ? 0 : (index / (values.length - 1)) * endX;
       const y = toChartY(value, min, max);
       return `${x},${y}`;
     })
@@ -546,14 +760,15 @@ function toBandPoints(
   upper: number,
   min: number,
   max: number,
+  endX = 100,
 ) {
   const upperPoints = sample.map((_, index) => {
-    const x = sample.length === 1 ? 0 : (index / (sample.length - 1)) * 100;
+    const x = sample.length === 1 ? 0 : (index / (sample.length - 1)) * endX;
     return `${x},${toChartY(upper, min, max)}`;
   });
   const lowerPoints = sample
     .map((_, index) => {
-      const x = sample.length === 1 ? 0 : (index / (sample.length - 1)) * 100;
+      const x = sample.length === 1 ? 0 : (index / (sample.length - 1)) * endX;
       return `${x},${toChartY(lower, min, max)}`;
     })
     .reverse();
@@ -566,8 +781,42 @@ function toChartY(value: number, min: number, max: number) {
   return 84 - ((value - min) / range) * 68;
 }
 
-function recentWindowWidth(length: number) {
-  return Math.min(38, (Math.min(14, length) / Math.max(length, 1)) * 100);
+function recentWindowWidth(length: number, endX = 100) {
+  return Math.min(endX * 0.38, (Math.min(14, length) / Math.max(length, 1)) * endX);
+}
+
+function SeasonalityProjection({
+  latest,
+  range,
+  seasonality,
+}: {
+  latest: number;
+  range: { max: number; min: number };
+  seasonality: SeasonalityRead;
+}) {
+  const projections = [
+    { move: seasonality.averageMove, stroke: "var(--spike-accent)" },
+    { move: seasonality.bestMove, stroke: "#f8f8f2" },
+  ].filter((item): item is { move: number; stroke: string } => item.move !== null);
+
+  return (
+    <>
+      {projections.map((projection, index) => (
+        <line
+          key={`${projection.stroke}-${index}`}
+          stroke={projection.stroke}
+          strokeDasharray="4 4"
+          strokeLinecap="round"
+          strokeWidth={index === 0 ? "2.1" : "1.5"}
+          vectorEffect="non-scaling-stroke"
+          x1={HISTORY_END_X}
+          x2="100"
+          y1={toChartY(latest, range.min, range.max)}
+          y2={toChartY(latest + projection.move, range.min, range.max)}
+        />
+      ))}
+    </>
+  );
 }
 
 function GridLines() {
@@ -641,6 +890,7 @@ function getCopy(locale: Locale) {
       latestLabel: (value: number) => `${roundOne(value)} USD/t`,
       marketRegime: "Режим ринку",
       normalRange: "нормальний діапазон",
+      noSeasonalData: "н/д",
       periodMove: "Рух періоду",
       periodMoveBody: (days: number) => `Зміна за останні ${days} точок архіву.`,
       publishedLine: "опублікована історія",
@@ -665,10 +915,33 @@ function getCopy(locale: Locale) {
         "Різниця між позиціями розширюється, що підсвічує зміну відносної сили.",
       spreadLabel: "Конкретний спред",
       spreadMode: "Спред",
+      seasonalAverage: "Сезонність 3Y",
+      seasonalAverageBody: (years: number) =>
+        years > 0
+          ? `Середній рух наступних 30 днів за ${years} попередні роки.`
+          : "Потрібно більше історії для сезонного сценарію.",
+      similarYear: "Схожий рік",
+      similarYearBody: (year: number | null) =>
+        year === null
+          ? "Схожий сезонний рік ще не визначено."
+          : `Найближча форма сезонності зараз: ${year}.`,
+      similarity: "Схожість",
       summaryCurrent: (value: number, percentile: number) =>
         `Поточний рівень ${roundOne(value)} USD/t знаходиться приблизно на ${Math.round(percentile)}-му percentile вибраного архівного вікна.`,
       summaryMonth: (change: number) =>
         `30-денний імпульс: ${formatSigned(change)}. AI читає це як структурний рух, якщо він підтверджений кількома точками.`,
+      summarySeasonal: (move: number | null, years: number) =>
+        move === null
+          ? "Сезонний сценарій поки не рахується: у verified archive недостатньо зіставних майбутніх точок."
+          : `За сезонністю ${years} попередніх років наступні 30 днів давали середній рух ${formatSigned(move)}.`,
+      summarySimilarYear: (
+        year: number | null,
+        move: number | null,
+        confidence: number | null,
+      ) =>
+        year === null || move === null
+          ? "AI ще не бачить достатньо близького історичного року для окремого сценарію."
+          : `Найближча форма до поточного руху: ${year} (${Math.round(confidence ?? 0)}% схожості); її наступний 30-денний рух: ${formatSigned(move)}.`,
       title: "AI Market Read",
       volatility: "Volatility",
       volatilityBody:
@@ -698,6 +971,7 @@ function getCopy(locale: Locale) {
     latestLabel: (value: number) => `${roundOne(value)} USD/t`,
     marketRegime: "Market regime",
     normalRange: "normal range",
+    noSeasonalData: "n/a",
     periodMove: "Period move",
     periodMoveBody: (days: number) => `Change across the latest ${days} archive points.`,
     publishedLine: "published history",
@@ -722,10 +996,33 @@ function getCopy(locale: Locale) {
       "The gap between positions is widening, highlighting a change in relative strength.",
     spreadLabel: "Specific spread",
     spreadMode: "Spread",
+    seasonalAverage: "Seasonality 3Y",
+    seasonalAverageBody: (years: number) =>
+      years > 0
+        ? `Average next-30-day move across ${years} prior years.`
+        : "More history is needed for a seasonal scenario.",
+    similarYear: "Similar year",
+    similarYearBody: (year: number | null) =>
+      year === null
+        ? "A comparable seasonal year is not available yet."
+        : `Closest seasonal shape right now: ${year}.`,
+    similarity: "Similarity",
     summaryCurrent: (value: number, percentile: number) =>
       `Current level ${roundOne(value)} USD/t sits near the ${Math.round(percentile)}th percentile of the selected archive window.`,
     summaryMonth: (change: number) =>
       `30-day impulse: ${formatSigned(change)}. The AI read treats it as structural only when confirmed by several points.`,
+    summarySeasonal: (move: number | null, years: number) =>
+      move === null
+        ? "The seasonal scenario is not calculated yet: the verified archive lacks comparable forward points."
+        : `Across ${years} prior seasonal years, the next 30 days averaged ${formatSigned(move)}.`,
+    summarySimilarYear: (
+      year: number | null,
+      move: number | null,
+      confidence: number | null,
+    ) =>
+      year === null || move === null
+        ? "The AI read does not yet find a close enough historical year for a separate scenario."
+        : `Closest current seasonal shape: ${year} (${Math.round(confidence ?? 0)}% similarity); its next-30-day move was ${formatSigned(move)}.`,
     title: "AI Market Read",
     volatility: "Volatility",
     volatilityBody:

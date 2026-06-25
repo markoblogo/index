@@ -1154,9 +1154,9 @@ function getAnalyticsCopy(locale: Locale) {
         "Порівнюйте динаміку спотових позицій, аналізуйте експортні та переробні базиси, відстежуйте волатильність і досліджуйте AI-assisted market read на основі опублікованих даних SPIKE SPOT INDEX.",
       heroTitle: "Аналітика SPIKE SPOT INDEX",
       scenarioBody:
-        "Публічний AI Market Read перетворює архів SPIKE SPOT INDEX на короткий ринковий висновок: режим ринку, поточний імпульс, відхилення від нормального діапазону, volatility та поведінку спредів. Це демонструє, як AI може читати накопичені дані і пояснювати рух опублікованого benchmark без доступу до індивідуальних подань респондентів.",
+        "Публічний AI Market Read зіставляє поточну ціну з verified historical archive: сезонністю попередніх років, схожістю з найближчим історичним роком, коротким імпульсом і спредами. Це демонструє, як AI може читати накопичені дані і формувати обережний сезонний сценарій без доступу до індивідуальних подань респондентів.",
       scenarioDisclaimer:
-        "AI-assisted outputs пояснюють уже опубліковані дані. Вони не є інвестиційною порадою, торговою рекомендацією або прогнозом майбутніх цін.",
+        "AI-assisted outputs пояснюють уже опубліковані й verified archive data. Сезонний сценарій не є інвестиційною порадою, торговою рекомендацією або гарантованим прогнозом майбутніх цін.",
       scenarioEyebrow: "AI-assisted analytics",
       scenarioTitle: "AI Market Intelligence Lab",
       spreadDescription:
@@ -1333,9 +1333,9 @@ function getAnalyticsCopy(locale: Locale) {
     historyPublicLimit:
       "The recent-publications table stays compact, while charts and analytical views can use the connected core-position archive from 2025-09-01.",
     scenarioBody:
-      "The public AI Market Read turns the SPIKE SPOT INDEX archive into a concise market interpretation: regime, current impulse, deviation from the normal range, volatility and spread behaviour. It shows how AI can read accumulated benchmark data and explain published market movement without accessing individual respondent submissions.",
+      "The public AI Market Read compares the current price with the verified historical archive: prior-year seasonality, the closest historical-year shape, short momentum and spreads. It shows how AI can read accumulated data and form a cautious seasonal scenario without accessing individual respondent submissions.",
     scenarioDisclaimer:
-      "AI-assisted outputs explain already published data. They are not investment advice, trading recommendations or forecasts of future prices.",
+      "AI-assisted outputs explain already published and verified archive data. The seasonal scenario is not investment advice, a trading recommendation or a guaranteed forecast of future prices.",
     scenarioEyebrow: "AI-assisted analytics",
     scenarioTitle: "AI Market Intelligence Lab",
     spreadDescription:

@@ -12,5 +12,3 @@ pnpm-debug.log*
 tsconfig.tsbuildinfo
 .vercel
 .local/
-data/spike-historical/raw/
-data/spike-historical/preview/
