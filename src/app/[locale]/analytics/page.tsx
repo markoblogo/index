@@ -171,7 +171,8 @@ export default async function AnalyticsPage({
       queryParams.experimentalAnalytics === "1");
   const showAiAnalytics =
     showExperimentalAnalytics &&
-    (process.env.NEXT_PUBLIC_ANALYTICS_AI_BLOCKS === "true" ||
+    queryParams.aiAnalytics !== "0" &&
+    (process.env.NEXT_PUBLIC_ANALYTICS_AI_BLOCKS !== "false" ||
       queryParams.aiAnalytics === "1");
 
   return (
