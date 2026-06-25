@@ -146,6 +146,13 @@ const operatingStack = [
   "Public embeds, landing pages and partner distribution",
 ] as const;
 
+const mediaHubSignals = [
+  "Daily briefs",
+  "Weekly and monthly reports",
+  "Source monitoring",
+  "Telegram material intake",
+] as const;
+
 export function PlatformLanding() {
   const partnerDeck = getTenantAssetUrl("1d3x.partnerDeck.pdf");
 
@@ -154,6 +161,25 @@ export function PlatformLanding() {
       <script
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         type="application/ld+json"
+      />
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+            @keyframes id3x-drift {
+              0% { transform: translate3d(-2%, 1%, 0) scale(1); opacity: .42; }
+              50% { transform: translate3d(5%, -3%, 0) scale(1.08); opacity: .72; }
+              100% { transform: translate3d(1%, 4%, 0) scale(.96); opacity: .5; }
+            }
+            @keyframes id3x-scan {
+              0% { transform: translateX(-35%); opacity: 0; }
+              18% { opacity: .55; }
+              100% { transform: translateX(135%); opacity: 0; }
+            }
+            @media (prefers-reduced-motion: reduce) {
+              .id3x-animate { animation: none !important; }
+            }
+          `,
+        }}
       />
       <header className="sticky top-0 z-40 border-b border-black/10 bg-[#f3f0e8]/90 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5 sm:px-8">
@@ -190,6 +216,9 @@ export function PlatformLanding() {
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_76%_18%,rgba(214,255,88,0.22),transparent_27%),radial-gradient(circle_at_15%_78%,rgba(255,255,255,0.12),transparent_28%),linear-gradient(135deg,#050505_0%,#0b1511_48%,#050505_100%)]" />
         <div className="absolute inset-0 -z-10 opacity-[0.16] [background-image:linear-gradient(rgba(255,255,255,.18)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.18)_1px,transparent_1px)] [background-size:72px_72px]" />
         <div className="absolute right-[-18rem] top-20 -z-10 h-[42rem] w-[42rem] rounded-full border border-[#d6ff58]/30" />
+        <div className="id3x-animate absolute left-[8%] top-[18%] -z-10 h-44 w-44 rounded-full bg-[#d6ff58]/20 blur-3xl [animation:id3x-drift_13s_ease-in-out_infinite_alternate]" />
+        <div className="id3x-animate absolute bottom-[12%] right-[18%] -z-10 h-60 w-60 rounded-full bg-white/10 blur-3xl [animation:id3x-drift_17s_ease-in-out_infinite_alternate-reverse]" />
+        <div className="id3x-animate absolute inset-y-0 left-0 -z-10 w-1/3 bg-gradient-to-r from-transparent via-[#d6ff58]/10 to-transparent [animation:id3x-scan_9s_linear_infinite]" />
         <div className="mx-auto grid min-h-[calc(100svh-4rem)] max-w-7xl items-center gap-10 px-5 py-16 sm:px-8 lg:grid-cols-[1.08fr_0.92fr] lg:py-20">
           <div>
             <p className="max-w-xl text-xs font-black uppercase tracking-[0.32em] text-[#d6ff58]">
@@ -203,21 +232,21 @@ export function PlatformLanding() {
               price workflows, public benchmark pages, MediaHub context and
               partner distribution in one launch system.
             </p>
-            <div className="mt-10 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <a
-                className="inline-flex h-12 items-center justify-center rounded-full border border-[#d6ff58] bg-[#d6ff58] px-6 text-sm font-black uppercase tracking-[0.12em] text-black transition hover:bg-white"
+                className="inline-flex h-12 items-center justify-center whitespace-nowrap rounded-full border border-[#d6ff58] bg-[#d6ff58] px-5 text-center text-[0.68rem] font-black uppercase tracking-[0.08em] text-black transition hover:bg-white sm:text-xs"
                 href="#contact"
               >
                 Partner with us
               </a>
               <a
-                className="inline-flex h-12 items-center justify-center rounded-full border border-white/20 px-6 text-sm font-black uppercase tracking-[0.12em] text-white transition hover:border-white"
+                className="inline-flex h-12 items-center justify-center whitespace-nowrap rounded-full border border-white/20 px-5 text-center text-[0.68rem] font-black uppercase tracking-[0.08em] text-white transition hover:border-white sm:text-xs"
                 href="#indices"
               >
                 View live indices
               </a>
               <Link
-                className="inline-flex h-12 items-center justify-center rounded-full border border-white/20 px-6 text-sm font-black uppercase tracking-[0.12em] text-white transition hover:border-[#d6ff58] hover:text-[#d6ff58]"
+                className="inline-flex h-12 items-center justify-center whitespace-nowrap rounded-full border border-white/20 px-5 text-center text-[0.68rem] font-black uppercase tracking-[0.08em] text-white transition hover:border-[#d6ff58] hover:text-[#d6ff58] sm:text-xs"
                 href="/media-hub"
               >
                 Open media hub
@@ -312,6 +341,59 @@ export function PlatformLanding() {
         </div>
       </section>
 
+      <section className="relative isolate overflow-hidden bg-[#050505] text-white">
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_72%_42%,rgba(214,255,88,0.18),transparent_28%),linear-gradient(180deg,#050505_0%,#0b120f_100%)]" />
+        <div className="mx-auto grid max-w-7xl gap-10 px-5 py-16 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:py-24">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.28em] text-[#d6ff58]">
+              MediaHub intelligence layer
+            </p>
+            <h2 className="mt-5 text-5xl font-black leading-[0.92] tracking-[-0.05em] sm:text-7xl">
+              Market context, not content noise.
+            </h2>
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-white/62">
+              MediaHub monitors relevant market sources, accepts analyst
+              materials through Telegram and turns the flow into daily, weekly
+              and monthly briefs for each index franchise.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              {mediaHubSignals.map((signal) => (
+                <span
+                  className="rounded-full border border-white/15 px-4 py-2 text-[0.68rem] font-black uppercase tracking-[0.12em] text-white/70"
+                  key={signal}
+                >
+                  {signal}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="relative min-h-[26rem] overflow-hidden rounded-[2rem] border border-white/12 bg-white/[0.045] p-6">
+            <div className="absolute inset-0 opacity-[0.18] [background-image:linear-gradient(rgba(214,255,88,.28)_1px,transparent_1px),linear-gradient(90deg,rgba(214,255,88,.28)_1px,transparent_1px)] [background-size:44px_44px]" />
+            <div className="id3x-animate absolute left-8 top-10 h-28 w-28 rounded-full bg-[#d6ff58]/30 blur-2xl [animation:id3x-drift_10s_ease-in-out_infinite_alternate]" />
+            <div className="relative grid gap-4">
+              {[
+                ["Monitoring feed", "News, blogs, Telegram, APIs and manual files"],
+                ["Report engine", "Daily / weekly / monthly summaries"],
+                ["Distribution", "Website, Telegram and partner channels"],
+              ].map(([title, text], index) => (
+                <div
+                  className="rounded-[1.25rem] border border-white/12 bg-black/35 p-5 backdrop-blur"
+                  key={title}
+                >
+                  <p className="text-xs font-black text-[#d6ff58]">
+                    0{index + 1}
+                  </p>
+                  <h3 className="mt-3 text-2xl font-black tracking-[-0.03em]">
+                    {title}
+                  </h3>
+                  <p className="mt-2 text-sm leading-6 text-white/58">{text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="border-y border-black/10 bg-[#f3f0e8] text-black" id="indices">
         <div className="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:py-20">
           <div className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
@@ -391,9 +473,9 @@ export function PlatformLanding() {
                   </p>
                 ))}
               </div>
-              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <div className="mt-6 flex flex-col gap-3 min-[1180px]:flex-row">
                 <a
-                  className="inline-flex items-center justify-center rounded-full border border-[#d6ff58] bg-[#d6ff58] px-5 py-3 text-xs font-black uppercase tracking-[0.12em] text-black transition hover:bg-white"
+                  className="inline-flex h-11 items-center justify-center whitespace-nowrap rounded-full border border-[#d6ff58] bg-[#d6ff58] px-4 text-center text-[0.66rem] font-black uppercase tracking-[0.08em] text-black transition hover:bg-white"
                   href={partnerDeck}
                   rel="noopener noreferrer"
                   target="_blank"
@@ -401,19 +483,19 @@ export function PlatformLanding() {
                   Watch presentation
                 </a>
                 <a
-                  className="inline-flex items-center justify-center rounded-full border border-white/20 px-5 py-3 text-xs font-black uppercase tracking-[0.12em] text-white transition hover:border-[#d6ff58] hover:text-[#d6ff58]"
+                  className="inline-flex h-11 items-center justify-center whitespace-nowrap rounded-full border border-white/20 px-4 text-center text-[0.66rem] font-black uppercase tracking-[0.08em] text-white transition hover:border-[#d6ff58] hover:text-[#d6ff58]"
                   download
                   href={partnerDeck}
                 >
-                  Download partner deck
+                  Download deck
+                </a>
+                <a
+                  className="inline-flex h-11 items-center justify-center whitespace-nowrap rounded-full border border-white/20 px-4 text-center text-[0.66rem] font-black uppercase tracking-[0.08em] text-white transition hover:border-[#d6ff58] hover:text-[#d6ff58]"
+                  href="#contact"
+                >
+                  Become partner
                 </a>
               </div>
-              <a
-                className="mt-3 inline-flex items-center justify-center rounded-full border border-white/20 px-5 py-3 text-xs font-black uppercase tracking-[0.12em] text-white transition hover:border-[#d6ff58] hover:text-[#d6ff58] sm:w-fit"
-                href="#contact"
-              >
-                Become a partner
-              </a>
             </div>
           </div>
         </div>
@@ -500,7 +582,7 @@ export function PlatformLanding() {
             </a>
           </div>
           <div className="rounded-[1.5rem] border border-black/10 bg-white p-4 shadow-xl shadow-black/5 sm:p-5">
-            <ContactForm />
+            <ContactForm tone="light" />
           </div>
         </div>
       </section>
@@ -679,7 +761,7 @@ function PlatformLogo({
       priority
       src={
         variant === "dark"
-          ? "/brand/1d3x-logo.webp"
+          ? "/brand/1d3x-logo-dark-transparent.webp"
           : "/brand/1d3x-logo-white.webp"
       }
       width={2140}
