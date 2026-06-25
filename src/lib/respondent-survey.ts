@@ -77,11 +77,6 @@ const labels = {
         : "Submit today’s CPT UA Black Sea price indicatives for your company. Individual submissions are used for index calculation and are not published publicly.",
     notPublished: "Not published",
     price: "Price",
-    priceHintLines: [
-      "Grains Export and Oilseeds Export: USD/t, excl. VAT",
-      "Oilseeds crush: USD/t, incl. VAT",
-      "Use the exact basis shown under each position",
-    ],
     publication: "Publication",
     submitLoading: "Submitting...",
     saveDraft: "Save as draft",
@@ -122,11 +117,6 @@ const labels = {
         : "Подайте сьогоднішні цінові індикативи CPT UA Black Sea від вашої компанії. Індивідуальні значення використовуються для розрахунку індексу і не публікуються відкрито.",
     notPublished: "Не опубліковано",
     price: "Ціна",
-    priceHintLines: [
-      "Grains Export та Oilseeds Export: USD/т, без ПДВ",
-      "Oilseeds crush: USD/т, з ПДВ",
-      "Орієнтуйтеся на точний базис під кожною позицією",
-    ],
     publication: "Публікація",
     submitLoading: "Надсилаємо...",
     saveDraft: "Зберегти чернетку",

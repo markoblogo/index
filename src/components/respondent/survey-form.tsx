@@ -199,7 +199,7 @@ export function RespondentSurveyForm({
                   {labels.price}
                 </span>
                 <span className="grid gap-0.5 text-[0.68rem] font-semibold leading-4 text-black/50">
-                  {labels.priceHintLines.map((line) => (
+                  {getPriceHintLines(commodity.category, locale).map((line) => (
                     <span key={line}>• {line}</span>
                   ))}
                 </span>
@@ -270,6 +270,20 @@ function formatCategoryLabel(category: string, locale: SurveyLocale) {
   }
 
   return locale === "uk" ? "Grains Export" : "Grains Export";
+}
+
+function getPriceHintLines(category: string, locale: SurveyLocale) {
+  const isCrush = category === "processors";
+
+  if (locale === "uk") {
+    return isCrush
+      ? ["В USD/т з ПДВ (переробка)", "Поставка протягом найближчих 30 днів від сьогодні"]
+      : ["В USD/т без ПДВ (експорт)", "Поставка протягом найближчих 30 днів від сьогодні"];
+  }
+
+  return isCrush
+    ? ["In USD/t incl. VAT (crush)", "Delivery within the next 30 days from today"]
+    : ["In USD/t excl. VAT (export)", "Delivery within the next 30 days from today"];
 }
 
 function CloseButton() {
