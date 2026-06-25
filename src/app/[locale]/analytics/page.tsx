@@ -141,7 +141,11 @@ export default async function AnalyticsPage({
   searchParams,
 }: {
   params: Promise<{ locale: Locale }>;
-  searchParams: Promise<{ experimentalAnalytics?: string; volatilityWindow?: string }>;
+  searchParams: Promise<{
+    aiAnalytics?: string;
+    experimentalAnalytics?: string;
+    volatilityWindow?: string;
+  }>;
 }) {
   const [{ locale }, queryParams] = await Promise.all([params, searchParams]);
   const copy = getAnalyticsCopy(locale);
@@ -165,6 +169,10 @@ export default async function AnalyticsPage({
     hasHistory &&
     (process.env.NEXT_PUBLIC_ANALYTICS_EXPERIMENTAL_BLOCKS === "true" ||
       queryParams.experimentalAnalytics === "1");
+  const showAiAnalytics =
+    showExperimentalAnalytics &&
+    (process.env.NEXT_PUBLIC_ANALYTICS_AI_BLOCKS === "true" ||
+      queryParams.aiAnalytics === "1");
 
   return (
     <main
@@ -233,6 +241,7 @@ export default async function AnalyticsPage({
 
       {showExperimentalAnalytics ? (
         <ExperimentalAnalyticsSectionAsync
+          enableAiAnalytics={showAiAnalytics}
           history={history}
           instruments={commodities.map((commodity) => ({
             id: commodity.id,

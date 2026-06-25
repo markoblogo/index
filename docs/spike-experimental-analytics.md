@@ -15,8 +15,25 @@ Enable it with either:
 - `Spread Leaderboard`: predefined SPIKE-relevant spreads ranked by z-score and recent movement.
 - `Data Quality & Confidence`: observation count, stale rows, abnormal movements and confidence buckets.
 
+## AI Analytics Preview
+
+The second experimental layer is gated separately and only appears when the base experimental layer is enabled.
+
+Enable it with either:
+
+- `NEXT_PUBLIC_ANALYTICS_AI_BLOCKS=true`
+- `/uk/analytics?experimentalAnalytics=1&aiAnalytics=1`
+
+Current provider mode is deterministic `none`. It does not call an LLM and does not send archive data to external AI providers. The layer builds an internal fact pack with evidence IDs, then renders:
+
+- anomaly explanation cards;
+- market regime map;
+- similar historical episodes;
+- daily / weekly AI market brief preview;
+- historical scenario cards.
+
 ## Limits
 
-This layer is not part of official SPIKE index methodology. It does not alter index calculation, publication, respondent collection, or public official values. It is deterministic analytics only: no LLM, no forecast, no trading recommendation.
+This layer is not part of official SPIKE index methodology. It does not alter index calculation, publication, respondent collection, or public official values. It is deterministic analytics only: no forecast and no trading recommendation.
 
 Use it as a public preview of analytical tooling around the historical archive and as a QA surface for unusual data patterns.
