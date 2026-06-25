@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import nextDynamic from "next/dynamic";
-import { ManualHelpCard } from "@/components/manual/manual-ui";
 import { SITE_CONFIG } from "@/lib/constants";
 import { allowMockFallback, hasDatabaseUrl } from "@/lib/db";
 import { getFxRates } from "@/lib/fx-rates";
@@ -9,7 +8,6 @@ import { getActiveIndexConfig } from "@/lib/index-platform";
 import { commodities, type Commodity, type CommodityId } from "@/lib/mock-data";
 import { getPublicHistoryData } from "@/lib/public-api-data";
 import { getActiveRespondentCountData } from "@/lib/respondent-directory-lazy";
-import { getSsiHelpBlock } from "@/lib/ssi-manual-content";
 
 export const dynamic = "force-dynamic";
 
@@ -205,11 +203,6 @@ export default async function AnalyticsPage({
       </section>
 
       <section className="mx-auto max-w-7xl px-6 py-6 lg:px-8 lg:py-7">
-        {isSpike ? (
-          <div className="mb-5">
-            <ManualHelpCard help={getSsiHelpBlock("analytics", locale)} />
-          </div>
-        ) : null}
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
           <p className="text-xs font-black uppercase tracking-[0.14em] text-black/55">
             {copy.volatilityWindowLabel}

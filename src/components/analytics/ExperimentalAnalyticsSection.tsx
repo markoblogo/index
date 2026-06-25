@@ -45,6 +45,9 @@ export function ExperimentalAnalyticsSection({ history, instruments }: Props) {
   const selectedInstrument =
     instruments.find((instrument) => instrument.id === selectedInstrumentId) ??
     instruments[0];
+  const selectedPulseRow =
+    pulseRows.find((row) => row.positionId === selectedInstrumentId) ??
+    pulseRows[0];
   const rangeStats = computeRangeForWindow(selectedSeries, rangeWindow);
   const seasonality = buildSeasonalitySeries(selectedSeries, seasonalityMode);
   const spreadDefinitions = useMemo(
@@ -84,7 +87,11 @@ export function ExperimentalAnalyticsSection({ history, instruments }: Props) {
         </div>
 
         <div className="mt-8 grid gap-5">
-          <MarketPulseHeatmap rows={pulseRows} />
+          <MarketPulseHeatmap
+            rows={pulseRows}
+            selectedPositionId={selectedPulseRow?.positionId ?? selectedInstrumentId}
+            setSelectedPositionId={setSelectedInstrumentId}
+          />
           <div className="grid gap-5 xl:grid-cols-[0.92fr_1.08fr]">
             <PriceRangeCard
               instruments={instruments}
@@ -114,55 +121,83 @@ export function ExperimentalAnalyticsSection({ history, instruments }: Props) {
 
 function MarketPulseHeatmap({
   rows,
+  selectedPositionId,
+  setSelectedPositionId,
 }: {
   rows: ReturnType<typeof buildMarketPulseRows>;
+  selectedPositionId: string;
+  setSelectedPositionId: (id: string) => void;
 }) {
+  const selectedRow =
+    rows.find((row) => row.positionId === selectedPositionId) ?? rows[0];
+
   return (
     <Panel
-      kicker="Market pulse heatmap"
-      subtitle="Один екран для денного, тижневого, місячного й квартального руху. Колір не є сигналом, це лише швидке маркування сили зміни."
+      kicker="Market pulse"
+      subtitle="Оберіть позицію у стрічці й дивіться її рух у чотирьох часових вікнах без довгої таблиці."
       title="Пульс ринку за позиціями"
     >
-      <div className="-mx-4 overflow-x-auto px-4 pb-1">
-        <table className="w-full min-w-[980px] text-left">
-          <thead>
-            <tr className="border-b border-white/12 text-[0.68rem] uppercase tracking-[0.16em] text-white/45">
-              {["Позиція", "1Д", "7Д", "30Д", "90Д", "Перцентиль", "Vol 30D", "Якість"].map(
-                (header) => (
-                  <th className="px-3 py-3 font-black" key={header}>
-                    {header}
-                  </th>
-                ),
-              )}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-white/10">
-            {rows.map((row) => (
-              <tr className="text-sm" key={row.positionId}>
-                <td className="px-3 py-3 font-black uppercase tracking-[0.04em]">
-                  {row.positionLabel}
-                  <span className="mt-1 block text-[0.68rem] font-semibold normal-case tracking-normal text-white/42">
-                    {row.latestDate} · {formatNumber(row.value)} USD/t
-                  </span>
-                </td>
-                <DeltaCell value={row.change1d.abs} />
-                <DeltaCell value={row.change7d.abs} />
-                <DeltaCell value={row.change30d.abs} />
-                <DeltaCell value={row.change90d.abs} />
-                <td className="px-3 py-3 font-black">
-                  {formatNullable(row.percentile, "%")}
-                </td>
-                <td className="px-3 py-3 font-black">
-                  {formatNullable(row.volatility30d, "%")}
-                </td>
-                <td className="px-3 py-3">
-                  <ConfidencePill confidence={row.confidence} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="-mx-1 overflow-x-auto px-1 pb-2 [scrollbar-width:thin]">
+        <div className="flex min-w-max gap-2">
+          {rows.map((row) => {
+            const isActive = row.positionId === selectedRow?.positionId;
+            return (
+              <button
+                className={`rounded-full border px-3 py-2 text-xs font-black uppercase tracking-[0.08em] transition ${
+                  isActive
+                    ? "border-[var(--spike-accent)] bg-[var(--spike-accent)] text-[#050505]"
+                    : "border-white/12 bg-black/55 text-white/64 hover:border-white/34"
+                }`}
+                key={row.positionId}
+                onClick={() => setSelectedPositionId(row.positionId)}
+                type="button"
+              >
+                {row.positionLabel}
+              </button>
+            );
+          })}
+        </div>
       </div>
+      {selectedRow ? (
+        <div className="mt-4 grid gap-4 rounded-[1.1rem] border border-white/10 bg-black/50 p-4 lg:grid-cols-[0.9fr_1.1fr]">
+          <div>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-[0.68rem] font-black uppercase tracking-[0.18em] text-white/42">
+                  Selected position
+                </p>
+                <h4 className="mt-2 text-2xl font-black uppercase leading-none">
+                  {selectedRow.positionLabel}
+                </h4>
+              </div>
+              <ConfidencePill confidence={selectedRow.confidence} />
+            </div>
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              <SmallMetric
+                label="Поточна ціна"
+                value={`${formatNumber(selectedRow.value)} USD/t`}
+              />
+              <SmallMetric label="Дата" value={selectedRow.latestDate} />
+              <SmallMetric
+                label="Перцентиль"
+                value={formatNullable(selectedRow.percentile, "%")}
+              />
+              <SmallMetric
+                label="Vol 30D"
+                value={formatNullable(selectedRow.volatility30d, "%")}
+              />
+            </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-4">
+            <PulseMoveCard label="1 день" value={selectedRow.change1d.abs} />
+            <PulseMoveCard label="7 днів" value={selectedRow.change7d.abs} />
+            <PulseMoveCard label="30 днів" value={selectedRow.change30d.abs} />
+            <PulseMoveCard label="90 днів" value={selectedRow.change90d.abs} />
+          </div>
+        </div>
+      ) : (
+        <EmptyState text="Поки немає доступних позицій для пульсу ринку." />
+      )}
     </Panel>
   );
 }
@@ -225,15 +260,31 @@ function PriceRangeCard({
 
       {rangeStats ? (
         <>
-          <RangeBar stats={rangeStats} />
-          <div className="mt-5 grid gap-3 sm:grid-cols-4">
-            <SmallMetric label="Current" value={`${formatNumber(rangeStats.current)} USD/t`} />
-            <SmallMetric label="Median" value={`${formatNumber(rangeStats.median)} USD/t`} />
-            <SmallMetric label="Percentile" value={`${formatNumber(rangeStats.percentile)}%`} />
+          <div className="mt-5 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+            <div>
+              <p className="text-[0.68rem] font-black uppercase tracking-[0.16em] text-white/42">
+                Поточне місце в історії
+              </p>
+              <p className="mt-2 text-4xl font-black leading-none text-[var(--spike-accent)]">
+                {formatNumber(rangeStats.percentile)}%
+              </p>
+              <p className="mt-2 text-xs font-semibold leading-5 text-white/46">
+                Значення вище приблизно {formatNumber(rangeStats.percentile)}% точок
+                у вибраному вікні.
+              </p>
+            </div>
             <SmallMetric
-              label="vs median"
+              label="Від медіани"
               value={`${formatSigned(rangeStats.distanceFromMedian)} USD/t`}
             />
+          </div>
+          <RangeBar stats={rangeStats} />
+          <div className="mt-4 grid gap-2 text-xs font-black uppercase tracking-[0.1em] text-white/52 sm:grid-cols-5">
+            <RangeLabel label="Min" value={rangeStats.min} />
+            <RangeLabel label="P25" value={rangeStats.p25} />
+            <RangeLabel label="Median" value={rangeStats.median} />
+            <RangeLabel label="P75" value={rangeStats.p75} />
+            <RangeLabel label="Max" value={rangeStats.max} />
           </div>
         </>
       ) : (
@@ -369,14 +420,41 @@ function DataQualityPanel({
   return (
     <Panel
       kicker="Data quality"
-      subtitle="Контроль покриття, свіжості та підозрілих стрибків, щоб відділяти аналітичний шум від корисної історії."
+      subtitle="Це QA-шар для аналітики: він не оцінює ринок, а показує, наскільки ряду можна довіряти для графіків і порівнянь."
       title="Якість даних і алерти"
     >
       <div className="grid gap-3 sm:grid-cols-4">
-        <SmallMetric label="Висока" value={String(counts.high)} />
-        <SmallMetric label="Середня" value={String(counts.medium)} />
-        <SmallMetric label="Низька" value={String(counts.low)} />
-        <SmallMetric label="Немає даних" value={String(counts.unavailable)} />
+        <QualityMetric
+          hint="Ряд має достатньо історії, актуальне значення і без критичних стрибків."
+          label="Готові для аналізу"
+          value={counts.high}
+        />
+        <QualityMetric
+          hint="Можна дивитися, але бажано перевірити покриття або свіжість."
+          label="Потребують уваги"
+          value={counts.medium}
+        />
+        <QualityMetric
+          hint="Краще не робити висновки без ручної перевірки."
+          label="Ризикові"
+          value={counts.low}
+        />
+        <QualityMetric
+          hint="Для позиції немає придатного історичного ряду."
+          label="Без даних"
+          value={counts.unavailable}
+        />
+      </div>
+      <div className="mt-4 rounded-[1rem] border border-white/10 bg-black/36 p-4">
+        <p className="text-[0.68rem] font-black uppercase tracking-[0.16em] text-white/42">
+          Що перевіряється
+        </p>
+        <div className="mt-3 grid gap-2 text-xs font-semibold leading-5 text-white/55 sm:grid-cols-2">
+          <span>• достатня кількість спостережень</span>
+          <span>• свіжа остання точка</span>
+          <span>• нульові або відʼємні ціни</span>
+          <span>• аномальні денні / 30Д стрибки</span>
+        </div>
       </div>
       <div className="mt-4 grid gap-2">
         {labeledAlerts.length > 0 ? (
@@ -394,10 +472,32 @@ function DataQualityPanel({
             </div>
           ))
         ) : (
-          <EmptyState text="Критичних алертів за поточними рядами немає." />
+          <EmptyState text="Критичних алертів за поточними рядами немає. Це означає, що експериментальні графіки не бачать очевидних технічних проблем у доступній історії." />
         )}
       </div>
     </Panel>
+  );
+}
+
+function QualityMetric({
+  hint,
+  label,
+  value,
+}: {
+  hint: string;
+  label: string;
+  value: number;
+}) {
+  return (
+    <div className="rounded-[1rem] border border-white/10 bg-black/42 p-3" title={hint}>
+      <p className="text-[0.64rem] font-black uppercase tracking-[0.14em] text-white/38">
+        {label}
+      </p>
+      <p className="mt-2 text-3xl font-black leading-none text-white">{value}</p>
+      <p className="mt-2 text-[0.68rem] font-semibold leading-4 text-white/42">
+        {hint}
+      </p>
+    </div>
   );
 }
 
@@ -464,31 +564,58 @@ function Select({
 function RangeBar({ stats }: { stats: NonNullable<ReturnType<typeof computeRangeForWindow>> }) {
   const span = stats.max - stats.min || 1;
   const pct = (value: number) => clamp(((value - stats.min) / span) * 100, 0, 100);
+  const markers = [
+    { label: "P25", value: stats.p25 },
+    { label: "Median", value: stats.median },
+    { label: "P75", value: stats.p75 },
+  ];
 
   return (
     <div className="mt-6">
-      <div className="relative h-14 rounded-full border border-white/12 bg-white/[0.045]">
+      <div className="relative h-24 rounded-[1.1rem] border border-white/12 bg-[linear-gradient(90deg,rgba(255,255,255,0.05),rgba(52,255,25,0.12),rgba(255,255,255,0.05))] px-4">
+        <div className="absolute left-4 right-4 top-1/2 h-px bg-white/18" />
         <div
-          className="absolute top-1/2 h-5 -translate-y-1/2 rounded-full bg-[var(--spike-accent)]/20"
-          style={{ left: `${pct(stats.p25)}%`, width: `${pct(stats.p75) - pct(stats.p25)}%` }}
+          className="absolute top-1/2 h-8 -translate-y-1/2 rounded-full border border-[var(--spike-accent)]/25 bg-[var(--spike-accent)]/12"
+          style={{
+            left: `calc(1rem + ${pct(stats.p25) * 0.94}%)`,
+            width: `${Math.max(5, (pct(stats.p75) - pct(stats.p25)) * 0.94)}%`,
+          }}
         />
-        {[stats.min, stats.median, stats.max].map((value) => (
+        {markers.map((marker) => (
           <span
-            className="absolute top-1/2 h-8 w-px -translate-y-1/2 bg-white/28"
-            key={value}
-            style={{ left: `${pct(value)}%` }}
-          />
+            className="absolute top-1/2 h-9 w-px -translate-y-1/2 bg-white/30"
+            key={marker.label}
+            style={{ left: `calc(1rem + ${pct(marker.value) * 0.94}%)` }}
+            title={`${marker.label}: ${formatNumber(marker.value)} USD/t`}
+          >
+            <span className="absolute -top-6 -translate-x-1/2 text-[0.62rem] font-black uppercase tracking-[0.1em] text-white/42">
+              {marker.label}
+            </span>
+          </span>
         ))}
         <span
-          className="absolute top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-black bg-[var(--spike-accent)] shadow-[0_0_22px_rgba(52,255,25,0.55)]"
-          style={{ left: `${pct(stats.current)}%` }}
+          className="absolute top-1/2 h-12 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--spike-accent)] shadow-[0_0_24px_rgba(52,255,25,0.65)]"
+          style={{ left: `calc(1rem + ${pct(stats.current) * 0.94}%)` }}
           title={`Current: ${formatNumber(stats.current)} USD/t`}
-        />
+        >
+          <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-[var(--spike-accent)]/30 bg-black px-2 py-1 text-[0.66rem] font-black uppercase text-[var(--spike-accent)]">
+            Current {formatNumber(stats.current)}
+          </span>
+        </span>
       </div>
-      <div className="mt-2 flex justify-between text-[0.68rem] font-black uppercase tracking-[0.12em] text-white/42">
+      <div className="mt-2 flex justify-between text-[0.68rem] font-black uppercase tracking-[0.12em] text-white/46">
         <span>{formatNumber(stats.min)}</span>
         <span>{formatNumber(stats.max)}</span>
       </div>
+    </div>
+  );
+}
+
+function RangeLabel({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-[0.8rem] border border-white/10 bg-black/35 px-3 py-2">
+      <span className="block text-white/34">{label}</span>
+      <span className="mt-1 block text-sm text-white">{formatNumber(value)} USD/t</span>
     </div>
   );
 }
@@ -521,8 +648,31 @@ function SeasonalitySvg({
   }
 
   return (
-    <div className="mt-5 overflow-hidden rounded-[1rem] border border-white/10 bg-black">
+    <div className="mt-5 overflow-hidden rounded-[1rem] border border-white/10 bg-[#050505]">
+      <div className="flex flex-wrap items-center gap-3 border-b border-white/10 px-4 py-3 text-[0.66rem] font-black uppercase tracking-[0.12em] text-white/44">
+        <span className="inline-flex items-center gap-2">
+          <span className="h-2.5 w-6 rounded-full bg-[var(--spike-accent)]" />
+          Поточний рік
+        </span>
+        <span className="inline-flex items-center gap-2">
+          <span className="h-px w-6 border-t border-dashed border-white/55" />
+          Середня сезонність
+        </span>
+        <span className="inline-flex items-center gap-2">
+          <span className="h-2.5 w-6 rounded-full bg-white/32" />
+          Попередні роки
+        </span>
+      </div>
       <svg aria-label="Seasonality chart" className="h-[18rem] w-full" viewBox="0 0 608 288">
+        <rect fill="#050505" height="288" width="608" />
+        <defs>
+          <linearGradient id="seasonalityFade" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0%" stopColor="rgba(52,255,25,0.06)" />
+            <stop offset="50%" stopColor="rgba(52,255,25,0.14)" />
+            <stop offset="100%" stopColor="rgba(255,255,255,0.04)" />
+          </linearGradient>
+        </defs>
+        <rect fill="url(#seasonalityFade)" height="216" rx="18" width="548" x="30" y="34" />
         {[55, 115, 175, 235].map((y) => (
           <line key={y} stroke="rgba(255,255,255,0.12)" x1="30" x2="578" y1={y} y2={y} />
         ))}
@@ -530,9 +680,9 @@ function SeasonalitySvg({
           <path
             d={path(average)}
             fill="none"
-            stroke="rgba(255,255,255,0.44)"
+            stroke="rgba(255,255,255,0.58)"
             strokeDasharray="6 8"
-            strokeWidth="2"
+            strokeWidth="2.5"
           />
         ) : null}
         {visibleSeries.map((row, index) => (
@@ -547,27 +697,45 @@ function SeasonalitySvg({
             strokeWidth={row.year === latestYear ? 4 : 2}
           />
         ))}
+        <text fill="rgba(255,255,255,0.42)" fontSize="10" fontWeight="800" x="34" y="272">
+          Jan
+        </text>
+        <text fill="rgba(255,255,255,0.42)" fontSize="10" fontWeight="800" x="526" y="272">
+          Dec
+        </text>
       </svg>
     </div>
   );
 }
 
-function DeltaCell({ value }: { value: number | null }) {
+function PulseMoveCard({ label, value }: { label: string; value: number | null }) {
   const tone =
     value === null
-      ? "bg-white/[0.035] text-white/36"
+      ? "border-white/10 bg-white/[0.035] text-white/36"
       : value > 0
-        ? "bg-[var(--spike-accent)]/15 text-[var(--spike-accent)]"
+        ? "border-[var(--spike-accent)]/30 bg-[var(--spike-accent)]/12 text-[var(--spike-accent)]"
         : value < 0
-          ? "bg-red-500/12 text-red-200"
-          : "bg-white/[0.05] text-white/62";
+          ? "border-red-400/35 bg-red-500/12 text-red-100"
+          : "border-white/10 bg-white/[0.05] text-white/72";
 
   return (
-    <td className="px-3 py-3">
-      <span className={`rounded-full px-2.5 py-1 text-xs font-black ${tone}`}>
+    <div className={`rounded-[1rem] border p-4 ${tone}`}>
+      <p className="text-[0.68rem] font-black uppercase tracking-[0.16em] opacity-60">
+        {label}
+      </p>
+      <p className="mt-3 text-2xl font-black leading-none">
         {value === null ? "n/a" : `${formatSigned(value)} USD/t`}
-      </span>
-    </td>
+      </p>
+      <p className="mt-2 text-[0.68rem] font-semibold leading-4 opacity-55">
+        {value === null
+          ? "немає бази"
+          : value > 0
+            ? "вище базової точки"
+            : value < 0
+              ? "нижче базової точки"
+              : "без зміни"}
+      </p>
+    </div>
   );
 }
 
