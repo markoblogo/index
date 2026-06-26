@@ -372,6 +372,7 @@ MN7R_INDEX_EXPORT_TOKEN="set-in-vercel"
 MN7R_INDEX_RESPONDENT_CODE="MN7R_MONITOR"
 MN7R_IMPORT_CRON_SECRET="set-in-vercel"
 SPIKE_AUTO_PUBLISH_CRON_SECRET="set-in-vercel"
+SPIKE_DAILY_CATCHUP_SECRET="set-in-vercel"
 SPIKE_ADMIN_INVITE_SECRET="set-in-vercel"
 SPIKE_ADMIN_INVITE_SENDER="set-in-vercel"
 SPIKE_ADMIN_INVITE_REPLY_TO="set-in-vercel"
@@ -393,7 +394,7 @@ SPIKE_RESPONDENT_TELEGRAM_INITIAL_HOUR="17"
 SPIKE_RESPONDENT_TELEGRAM_REMINDER_HOURS="18,19"
 OPENAI_API_KEY="set-in-vercel-for-media-hub-and-internal-ai-briefs"
 MEDIA_HUB_SCHEDULE_TIMEZONE="Europe/Kyiv"
-MEDIA_HUB_DAILY_REPORT_TIME="19:10"
+MEDIA_HUB_DAILY_REPORT_TIME="20:00"
 MEDIA_HUB_WEEKLY_REPORT_TIME="15:00"
 MEDIA_HUB_TELEGRAM_CHAT_ID="optional-shared-media-hub-chat-id"
 SPIKE_AI_BRIEF_MODEL="gpt-4.1-mini"
@@ -552,8 +553,19 @@ Cron/internal API:
 - `GET /api/cron/respondent-telegram`
 - `GET /api/cron/mn7r-monitor-prices`
 - `GET /api/cron/spike-auto-publish`
+- `POST /api/admin/spike-daily-catchup`
 - `GET /api/cron/uga-spike-demo-sync`
 - `GET /api/cron/spike-admin-invites`
+
+Manual catch-up endpoints:
+
+```bash
+curl -X POST 'https://spike.1d3x.com/api/admin/spike-daily-catchup?force=1&date=2026-06-25' \
+  -H 'Authorization: Bearer <SPIKE_DAILY_CATCHUP_SECRET>'
+
+curl -X POST 'https://spike.1d3x.com/api/admin/spike-daily-catchup?force=1&date=2026-06-25&mediaHub=1' \
+  -H 'Authorization: Bearer <SPIKE_DAILY_CATCHUP_SECRET>'
+```
 
 ## Embedding
 

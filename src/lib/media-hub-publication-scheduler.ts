@@ -124,7 +124,7 @@ export type MediaHubReportSummary = {
 };
 
 const DEFAULT_MEDIA_HUB_TIMEZONE = "Europe/Kyiv";
-const DEFAULT_MEDIA_HUB_DAILY_REPORT_TIME = "19:10";
+const DEFAULT_MEDIA_HUB_DAILY_REPORT_TIME = "20:00";
 const DEFAULT_MEDIA_HUB_WEEKLY_REPORT_TIME = "15:00";
 
 export function getMediaHubPublicationPlan(date = getParisLocalDate()): MediaHubPublicationPlan {

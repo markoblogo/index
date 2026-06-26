@@ -54,11 +54,11 @@
     },
     {
       "path": "/api/cron/media-hub-publish-weekday-16",
-      "schedule": "10 16 * * 1-5"
+      "schedule": "0 17 * * 1-5"
     },
     {
       "path": "/api/cron/media-hub-publish-weekday-17",
-      "schedule": "10 17 * * 1-5"
+      "schedule": "15 17 * * 1-5"
     },
     {
       "path": "/api/cron/media-hub-publish-saturday-12",

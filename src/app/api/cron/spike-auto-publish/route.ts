@@ -31,8 +31,12 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
   const force = url.searchParams.get("force") === "1";
+  const requestedDate = url.searchParams.get("date");
+  const isFallbackWindow = url.pathname !== "/api/cron/spike-auto-publish";
+  const isRetryWindow = url.pathname.endsWith("-17");
+  const forced = Boolean(force || requestedDate || isFallbackWindow);
 
-  if (!force && !isKyivAutoPublishHour()) {
+  if (!forced && !isKyivAutoPublishHour()) {
     return NextResponse.json({
       date: formatDateKyiv(),
       published: 0,
@@ -40,7 +44,6 @@ export async function GET(request: Request) {
     });
   }
 
-  const requestedDate = url.searchParams.get("date");
   const date = requestedDate ?? formatDateKyiv();
 
   if (isPlatformSite()) {
@@ -90,7 +93,7 @@ export async function GET(request: Request) {
     const result = await autoPublishSpikeDailyIndices(targetDate, {
       generateAiBrief: url.searchParams.get("brief") === "1",
       publishMediaHub: shouldPublishMediaHub,
-      replaceExisting,
+      replaceExisting: replaceExisting || isRetryWindow,
     });
     results.push({
       ...result,

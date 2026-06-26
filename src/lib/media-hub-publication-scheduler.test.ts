@@ -28,7 +28,7 @@ import {
 describe("media hub publication scheduler", () => {
   beforeEach(() => {
     vi.stubEnv("MEDIA_HUB_SCHEDULE_TIMEZONE", "Europe/Kyiv");
-    vi.stubEnv("MEDIA_HUB_DAILY_REPORT_TIME", "19:10");
+    vi.stubEnv("MEDIA_HUB_DAILY_REPORT_TIME", "20:00");
     vi.stubEnv("MEDIA_HUB_WEEKLY_REPORT_TIME", "15:00");
   });
 
@@ -67,10 +67,10 @@ describe("media hub publication scheduler", () => {
     });
   });
 
-  it("runs weekday daily reports after the 19:00 Kyiv index publication slot", () => {
-    expect(isMediaHubPublicationDue(new Date("2026-06-22T16:10:00.000Z"))).toBe(true);
-    expect(isMediaHubPublicationDue(new Date("2026-01-05T17:10:00.000Z"))).toBe(true);
-    expect(isMediaHubPublicationDue(new Date("2026-06-22T16:00:00.000Z"))).toBe(false);
+  it("runs weekday daily reports after the 20:00 Kyiv index publication slot", () => {
+    expect(isMediaHubPublicationDue(new Date("2026-06-22T17:00:00.000Z"))).toBe(true);
+    expect(isMediaHubPublicationDue(new Date("2026-01-05T18:00:00.000Z"))).toBe(true);
+    expect(isMediaHubPublicationDue(new Date("2026-06-22T16:59:00.000Z"))).toBe(false);
   });
 
   it("runs Saturday weekly/monthly reports at 15:00 Kyiv", () => {
