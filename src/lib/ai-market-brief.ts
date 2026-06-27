@@ -1393,7 +1393,7 @@ function buildDailyIndexTelegramSection(
         : "🚉 FCA Chop, Ukraine (export)",
     "CPT parity Odesa, Ukraine (processing)":
       locale === "uk"
-        ? "🏭 CPT ПАРИТЕТ ОДЕСА, УКРАЇНА (переробка)"
+        ? "🏭 СРТ ЗАВОД (переробка)"
         : "🏭 CPT parity Odesa, Ukraine (processing)",
   } as const;
 

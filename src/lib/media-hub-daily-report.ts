@@ -480,7 +480,7 @@ function formatBasis(basis: string, locale: Locale) {
   return basis
     .replace(/CPT Odesa, Ukraine \(export\)/i, "CPT Одеса, Україна (експорт)")
     .replace(/FCA Chop, Ukraine \(export\)/i, "FCA Чоп, Україна (експорт)")
-    .replace(/CPT parity Odesa, Ukraine \(processing\)/i, "CPT паритет Одеса, Україна (переробка)");
+    .replace(/CPT parity Odesa, Ukraine \(processing\)/i, "СРТ ЗАВОД, Україна (переробка)");
 }
 
 function formatNumber(value: number) {
