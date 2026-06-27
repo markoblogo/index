@@ -220,19 +220,23 @@ export async function runDueMediaHubPublication(options: {
   date?: string;
   forceKind?: MediaHubPublicationKind;
   forceTelegram?: boolean;
+  publishTelegram?: boolean;
 } = {}) {
   const plan = getMediaHubPublicationPlan(options.date);
   const kind = options.forceKind && options.forceKind !== "none"
     ? options.forceKind
     : plan.kind;
+  const publishTelegram = options.publishTelegram !== false;
 
   if (kind === "daily") {
     const report = await publishMediaHubSnapshotReport("daily", plan.date);
-    const telegram = await sendMediaHubReportTelegram("daily", plan.date, {
+    const telegram = publishTelegram
+      ? await sendMediaHubReportTelegram("daily", plan.date, {
       audience: isPlatformSite() ? "platform" : "spike",
       force: options.forceTelegram,
       locale: isPlatformSite() ? "en" : "uk",
-    });
+      })
+      : { skippedReason: "site_only", status: "skipped" as const };
 
     return {
       plan: { ...plan, kind },
@@ -246,11 +250,13 @@ export async function runDueMediaHubPublication(options: {
 
   if (kind === "weekly") {
     const report = await publishMediaHubSnapshotReport("weekly", plan.date);
-    const telegram = await sendMediaHubReportTelegram("weekly", plan.date, {
-      audience: isPlatformSite() ? "platform" : "spike",
-      force: options.forceTelegram,
-      locale: isPlatformSite() ? "en" : "uk",
-    });
+    const telegram = publishTelegram
+      ? await sendMediaHubReportTelegram("weekly", plan.date, {
+        audience: isPlatformSite() ? "platform" : "spike",
+        force: options.forceTelegram,
+        locale: isPlatformSite() ? "en" : "uk",
+      })
+      : { skippedReason: "site_only", status: "skipped" as const };
 
     return {
       plan: { ...plan, kind },
@@ -264,11 +270,13 @@ export async function runDueMediaHubPublication(options: {
 
   if (kind === "monthly") {
     const report = await publishMediaHubSnapshotReport("monthly", plan.date);
-    const telegram = await sendMediaHubReportTelegram("monthly", plan.date, {
-      audience: isPlatformSite() ? "platform" : "spike",
-      force: options.forceTelegram,
-      locale: isPlatformSite() ? "en" : "uk",
-    });
+    const telegram = publishTelegram
+      ? await sendMediaHubReportTelegram("monthly", plan.date, {
+        audience: isPlatformSite() ? "platform" : "spike",
+        force: options.forceTelegram,
+        locale: isPlatformSite() ? "en" : "uk",
+      })
+      : { skippedReason: "site_only", status: "skipped" as const };
 
     return {
       plan: { ...plan, kind },

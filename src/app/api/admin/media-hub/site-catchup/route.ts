@@ -5,13 +5,11 @@ import { type MediaHubPublicationKind } from "@/lib/media-hub-publication-schedu
 
 export const dynamic = "force-dynamic";
 
-type CatchupBody = {
+type SiteCatchupBody = {
   date?: string;
   force?: boolean;
   kind?: "daily" | "weekly" | "monthly";
-  resend?: boolean;
   forceKind?: "daily" | "weekly" | "monthly";
-  sendTelegram?: boolean;
 };
 
 export async function POST(request: Request) {
@@ -19,7 +17,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = (await request.json().catch(() => ({}))) as CatchupBody;
+  const body = (await request.json().catch(() => ({}))) as SiteCatchupBody;
   const query = new URL(request.url).searchParams;
 
   const force = query.get("force") === "1" ? true : Boolean(body.force);
@@ -38,18 +36,11 @@ export async function POST(request: Request) {
       body.forceKind ??
       (isPlatformSite() ? "daily" : "daily"),
   );
-  const resend = query.get("resend") === "1" ? true : body.resend === true;
-  const sendTelegram = query.get("sendTelegram") === "0"
-    ? false
-    : query.get("sendTelegram") === "1"
-      ? true
-      : body.sendTelegram ?? true;
 
   const result = await runDueMediaHubPublication({
     date,
     forceKind: kind,
-    forceTelegram: resend,
-    publishTelegram: sendTelegram,
+    publishTelegram: false,
   });
 
   return NextResponse.json({
