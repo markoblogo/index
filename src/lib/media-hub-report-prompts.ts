@@ -12,6 +12,7 @@ export function buildMediaHubReportPrompt(input: {
   latestData: PublicLatestItem[];
   locale: Locale;
   manualMaterials?: MediaHubManualMaterialDigest[];
+  historicalSummaries?: string[];
   periodEndDate: string;
   periodStartDate: string;
   snapshots: MediaHubWindowSnapshot[];
@@ -114,6 +115,7 @@ export function buildSsiWeeklyMonthlyPrompt(input: {
   latestData: PublicLatestItem[];
   locale: Locale;
   manualMaterials?: MediaHubManualMaterialDigest[];
+  historicalSummaries?: string[];
   periodEndDate: string;
   periodStartDate: string;
   snapshots: MediaHubWindowSnapshot[];
@@ -151,6 +153,7 @@ export function buildSsiWeeklyMonthlyPrompt(input: {
     ].join("\n"),
     renderIndexData(input.latestData, true),
     renderManualMaterials(input.manualMaterials ?? []),
+    renderHistoricalContext(input.historicalSummaries ?? []),
     renderSnapshotEvidence(input.snapshots, input.kind),
     renderAvoidPhrases(input.avoidPhrases ?? []),
   ].join("\n\n");
@@ -173,6 +176,7 @@ export function build1d3xWeeklyMonthlyPrompt(input: {
   latestData: PublicLatestItem[];
   locale: Locale;
   manualMaterials?: MediaHubManualMaterialDigest[];
+  historicalSummaries?: string[];
   periodEndDate: string;
   periodStartDate: string;
   snapshots: MediaHubWindowSnapshot[];
@@ -200,6 +204,7 @@ export function build1d3xWeeklyMonthlyPrompt(input: {
       "Final footer: 1D3X / https://1d3x.com/",
     ].join("\n"),
     renderManualMaterials(input.manualMaterials ?? []),
+    renderHistoricalContext(input.historicalSummaries ?? []),
     renderSnapshotEvidence(input.snapshots, input.kind),
     renderAvoidPhrases(input.avoidPhrases ?? []),
   ].join("\n\n");
@@ -308,6 +313,17 @@ function renderVisualEvidence(materials: MediaHubManualMaterialDigest[]) {
   return visualLines.length > 0
     ? ["Visual/file evidence for admin review and report grounding:", ...visualLines]
     : [];
+}
+
+function renderHistoricalContext(items: string[]) {
+  if (items.length === 0) {
+    return "Recent report context: none available.";
+  }
+
+  return [
+    "Recent report context (use only when source-backed):",
+    ...items.slice(0, 20).map((item, index) => `${index + 1}. ${item}`),
+  ].join("\n");
 }
 
 function scoreManualMaterial(material: MediaHubManualMaterialDigest) {

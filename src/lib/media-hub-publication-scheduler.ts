@@ -543,11 +543,22 @@ async function buildTransientMediaHubSnapshotReport(
     console.warn("Skipping 1D3X Media Hub avoid phrases.", safeErrorMessage(error));
     return [] as string[];
   });
+  const historicalSummaries = kind === "daily"
+    ? [] as string[]
+    : await getPreviousReportSummariesForContext({
+      kind,
+      tenantId,
+    }).catch((error: unknown) => {
+      if (!isPlatformSite()) throw error;
+      console.warn("Skipping historical report context.", safeErrorMessage(error));
+      return [] as string[];
+    });
   const llm = await generateMediaHubLlmReports({
     avoidPhrases,
     kind,
     latestData,
     manualMaterials,
+    historicalSummaries,
     periodEndDate,
     periodStartDate,
     snapshots,
@@ -556,6 +567,7 @@ async function buildTransientMediaHubSnapshotReport(
   const content = buildSnapshotReportContent({
     kind,
     llm,
+    tenant: tenantId === "1d3x" ? "platform" : "spike",
     historyData,
     latestData,
     manualMaterials,
@@ -614,6 +626,7 @@ function buildSnapshotReportContent(input: {
   kind: Exclude<MediaHubPublicationKind, "none">;
   latestData?: PublicLatestItem[];
   llm?: Awaited<ReturnType<typeof generateMediaHubLlmReports>>;
+  tenant: "spike" | "platform";
   manualMaterials?: MediaHubManualMaterialDigest[];
   periodEndDate: string;
   periodStartDate: string;
@@ -623,6 +636,14 @@ function buildSnapshotReportContent(input: {
   const totalItems = input.snapshots.reduce((sum, snapshot) => sum + snapshot.itemCount, 0);
   const totalSources = input.snapshots.reduce((sum, snapshot) => sum + snapshot.sourceCount, 0);
   const primaryLocalized = getPrimaryLocalizedReport(input.llm?.localized);
+  const nonDailyFallback = input.kind === "daily"
+    ? null
+    : buildNonDailyFallbackReport({
+      kind: input.kind,
+      manualMaterials: input.manualMaterials ?? [],
+      snapshots: input.snapshots,
+      tenant: input.tenant,
+    });
   const evidenceFallback = input.kind === "daily" && isPlatformSite()
     ? buildPlatformDailyEvidenceFallback({
         manualMaterials: input.manualMaterials ?? [],
@@ -659,16 +680,29 @@ function buildSnapshotReportContent(input: {
       sourceType: material.sourceType,
     })) ?? [],
     localized: input.llm?.localized,
+    ...(nonDailyFallback?.localized)
+      ? { localized: {
+        ...input.llm?.localized,
+        uk: input.llm?.localized?.uk?.summary?.length
+          ? input.llm.localized.uk
+          : nonDailyFallback.localized.uk,
+        en: input.llm?.localized?.en?.summary?.length
+          ? input.llm.localized.en
+          : nonDailyFallback.localized.en,
+      }}
+      : {},
     dailyReports,
     periodEndDate: input.periodEndDate,
     periodStartDate: input.periodStartDate,
     summary: primaryLocalized?.summary?.length
       ? primaryLocalized.summary
+      : nonDailyFallback?.summary.length
+        ? nonDailyFallback.summary
       : evidenceFallback?.summary.length
         ? evidenceFallback.summary
         : (primary?.summaryBody ?? []),
     title: primaryLocalized?.title || evidenceFallback?.title ||
-      (primary?.summaryTitle ??
+      (nonDailyFallback?.title || primary?.summaryTitle ||
         `Media Hub ${input.kind} report · ${input.periodStartDate}—${input.periodEndDate}`),
     totals: {
       items: totalItems,
@@ -687,6 +721,76 @@ function buildSnapshotReportContent(input: {
       topTopics: snapshot.topTopics,
       window: snapshot.window,
     })),
+    };
+}
+
+function buildNonDailyFallbackReport(input: {
+  kind: Exclude<MediaHubPublicationKind, "none">;
+  manualMaterials: MediaHubManualMaterialDigest[];
+  snapshots: MediaHubWindowSnapshot[];
+  tenant: "spike" | "platform";
+}) {
+  const materialItems = input.manualMaterials
+    .filter(isReportWorthyMaterial)
+    .map(extractMaterialSignal)
+    .filter((item): item is EvidenceSignal => Boolean(item))
+    .slice(0, 24);
+
+  const feedItems = input.snapshots
+    .flatMap((snapshot) => snapshot.feed)
+    .filter((item) => item.title && item.summary && !isWeakEvidenceText(`${item.title} ${item.summary}`))
+    .map((item) => ({
+      body: compactSentence(item.summary || item.title),
+      source: item.source,
+      tags: item.tags.join(" "),
+      title: item.title,
+    }))
+    .slice(0, 20);
+
+  const signals = dedupeEvidenceSignals([...materialItems, ...feedItems]);
+  if (signals.length === 0) {
+    return null;
+  }
+
+  const headline = input.tenant === "platform"
+    ? `1D3X ${input.kind === "monthly" ? "Monthly" : "Weekly"} Commodity & Logistics Market`
+    : `SPIKE SPOT INDEX ${input.kind === "monthly" ? "Місячний" : "Тижневий"} ринок зерна та олійних`
+  ;
+
+  const sections = [
+    section(input.tenant === "platform" ? "🔎 Main signals" : "🔎 Головні сигнали", signals.slice(0, 5)),
+    section(
+      input.tenant === "platform" ? "🌾 Grain logistics" : "🚚 Логістика",
+      filterSignals(signals, /logistics|rail|port|vessel|route|shipment|freight|truck|barge|black sea|bosphorus/i).slice(0, 4),
+    ),
+    section(
+      input.tenant === "platform" ? "🌽 Grains" : "🌾 Зернові",
+      filterSignals(signals, /wheat|corn|maize|grain|barley|sorghum/i).slice(0, 4),
+    ),
+    section(
+      input.tenant === "platform" ? "🌱 Oilseeds and vegetable oils" : "🌱 Олійні та переробка",
+      filterSignals(signals, /soy|soybean|oil|rapeseed|canola|sunflower|vegetable/i).slice(0, 4),
+    ),
+  ]
+    .flat();
+
+  const summary = sections.length > 0
+    ? sections
+    : section(input.tenant === "platform" ? "🔎 Main signals" : "🔎 Головні сигнали", signals.slice(0, 12));
+
+  return {
+    localized: {
+      en: {
+        summary,
+        title: `1D3X ${input.kind === "monthly" ? "Monthly" : "Weekly"} Commodity & Logistics Market`,
+      },
+      uk: {
+        summary,
+        title: headline,
+      },
+    },
+    summary,
+    title: headline,
   };
 }
 
@@ -901,23 +1005,33 @@ function buildMediaHubTelegramText(input: {
         : renderDailyNewsTelegramSection(dailyReport.newsSection)),
     );
   } else if (primaryWindow) {
-    const summary = dedupeNonEmpty(
-      localized?.summary?.length
-        ? localized.summary
-        : [
-            ...primaryWindow.summaryBody,
-            ...input.content.summary,
-          ],
-    ).filter((line) => !isGenericWeakLine(line));
+    const fallbackWindowSummary = input.content.windows.flatMap((window) => [
+      window.summaryTitle,
+      ...window.summaryBody,
+    ]);
+    const localizedSummary = localized?.summary?.length ? localized.summary : [];
+    const windowSnapshots = input.content.windows.flatMap((window) => [
+      `${window.label} (${window.progressLabel})`,
+      ...window.summaryBody,
+    ]);
+    const summary = dedupeNonEmpty([
+      ...localizedSummary,
+      ...input.content.summary,
+      ...fallbackWindowSummary,
+      ...primaryWindow.summaryBody,
+      ...windowSnapshots,
+    ]).filter((line) => !isGenericWeakLine(line))
+      .map((line) => normalizeSsiCptTerminology(input.tenant, line));
     if (localized?.title) {
       lines.push("", `<b>${escapeHtml(localized.title)}</b>`);
     }
 
     if (summary.length > 0) {
+      const limit = input.kind === "daily" ? 24 : input.kind === "weekly" ? 100 : 140;
       lines.push(
         "",
         isUk ? "<b>🔎 Головні сигнали</b>" : "<b>🔎 Main signals</b>",
-        ...summary.slice(0, 8).map((line) => `• ${escapeHtml(line)}`),
+        ...summary.slice(0, limit).map((line) => `• ${escapeHtml(line)}`),
       );
     }
   }
@@ -937,20 +1051,35 @@ function buildMediaHubTelegramText(input: {
 }
 
 function splitTelegramMessage(text: string) {
-  if (text.length <= 3900) {
+  const maxLength = 3900;
+  if (text.length <= maxLength) {
     return [text];
   }
 
   const chunks: string[] = [];
   let current = "";
 
-  for (const block of text.split("\n\n")) {
-    const next = current ? `${current}\n\n${block}` : block;
-    if (next.length > 3900) {
+  for (const rawLine of text.split("\n")) {
+    const line = rawLine.trimEnd();
+
+    if (line.length > maxLength) {
+      if (current.trim().length > 0) {
+        chunks.push(current);
+        current = "";
+      }
+
+      for (let index = 0; index < line.length; index += maxLength - 120) {
+        chunks.push(line.slice(index, index + maxLength - 120).trim());
+      }
+      continue;
+    }
+
+    const next = current ? `${current}\n${line}` : line;
+    if (next.length > maxLength) {
       if (current) {
         chunks.push(current);
       }
-      current = block;
+      current = line;
     } else {
       current = next;
     }
@@ -1218,12 +1347,73 @@ async function getPreviousReportAvoidPhrases(input: {
   }))].slice(0, 30);
 }
 
+async function getPreviousReportSummariesForContext(input: {
+  kind: Exclude<MediaHubPublicationKind, "none">;
+  tenantId: string;
+}) {
+  if (!hasDatabaseUrl()) {
+    return [] as string[];
+  }
+
+  await ensureMediaHubReportStorage();
+
+  const rows = await db.$queryRawUnsafe<MediaHubReportRow[]>(
+    `
+      SELECT "contentJson"
+      FROM "MediaHubReport"
+      WHERE "tenantId" = $1
+        AND "kind" = $2
+        AND "status" = 'published'
+      ORDER BY "periodEnd" DESC
+      LIMIT 5
+    `,
+    input.tenantId,
+    input.kind,
+  );
+
+  const summaryLines = rows.flatMap((row) => {
+    const content = parseMediaHubReportContent(row.contentJson);
+    if (!content) {
+      return [];
+    }
+
+    const lines = [
+      ...content.localized?.uk?.summary ?? [],
+      ...content.localized?.en?.summary ?? [],
+      ...content.summary,
+      content.title,
+    ];
+
+    return lines
+      .filter((line) => Boolean(line && line.trim()))
+      .map((line) => line.trim());
+  });
+
+  return dedupeNonEmpty(summaryLines).slice(0, 30);
+}
+
 function normalizeMediaHubKind(value: unknown): Exclude<MediaHubPublicationKind, "none"> {
   return value === "weekly" || value === "monthly" ? value : "daily";
 }
 
 function normalizeWindowKey(value: unknown): MediaHubWindowKey {
   return value === "week" || value === "month" ? value : "day";
+}
+
+function normalizeSsiCptTerminology(tenant: "spike" | "platform", value: string) {
+  if (tenant !== "spike") {
+    return value;
+  }
+
+  return value
+    .replaceAll("CPT Odessa, Ukraine (processing)", "СРТ ЗАВОД, Україна (переробка)")
+    .replaceAll("CPT Odesa, Ukraine (processing)", "СРТ ЗАВОД, Україна (переробка)")
+    .replaceAll("CPT Odesa, Україна (переробці)", "СРТ ЗАВОД")
+    .replaceAll("CPT Odessa, Україна (переробці)", "СРТ ЗАВОД")
+    .replace(/CPT\s+Odessa\s+в\s+переробці/giu, "СРТ ЗАВОД")
+    .replace(/CPT\s+Odesa\s+в\s+переробці/giu, "СРТ ЗАВОД")
+    .replace(/CPT\s+Odesa\s+у\s+переробці/giu, "СРТ ЗАВОД")
+    .replace(/CPT\s+Odessa\s+у\s+переробці/giu, "СРТ ЗАВОД");
 }
 
 function dedupeNonEmpty(values: string[]) {

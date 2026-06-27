@@ -28,6 +28,7 @@ export async function generateMediaHubLlmReports(input: {
   kind: MediaHubReportKind;
   latestData: PublicLatestItem[];
   manualMaterials?: MediaHubManualMaterialDigest[];
+  historicalSummaries?: string[];
   avoidPhrases?: string[];
   periodEndDate: string;
   periodStartDate: string;
@@ -74,6 +75,7 @@ async function generateOneLocale(input: {
   kind: MediaHubReportKind;
   latestData: PublicLatestItem[];
   manualMaterials?: MediaHubManualMaterialDigest[];
+  historicalSummaries?: string[];
   avoidPhrases?: string[];
   locale: Locale;
   model: string;
@@ -115,7 +117,7 @@ async function callResponsesApi(input: {
   prompt: string;
   tenant: MediaHubTenant;
 }): Promise<GenerationResult> {
-  const useWebSearch = input.kind !== "daily" || input.tenant === "platform";
+  const useWebSearch = input.kind !== "daily";
   const requestBody: Record<string, unknown> = {
     input: input.prompt,
     max_output_tokens: input.kind === "daily" ? 1700 : input.kind === "weekly" ? 3600 : 4200,
@@ -200,6 +202,7 @@ function buildPrompt(input: {
   latestData: PublicLatestItem[];
   locale: Locale;
   manualMaterials?: MediaHubManualMaterialDigest[];
+  historicalSummaries?: string[];
   periodEndDate: string;
   periodStartDate: string;
   snapshots: MediaHubWindowSnapshot[];
@@ -314,7 +317,7 @@ function sanitizeGeneratedSummary(summary: string[]) {
 }
 
 function isUsableGeneratedSummary(summary: string[], kind: MediaHubReportKind) {
-  const minNarrativeItems = kind === "daily" ? 3 : 8;
+  const minNarrativeItems = kind === "daily" ? 3 : kind === "weekly" ? 10 : 14;
   const narrativeItems = summary.filter((item) => {
     const normalized = normalizeGeneratedLine(item);
     if (!normalized) return false;
