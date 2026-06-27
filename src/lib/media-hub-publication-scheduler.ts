@@ -186,6 +186,36 @@ export function isMediaHubPublicationDue(now: Date = new Date()) {
   return plan.kind !== "none" && parts.hour === hour && parts.minute === minute;
 }
 
+export function getMediaHubPublicationCatchupWindowMinutes() {
+  const raw = process.env.MEDIA_HUB_PUBLICATION_CATCHUP_WINDOW_MINUTES?.trim() ?? "";
+  const value = Number.parseInt(raw, 10);
+  return Number.isFinite(value) && value >= 1 && value <= 240
+    ? value
+    : 30;
+}
+
+export function isMediaHubPublicationCatchupDue(
+  now: Date = new Date(),
+  plan: MediaHubPublicationPlan = getMediaHubPublicationPlan(),
+) {
+  if (plan.kind === "none") {
+    return false;
+  }
+
+  const parts = getParisLocalTimeParts(now);
+  if (parts.date !== plan.date) {
+    return false;
+  }
+
+  const [dueHour, dueMinute] = getMediaHubReportTime(plan.kind).split(":").map(Number);
+  const dueTotalMinutes = dueHour * 60 + dueMinute;
+  const nowTotalMinutes = parts.hour * 60 + parts.minute;
+  const delta = nowTotalMinutes - dueTotalMinutes;
+  const window = getMediaHubPublicationCatchupWindowMinutes();
+
+  return delta >= 0 && delta <= window;
+}
+
 export async function runDueMediaHubPublication(options: {
   date?: string;
   forceKind?: MediaHubPublicationKind;
@@ -1366,7 +1396,7 @@ async function ensureMediaHubReportStorage() {
   `);
 }
 
-async function getMediaHubReport(
+export async function getMediaHubReport(
   kind: string,
   periodEndDate: string,
   tenantId: string = getActiveIndexConfig().id,

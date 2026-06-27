@@ -1,11 +1,18 @@
 import { NextResponse } from "next/server";
 import { isCronRequestAuthorized } from "@/lib/cron-auth";
+import { hasDatabaseUrl } from "@/lib/db";
+import { getActiveIndexConfig } from "@/lib/index-platform";
 import {
+  getMediaHubPublicationCatchupDue,
+  getMediaHubPublicationCatchupWindowMinutes,
   getMediaHubPublicationPlan,
+  getMediaHubReport,
+  getParisLocalDate,
   isMediaHubPublicationDue,
   runDueMediaHubPublication,
   type MediaHubPublicationKind,
 } from "@/lib/media-hub-publication-scheduler";
+import { isPlatformSite } from "@/lib/platform-site";
 
 export const dynamic = "force-dynamic";
 
@@ -28,19 +35,52 @@ export async function GET(request: Request) {
   const date = url.searchParams.get("date") ?? undefined;
   const forceKind = normalizeKind(url.searchParams.get("kind"));
   const forceTelegram = url.searchParams.get("resend") === "1";
-  const forced = Boolean(date || forceKind || url.pathname !== "/api/cron/media-hub-publish");
+  const isRetryCron = url.pathname === "/api/cron/media-hub-publish-retry";
 
-  if (!forced && !isMediaHubPublicationDue()) {
-    const plan = getMediaHubPublicationPlan();
+  const now = new Date();
+  const plan = getMediaHubPublicationPlan(date ?? getParisLocalDate(now));
+  const isDue = isMediaHubPublicationDue(now);
+  const isCatchupDue = isRetryCron && isMediaHubPublicationCatchupDue(now, plan);
+  const forced = Boolean(
+    date ||
+      forceKind ||
+      (url.pathname !== "/api/cron/media-hub-publish" && !isRetryCron),
+  );
+
+  if (!forced && !isDue && !isCatchupDue) {
     return NextResponse.json({
       plan,
       skippedReason: "outside_media_hub_report_time",
+      catchupWindowMinutes: isRetryCron
+        ? getMediaHubPublicationCatchupWindowMinutes()
+        : undefined,
       status: "skipped",
       triggeredAt: new Date().toISOString(),
     });
   }
 
-  const plan = getMediaHubPublicationPlan(date);
+  if (isRetryCron && hasDatabaseUrl()) {
+    const tenantId = isPlatformSite() ? "1d3x" : getActiveIndexConfig().id;
+    const existing = await getMediaHubReport(plan.kind, plan.date, tenantId);
+    if (existing?.telegramSentAt) {
+      return NextResponse.json({
+        plan,
+        skippedReason: "already_published_and_telegram_sent",
+        status: "skipped",
+        triggeredAt: new Date().toISOString(),
+      });
+    }
+  }
+
+  if (isRetryCron && !hasDatabaseUrl() && !forced && !isDue) {
+    return NextResponse.json({
+      plan,
+      skippedReason: "retry_disabled_without_database",
+      status: "skipped",
+      triggeredAt: new Date().toISOString(),
+    });
+  }
+
   const publication = await runDueMediaHubPublication({
     date: plan.date,
     forceKind,
@@ -49,6 +89,10 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     ...publication,
+    catchupRoute: isRetryCron,
+    catchupWindowMinutes: isRetryCron
+      ? getMediaHubPublicationCatchupWindowMinutes()
+      : undefined,
     triggeredAt: new Date().toISOString(),
   });
 }

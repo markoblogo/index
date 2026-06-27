@@ -28,6 +28,9 @@ const SSI_KEYWORDS = [
 const ID3X_KEYWORDS = [
   "1d3x",
   "id3x",
+  "idex",
+  "idex_grains",
+  "idex_grains_bot",
   "1d3x.com",
   "global",
   "cbot",

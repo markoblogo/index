@@ -67,6 +67,14 @@
     {
       "path": "/api/cron/media-hub-publish-saturday-13",
       "schedule": "0 13 * * 6"
+    },
+    {
+      "path": "/api/cron/media-hub-publish-retry",
+      "schedule": "*/5 12 * * 6"
+    },
+    {
+      "path": "/api/cron/media-hub-publish-retry",
+      "schedule": "*/5 17 * * 1-5"
     }
   ]
 }
