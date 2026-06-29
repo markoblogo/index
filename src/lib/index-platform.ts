@@ -272,7 +272,7 @@ const spikeCommodities: IndexCommodityConfig[] = [
       },
       {
         label: { uk: "Базис", en: "Basis" },
-        value: { uk: "CPT parity Одеса", en: "CPT parity Odesa" },
+        value: { uk: "СРТ завод", en: "CPT Crush" },
       },
       { label: { uk: "Напрямок", en: "Direction" }, value: { uk: "переробка", en: "processing" } },
     ],
@@ -299,7 +299,7 @@ const spikeCommodities: IndexCommodityConfig[] = [
       },
       {
         label: { uk: "Базис", en: "Basis" },
-        value: { uk: "CPT parity Одеса", en: "CPT parity Odesa" },
+        value: { uk: "СРТ завод", en: "CPT Crush" },
       },
       { label: { uk: "Напрямок", en: "Direction" }, value: { uk: "переробка", en: "processing" } },
     ],
@@ -326,7 +326,7 @@ const spikeCommodities: IndexCommodityConfig[] = [
       },
       {
         label: { uk: "Базис", en: "Basis" },
-        value: { uk: "CPT parity Одеса", en: "CPT parity Odesa" },
+        value: { uk: "СРТ завод", en: "CPT Crush" },
       },
       { label: { uk: "Напрямок", en: "Direction" }, value: { uk: "переробка", en: "processing" } },
     ],
@@ -560,7 +560,7 @@ export const INDEX_CONFIGS: Record<IndexTenantId, IndexConfig> = {
     brandUrl: "https://spike.broker/en/",
     logoPath: "/brand/spike-logo-full.png",
     logoHeaderPath: "/brand/spike-logo-full.png",
-    defaultDeliveryBasis: "CPT Odesa / CPT parity Odesa / FCA Chop",
+    defaultDeliveryBasis: "CPT Odesa / CPT Crush / FCA Chop",
     defaultDeliveryPeriod: "spot",
     currency: "USD",
     unit: "t",
@@ -655,10 +655,10 @@ export const INDEX_CONFIGS: Record<IndexTenantId, IndexConfig> = {
       },
       {
         code: "CPT_PARITY_ODESA_PROCESSING",
-        name: "CPT parity Odesa, Ukraine (processing)",
+        name: "CPT Crush, Ukraine (processing)",
         region: "Odesa, Ukraine",
         basketCode: "CPT_PARITY_ODESA_PROCESSING_SPIKE",
-        basketName: "CPT parity Odesa Processing Spike Basket",
+        basketName: "CPT Crush Processing Spike Basket",
       },
       {
         code: "FCA_CHOP_EXPORT",

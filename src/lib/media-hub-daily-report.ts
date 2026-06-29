@@ -418,7 +418,7 @@ function getSsiIndexGroupId(
     return "seasonal";
   }
   const basis = item.basis.toLowerCase();
-  if (basis.includes("parity") || basis.includes("processing")) {
+  if (basis.includes("crush") || basis.includes("parity") || basis.includes("processing")) {
     return "processing";
   }
   return "all_season";
@@ -480,6 +480,7 @@ function formatBasis(basis: string, locale: Locale) {
   return basis
     .replace(/CPT Odesa, Ukraine \(export\)/i, "CPT Одеса, Україна (експорт)")
     .replace(/FCA Chop, Ukraine \(export\)/i, "FCA Чоп, Україна (експорт)")
+    .replace(/CPT Crush, Ukraine \(processing\)/i, "СРТ ЗАВОД, Україна (переробка)")
     .replace(/CPT parity Odesa, Ukraine \(processing\)/i, "СРТ ЗАВОД, Україна (переробка)");
 }
 

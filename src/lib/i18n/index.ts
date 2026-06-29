@@ -819,7 +819,7 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
           "SPIKE SPOT INDEX - це окрема індексна платформа ",
         descriptionLinkText: "Spike Brokers",
       descriptionAfterLink:
-        " для щоденної публікації агрегованих спотових цін у категоріях Grains Export, Oilseeds crush та Oilseeds Export. Індекс створений, щоб дати ринку прозорий і порівнюваний орієнтир для позицій CPT Port, FCA Чоп та CPT parity Одеса.",
+        " для щоденної публікації агрегованих спотових цін у категоріях Grains Export, Oilseeds crush та Oilseeds Export. Індекс створений, щоб дати ринку прозорий і порівнюваний орієнтир для позицій CPT Port, FCA Чоп та СРТ завод.",
         ugaHref: "https://spike.broker/",
         whyTitle: "Операційний ціновий орієнтир для угод, логістики та переробки",
         whyBody: [
@@ -882,14 +882,14 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
         coreNarrative: [
           "Індекс розраховується на основі щоденних цінових оцінок, які надає визначена група партнерів-респондентів Spike Brokers. Кожне подане значення має відображати справедливий ринковий рівень на кінець торгового дня для відповідної культури та базису.",
           "MN7R Monitor підключений як окремий автоматизований респондент. Щоденно о 17:00 за Києвом система імпортує актуальні цінові індикатори Monitor і матчить їх за товаром, базисом поставки та перетином періоду поставки. Запис з Monitor враховується лише тоді, коли його період поставки перекриває поточне 30-денне вікно щонайменше на 10 днів.",
-          "Якщо для однієї позиції SPIKE є декілька відповідних індикаторів Monitor, система розраховує їх середнє арифметичне і використовує його як цінову відповідь респондента Monitor. Публічна структура поділена на Grains Export, Oilseeds crush та Oilseeds Export. Для базових і сезонних експортних позицій використовуються CPT Port або FCA Чоп, а для переробки — CPT parity Одеса.",
+          "Якщо для однієї позиції SPIKE є декілька відповідних індикаторів Monitor, система розраховує їх середнє арифметичне і використовує його як цінову відповідь респондента Monitor. Публічна структура поділена на Grains Export, Oilseeds crush та Oilseeds Export. Для базових і сезонних експортних позицій використовуються CPT Port або FCA Чоп, а для переробки — СРТ завод.",
           "Ціни проходять валідацію відносно медіани вибірки. Значення, що відхиляються від медіани більш ніж на +/-2%, виключаються як потенційні викиди. Після очищення вибірки індекс розраховується як середнє арифметичне валідних цін. Корзина може бути опублікована лише тоді, коли після фільтрації залишається щонайменше 5 валідних значень респондентів.",
           "До публікації значення можуть перевірятися, уточнюватися та мати декілька версій. Після публікації фінальне значення фіксується. Система зберігає зміни, перерахунки та події публікації в журналі аудиту. У публічній частині методології вказуються типи респондентів, але не назви окремих компаній.",
         ],
         facts: [
         { value: "CPT Port", label: "Базис для базових і сезонних експортних позицій" },
         { value: "FCA Chop", label: "Базис для прикордонної позиції" },
-        { value: "CPT parity", label: "Базис для позицій переробки" },
+        { value: "СРТ завод", label: "Базис для позицій переробки" },
         { value: "3", label: "Категорії індексів" },
           { value: "17:00", label: "Час імпорту Monitor (Київ)" },
           { value: "10д / 30д", label: "Мінімальний перетин вікна поставки" },
@@ -985,7 +985,7 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
         "SPIKE SPOT INDEX is a dedicated index platform by ",
       descriptionLinkText: "Spike Brokers",
     descriptionAfterLink:
-      " for publishing daily aggregated spot prices across Grains Export, Oilseeds crush and Oilseeds Export positions. The index gives the market a transparent and comparable reference for CPT Port, FCA Chop and CPT parity Odesa levels.",
+      " for publishing daily aggregated spot prices across Grains Export, Oilseeds crush and Oilseeds Export positions. The index gives the market a transparent and comparable reference for CPT Port, FCA Chop and CPT Crush levels.",
       ugaHref: "https://spike.broker/en/",
       whyTitle: "An operational price reference for trade, logistics and processing",
       whyBody: [
@@ -1052,14 +1052,14 @@ function getSpikeDictionary(locale: Locale, base: Dictionary): Dictionary {
       coreNarrative: [
         "The index is calculated from daily price assessments submitted by a defined group of Spike Brokers respondent partners. Each submitted value should reflect a fair end-of-day market level for the relevant commodity and basis.",
         "MN7R Monitor is connected as a separate automated respondent. Every weekday at 17:00 Kyiv, SPIKE imports current Monitor price indicators and matches them by commodity, delivery basis and delivery-period overlap. A Monitor record is eligible only when its delivery period overlaps the current 30-day window by at least 10 days.",
-        "If several Monitor indicators match one SPIKE position, the system calculates their arithmetic average and stores it as the Monitor respondent value for that position. The public structure is split into Grains Export, Oilseeds crush and Oilseeds Export. Core and seasonal export positions use CPT Port or FCA Chop bases, while processing positions use CPT parity Odesa.",
+        "If several Monitor indicators match one SPIKE position, the system calculates their arithmetic average and stores it as the Monitor respondent value for that position. The public structure is split into Grains Export, Oilseeds crush and Oilseeds Export. Core and seasonal export positions use CPT Port or FCA Chop bases, while processing positions use CPT Crush.",
         "Prices are validated by sample median. Values deviating from the median by more than +/-2% are excluded as potential outliers. The final index value is the arithmetic average of the cleaned sample. A basket is publishable only when at least 5 valid respondent prices remain after filtering.",
         "Before publication, values can be reviewed, corrected and versioned. After publication, the final value is locked. The system records changes, recalculations and publication events in an audit log. Public methodology identifies respondent types, but not company names.",
       ],
       facts: [
       { value: "CPT Port", label: "Core and seasonal export basis" },
       { value: "FCA Chop", label: "Border-position basis" },
-      { value: "CPT parity", label: "Processing-position basis" },
+      { value: "CPT Crush", label: "Processing-position basis" },
         { value: "3", label: "Index categories" },
         { value: "17:00", label: "Monitor import time (Kyiv)" },
         { value: "10d / 30d", label: "Minimum delivery-window overlap" },

@@ -116,7 +116,7 @@ function createDefaultRespondentEmailSchedule() {
     surveyUrl: "/respondent",
     template:
       activeIndex.id === "spike-ua"
-        ? "Please submit today's CPT Odesa / CPT parity Odesa / FCA Chop spot price indicatives for SPIKE SPOT INDEX. Open your daily survey form using the personal link in this email."
+        ? "Please submit today's CPT Odesa / CPT Crush / FCA Chop spot price indicatives for SPIKE SPOT INDEX. Open your daily survey form using the personal link in this email."
         : "Please submit today's CPT UA Black Sea price indicatives for UGA Index. Open your daily survey form using the personal link in this email.",
     timezone: "Europe/Kyiv",
     workdays: "Monday-Friday",

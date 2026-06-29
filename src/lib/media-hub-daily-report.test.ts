@@ -83,7 +83,7 @@ describe("media hub daily report formatting", () => {
   it("groups SSI indices into all season, seasonal and processing with stable order", () => {
     const facts = buildSsiDailyIndexFacts([
       latest({
-        basis: "CPT parity Odesa, Ukraine (processing)",
+        basis: "CPT Crush, Ukraine (processing)",
         commodityCode: "SUN",
         commodityId: "sunflower",
         commodityNameUk: "Соняшник",

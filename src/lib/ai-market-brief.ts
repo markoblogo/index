@@ -1391,16 +1391,24 @@ function buildDailyIndexTelegramSection(
       locale === "uk"
         ? "🚉 FCA ЧОП, УКРАЇНА (експорт)"
         : "🚉 FCA Chop, Ukraine (export)",
-    "CPT parity Odesa, Ukraine (processing)":
+    "CPT Crush, Ukraine (processing)":
       locale === "uk"
         ? "🏭 СРТ ЗАВОД (переробка)"
-        : "🏭 CPT parity Odesa, Ukraine (processing)",
+        : "🏭 CPT Crush, Ukraine (processing)",
   } as const;
+
+  const groupBasisAliases: Record<string, string[]> = {
+    "CPT Crush, Ukraine (processing)": [
+      "CPT Crush, Ukraine (processing)",
+      "CPT parity Odesa, Ukraine (processing)",
+    ],
+  };
 
   const sections = Object.entries(groupLabels)
     .map(([basis, label]) => {
+      const basisAliases = groupBasisAliases[basis] ?? [basis];
       const rows = latestData
-        .filter((row) => row.basis === basis && row.valueUsdPerMt !== null)
+        .filter((row) => basisAliases.includes(row.basis) && row.valueUsdPerMt !== null)
         .sort((a, b) => commoditySort(a.commodityId) - commoditySort(b.commodityId));
 
       if (rows.length === 0) {
@@ -1428,13 +1436,13 @@ function buildDailyIndexTelegramSection(
           "<i>ℹ️ Примітка:</i>",
           "<i>• Ціни вказані для поставки протягом 30 днів.</i>",
           "<i>• Позиції переробки відображаються з ПДВ.</i>",
-          "<i>• CPT parity показує ціни заводів із різних регіонів України, приведені до базису CPT Одеса з урахуванням логістики.</i>",
+          "<i>• СРТ завод показує ціни заводів із різних регіонів України, приведені до переробного базису з урахуванням логістики.</i>",
         ].join("\n")
       : [
           "<i>ℹ️ Notes:</i>",
           "<i>• Prices are shown for delivery within 30 days.</i>",
           "<i>• Processing positions are displayed VAT-included.</i>",
-          "<i>• CPT parity reflects plant bids from different Ukrainian regions normalized to CPT Odesa with logistics adjustment.</i>",
+          "<i>• CPT Crush reflects plant bids from different Ukrainian regions normalized to a crush basis with logistics adjustment.</i>",
         ].join("\n");
 
   return [...sections, "", notes].join("\n\n");

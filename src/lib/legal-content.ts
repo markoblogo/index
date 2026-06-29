@@ -123,7 +123,7 @@ function mapSpikeEnLegalText(text: string) {
     .replaceAll("the Ukrainian Grain Association", "Spike Brokers")
     .replaceAll("Ukrainian Grain Association", "Spike Brokers")
     .replaceAll("UGA", "Spike Brokers")
-    .replaceAll("FOB Black Sea", "CPT Odesa, CPT parity Odesa and FCA Chop")
+    .replaceAll("FOB Black Sea", "CPT Odesa, CPT Crush and FCA Chop")
     .replaceAll("T+30", "spot")
     .replaceAll("inbox@uga.ua", "info@spike.broker")
     .replaceAll(
@@ -143,7 +143,7 @@ function mapSpikeUkLegalText(text: string) {
     .replaceAll("Українська зернова асоціація", "Spike Brokers")
     .replaceAll("Української зернової асоціації", "Spike Brokers")
     .replaceAll("УЗА", "Spike Brokers")
-    .replaceAll("FOB Black Sea", "CPT Одеса, CPT parity Одеса та FCA Чоп")
+    .replaceAll("FOB Black Sea", "CPT Одеса, СРТ завод та FCA Чоп")
     .replaceAll("T+30", "spot")
     .replaceAll("inbox@uga.ua", "info@spike.broker")
     .replaceAll(
