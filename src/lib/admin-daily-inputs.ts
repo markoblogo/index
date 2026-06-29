@@ -34,6 +34,9 @@ export type DailyInputCell = {
   respondentId: string;
   price: number | null;
   spikeIndicative: number | null;
+  previousPublished: number | null;
+  previousDeviationPct: number | null;
+  autoExcluded: boolean;
   difference: number | null;
   deviationPct: number | null;
   warning: boolean;
@@ -184,7 +187,7 @@ async function getDatabaseDailyInputData(date: string): Promise<DailyInputData> 
     throw new Error("Missing basis, commodities, or active respondents.");
   }
 
-  const [submissions, indicatives, publishedIndices] = await Promise.all([
+  const [submissions, indicatives, publishedIndices, previousPublishedIndices] = await Promise.all([
     db.priceSubmission.findMany({
       where: {
         tradeDate,
@@ -205,6 +208,15 @@ async function getDatabaseDailyInputData(date: string): Promise<DailyInputData> 
       },
       select: { locked: true },
     }),
+    db.publishedIndex.findMany({
+      where: {
+        tradeDate: { lt: tradeDate },
+        deliveryBasisId: { in: basisIds },
+        status: "published",
+        locked: true,
+      },
+      orderBy: { tradeDate: "desc" },
+    }),
   ]);
   const lockedPublishedCount = publishedIndices.filter((index) => index.locked).length;
   const lockedForEditing = isPastTradeDate(date)
@@ -217,6 +229,20 @@ async function getDatabaseDailyInputData(date: string): Promise<DailyInputData> 
       indicative.priceUsdPerMt.toNumber(),
     ]),
   );
+  const previousPublishedByCommodity = new Map<string, number>();
+
+  for (const publishedIndex of previousPublishedIndices) {
+    const key = cellKey(
+      publishedIndex.commodityId,
+      publishedIndex.deliveryBasisId,
+      "previous",
+    );
+
+    if (!previousPublishedByCommodity.has(key)) {
+      previousPublishedByCommodity.set(key, publishedIndex.valueUsdPerMt.toNumber());
+    }
+  }
+
   const submissionsByCell = new Map<string, typeof submissions>();
 
   for (const submission of submissions) {
@@ -256,15 +282,27 @@ async function getDatabaseDailyInputData(date: string): Promise<DailyInputData> 
           ? fallbackSpikeForCommodityCode(commodity.code, date)
           : null);
       const price = selectedSubmission?.priceUsdPerMt.toNumber() ?? null;
+      const previousPublished =
+        basis
+          ? (previousPublishedByCommodity.get(
+              cellKey(commodity.id, basis.id, "previous"),
+            ) ?? null)
+          : null;
+      const autoExcluded = isAutoPreviousDayOutlier(
+        selectedSubmission,
+        previousPublished,
+      );
 
       return buildCell({
         commodityId: commodity.id,
         adminChanged: Boolean(adminSubmission && respondentSubmission),
         enteredByAdmin: Boolean(adminSubmission),
         enteredByRespondent: Boolean(respondentSubmission),
-        excluded: isSubmissionExcluded(selectedSubmission),
+        excluded: isSubmissionExcluded(selectedSubmission) || autoExcluded,
+        autoExcluded,
         respondentId: respondent.id,
         price,
+        previousPublished,
         spikeIndicative,
         status: getDatabaseSubmissionStatus(selectedSubmission),
       });
@@ -370,8 +408,10 @@ function getMockDailyInputData(date: string): DailyInputData {
             !selectedSubmission &&
             fallbackStatus === "submitted_by_respondent"),
         excluded: Boolean(selectedSubmission?.excluded),
+        autoExcluded: false,
         respondentId: respondent.id,
         price: selectedSubmission?.price ?? (isSpikeIndex ? null : price),
+        previousPublished: null,
         spikeIndicative,
         status,
       });
@@ -597,8 +637,10 @@ function buildCell({
   enteredByAdmin,
   enteredByRespondent,
   excluded,
+  autoExcluded,
   respondentId,
   price,
+  previousPublished,
   spikeIndicative,
   status,
 }: {
@@ -607,8 +649,10 @@ function buildCell({
   enteredByAdmin: boolean;
   enteredByRespondent: boolean;
   excluded: boolean;
+  autoExcluded: boolean;
   respondentId: string;
   price: number | null;
+  previousPublished: number | null;
   spikeIndicative: number | null;
   status: DailyInputStatus;
 }): DailyInputCell {
@@ -620,6 +664,15 @@ function buildCell({
     price === null || spikeIndicative === null || spikeIndicative <= 0
       ? null
       : (Math.abs(price - spikeIndicative) / spikeIndicative) * 100;
+  const previousDeviationPct =
+    price === null || previousPublished === null || previousPublished <= 0
+      ? null
+      : (Math.abs(price - previousPublished) / previousPublished) * 100;
+  const benchmarkWarning =
+    price !== null &&
+    spikeIndicative !== null &&
+    spikeIndicative > 0 &&
+    Math.abs(price - spikeIndicative) / spikeIndicative > WARNING_THRESHOLD;
 
   return {
     adminChanged,
@@ -627,16 +680,15 @@ function buildCell({
     enteredByAdmin,
     enteredByRespondent,
     excluded,
+    autoExcluded,
     respondentId,
     price,
     spikeIndicative,
+    previousPublished,
+    previousDeviationPct,
     difference,
     deviationPct,
-    warning:
-      price !== null &&
-      spikeIndicative !== null &&
-      spikeIndicative > 0 &&
-      Math.abs(price - spikeIndicative) / spikeIndicative > WARNING_THRESHOLD,
+    warning: benchmarkWarning || autoExcluded,
     status,
   };
 }
@@ -703,6 +755,72 @@ function buildSubmissionMetadata(
 
 export function isSubmissionExcluded(submission: { metadata?: unknown } | null | undefined) {
   return isJsonObject(submission?.metadata) && submission.metadata.excludedFromIndex === true;
+}
+
+export function hasManualExclusionDecision(
+  submission: { metadata?: unknown } | null | undefined,
+) {
+  return (
+    isJsonObject(submission?.metadata) &&
+    Object.prototype.hasOwnProperty.call(submission.metadata, "excludedFromIndex")
+  );
+}
+
+export function isAutoPreviousDayOutlier(
+  submission:
+    | {
+        metadata?: unknown;
+        priceUsdPerMt?: { toNumber(): number } | number | null;
+      }
+    | null
+    | undefined,
+  previousPublished: number | null | undefined,
+) {
+  const price = getSubmissionPrice(submission);
+
+  return (
+    !hasManualExclusionDecision(submission) &&
+    price !== null &&
+    previousPublished !== null &&
+    previousPublished !== undefined &&
+    previousPublished > 0 &&
+    Math.abs(price - previousPublished) / previousPublished > WARNING_THRESHOLD
+  );
+}
+
+export function shouldExcludeSubmission(
+  submission:
+    | {
+        metadata?: unknown;
+        priceUsdPerMt?: { toNumber(): number } | number | null;
+      }
+    | null
+    | undefined,
+  previousPublished: number | null | undefined,
+) {
+  return isSubmissionExcluded(submission) || isAutoPreviousDayOutlier(submission, previousPublished);
+}
+
+function getSubmissionPrice(
+  submission:
+    | {
+        priceUsdPerMt?: { toNumber(): number } | number | null;
+      }
+    | null
+    | undefined,
+) {
+  const value = submission?.priceUsdPerMt;
+
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  const numericValue = value.toNumber();
+  return Number.isFinite(numericValue) ? numericValue : null;
 }
 
 function isJsonObject(value: unknown): value is Prisma.JsonObject {

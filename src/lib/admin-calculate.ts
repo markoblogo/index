@@ -21,7 +21,9 @@ import {
 import { commodities } from "@/lib/mock-data";
 import {
   getDailyInputData,
+  isAutoPreviousDayOutlier,
   isSubmissionExcluded,
+  shouldExcludeSubmission,
   todayInputDate,
 } from "@/lib/admin-daily-inputs";
 import {
@@ -331,6 +333,7 @@ async function getDatabaseCalculationData(date: string): Promise<AdminCalculatio
         version: existingCalculation?.version ?? 1,
         respondentNameById: calculationInput.respondentNameById,
         selectedSubmissions: calculationInput.selectedSubmissions,
+        previousPublished: calculationInput.previousPublished,
         published: publishedIndex
           ? {
               value: publishedIndex.valueUsdPerMt.toNumber(),
@@ -433,24 +436,36 @@ async function persistDatabaseCalculations(
         .filter(isSubmissionExcluded)
         .map((submission) => submission.respondentId),
     );
+    const autoPreviousDayExcludedRespondentIds = new Set(
+      calculationInput.selectedSubmissions
+        .filter((submission) =>
+          isAutoPreviousDayOutlier(submission, calculationInput.previousPublished),
+        )
+        .map((submission) => submission.respondentId),
+    );
 
     await db.indexCalculationItem.createMany({
       data: calculationInput.selectedSubmissions.map((submission) => {
         const excluded = excludedByRespondent.get(submission.respondentId);
         const manuallyExcluded = manuallyExcludedRespondentIds.has(submission.respondentId);
+        const autoPreviousDayExcluded = autoPreviousDayExcludedRespondentIds.has(
+          submission.respondentId,
+        );
 
         return {
           calculationId: calculation.id,
           priceSubmissionId: submission.id,
           respondentId: submission.respondentId,
           priceUsdPerMt: submission.priceUsdPerMt,
-          included: !excluded && !manuallyExcluded,
+          included: !excluded && !manuallyExcluded && !autoPreviousDayExcluded,
           deviationPct: excluded
             ? new Prisma.Decimal(excluded.deviationPct)
             : new Prisma.Decimal(0),
           exclusionReason: manuallyExcluded
             ? "manual_exclude_from_index"
-            : excluded ? "outside_2pct_median_band" : null,
+            : autoPreviousDayExcluded
+              ? "previous_day_2pct_deviation"
+              : excluded ? "outside_2pct_median_band" : null,
         };
       }),
     });
@@ -692,7 +707,7 @@ async function getDatabaseCalculationContext(date: string) {
     return null;
   }
 
-  const [submissions, indicatives, calculations, published] = await Promise.all([
+  const [submissions, indicatives, calculations, published, previousPublished] = await Promise.all([
     db.priceSubmission.findMany({
       where: {
         tradeDate,
@@ -721,7 +736,24 @@ async function getDatabaseCalculationContext(date: string) {
         basketId: { in: basketIds },
       },
     }),
+    db.publishedIndex.findMany({
+      where: {
+        tradeDate: { lt: tradeDate },
+        deliveryBasisId: { in: basisIds },
+        basketId: { in: basketIds },
+        status: "published",
+        locked: true,
+      },
+      orderBy: { tradeDate: "desc" },
+    }),
   ]);
+  const previousPublishedIndices = new Map<string, (typeof previousPublished)[number]>();
+
+  for (const publishedIndex of previousPublished) {
+    if (!previousPublishedIndices.has(publishedIndex.commodityId)) {
+      previousPublishedIndices.set(publishedIndex.commodityId, publishedIndex);
+    }
+  }
 
   return {
     basisByCommodityId,
@@ -736,6 +768,7 @@ async function getDatabaseCalculationContext(date: string) {
     publishedIndices: new Map(
       published.map((publishedIndex) => [publishedIndex.commodityId, publishedIndex]),
     ),
+    previousPublishedIndices,
   };
 }
 
@@ -776,15 +809,18 @@ function buildDatabaseCalculationInput(
       item.commodityId === commodityId &&
       (!basis || item.deliveryBasisId === basis.id),
   );
+  const previousPublished =
+    context.previousPublishedIndices.get(commodityId)?.valueUsdPerMt.toNumber() ?? null;
 
   return {
     respondentNameById,
+    previousPublished,
     selectedSubmissions,
     spikeIndicative: indicative?.priceUsdPerMt.toNumber() ?? null,
     submissions: selectedSubmissions.map(
       (submission): PriceSubmission => ({
         respondentId: submission.respondentId,
-        price: isSubmissionExcluded(submission)
+        price: shouldExcludeSubmission(submission, previousPublished)
           ? undefined
           : submission.priceUsdPerMt.toNumber(),
       }),
@@ -824,6 +860,7 @@ function buildCalculationCommodity({
   published,
   basketRespondentCount,
   selectedSubmissions = [],
+  previousPublished = null,
 }: {
   basketRespondentCount: number;
   code: string;
@@ -838,6 +875,7 @@ function buildCalculationCommodity({
     priceUsdPerMt: { toNumber(): number };
     respondentId: string;
   }>;
+  previousPublished?: number | null;
 }): AdminCalculationCommodity {
   const spikeDifference =
     result.value === null || spikeIndicative === null
@@ -884,6 +922,24 @@ function buildCalculationCommodity({
             price: submission.priceUsdPerMt.toNumber(),
             deviationPct: 0,
             reason: "manual_exclude_from_index",
+          })),
+        selectedSubmissions
+          .filter((submission) =>
+            isAutoPreviousDayOutlier(submission, previousPublished),
+          )
+          .map((submission) => ({
+            respondentId: submission.respondentId,
+            respondentName: respondentNameById.get(submission.respondentId) ?? submission.respondentId,
+            price: submission.priceUsdPerMt.toNumber(),
+            deviationPct:
+              previousPublished && previousPublished > 0
+                ? roundToTwoDecimals(
+                    (Math.abs(submission.priceUsdPerMt.toNumber() - previousPublished) /
+                      previousPublished) *
+                      100,
+                  )
+                : 0,
+            reason: "previous_day_2pct_deviation",
           })),
       ),
     published,

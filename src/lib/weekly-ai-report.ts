@@ -1879,7 +1879,7 @@ function buildDeterministicWeeklyReport(
                 : "The grains block reads weekly movement through port and border positions and through the shifting market anchor between corn and wheat. The key point is not one day, but the confirmed direction over the week.",
           },
           {
-            title: "SPIKE Spot Commodity Index Ukraine",
+            title: "Spot Index Ukraine",
             body:
               locale === "uk"
                 ? `Тижнева картина показує, що кукурудза змінилася на ${formatSigned(corn?.weeklyChangeAbs ?? 0)} USD/t, пшениця 11.5% — на ${formatSigned(wheat?.weeklyChangeAbs ?? 0)} USD/t, а фуражна пшениця — на ${formatSigned(feedWheat?.weeklyChangeAbs ?? 0)} USD/t. Це дає читачу не список цифр, а структуру руху.`
@@ -1934,7 +1934,7 @@ function buildDeterministicWeeklyReport(
                 : "The oilseeds and processing block reads weekly soybean and sunflower behaviour through processing, domestic demand and export geography. The key is not only the benchmark, but also how it affects linked products.",
           },
           {
-            title: "SPIKE Spot Commodity Index Ukraine",
+            title: "Spot Index Ukraine",
             body:
               locale === "uk"
                 ? `Соя ГМО завершила тиждень на ${formatValue(soybean?.latestValue)} USD/t, а соняшник — на ${formatValue(sunflower?.latestValue)} USD/t. Ці позиції формують основу для читання переробного сегмента.`
@@ -2141,7 +2141,7 @@ export function buildWeeklyTelegramMessages(
     formatTelegramWeekEnd(weekEndDate),
     [
       `🧠 <b>Аналітичний висновок тижня</b>\nЗерновий блок читався через кукурудзу, пшеницю та різницю між портом і кордоном, яка задавала ринкову опору тижня.`,
-      `📈 <b>SPIKE Spot Commodity Index Ukraine</b>\n• Кукурудза, пшениця 11.5% та фуражна пшениця показали тижневий рух у межах опублікованих значень.\n• FCA Чоп: ${formatValue(borderCorn?.latestValue)} USD/t.\n• Ринок читав не лише самі ціни, а й різницю між портом і кордоном.`,
+      `📈 <b>Spot Index Ukraine</b>\n• Кукурудза, пшениця 11.5% та фуражна пшениця показали тижневий рух у межах опублікованих значень.\n• FCA Чоп: ${formatValue(borderCorn?.latestValue)} USD/t.\n• Ринок читав не лише самі ціни, а й різницю між портом і кордоном.`,
       `🌽 <b>Кукурудза</b>\n• Кукурудза закріпилася як головна експортна опора тижня.\n• Опубліковане значення: ${formatValue(corn?.latestValue)} USD/t.\n• Тижневий рух: ${formatSigned(corn?.weeklyChangeAbs ?? 0)} USD/t.`,
       `🌾 <b>Пшениця</b>\n• Пшениця 11.5% та фуражна пшениця показали власну структуру попиту.\n• Пшениця 11.5%: ${formatValue(wheat?.latestValue)} USD/t.\n• Фуражна пшениця: ${formatValue(feedWheat?.latestValue)} USD/t.`,
       `🌍 <b>Експортна географія</b>\nПоточний тиждень найкраще читався через CPT Одеса та FCA Чоп, що допомогло окремо побачити портову й прикордонну логіку.`,
@@ -2154,7 +2154,7 @@ export function buildWeeklyTelegramMessages(
     formatTelegramWeekEnd(weekEndDate),
     [
       `🧠 <b>Аналітичний висновок тижня</b>\nОлійний блок читався через соняшник і сою, а також через те, як ці позиції впливали на тон переробки та суміжні продукти.`,
-      `📈 <b>SPIKE Spot Commodity Index Ukraine</b>\n• Соняшник і соя ГМО залишилися головними опорними позиціями переробного сегмента.\n• Тиждень читався через переробку, внутрішній попит і експортний фон.`,
+      `📈 <b>Spot Index Ukraine</b>\n• Соняшник і соя ГМО залишилися головними опорними позиціями переробного сегмента.\n• Тиждень читався через переробку, внутрішній попит і експортний фон.`,
       `🌻 <b>Соняшник</b>\n• Соняшник залишився ключовим для читання переробного ринку.\n• Опубліковане значення: ${formatValue(sunflower?.latestValue)} USD/t.\n• Тижневий рух: ${formatSigned(sunflower?.weeklyChangeAbs ?? 0)} USD/t.`,
       `🌱 <b>Соя</b>\n• Соя ГМО зберегла важливість для переробного кошика.\n• Опубліковане значення: ${formatValue(soybean?.latestValue)} USD/t.\n• Тижневий рух: ${formatSigned(soybean?.weeklyChangeAbs ?? 0)} USD/t.`,
       `🛢 <b>Олії, макуха та продукти переробки</b>\nСуміжні продукти читаються через базові олійні позиції та зміну тону переробки.`,

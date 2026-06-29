@@ -105,7 +105,7 @@ export function buildSsiDailyReportView(input: {
         "Ціни вказані для поставки протягом 30 днів.",
         "Паритет - це відображення цін заводів із різних регіонів України, приведених до єдиного базису CPT Одеса з урахуванням логістичних витрат.",
       ],
-      title: "SPIKE Spot Commodity Index Ukraine",
+      title: "Spot Index Ukraine",
     },
     newsSection: {
       themes: buildDailyNewsThemes(input.localizedSummary, input.locale, "spike"),
@@ -243,7 +243,7 @@ export function renderSsiDailyIndexTelegramSection(indexSection: NonNullable<Med
       for (const item of items) {
         const vat = item.vatIncluded ? " в т.ч. ПДВ" : "";
         lines.push(
-          `• ${escapeHtml(item.name)} - <b>${escapeHtml(formatIndexValue(item.value, item.unit))}</b>${vat} (${escapeHtml(formatIndexChange(item.dayChange, "d/d"))}; ${escapeHtml(formatIndexChange(item.previousFridayChange, "до пт"))})`,
+          `• ${escapeHtml(item.name)} - <b>${escapeHtml(formatIndexValue(item.value, item.unit))}</b>${vat} (${escapeHtml(formatIndexChange(item.dayChange, "д/д"))}; ${escapeHtml(formatIndexChange(item.previousFridayChange, "т/т"))})`,
         );
       }
     }

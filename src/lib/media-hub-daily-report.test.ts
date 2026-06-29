@@ -145,7 +145,7 @@ describe("media hub daily report formatting", () => {
       "OILSEEDS CRUSH",
     ]);
     expect(report.newsSection.themes.map((theme) => theme.title)).toContain("🚚 Логістика та експорт");
-    expect(telegram.indexOf("SPIKE Spot Commodity Index Ukraine"))
+    expect(telegram.indexOf("Spot Index Ukraine"))
       .toBeLessThan(telegram.indexOf("🔎 Головні сигнали"));
     expect(telegram).not.toContain("↳");
   });

@@ -572,10 +572,12 @@ function MatrixCell({
   locked: boolean;
   showSpikeComparison: boolean;
 }) {
+  const hasVisibleWarning = cell.warning && (showSpikeComparison || cell.autoExcluded);
+
   return (
     <td
       className={
-        cell.warning && showSpikeComparison
+        hasVisibleWarning
           ? `${compact ? "min-w-[13rem]" : "min-w-[15rem]"} admin-warning-cell border-l border-black/10 bg-red-50 px-2.5 py-2.5 align-top`
           : `${compact ? "min-w-[13rem]" : "min-w-[15rem]"} border-l border-black/10 px-2.5 py-2.5 align-top`
       }
@@ -584,7 +586,7 @@ function MatrixCell({
         <input
           aria-label={`${cell.commodityId} ${cell.respondentId} price`}
           className={
-            cell.warning && showSpikeComparison
+            hasVisibleWarning
               ? `${compact ? "px-2.5 py-1.5 text-[0.95rem]" : "px-3 py-2 text-sm"} w-full border border-red-300 bg-white font-semibold text-uga-dark focus:border-red-500 focus:ring-red-500`
               : `${compact ? "px-2.5 py-1.5 text-[0.95rem]" : "px-3 py-2 text-sm"} w-full border border-black/20 bg-white font-semibold text-uga-dark focus:border-uga-green focus:ring-uga-green`
           }
@@ -627,6 +629,9 @@ function MatrixCell({
           {!compact && cell.status === "missing" ? (
             <SourceBadge active={false} label="Missing" />
           ) : null}
+          {cell.autoExcluded ? (
+            <SourceBadge active label="Prev day 2%" tone="warning" />
+          ) : null}
           {cell.excluded ? <SourceBadge active label="Excluded" tone="warning" /> : null}
         </div>
         <div className="rounded-[0.9rem] border border-black/8 bg-black/[0.03] px-2.5 py-2">
@@ -646,9 +651,19 @@ function MatrixCell({
             Large deviation vs benchmark
           </p>
         ) : null}
+        {cell.autoExcluded && cell.previousPublished !== null ? (
+          <p className="text-xs font-semibold text-red-700">
+            Auto-excluded: {formatPercent(cell.previousDeviationPct)} vs previous
+            published ${cell.previousPublished.toFixed(2)}
+          </p>
+        ) : null}
       </div>
     </td>
   );
+}
+
+function formatPercent(value: number | null) {
+  return value === null ? "n/a" : `${value.toFixed(2)}%`;
 }
 
 function SourceBadge({
