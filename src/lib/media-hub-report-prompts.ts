@@ -69,7 +69,7 @@ export function buildSsiDailyReportPrompt(input: {
     noHallucinationRules(),
     commonJsonRules(input),
     renderIndexData(input.latestData, isUk),
-    renderManualMaterials(input.manualMaterials ?? []),
+    renderManualMaterials(input.manualMaterials ?? [], input.kind),
     renderSnapshotEvidence(input.snapshots, input.kind),
   ].join("\n\n");
 }
@@ -104,7 +104,7 @@ export function build1d3xDailyReportPrompt(input: {
     "Omit thematic sections that have no concrete source-backed facts. Do not become Ukraine-only unless Ukraine/Black Sea materially drives the global market.",
     noHallucinationRules(),
     commonJsonRules(input),
-    renderManualMaterials(input.manualMaterials ?? []),
+    renderManualMaterials(input.manualMaterials ?? [], input.kind),
     renderSnapshotEvidence(input.snapshots, input.kind),
   ].join("\n\n");
 }
@@ -130,8 +130,11 @@ export function buildSsiWeeklyMonthlyPrompt(input: {
     "No trading recommendations. No invented index values, futures prices, export volumes, destinations, dates or sources.",
     "Avoid generic phrases: ринок перебуває під тиском; залишається стабільним; демонструє зростання; свідчить про; формує баланс; нівелює.",
     input.kind === "monthly"
-      ? "Monthly adaptation: focus on persistent drivers, cumulative dynamics and structural shifts. Avoid day-by-day narrative."
+      ? "Monthly adaptation: synthesize the previous three weekly reports plus the current/fourth week evidence. Focus on persistent drivers, cumulative dynamics and structural shifts. Avoid day-by-day narrative."
       : "Weekly adaptation: cover the full reporting period, not a recap of the latest daily note.",
+    input.kind === "monthly"
+      ? "Monthly report must be materially larger than daily/weekly notes: target 45-80 summary array items with 3-6 concrete narrative items under every sourced section. Do not stop after headings."
+      : "Weekly report target: 25-45 summary array items with concrete narrative items under every sourced section.",
     commonJsonRules(input),
     "Required structure inside summary array:",
     [
@@ -152,7 +155,7 @@ export function buildSsiWeeklyMonthlyPrompt(input: {
       "Final footer: Spike Spot Index / https://spike.1d3x.com/",
     ].join("\n"),
     renderIndexData(input.latestData, true),
-    renderManualMaterials(input.manualMaterials ?? []),
+    renderManualMaterials(input.manualMaterials ?? [], input.kind),
     renderHistoricalContext(input.historicalSummaries ?? []),
     renderSnapshotEvidence(input.snapshots, input.kind),
     renderAvoidPhrases(input.avoidPhrases ?? []),
@@ -190,8 +193,11 @@ export function build1d3xWeeklyMonthlyPrompt(input: {
     "Brand footer must be exactly: 1D3X / https://1d3x.com/",
     "No trading recommendations. No invented values, destinations, dates or sources.",
     input.kind === "monthly"
-      ? "Monthly adaptation: persistent drivers and cumulative shifts, using weekly reports plus fourth-week daily reports when available."
+      ? "Monthly adaptation: synthesize the previous three weekly reports plus current/fourth week evidence. Cover persistent drivers and cumulative shifts, not a short digest."
       : "Weekly adaptation: full week synthesis, not a latest-daily recap.",
+    input.kind === "monthly"
+      ? "Monthly report must be materially larger than daily/weekly notes: target 45-80 summary array items with 3-6 concrete narrative items under every sourced section. Do not stop after headings."
+      : "Weekly report target: 25-45 summary array items with concrete narrative items under every sourced section.",
     commonJsonRules(input),
     "Required structure inside summary array:",
     [
@@ -203,7 +209,7 @@ export function build1d3xWeeklyMonthlyPrompt(input: {
       "Part IV. Regional focus: only relevant regions from source evidence.",
       "Final footer: 1D3X / https://1d3x.com/",
     ].join("\n"),
-    renderManualMaterials(input.manualMaterials ?? []),
+    renderManualMaterials(input.manualMaterials ?? [], input.kind),
     renderHistoricalContext(input.historicalSummaries ?? []),
     renderSnapshotEvidence(input.snapshots, input.kind),
     renderAvoidPhrases(input.avoidPhrases ?? []),
@@ -220,7 +226,9 @@ function commonJsonRules(input: {
     "Return strict JSON only. Shape: {\"title\":\"...\",\"summary\":[\"section or paragraph\",\"...\"]}.",
     input.kind === "daily"
       ? "Use section headings plus concise bullet-text items; keep the full summary under 28 array items."
-      : "Use substantial sectioned summary items. Omit empty sections completely.",
+      : input.kind === "weekly"
+        ? "Use substantial sectioned summary items. Target 25-45 summary array items. Omit empty sections completely."
+        : "Use a full monthly report, not a digest. Target 45-80 summary array items. Omit empty sections completely.",
     "Paraphrase source materials. Do not copy long copyrighted text. If data is missing, omit that item or section completely.",
   ].join("\n");
 }
@@ -237,7 +245,7 @@ function renderIndexData(latestData: PublicLatestItem[], isUk: boolean) {
 }
 
 function renderSnapshotEvidence(snapshots: MediaHubWindowSnapshot[], kind: ReportKind) {
-  const feedLimit = kind === "daily" ? 24 : 80;
+  const feedLimit = kind === "daily" ? 24 : kind === "weekly" ? 90 : 140;
   const feedLines = snapshots
     .flatMap((snapshot) => snapshot.feed.map((item) => ({ item, snapshot })))
     .filter(({ item }) => scoreEvidenceText(`${item.source} ${item.title} ${item.summary} ${item.tags.join(" ")}`) > 0)
@@ -258,7 +266,7 @@ function renderSnapshotEvidence(snapshots: MediaHubWindowSnapshot[], kind: Repor
   ].join("\n");
 }
 
-function renderManualMaterials(materials: MediaHubManualMaterialDigest[]) {
+function renderManualMaterials(materials: MediaHubManualMaterialDigest[], kind: ReportKind) {
   const ranked = materials
     .map((material) => ({ material, score: scoreManualMaterial(material) }))
     .filter((item) => item.score > 0)
@@ -270,7 +278,7 @@ function renderManualMaterials(materials: MediaHubManualMaterialDigest[]) {
 
   return [
     "Additional API/manual evidence:",
-    ...ranked.slice(0, 24).map(({ material }, index) =>
+    ...ranked.slice(0, kind === "daily" ? 24 : kind === "weekly" ? 44 : 70).map(({ material }, index) =>
       `${index + 1}. ${material.sourceDomain || material.originalFilename || material.originalUrl || material.id} | ${formatMaterialEvidence(material)}`,
     ),
     ...renderVisualEvidence(ranked.map(({ material }) => material)),
@@ -322,7 +330,7 @@ function renderHistoricalContext(items: string[]) {
 
   return [
     "Recent report context (use only when source-backed):",
-    ...items.slice(0, 20).map((item, index) => `${index + 1}. ${item}`),
+    ...items.slice(0, 48).map((item, index) => `${index + 1}. ${item}`),
   ].join("\n");
 }
 

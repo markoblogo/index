@@ -70,11 +70,11 @@
     },
     {
       "path": "/api/cron/media-hub-publish-retry",
-      "schedule": "5 12 * * 6"
+      "schedule": "*/5 12 * * 6"
     },
     {
       "path": "/api/cron/media-hub-publish-retry",
-      "schedule": "5 17 * * 1-5"
+      "schedule": "*/5 17 * * 1-5"
     }
   ]
 }

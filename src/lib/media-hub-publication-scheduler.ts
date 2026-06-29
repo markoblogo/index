@@ -555,6 +555,8 @@ async function buildTransientMediaHubSnapshotReport(
     ? [] as string[]
     : await getPreviousReportSummariesForContext({
       kind,
+      periodEndDate,
+      periodStartDate,
       tenantId,
     }).catch((error: unknown) => {
       if (!isPlatformSite()) throw error;
@@ -742,7 +744,7 @@ function buildNonDailyFallbackReport(input: {
     .filter(isReportWorthyMaterial)
     .map(extractMaterialSignal)
     .filter((item): item is EvidenceSignal => Boolean(item))
-    .slice(0, 24);
+    .slice(0, input.kind === "monthly" ? 48 : 28);
 
   const feedItems = input.snapshots
     .flatMap((snapshot) => snapshot.feed)
@@ -753,7 +755,7 @@ function buildNonDailyFallbackReport(input: {
       tags: item.tags.join(" "),
       title: item.title,
     }))
-    .slice(0, 20);
+    .slice(0, input.kind === "monthly" ? 44 : 24);
 
   const signals = dedupeEvidenceSignals([...materialItems, ...feedItems]);
   if (signals.length === 0) {
@@ -766,18 +768,18 @@ function buildNonDailyFallbackReport(input: {
   ;
 
   const sections = [
-    section(input.tenant === "platform" ? "🔎 Main signals" : "🔎 Головні сигнали", signals.slice(0, 5)),
+    section(input.tenant === "platform" ? "🔎 Main signals" : "🔎 Головні сигнали", signals.slice(0, input.kind === "monthly" ? 10 : 6)),
     section(
       input.tenant === "platform" ? "🌾 Grain logistics" : "🚚 Логістика",
-      filterSignals(signals, /logistics|rail|port|vessel|route|shipment|freight|truck|barge|black sea|bosphorus/i).slice(0, 4),
+      filterSignals(signals, /logistics|rail|port|vessel|route|shipment|freight|truck|barge|black sea|bosphorus/i).slice(0, input.kind === "monthly" ? 8 : 5),
     ),
     section(
       input.tenant === "platform" ? "🌽 Grains" : "🌾 Зернові",
-      filterSignals(signals, /wheat|corn|maize|grain|barley|sorghum/i).slice(0, 4),
+      filterSignals(signals, /wheat|corn|maize|grain|barley|sorghum/i).slice(0, input.kind === "monthly" ? 8 : 5),
     ),
     section(
       input.tenant === "platform" ? "🌱 Oilseeds and vegetable oils" : "🌱 Олійні та переробка",
-      filterSignals(signals, /soy|soybean|oil|rapeseed|canola|sunflower|vegetable/i).slice(0, 4),
+      filterSignals(signals, /soy|soybean|oil|rapeseed|canola|sunflower|vegetable/i).slice(0, input.kind === "monthly" ? 8 : 5),
     ),
   ]
     .flat();
@@ -1357,6 +1359,8 @@ async function getPreviousReportAvoidPhrases(input: {
 
 async function getPreviousReportSummariesForContext(input: {
   kind: Exclude<MediaHubPublicationKind, "none">;
+  periodEndDate: string;
+  periodStartDate: string;
   tenantId: string;
 }) {
   if (!hasDatabaseUrl()) {
@@ -1365,19 +1369,38 @@ async function getPreviousReportSummariesForContext(input: {
 
   await ensureMediaHubReportStorage();
 
-  const rows = await db.$queryRawUnsafe<MediaHubReportRow[]>(
-    `
-      SELECT "contentJson"
-      FROM "MediaHubReport"
-      WHERE "tenantId" = $1
-        AND "kind" = $2
-        AND "status" = 'published'
-      ORDER BY "periodEnd" DESC
-      LIMIT 5
-    `,
-    input.tenantId,
-    input.kind,
-  );
+  const rows = input.kind === "monthly"
+    ? await db.$queryRawUnsafe<MediaHubReportRow[]>(
+      `
+        SELECT "contentJson"
+        FROM "MediaHubReport"
+        WHERE "tenantId" = $1
+          AND "kind" = 'weekly'
+          AND "status" = 'published'
+          AND "periodEnd" >= $2::date
+          AND "periodEnd" <= $3::date
+        ORDER BY "periodEnd" ASC
+        LIMIT 4
+      `,
+      input.tenantId,
+      input.periodStartDate,
+      input.periodEndDate,
+    )
+    : await db.$queryRawUnsafe<MediaHubReportRow[]>(
+      `
+        SELECT "contentJson"
+        FROM "MediaHubReport"
+        WHERE "tenantId" = $1
+          AND "kind" = $2
+          AND "status" = 'published'
+          AND "periodEnd" < $3::date
+        ORDER BY "periodEnd" DESC
+        LIMIT 5
+      `,
+      input.tenantId,
+      input.kind,
+      input.periodEndDate,
+    );
 
   const summaryLines = rows.flatMap((row) => {
     const content = parseMediaHubReportContent(row.contentJson);
@@ -1397,7 +1420,7 @@ async function getPreviousReportSummariesForContext(input: {
       .map((line) => line.trim());
   });
 
-  return dedupeNonEmpty(summaryLines).slice(0, 30);
+  return dedupeNonEmpty(summaryLines).slice(0, input.kind === "monthly" ? 72 : 30);
 }
 
 function normalizeMediaHubKind(value: unknown): Exclude<MediaHubPublicationKind, "none"> {

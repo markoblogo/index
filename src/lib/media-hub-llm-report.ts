@@ -120,7 +120,7 @@ async function callResponsesApi(input: {
   const useWebSearch = input.kind !== "daily";
   const requestBody: Record<string, unknown> = {
     input: input.prompt,
-    max_output_tokens: input.kind === "daily" ? 1700 : input.kind === "weekly" ? 3600 : 4200,
+    max_output_tokens: getMaxOutputTokens(input.kind),
     model: input.model,
     temperature: 0.25,
   };
@@ -161,7 +161,7 @@ async function callChatCompletionsApi(input: {
 }): Promise<GenerationResult> {
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     body: JSON.stringify({
-      max_tokens: input.kind === "daily" ? 1700 : input.kind === "weekly" ? 3600 : 4200,
+      max_tokens: getMaxOutputTokens(input.kind),
       messages: [
         {
           content: "Return strict JSON only with keys title and summary. summary must be an array of strings.",
@@ -274,7 +274,7 @@ function parseGeneratedJson(value: string, kind: MediaHubReportKind): MediaHubLo
           .filter((item): item is string => typeof item === "string")
           .map((item) => item.trim())
           .filter(Boolean)
-          .slice(0, kind === "daily" ? 40 : 120)
+          .slice(0, kind === "daily" ? 40 : kind === "weekly" ? 140 : 220)
       : [];
     const summary = sanitizeGeneratedSummary(rawSummary);
 
@@ -317,7 +317,7 @@ function sanitizeGeneratedSummary(summary: string[]) {
 }
 
 function isUsableGeneratedSummary(summary: string[], kind: MediaHubReportKind) {
-  const minNarrativeItems = kind === "daily" ? 3 : kind === "weekly" ? 10 : 14;
+  const minNarrativeItems = kind === "daily" ? 3 : kind === "weekly" ? 14 : 22;
   const narrativeItems = summary.filter((item) => {
     const normalized = normalizeGeneratedLine(item);
     if (!normalized) return false;
@@ -380,6 +380,10 @@ function getMediaHubModel(kind: MediaHubReportKind) {
     process.env.SPIKE_WEEKLY_REPORT_MODEL ||
     process.env.SPIKE_AI_BRIEF_MODEL ||
     "gpt-4.1-mini";
+}
+
+function getMaxOutputTokens(kind: MediaHubReportKind) {
+  return kind === "daily" ? 2200 : kind === "weekly" ? 6500 : 9000;
 }
 
 async function safeOpenAiResponseError(response: Response) {

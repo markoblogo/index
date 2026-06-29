@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { randomUUID } from "node:crypto";
+import { db, hasDatabaseUrl } from "@/lib/db";
 import {
   extractUrlsFromText,
   ingestMediaHubFileMaterial,
@@ -37,6 +39,18 @@ type TelegramMessage = {
   from?: { id?: number | string; username?: string };
   message_id: number;
   text?: string;
+};
+
+type PendingTelegramMaterial = {
+  chatId: string;
+  createdAt: Date;
+  documentFileId: string | null;
+  documentFileName: string | null;
+  documentMimeType: string | null;
+  fromId: string | null;
+  messageId: string;
+  text: string | null;
+  urls: string[];
 };
 
 const MEDIA_HUB_BOT_TOKEN_ENV_NAMES = [
@@ -153,6 +167,8 @@ export async function POST(request: Request) {
   }
 
   const routed = parseMediaHubMaterialHashtags(text);
+  const urls = extractUrlsFromText(text);
+  const hasIncomingMaterial = urls.length > 0 || Boolean(message.document);
   const inferredTenantIds = isCorporateGroupMessage && routed.tenantIds.length === 0
     ? inferCorporateTelegramTenants(text)
     : [];
@@ -160,6 +176,17 @@ export async function POST(request: Request) {
     ? routed.tenantIds
     : inferredTenantIds;
   if (routed.tenantIds.length === 0) {
+    if (hasIncomingMaterial) {
+      const pending = await savePendingTelegramMaterial(message, urls);
+      await sendTelegramText(
+        botToken.value,
+        String(message.chat.id),
+        pending.status === "saved"
+          ? "Матеріал отримано. Надішліть наступним повідомленням теги: #ssi або #1d3x та #weekly/#monthly/#daily."
+          : "Матеріал отримано, але тимчасове збереження недоступне. Надішліть матеріал повторно разом із тегами #ssi або #1d3x.",
+      );
+      return NextResponse.json({ ok: true, pending });
+    }
     if (isCorporateGroupMessage && tenantIds.length === 0 && text.trim()) {
       await ingestMediaHubTextMaterial({
         kind: "source_candidate",
@@ -182,8 +209,21 @@ export async function POST(request: Request) {
     }
   }
 
-  const urls = extractUrlsFromText(text);
   const results = [];
+
+  if (!hasIncomingMaterial) {
+    const pending = await consumePendingTelegramMaterial(message);
+    if (pending) {
+      const pendingResults = await processPendingTelegramMaterial({
+        botToken: botToken.value,
+        kind: routed.kind,
+        message,
+        pending,
+        tenantIds,
+      });
+      return NextResponse.json({ ok: true, pendingApplied: true, results: pendingResults });
+    }
+  }
 
   for (const tenantId of tenantIds) {
     for (const url of urls) {
@@ -276,6 +316,188 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json({ ok: true, results });
+}
+
+async function savePendingTelegramMaterial(message: TelegramMessage, urls: string[]) {
+  if (!hasDatabaseUrl()) {
+    return { skippedReason: "database_not_configured", status: "skipped" as const };
+  }
+  await ensurePendingTelegramMaterialStorage();
+  await db.$executeRawUnsafe(
+    `
+      DELETE FROM "MediaHubTelegramPendingMaterial"
+      WHERE "createdAt" < NOW() - INTERVAL '48 hours'
+         OR ("chatId" = $1 AND COALESCE("fromId", '') = COALESCE($2, ''))
+    `,
+    String(message.chat.id),
+    message.from?.id ? String(message.from.id) : null,
+  );
+  await db.$executeRawUnsafe(
+    `
+      INSERT INTO "MediaHubTelegramPendingMaterial" (
+        "id", "chatId", "fromId", "messageId", "urlsJson", "documentFileId",
+        "documentFileName", "documentMimeType", "text", "createdAt"
+      )
+      VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9, NOW())
+    `,
+    randomUUID(),
+    String(message.chat.id),
+    message.from?.id ? String(message.from.id) : null,
+    String(message.message_id),
+    JSON.stringify(urls),
+    message.document?.file_id ?? null,
+    message.document?.file_name ?? null,
+    message.document?.mime_type ?? null,
+    [message.text, message.caption].filter(Boolean).join(" ").trim() || null,
+  );
+  return { status: "saved" as const };
+}
+
+async function consumePendingTelegramMaterial(
+  message: TelegramMessage,
+): Promise<PendingTelegramMaterial | null> {
+  if (!hasDatabaseUrl()) {
+    return null;
+  }
+  await ensurePendingTelegramMaterialStorage();
+  const rows = await db.$queryRawUnsafe<Array<{
+    chatId: string;
+    createdAt: Date;
+    documentFileId: string | null;
+    documentFileName: string | null;
+    documentMimeType: string | null;
+    fromId: string | null;
+    id: string;
+    messageId: string;
+    text: string | null;
+    urlsJson: unknown;
+  }>>(
+    `
+      SELECT *
+      FROM "MediaHubTelegramPendingMaterial"
+      WHERE "chatId" = $1
+        AND COALESCE("fromId", '') = COALESCE($2, '')
+        AND "createdAt" >= NOW() - INTERVAL '48 hours'
+      ORDER BY "createdAt" DESC
+      LIMIT 1
+    `,
+    String(message.chat.id),
+    message.from?.id ? String(message.from.id) : null,
+  );
+  const row = rows[0];
+  if (!row) {
+    return null;
+  }
+  await db.$executeRawUnsafe(
+    `DELETE FROM "MediaHubTelegramPendingMaterial" WHERE "id" = $1`,
+    row.id,
+  );
+  return {
+    chatId: row.chatId,
+    createdAt: row.createdAt,
+    documentFileId: row.documentFileId,
+    documentFileName: row.documentFileName,
+    documentMimeType: row.documentMimeType,
+    fromId: row.fromId,
+    messageId: row.messageId,
+    text: row.text,
+    urls: Array.isArray(row.urlsJson)
+      ? row.urlsJson.filter((item): item is string => typeof item === "string")
+      : [],
+  };
+}
+
+async function processPendingTelegramMaterial(input: {
+  botToken: string;
+  kind: ReturnType<typeof parseMediaHubMaterialHashtags>["kind"];
+  message: TelegramMessage;
+  pending: PendingTelegramMaterial;
+  tenantIds: MediaHubManualMaterialTenant[];
+}) {
+  const results = [];
+  for (const tenantId of input.tenantIds) {
+    for (const url of input.pending.urls) {
+      const result = await ingestMediaHubLinkMaterial({
+        kind: input.kind,
+        receivedFrom: "telegram",
+        sourceType: "telegram_link",
+        telegramChatId: input.pending.chatId,
+        telegramFromId: input.pending.fromId ?? undefined,
+        telegramMessageId: input.pending.messageId,
+        tenantId,
+        url,
+      });
+      results.push(result);
+      await replyForResult({
+        botToken: input.botToken,
+        kind: input.kind,
+        label: url,
+        message: input.message,
+        sourceType: "link",
+        status: result.extractionStatus,
+        tenantId,
+      });
+    }
+    if (input.pending.documentFileId) {
+      const file = await downloadTelegramFile(input.botToken, input.pending.documentFileId);
+      const result = file
+        ? await ingestMediaHubFileMaterial({
+            bytes: file,
+            filename: input.pending.documentFileName ?? "telegram-upload",
+            kind: input.kind,
+            mimeType: input.pending.documentMimeType ?? "application/octet-stream",
+            receivedFrom: "telegram",
+            sourceType: "telegram_file",
+            telegramChatId: input.pending.chatId,
+            telegramFromId: input.pending.fromId ?? undefined,
+            telegramMessageId: input.pending.messageId,
+            tenantId,
+          })
+        : {
+            extractionStatus: "failed",
+            kind: input.kind,
+            message: "Telegram file download failed.",
+            tenantId,
+          };
+      results.push(result);
+      await replyForResult({
+        botToken: input.botToken,
+        kind: input.kind,
+        label: input.pending.documentFileName ?? "file",
+        message: input.message,
+        mimeType: input.pending.documentMimeType ?? "application/octet-stream",
+        sourceType: "file",
+        status: result.extractionStatus,
+        tenantId,
+      });
+    }
+  }
+  if (results.length === 0) {
+    await sendTelegramText(input.botToken, String(input.message.chat.id), "Очікуючий матеріал не містить посилання або файлу. Надішліть матеріал повторно.");
+  }
+  return results;
+}
+
+async function ensurePendingTelegramMaterialStorage() {
+  await db.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "MediaHubTelegramPendingMaterial" (
+      "id" TEXT NOT NULL,
+      "chatId" TEXT NOT NULL,
+      "fromId" TEXT,
+      "messageId" TEXT NOT NULL,
+      "urlsJson" JSONB NOT NULL DEFAULT '[]'::jsonb,
+      "documentFileId" TEXT,
+      "documentFileName" TEXT,
+      "documentMimeType" TEXT,
+      "text" TEXT,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "MediaHubTelegramPendingMaterial_pkey" PRIMARY KEY ("id")
+    )
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE INDEX IF NOT EXISTS "MediaHubTelegramPendingMaterial_chat_idx"
+    ON "MediaHubTelegramPendingMaterial"("chatId", "fromId", "createdAt" DESC)
+  `);
 }
 
 async function handleBotCommand(
