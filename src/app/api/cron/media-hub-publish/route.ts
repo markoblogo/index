@@ -3,11 +3,11 @@ import { isCronRequestAuthorized } from "@/lib/cron-auth";
 import { hasDatabaseUrl } from "@/lib/db";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import {
-  getMediaHubPublicationCatchupDue,
   getMediaHubPublicationCatchupWindowMinutes,
   getMediaHubPublicationPlan,
   getMediaHubReport,
   getParisLocalDate,
+  isMediaHubPublicationCatchupDue,
   isMediaHubPublicationDue,
   runDueMediaHubPublication,
   type MediaHubPublicationKind,

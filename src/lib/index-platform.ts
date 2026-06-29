@@ -100,7 +100,12 @@ export type IndexConfig = {
     basketCode: string;
     basketName: string;
   }>;
-  respondents: Array<{ id: string; legalName: string }>;
+  respondents: Array<{
+    collectionMode?: "self_service" | "telegram_request" | "manual_outreach";
+    id: string;
+    legalName: string;
+    seedAuthContact?: boolean;
+  }>;
   commodities: IndexCommodityConfig[];
 };
 
@@ -670,6 +675,36 @@ export const INDEX_CONFIGS: Record<IndexTenantId, IndexConfig> = {
         legalName: "Admin market fallback",
       },
       { id: "fop-solovey", legalName: "ФОП Соловей" },
+      {
+        id: "kernel",
+        legalName: "Кернел",
+        collectionMode: "manual_outreach",
+        seedAuthContact: false,
+      },
+      {
+        id: "mhp",
+        legalName: "МХП",
+        collectionMode: "manual_outreach",
+        seedAuthContact: false,
+      },
+      {
+        id: "brooklyn",
+        legalName: "Бруклін",
+        collectionMode: "manual_outreach",
+        seedAuthContact: false,
+      },
+      {
+        id: "continental",
+        legalName: "Контінентал",
+        collectionMode: "manual_outreach",
+        seedAuthContact: false,
+      },
+      {
+        id: "lnz",
+        legalName: "ЛНЗ",
+        collectionMode: "manual_outreach",
+        seedAuthContact: false,
+      },
     ],
     commodities: spikeCommodities,
   },

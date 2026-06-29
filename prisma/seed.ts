@@ -32,6 +32,9 @@ const commodities = activeIndex.commodities.map((commodity) => ({
 }));
 
 const respondents = activeIndex.respondents;
+const respondentConfigById = new Map(
+  respondents.map((respondent) => [respondent.id, respondent]),
+);
 const contactSeedByRespondentId: Record<
   string,
   {
@@ -144,7 +147,9 @@ const directoryRespondents =
           status: "pending",
         },
       ]
-    : respondents.map((respondent, index) => {
+    : respondents
+      .filter((respondent) => respondent.seedAuthContact !== false)
+      .map((respondent, index) => {
         const isSystemRespondent =
           respondent.id === MN7R_MONITOR_RESPONDENT_ID ||
           respondent.id === SPIKE_ADMIN_FALLBACK_RESPONDENT_ID;
@@ -162,7 +167,9 @@ const directoryRespondents =
               : respondent.id === MN7R_MONITOR_RESPONDENT_ID
                 ? "mn7r-monitor@spike-ua.system"
                 : `respondent-${index + 1}@${activeIndex.id}.demo`,
-          collectionMode: isSystemRespondent ? "manual_outreach" : "self_service",
+          collectionMode:
+            respondent.collectionMode ??
+            (isSystemRespondent ? "manual_outreach" : "self_service"),
           status: "active",
         };
       });
@@ -220,6 +227,7 @@ async function main() {
           displayName: respondent.legalName,
           active: true,
           status: "active",
+          collectionMode: respondent.collectionMode ?? "self_service",
         },
         create: {
           id: respondent.id,
@@ -227,6 +235,7 @@ async function main() {
           displayName: respondent.legalName,
           active: true,
           status: "active",
+          collectionMode: respondent.collectionMode ?? "self_service",
         },
       }),
     ),
@@ -474,8 +483,12 @@ async function main() {
         }
 
         const basePrice = commoditySeed.basePrice - dayOffset * 0.65;
+        const seedPriceRespondents = respondentRecords.filter(
+          (respondent) =>
+            respondentConfigById.get(respondent.id)?.seedAuthContact !== false,
+        );
         const submissions = await Promise.all(
-          respondentRecords.map((respondent, respondentIndex) => {
+          seedPriceRespondents.map((respondent, respondentIndex) => {
             const price = roundMoney(basePrice + respondentIndex * 0.3 - 1.05);
 
             return prisma.priceSubmission.upsert({

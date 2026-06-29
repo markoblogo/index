@@ -451,10 +451,11 @@ function MovementSummary({
 
           const latestDate = formatShortDate(latest.date, locale);
           const sevenDay =
-            latest.value - getPointBack(commodityHistory, 8).value;
+            latest.value - getCalendarLookbackPoint(commodityHistory, latest.date, 7).value;
           const thirtyDay =
-            latest.value - getPointBack(commodityHistory, 31).value;
-          const ninetyDay = latest.value - commodityHistory[0].value;
+            latest.value - getCalendarLookbackPoint(commodityHistory, latest.date, 30).value;
+          const ninetyDay =
+            latest.value - getCalendarLookbackPoint(commodityHistory, latest.date, 90).value;
 
           return (
             <article
@@ -973,6 +974,25 @@ function getPointBack(history: AnalyticsPoint[], countFromEnd: number) {
       value: 0,
     }
   );
+}
+
+function getCalendarLookbackPoint(
+  history: AnalyticsPoint[],
+  latestDate: string,
+  daysBack: number,
+) {
+  const targetDate = addDays(latestDate, -daysBack);
+  return (
+    history.filter((point) => point.date <= targetDate).at(-1) ??
+    history.find((point) => point.date >= targetDate) ??
+    getPointBack(history, 1)
+  );
+}
+
+function addDays(date: string, days: number) {
+  const parsed = new Date(`${date}T00:00:00Z`);
+  parsed.setUTCDate(parsed.getUTCDate() + days);
+  return parsed.toISOString().slice(0, 10);
 }
 
 function getCommodity(commodityId: CommodityId): Commodity {

@@ -1344,7 +1344,7 @@ function createInitialRespondents() {
       "",
       `respondent-${index + 1}@spike-ua.demo`,
       "active",
-      "self_service",
+      respondent.collectionMode ?? "self_service",
     ),
   );
 }
