@@ -262,7 +262,7 @@ async function getDatabaseDailyInputData(date: string): Promise<DailyInputData> 
         adminChanged: Boolean(adminSubmission && respondentSubmission),
         enteredByAdmin: Boolean(adminSubmission),
         enteredByRespondent: Boolean(respondentSubmission),
-        excluded: false,
+        excluded: isSubmissionExcluded(selectedSubmission),
         respondentId: respondent.id,
         price,
         spikeIndicative,
@@ -490,6 +490,7 @@ async function saveDatabaseDailyInputs(
         },
       },
       update: {
+        metadata: buildSubmissionMetadata(existing?.metadata, entry.excluded, user.username),
         priceUsdPerMt: new Prisma.Decimal(entry.price),
         status: entry.inputSource === "admin" ? "verified" : entry.submissionStatus,
         submittedAt: new Date(),
@@ -502,11 +503,16 @@ async function saveDatabaseDailyInputs(
         source: entry.inputSource,
         status: entry.inputSource === "admin" ? "verified" : entry.submissionStatus,
         priceUsdPerMt: new Prisma.Decimal(entry.price),
+        metadata: buildSubmissionMetadata(null, entry.excluded, user.username),
         submittedAt: new Date(),
       },
     });
 
-    if (!existing || !existing.priceUsdPerMt.equals(saved.priceUsdPerMt)) {
+    if (
+      !existing ||
+      !existing.priceUsdPerMt.equals(saved.priceUsdPerMt) ||
+      isSubmissionExcluded(existing) !== entry.excluded
+    ) {
       await db.auditLog.create({
         data: {
           actorRole: "admin",
@@ -516,6 +522,7 @@ async function saveDatabaseDailyInputs(
           summary: `Admin saved ${entry.price} USD/t for ${entry.commodityId} on ${date}.`,
           beforeJson: existing
             ? {
+                excludedFromIndex: isSubmissionExcluded(existing),
                 priceUsdPerMt: existing.priceUsdPerMt.toNumber(),
                 status: existing.status,
               }
@@ -525,7 +532,7 @@ async function saveDatabaseDailyInputs(
             status: saved.status,
             source: saved.source,
             username: user.username,
-            excludedFromDemoCalculation: entry.excluded,
+            excludedFromIndex: entry.excluded,
           },
         },
       });
@@ -678,6 +685,28 @@ function selectLatestDatabaseSubmission<T extends { updatedAt: Date }>(
   return respondentSubmission.updatedAt > adminSubmission.updatedAt
     ? respondentSubmission
     : adminSubmission;
+}
+
+function buildSubmissionMetadata(
+  existingMetadata: unknown,
+  excluded: boolean,
+  username: string,
+) {
+  const base = isJsonObject(existingMetadata) ? existingMetadata : {};
+  return {
+    ...base,
+    excludedFromIndex: excluded,
+    excludedFromIndexBy: username,
+    excludedFromIndexUpdatedAt: new Date().toISOString(),
+  } satisfies Prisma.InputJsonObject;
+}
+
+export function isSubmissionExcluded(submission: { metadata?: unknown } | null | undefined) {
+  return isJsonObject(submission?.metadata) && submission.metadata.excludedFromIndex === true;
+}
+
+function isJsonObject(value: unknown): value is Prisma.JsonObject {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
 
 function selectLatestMockSubmission<

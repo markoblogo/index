@@ -21,6 +21,7 @@ import {
 import { commodities } from "@/lib/mock-data";
 import {
   getDailyInputData,
+  isSubmissionExcluded,
   todayInputDate,
 } from "@/lib/admin-daily-inputs";
 import {
@@ -60,6 +61,7 @@ export type AdminCalculationCommodity = {
     respondentName: string;
     price: number;
     deviationPct: number;
+    reason?: string;
   }>;
   published: {
     value: number;
@@ -328,6 +330,7 @@ async function getDatabaseCalculationData(date: string): Promise<AdminCalculatio
         spikeIndicative: calculationInput.spikeIndicative,
         version: existingCalculation?.version ?? 1,
         respondentNameById: calculationInput.respondentNameById,
+        selectedSubmissions: calculationInput.selectedSubmissions,
         published: publishedIndex
           ? {
               value: publishedIndex.valueUsdPerMt.toNumber(),
@@ -425,21 +428,29 @@ async function persistDatabaseCalculations(
     const excludedByRespondent = new Map(
       result.excluded.map((item) => [item.respondentId, item]),
     );
+    const manuallyExcludedRespondentIds = new Set(
+      calculationInput.selectedSubmissions
+        .filter(isSubmissionExcluded)
+        .map((submission) => submission.respondentId),
+    );
 
     await db.indexCalculationItem.createMany({
       data: calculationInput.selectedSubmissions.map((submission) => {
         const excluded = excludedByRespondent.get(submission.respondentId);
+        const manuallyExcluded = manuallyExcludedRespondentIds.has(submission.respondentId);
 
         return {
           calculationId: calculation.id,
           priceSubmissionId: submission.id,
           respondentId: submission.respondentId,
           priceUsdPerMt: submission.priceUsdPerMt,
-          included: !excluded,
+          included: !excluded && !manuallyExcluded,
           deviationPct: excluded
             ? new Prisma.Decimal(excluded.deviationPct)
             : new Prisma.Decimal(0),
-          exclusionReason: excluded ? "outside_2pct_median_band" : null,
+          exclusionReason: manuallyExcluded
+            ? "manual_exclude_from_index"
+            : excluded ? "outside_2pct_median_band" : null,
         };
       }),
     });
@@ -773,7 +784,9 @@ function buildDatabaseCalculationInput(
     submissions: selectedSubmissions.map(
       (submission): PriceSubmission => ({
         respondentId: submission.respondentId,
-        price: submission.priceUsdPerMt.toNumber(),
+        price: isSubmissionExcluded(submission)
+          ? undefined
+          : submission.priceUsdPerMt.toNumber(),
       }),
     ),
   };
@@ -810,6 +823,7 @@ function buildCalculationCommodity({
   respondentNameById,
   published,
   basketRespondentCount,
+  selectedSubmissions = [],
 }: {
   basketRespondentCount: number;
   code: string;
@@ -819,6 +833,11 @@ function buildCalculationCommodity({
   version: number;
   respondentNameById: Map<string, string>;
   published: AdminCalculationCommodity["published"];
+  selectedSubmissions?: Array<{
+    metadata: unknown;
+    priceUsdPerMt: { toNumber(): number };
+    respondentId: string;
+  }>;
 }): AdminCalculationCommodity {
   const spikeDifference =
     result.value === null || spikeIndicative === null
@@ -849,11 +868,24 @@ function buildCalculationCommodity({
     spikeDifference,
     spikeDeviationPct,
     benchmarkBlendedValue,
-    excluded: result.excluded.map((item) => ({
-      ...item,
-      respondentName: respondentNameById.get(item.respondentId) ?? item.respondentId,
-      deviationPct: roundToTwoDecimals(item.deviationPct),
-    })),
+    excluded: result.excluded
+      .map((item) => ({
+        ...item,
+        respondentName: respondentNameById.get(item.respondentId) ?? item.respondentId,
+        deviationPct: roundToTwoDecimals(item.deviationPct),
+        reason: "outside_2pct_median_band",
+      }))
+      .concat(
+        selectedSubmissions
+          .filter(isSubmissionExcluded)
+          .map((submission) => ({
+            respondentId: submission.respondentId,
+            respondentName: respondentNameById.get(submission.respondentId) ?? submission.respondentId,
+            price: submission.priceUsdPerMt.toNumber(),
+            deviationPct: 0,
+            reason: "manual_exclude_from_index",
+          })),
+      ),
     published,
   };
 }
