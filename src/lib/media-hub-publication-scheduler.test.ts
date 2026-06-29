@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+let platformSite = false;
 vi.mock("@/lib/db", () => ({
   db: {},
   hasDatabaseUrl: () => false,
@@ -15,7 +16,7 @@ vi.mock("@/lib/index-platform", () => ({
   }),
 }));
 vi.mock("@/lib/platform-site", () => ({
-  isPlatformSite: () => false,
+  isPlatformSite: () => platformSite,
 }));
 
 import {
@@ -27,8 +28,8 @@ import {
 
 describe("media hub publication scheduler", () => {
   beforeEach(() => {
+    platformSite = false;
     vi.stubEnv("MEDIA_HUB_SCHEDULE_TIMEZONE", "Europe/Kyiv");
-    vi.stubEnv("MEDIA_HUB_DAILY_REPORT_TIME", "20:00");
     vi.stubEnv("MEDIA_HUB_WEEKLY_REPORT_TIME", "15:00");
   });
 
@@ -67,10 +68,17 @@ describe("media hub publication scheduler", () => {
     });
   });
 
-  it("runs weekday daily reports after the 20:00 Kyiv index publication slot", () => {
-    expect(isMediaHubPublicationDue(new Date("2026-06-22T17:00:00.000Z"))).toBe(true);
-    expect(isMediaHubPublicationDue(new Date("2026-01-05T18:00:00.000Z"))).toBe(true);
-    expect(isMediaHubPublicationDue(new Date("2026-06-22T16:59:00.000Z"))).toBe(false);
+  it("runs SSI weekday daily reports at 19:10 Kyiv after the 19:00 index publication slot", () => {
+    expect(isMediaHubPublicationDue(new Date("2026-06-22T16:10:00.000Z"))).toBe(true);
+    expect(isMediaHubPublicationDue(new Date("2026-01-05T17:10:00.000Z"))).toBe(true);
+    expect(isMediaHubPublicationDue(new Date("2026-06-22T16:09:00.000Z"))).toBe(false);
+  });
+
+  it("runs 1D3X weekday daily reports at 19:15 Kyiv", () => {
+    platformSite = true;
+    expect(isMediaHubPublicationDue(new Date("2026-06-22T16:15:00.000Z"))).toBe(true);
+    expect(isMediaHubPublicationDue(new Date("2026-01-05T17:15:00.000Z"))).toBe(true);
+    expect(isMediaHubPublicationDue(new Date("2026-06-22T16:10:00.000Z"))).toBe(false);
   });
 
   it("runs Saturday weekly/monthly reports at 15:00 Kyiv", () => {

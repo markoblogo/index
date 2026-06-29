@@ -36,6 +36,12 @@ export async function GET(request: Request) {
   const forceKind = normalizeKind(url.searchParams.get("kind"));
   const forceTelegram = url.searchParams.get("resend") === "1";
   const isRetryCron = url.pathname === "/api/cron/media-hub-publish-retry";
+  const isTenantScheduledAlias =
+    (url.pathname === "/api/cron/media-hub-publish-weekday-16" && !isPlatformSite()) ||
+    (url.pathname === "/api/cron/media-hub-publish-weekday-17" && isPlatformSite());
+  const isSharedScheduledAlias =
+    url.pathname === "/api/cron/media-hub-publish-saturday-12" ||
+    url.pathname === "/api/cron/media-hub-publish-saturday-13";
 
   const now = new Date();
   const plan = getMediaHubPublicationPlan(date ?? getParisLocalDate(now));
@@ -44,7 +50,8 @@ export async function GET(request: Request) {
   const forced = Boolean(
     date ||
       forceKind ||
-      (url.pathname !== "/api/cron/media-hub-publish" && !isRetryCron),
+      isTenantScheduledAlias ||
+      isSharedScheduledAlias,
   );
 
   if (!forced && !isDue && !isCatchupDue) {

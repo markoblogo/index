@@ -124,7 +124,8 @@ export type MediaHubReportSummary = {
 };
 
 const DEFAULT_MEDIA_HUB_TIMEZONE = "Europe/Kyiv";
-const DEFAULT_MEDIA_HUB_DAILY_REPORT_TIME = "20:00";
+const DEFAULT_SPIKE_MEDIA_HUB_DAILY_REPORT_TIME = "19:10";
+const DEFAULT_PLATFORM_MEDIA_HUB_DAILY_REPORT_TIME = "19:15";
 const DEFAULT_MEDIA_HUB_WEEKLY_REPORT_TIME = "15:00";
 
 export function getMediaHubPublicationPlan(date = getParisLocalDate()): MediaHubPublicationPlan {
@@ -1751,11 +1752,17 @@ export function getMediaHubTimezone() {
 export function getMediaHubReportTime(kind: MediaHubPublicationKind = "daily") {
   const configured =
     kind === "daily"
-      ? process.env.MEDIA_HUB_DAILY_REPORT_TIME?.trim()
+      ? (
+        isPlatformSite()
+          ? process.env.ID3X_MEDIA_HUB_DAILY_REPORT_TIME?.trim()
+          : process.env.SPIKE_MEDIA_HUB_DAILY_REPORT_TIME?.trim()
+      ) ?? process.env.MEDIA_HUB_DAILY_REPORT_TIME?.trim()
       : process.env.MEDIA_HUB_WEEKLY_REPORT_TIME?.trim();
   const fallback =
     kind === "daily"
-      ? DEFAULT_MEDIA_HUB_DAILY_REPORT_TIME
+      ? isPlatformSite()
+        ? DEFAULT_PLATFORM_MEDIA_HUB_DAILY_REPORT_TIME
+        : DEFAULT_SPIKE_MEDIA_HUB_DAILY_REPORT_TIME
       : DEFAULT_MEDIA_HUB_WEEKLY_REPORT_TIME;
   return configured && /^\d{2}:\d{2}$/.test(configured)
     ? configured
