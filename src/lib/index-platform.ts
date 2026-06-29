@@ -669,10 +669,15 @@ export const INDEX_CONFIGS: Record<IndexTenantId, IndexConfig> = {
       },
     ],
     respondents: [
-      { id: MN7R_MONITOR_RESPONDENT_ID, legalName: "MN7R Monitor" },
+      {
+        id: MN7R_MONITOR_RESPONDENT_ID,
+        legalName: "MN7R Monitor",
+        collectionMode: "manual_outreach",
+      },
       {
         id: SPIKE_ADMIN_FALLBACK_RESPONDENT_ID,
         legalName: "Admin market fallback",
+        collectionMode: "manual_outreach",
       },
       { id: "fop-solovey", legalName: "ФОП Соловей" },
       {

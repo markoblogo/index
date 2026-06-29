@@ -1,5 +1,6 @@
 import { allowMockFallback, db, hasDatabaseUrl } from "@/lib/db";
 import { getActiveIndexConfig, type IndexTenantId } from "@/lib/index-platform";
+import { syncIndexPositionDirectory } from "@/lib/position-directory-sync";
 import { sendRespondentOnboarding } from "@/lib/respondent-onboarding";
 
 export type RespondentStatus = "active" | "pending";
@@ -346,6 +347,7 @@ export async function getRespondentDirectoryData() {
   }
 
   try {
+    await syncIndexPositionDirectory(getActiveIndexConfig());
     const kyivDateBounds = getKyivDateBounds();
     const tradeDate = new Date(kyivDateBounds.start);
     const respondents = await db.respondent.findMany({
@@ -638,6 +640,7 @@ export async function getActiveRespondentCountData() {
   }
 
   try {
+    await syncIndexPositionDirectory(getActiveIndexConfig());
     return await db.respondent.count({
       where: {
         active: true,
