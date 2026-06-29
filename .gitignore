@@ -12,3 +12,4 @@ pnpm-debug.log*
 tsconfig.tsbuildinfo
 .vercel
 .local/
+.env*
