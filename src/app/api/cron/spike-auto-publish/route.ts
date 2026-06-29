@@ -7,7 +7,6 @@ import {
   type AutoPublishResult,
 } from "@/lib/auto-publish";
 import { importMn7rMonitorRespondentPrices } from "@/lib/mn7r-monitor-import";
-import { runDueMediaHubPublication } from "@/lib/media-hub-publication-scheduler";
 import { isPlatformSite } from "@/lib/platform-site";
 import { syncTelegramWorkspaceResources } from "@/lib/telegram-source-collector";
 
@@ -47,17 +46,11 @@ export async function GET(request: Request) {
   const date = requestedDate ?? formatDateKyiv();
 
   if (isPlatformSite()) {
-    const mediaHub = await runDueMediaHubPublication({
-      date,
-      forceKind: "daily",
-      forceTelegram: url.searchParams.get("resend") === "1",
-    });
-
     return NextResponse.json({
       date,
-      mediaHub,
-      skippedReason: null,
-      sourceSync: { skippedReason: "platform_media_hub_publish_only", status: "skipped" },
+      mediaHub: { skippedReason: "platform_media_hub_uses_19_15_schedule", status: "skipped" },
+      skippedReason: "platform_auto_publish_disabled",
+      sourceSync: { skippedReason: "platform_auto_publish_disabled", status: "skipped" },
       triggeredAt: new Date().toISOString(),
     });
   }

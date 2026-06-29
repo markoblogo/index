@@ -460,16 +460,14 @@ export async function sendMediaHubReportTelegram(
     options.audience === "spike" && kind === "daily"
       ? await getPublicLatestData()
       : [];
-  const messages = splitTelegramMessage(
-    buildMediaHubTelegramText({
-      content,
-      kind,
-      latestData,
-      locale: options.locale,
-      periodEndDate,
-      tenant: options.audience,
-    }),
-  );
+  const messages = buildMediaHubTelegramMessages({
+    content,
+    kind,
+    latestData,
+    locale: options.locale,
+    periodEndDate,
+    tenant: options.audience,
+  });
   const sent = await sendTelegramMessages(botToken, normalizeMediaHubTelegramChatId(chatId), messages);
   if (sent.status === "failed") {
     return sent;
@@ -1059,6 +1057,110 @@ function buildMediaHubTelegramText(input: {
   );
 
   return lines.join("\n");
+}
+
+function buildMediaHubTelegramMessages(input: {
+  content: MediaHubReportContentJson;
+  kind: Exclude<MediaHubPublicationKind, "none">;
+  latestData: PublicLatestItem[];
+  locale: Locale;
+  periodEndDate: string;
+  tenant: "spike" | "platform";
+}) {
+  const text = buildMediaHubTelegramText(input);
+  if (input.kind === "daily") {
+    return [fitSingleTelegramMessage(text)];
+  }
+  return splitTelegramMessageBySections(text);
+}
+
+function fitSingleTelegramMessage(text: string) {
+  const maxLength = 3900;
+  if (text.length <= maxLength) {
+    return text;
+  }
+
+  const lines = text.split("\n");
+  const footerStart = lines.findIndex((line) => line.includes("AI-assisted Media Hub digest"));
+  const footer = footerStart >= 0 ? lines.slice(footerStart) : [];
+  const body = footerStart >= 0 ? lines.slice(0, footerStart) : lines;
+  const requiredFooter = footer.length > 0 ? ["", ...footer] : [];
+  const result: string[] = [];
+  let sectionItemCount = 0;
+
+  for (const line of body) {
+    const isBullet = line.trim().startsWith("• ");
+    const isHeading = /^<b>.*<\/b>$/.test(line.trim()) && !isBullet;
+    if (isHeading) {
+      sectionItemCount = 0;
+    }
+    if (isBullet) {
+      sectionItemCount += 1;
+      if (sectionItemCount > 2) {
+        continue;
+      }
+    }
+    const candidate = [...result, line, ...requiredFooter].join("\n");
+    if (candidate.length > maxLength) {
+      continue;
+    }
+    result.push(line);
+  }
+
+  const fitted = [...result, ...requiredFooter].join("\n").trim();
+  if (fitted.length <= maxLength) {
+    return fitted;
+  }
+
+  return `${fitted.slice(0, maxLength - 160).trim()}\n\n<i>Report shortened to fit one Telegram message.</i>`;
+}
+
+function splitTelegramMessageBySections(text: string) {
+  const maxLength = 3900;
+  if (text.length <= maxLength) {
+    return [text];
+  }
+
+  const chunks: string[] = [];
+  let current = "";
+  for (const section of splitTelegramSections(text)) {
+    const candidate = current ? `${current}\n\n${section}` : section;
+    if (candidate.length <= maxLength) {
+      current = candidate;
+      continue;
+    }
+    if (current) {
+      chunks.push(current);
+    }
+    if (section.length <= maxLength) {
+      current = section;
+    } else {
+      chunks.push(...splitTelegramMessage(section));
+      current = "";
+    }
+  }
+  if (current) {
+    chunks.push(current);
+  }
+  return chunks;
+}
+
+function splitTelegramSections(text: string) {
+  const sections: string[] = [];
+  let current: string[] = [];
+  for (const line of text.split("\n")) {
+    const startsSection = current.length > 0 && /^<b>[^<]+<\/b>$/.test(line.trim());
+    if (startsSection) {
+      sections.push(current.join("\n").trim());
+      current = [line];
+    } else {
+      current.push(line);
+    }
+  }
+  if (current.length > 0) {
+    sections.push(current.join("\n").trim());
+  }
+  return sections.filter(Boolean);
 }
 
 function splitTelegramMessage(text: string) {
