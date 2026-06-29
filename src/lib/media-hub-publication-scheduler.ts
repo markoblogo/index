@@ -20,6 +20,13 @@ import {
   getManualMaterialsForPeriod,
   type MediaHubManualMaterialDigest,
 } from "@/lib/media-hub-manual-materials";
+import {
+  buildMediaHubEvidenceLedger,
+  getMediaHubReportTextForValidation,
+  validateMediaHubReportClaims,
+  type MediaHubClaimValidation,
+  type MediaHubEvidenceItem,
+} from "@/lib/media-hub-evidence";
 import { isPlatformSite } from "@/lib/platform-site";
 import {
   getPublicLatestData,
@@ -74,6 +81,8 @@ type MediaHubReportContentJson = {
     sourceDomain: string | null;
     sourceType: string;
   }>;
+  evidence?: MediaHubEvidenceItem[];
+  validation?: MediaHubClaimValidation;
   localized?: Partial<Record<Locale, MediaHubLocalizedReport>>;
   dailyReports?: Partial<Record<Locale, MediaHubDailyReportView>>;
   periodEndDate: string;
@@ -316,6 +325,9 @@ export async function publishMediaHubSnapshotReport(
     const { content, manualMaterials, periodStartDate, primarySnapshot, snapshots } =
       await buildTransientMediaHubSnapshotReport(kind, periodEndDate);
     const tenantId = isPlatformSite() ? "1d3x" : getActiveIndexConfig().id;
+    const reportStatus = content.validation?.status === "needs_review"
+      ? "needs_review"
+      : "published";
     const contentHash = createHash("sha256")
       .update(JSON.stringify(content))
       .digest("hex");
@@ -331,7 +343,7 @@ export async function publishMediaHubSnapshotReport(
         )
         VALUES (
           $1, $2, $3, $4::date, $5::date, $6,
-          'published', $7, $8::jsonb, $9::jsonb,
+          $10, $7, $8::jsonb, $9::jsonb,
           NULL, '[]'::jsonb, NOW(), NOW()
         )
         ON CONFLICT ("tenantId", "kind", "periodEnd")
@@ -355,6 +367,7 @@ export async function publishMediaHubSnapshotReport(
         manualMaterials,
         snapshots,
       }),
+      reportStatus,
     );
 
     revalidatePath("/media-hub");
@@ -367,7 +380,8 @@ export async function publishMediaHubSnapshotReport(
       periodEndDate,
       periodStartDate,
       sourceCount: primarySnapshot?.sourceCount ?? 0,
-      status: "published" as const,
+      status: reportStatus,
+      unsupportedClaims: content.validation?.unsupportedClaims ?? [],
     };
   } catch (error) {
     if (isPlatformSite()) {
@@ -445,6 +459,10 @@ export async function sendMediaHubReportTelegram(
     return { skippedReason: "already_sent", status: "skipped" as const };
   }
 
+  if (report?.status === "needs_review") {
+    return { skippedReason: "evidence_validation_needs_review", status: "skipped" as const };
+  }
+
   if (!report && options.audience !== "platform") {
     return { skippedReason: "report_not_found", status: "skipped" as const };
   }
@@ -454,6 +472,10 @@ export async function sendMediaHubReportTelegram(
     : (await buildTransientMediaHubSnapshotReport(kind, periodEndDate)).content;
   if (!content) {
     return { skippedReason: "report_content_invalid", status: "skipped" as const };
+  }
+
+  if (content.validation?.status === "needs_review") {
+    return { skippedReason: "evidence_validation_needs_review", status: "skipped" as const };
   }
 
   const latestData =
@@ -672,6 +694,29 @@ function buildSnapshotReportContent(input: {
         primaryTitle: evidenceFallback?.title || primary?.summaryTitle,
       })
     : undefined;
+  const evidence = buildMediaHubEvidenceLedger({
+    latestData: input.latestData,
+    manualMaterials: input.manualMaterials,
+    periodEndDate: input.periodEndDate,
+    snapshots: input.snapshots,
+  });
+  const validation = validateMediaHubReportClaims({
+    evidence,
+    reportText: getMediaHubReportTextForValidation({
+      dailyReports,
+      localized: input.llm?.localized,
+      summary: primaryLocalized?.summary?.length
+        ? primaryLocalized.summary
+        : nonDailyFallback?.summary.length
+          ? nonDailyFallback.summary
+          : evidenceFallback?.summary.length
+            ? evidenceFallback.summary
+            : (primary?.summaryBody ?? []),
+      title: primaryLocalized?.title || evidenceFallback?.title ||
+        (nonDailyFallback?.title || primary?.summaryTitle ||
+          `Media Hub ${input.kind} report · ${input.periodStartDate}—${input.periodEndDate}`),
+    }),
+  });
 
   return {
     generatedAt: new Date().toISOString(),
@@ -688,6 +733,8 @@ function buildSnapshotReportContent(input: {
       sourceDomain: material.sourceDomain,
       sourceType: material.sourceType,
     })) ?? [],
+    evidence,
+    validation,
     localized: input.llm?.localized,
     ...(nonDailyFallback?.localized)
       ? { localized: {
@@ -1214,7 +1261,13 @@ function parseMediaHubReportContent(value: unknown): MediaHubReportContentJson |
   if (!candidate.title || !Array.isArray(candidate.windows)) {
     return null;
   }
-  const localized = parseLocalizedReports(candidate.localized);
+    const localized = parseLocalizedReports(candidate.localized);
+  const evidence = Array.isArray(candidate.evidence)
+    ? candidate.evidence as MediaHubEvidenceItem[]
+    : [];
+  const validation = isValidation(candidate.validation)
+    ? candidate.validation
+    : undefined;
 
   return {
     generatedAt: String(candidate.generatedAt ?? new Date().toISOString()),
@@ -1228,6 +1281,8 @@ function parseMediaHubReportContent(value: unknown): MediaHubReportContentJson |
       : undefined,
     localized,
     dailyReports: parseDailyReports(candidate.dailyReports),
+    evidence,
+    validation,
     manualMaterialsUsed: Array.isArray(candidate.manualMaterialsUsed)
       ? candidate.manualMaterialsUsed
           .filter((item) => Boolean(item) && typeof item === "object")
@@ -1262,6 +1317,15 @@ function parseMediaHubReportContent(value: unknown): MediaHubReportContentJson |
       window: normalizeWindowKey(window.window),
     })),
   };
+}
+
+function isValidation(value: unknown): value is MediaHubClaimValidation {
+  return Boolean(
+    value &&
+    typeof value === "object" &&
+    ((value as { status?: unknown }).status === "passed" ||
+      (value as { status?: unknown }).status === "needs_review"),
+  );
 }
 
 function parseDailyReports(value: unknown): Partial<Record<Locale, MediaHubDailyReportView>> | undefined {
@@ -1748,6 +1812,34 @@ export async function getMediaHubReport(
     }
     throw error;
   }
+}
+
+export async function getMediaHubReportEvidence(input: {
+  kind: Exclude<MediaHubPublicationKind, "none">;
+  periodEndDate: string;
+  tenantId?: string;
+}) {
+  if (!hasDatabaseUrl()) {
+    return null;
+  }
+
+  await ensureMediaHubReportStorage();
+  const tenantId = input.tenantId ?? (isPlatformSite() ? "1d3x" : getActiveIndexConfig().id);
+  const report = await getMediaHubReport(input.kind, input.periodEndDate, tenantId);
+  if (!report) {
+    return null;
+  }
+
+  const content = parseMediaHubReportContent(report.contentJson);
+  return {
+    evidence: content?.evidence ?? [],
+    id: report.id,
+    kind: report.kind,
+    periodEndDate: input.periodEndDate,
+    status: report.status,
+    title: report.title,
+    validation: content?.validation ?? null,
+  };
 }
 
 function safeErrorMessage(error: unknown) {

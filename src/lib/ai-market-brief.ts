@@ -16,6 +16,7 @@ import {
   listReportWorkspaceResources,
   renderReportTelegramTemplate,
 } from "@/lib/report-workspace";
+import type { MediaHubEvidenceItem } from "@/lib/media-hub-evidence";
 import { getActiveRespondentCountData } from "@/lib/respondent-directory-lazy";
 import { getDailyTelegramDigest } from "@/lib/telegram-source-collector";
 
@@ -186,13 +187,17 @@ export async function generateAndStoreDailyAiMarketBrief({
       })),
     telegramDigest,
   );
+  const inputWithEvidence = {
+    ...input,
+    evidence: buildDailyBriefEvidence(input),
+  };
   const fallback = buildDeterministicAiMarketBrief(
     history,
     locale,
     activeRespondentCount,
   );
 
-  if (existing && existing.inputDataHash === input.inputDataHash && !force) {
+  if (existing && existing.inputDataHash === inputWithEvidence.inputDataHash && !force) {
     return {
       date: tradeDate,
       id: existing.id,
@@ -216,7 +221,7 @@ export async function generateAndStoreDailyAiMarketBrief({
           fallbackReason: "openai_api_key_missing",
         },
       },
-      input,
+      input: inputWithEvidence,
       locale,
       source,
       status: "fallback",
@@ -232,12 +237,12 @@ export async function generateAndStoreDailyAiMarketBrief({
   }
 
   try {
-    const generated = await callOpenAiBrief(apiKey, input);
+    const generated = await callOpenAiBrief(apiKey, inputWithEvidence);
     const row = await upsertBrief({
       actorUserId,
       date: tradeDate,
       generated,
-      input,
+      input: inputWithEvidence,
       locale,
       source,
       status: "generated",
@@ -266,7 +271,7 @@ export async function generateAndStoreDailyAiMarketBrief({
           fallbackReason: "openai_generation_error",
         },
       },
-      input,
+      input: inputWithEvidence,
       locale,
       source,
       status: "fallback",
@@ -282,6 +287,56 @@ export async function generateAndStoreDailyAiMarketBrief({
       status: row.status,
     };
   }
+}
+
+function buildDailyBriefEvidence(input: ReturnType<typeof buildBriefInput>) {
+  const evidence: MediaHubEvidenceItem[] = [];
+
+  for (const position of input.positions) {
+    evidence.push({
+      claim: `${position.name} ${position.latestUsdPerMt} USD/t`,
+      confidence: "high",
+      excerpt: `${position.name}: ${position.latestUsdPerMt} USD/t; d/d ${position.change1d}; week-to-Friday ${position.changeWeekToLastFriday}`,
+      id: `brief-index:${position.commodityId}:${input.generatedFromDate}`,
+      sourceDate: input.generatedFromDate,
+      sourceTitle: "Published SPIKE index history",
+      sourceType: "index",
+      sourceUrl: "https://spike.1d3x.com/",
+      usedInSection: "daily_brief_input",
+    });
+  }
+
+  for (const source of input.sourceReferences) {
+    evidence.push({
+      claim: source.title,
+      confidence: "medium",
+      excerpt: [source.title, source.notes].filter(Boolean).join(": ").slice(0, 500),
+      id: `brief-source:${source.type}:${source.title}`,
+      sourceDate: null,
+      sourceTitle: source.title,
+      sourceType: "manual_material",
+      sourceUrl: source.url || null,
+      usedInSection: "daily_brief_sources",
+    });
+  }
+
+  for (const channel of input.telegramDigest?.channels ?? []) {
+    for (const post of channel.posts) {
+      evidence.push({
+        claim: `${channel.channelHandle} post`,
+        confidence: "medium",
+        excerpt: post.text.replace(/\s+/g, " ").trim().slice(0, 500),
+        id: `brief-telegram:${channel.channelHandle}:${post.publishedAt}:${post.postUrl}`,
+        sourceDate: post.publishedAt,
+        sourceTitle: channel.channelHandle,
+        sourceType: "monitored_source",
+        sourceUrl: post.postUrl || null,
+        usedInSection: "daily_telegram_digest",
+      });
+    }
+  }
+
+  return evidence.slice(0, 100);
 }
 
 export async function sendAiBriefTelegramSummary(

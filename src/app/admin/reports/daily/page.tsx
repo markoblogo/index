@@ -27,6 +27,7 @@ import {
   syncTelegramWorkspaceResources,
 } from "@/lib/telegram-source-collector";
 import { getAiMarketBriefAdminStatus } from "@/lib/ai-market-brief-lazy";
+import { getMediaHubReportEvidence } from "@/lib/media-hub-publication-scheduler";
 import { listWeeklyReports } from "@/lib/weekly-ai-report-lazy";
 import { buildReportsUrl } from "@/lib/admin-reports";
 
@@ -58,13 +59,17 @@ export default async function DailyReportsPage({
   const params = await searchParams;
   const selectedLanguage = normalizeAdminLocale(params.lang);
 
-  const [dailyConfig, dailyStatus, dailyResources, dailyDigest, weeklyReports] =
+  const [dailyConfig, dailyStatus, dailyResources, dailyDigest, weeklyReports, dailyEvidence] =
     await Promise.all([
       getReportWorkspaceConfig("daily"),
       getAiMarketBriefAdminStatus(todayInputDate()),
       listReportWorkspaceResources({ reportKind: "daily" }),
       getDailyTelegramDigest(todayInputDate()),
       listWeeklyReports().catch(() => []),
+      getMediaHubReportEvidence({
+        kind: "daily",
+        periodEndDate: todayInputDate(),
+      }).catch(() => null),
     ]);
   const activeWeeklyReport = weeklyReports.find(
     (report) =>
@@ -208,6 +213,7 @@ export default async function DailyReportsPage({
       dailyDigest={dailyDigest}
       dailyResources={dailyResources}
       dailyStatus={dailyStatus}
+      dailyEvidence={dailyEvidence}
       dailyTemplatePreview={dailyTemplatePreview}
       activeTradeDate={activeTradeDate}
       notice={params.notice}

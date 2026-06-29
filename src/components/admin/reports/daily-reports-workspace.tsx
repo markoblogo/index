@@ -2,6 +2,7 @@
 
 import type { ReportWorkspaceConfig, ReportWorkspaceResource } from "@/lib/report-workspace";
 import { buildOperationalReadiness } from "@/lib/admin-reports";
+import type { getMediaHubReportEvidence } from "@/lib/media-hub-publication-scheduler";
 import type { TelegramSourceDigest } from "@/lib/telegram-source-collector";
 import { ReportsWorkspaceHeader } from "@/components/admin/reports/reports-workspace-header";
 import { OperationalReadinessPanel } from "@/components/admin/reports/operational-readiness-panel";
@@ -21,6 +22,7 @@ type DailyReportsWorkspaceProps = {
   dailyConfig: ReportWorkspaceConfig;
   dailyDigest: TelegramSourceDigest;
   dailyResources: ReportWorkspaceResource[];
+  dailyEvidence: Awaited<ReturnType<typeof getMediaHubReportEvidence>>;
   dailyTemplatePreview: string;
   notice?: string;
   operationalReadiness: Awaited<ReturnType<typeof buildOperationalReadiness>>;
@@ -42,6 +44,7 @@ export function DailyReportsWorkspace({
   dailyConfig,
   dailyDigest,
   dailyResources,
+  dailyEvidence,
   dailyTemplatePreview,
   notice,
   operationalReadiness,
@@ -127,6 +130,7 @@ export function DailyReportsWorkspace({
             toggleChannelPostsAction={toggleChannelPostsAction}
             toggleCollectedPostAction={toggleCollectedPostAction}
           />
+          <EvidencePanel dailyEvidence={dailyEvidence} />
         </WorkspaceLane>
 
         <section className="grid gap-6">
@@ -177,6 +181,87 @@ export function DailyReportsWorkspace({
             </div>
           </section>
         </section>
+      </div>
+    </section>
+  );
+}
+
+function EvidencePanel({
+  dailyEvidence,
+}: {
+  dailyEvidence: Awaited<ReturnType<typeof getMediaHubReportEvidence>>;
+}) {
+  const validation = dailyEvidence?.validation;
+  const unsupported = validation?.unsupportedClaims ?? [];
+  const evidence = dailyEvidence?.evidence ?? [];
+
+  return (
+    <section className="grid gap-4 rounded-[1.2rem] border border-white/10 bg-black/30 p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-[0.12em] text-white/45">
+            Evidence / claim gate
+          </p>
+          <p className="mt-2 text-sm text-white/68">
+            Shows source support saved with the latest generated Media Hub daily report.
+          </p>
+        </div>
+        <span className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] ${
+          validation?.status === "needs_review"
+            ? "border-amber-300/50 bg-amber-300/10 text-amber-100"
+            : validation?.status === "passed"
+              ? "border-emerald-300/40 bg-emerald-300/10 text-emerald-100"
+              : "border-white/12 text-white/45"
+        }`}>
+          {validation?.status ?? "no report"}
+        </span>
+      </div>
+
+      {unsupported.length > 0 ? (
+        <div className="grid gap-2">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-amber-100">
+            Needs review
+          </p>
+          {unsupported.map((item) => (
+            <div
+              className="rounded-[1rem] border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-sm leading-6 text-amber-50"
+              key={item.claim}
+            >
+              <p className="font-semibold">{item.claim}</p>
+              <p className="mt-1 text-xs text-amber-100/70">{item.reason}</p>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      <div className="grid gap-2">
+        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-white/45">
+          Evidence items: {evidence.length}
+        </p>
+        {evidence.slice(0, 12).map((item) => (
+          <div
+            className="rounded-[1rem] border border-white/10 bg-black/30 px-4 py-3 text-sm leading-6 text-white/68"
+            key={item.id}
+          >
+            <div className="flex flex-wrap gap-2 text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-white/38">
+              <span>{item.sourceType}</span>
+              <span>{item.confidence}</span>
+              {item.sourceDate ? <span>{item.sourceDate.slice(0, 10)}</span> : null}
+            </div>
+            <p className="mt-1 font-semibold text-white">{item.sourceTitle}</p>
+            <p className="mt-1">{item.excerpt}</p>
+            {item.sourceUrl ? (
+              <a className="mt-2 inline-flex text-xs font-semibold text-uga-lime" href={item.sourceUrl}>
+                Open source
+              </a>
+            ) : null}
+          </div>
+        ))}
+        {evidence.length === 0 ? (
+          <p className="text-sm text-white/55">
+            No evidence ledger saved yet. Generate/publish a Media Hub daily report first.
+          </p>
+        ) : null}
       </div>
     </section>
   );
