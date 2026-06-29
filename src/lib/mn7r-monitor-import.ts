@@ -167,7 +167,8 @@ const SPIKE_MN7R_TARGETS: Mn7rTarget[] = [
   {
     indexCode: "GMO_SOY",
     commodityKeywords: ["soy", "soybean", "соя", "gmo"],
-    basisKeywords: ["parity", "паритет", "odesa", "одеса"],
+    basisKeywords: ["crush", "завод", "перероб", "processing"],
+    excludeKeywords: ["parity", "паритет", "port", "порт", "chop", "чоп"],
   },
   {
     indexCode: "GMO_SOY_EXPORT",
@@ -310,7 +311,9 @@ export async function importMn7rMonitorRespondentPrices(
       await clear({
         date: payload.asOfDate,
         indexCode: position.indexCode,
-        reason: `mn7r_unsupported_currency_${position.currency ?? "null"}`,
+        reason: requiresUahVatSource(position.indexCode)
+          ? `mn7r_requires_uah_vat_source_${position.currency ?? "null"}`
+          : `mn7r_unsupported_currency_${position.currency ?? "null"}`,
         respondentCode,
       });
       skipped += 1;
@@ -705,6 +708,10 @@ function normalizeMonitorPriceToUsd(
     return null;
   }
 
+  if (requiresUahVatSource(position.indexCode) && originalCurrency !== "UAH") {
+    return null;
+  }
+
   if (originalCurrency === "USD") {
     return {
       fxMeta: null,
@@ -734,6 +741,10 @@ function normalizeMonitorPriceToUsd(
   }
 
   return null;
+}
+
+function requiresUahVatSource(indexCode: string) {
+  return normalizeText(indexCode) === normalizeText("GMO_SOY");
 }
 
 function matchRawRecordToIndexCode(raw: Mn7rRawRecord) {

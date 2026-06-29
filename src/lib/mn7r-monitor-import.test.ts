@@ -204,6 +204,122 @@ describe("importMn7rMonitorRespondentPrices", () => {
     });
   });
 
+  it("imports GMO soy processing only from UAH VAT-inclusive CPT Crush source", async () => {
+    process.env.INDEX_TENANT = "spike-ua";
+    process.env.MN7R_API_URL = "http://monitor.test";
+    process.env.MN7R_INDEX_EXPORT_TOKEN = "token";
+
+    const payload: Mn7rPayload = {
+      source: "MN7R_MONITOR",
+      respondentCode: "MN7R_MONITOR",
+      asOfDate: "2026-06-29",
+      generatedAt: "2026-06-29T14:00:00.000Z",
+      timezone: "Europe/Kyiv",
+      methodologyVersion: "mn7r-monitor-index-v2",
+      records: [
+        {
+          title: "Соя ГМО 37 протеїн CPT Crush завод Україна 01/07-31/07",
+          deliveryStart: "2026-07-01",
+          deliveryEnd: "2026-07-31",
+          monitorPrice: 21000,
+          currency: "UAH incl. VAT",
+          quality: "ok",
+        },
+        {
+          title: "Соя ГМО CPT Odesa export 01/07-31/07",
+          deliveryStart: "2026-07-01",
+          deliveryEnd: "2026-07-31",
+          monitorPrice: 432,
+          currency: "USD",
+          quality: "ok",
+        },
+      ],
+    };
+    const calls: RespondentPriceInput[] = [];
+
+    const result = await importMn7rMonitorRespondentPrices("2026-06-29", {
+      clearRespondentPriceImpl: async () => undefined,
+      fetchImpl: async () =>
+        new Response(JSON.stringify(payload), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      getFxRatesImpl: async () => ({
+        eurUah: 49,
+        fetchedAt: "2026-06-29T14:00:00.000Z",
+        rateDate: "2026-06-29",
+        source: "NBU",
+        usdUah: 42,
+      }),
+      upsertRespondentPriceImpl: async (input) => {
+        calls.push(input);
+      },
+    });
+
+    expect(result.imported).toBe(2);
+    expect(calls.find((call) => call.indexCode === "GMO_SOY")).toMatchObject({
+      currency: "USD",
+      indexCode: "GMO_SOY",
+      price: 500,
+    });
+    expect(calls.find((call) => call.indexCode === "GMO_SOY")?.meta).toMatchObject({
+      originalCurrency: "UAH",
+      originalMonitorPrice: 21000,
+    });
+    expect(calls.find((call) => call.indexCode === "GMO_SOY_EXPORT")).toMatchObject({
+      indexCode: "GMO_SOY_EXPORT",
+      price: 432,
+    });
+  });
+
+  it("clears direct GMO soy processing monitor payloads that are not UAH VAT source prices", async () => {
+    process.env.INDEX_TENANT = "spike-ua";
+    process.env.MN7R_API_URL = "http://monitor.test";
+    process.env.MN7R_INDEX_EXPORT_TOKEN = "token";
+
+    const payload: Mn7rPayload = {
+      source: "MN7R_MONITOR",
+      respondentCode: "MN7R_MONITOR",
+      asOfDate: "2026-06-29",
+      generatedAt: "2026-06-29T14:00:00.000Z",
+      timezone: "Europe/Kyiv",
+      methodologyVersion: "mn7r-monitor-index-v1",
+      positions: [
+        {
+          indexCode: "GMO_SOY",
+          currency: "USD",
+          avgBid: null,
+          avgOffer: 432,
+          monitorPrice: 432,
+          bidCount: 0,
+          offerCount: 1,
+          sampleCount: 1,
+          quality: "ok",
+        },
+      ],
+    };
+    const calls: RespondentPriceInput[] = [];
+    const cleared: string[] = [];
+
+    const result = await importMn7rMonitorRespondentPrices("2026-06-29", {
+      clearRespondentPriceImpl: async (input) => {
+        cleared.push(`${input.indexCode}:${input.reason}`);
+      },
+      fetchImpl: async () =>
+        new Response(JSON.stringify(payload), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      upsertRespondentPriceImpl: async (input) => {
+        calls.push(input);
+      },
+    });
+
+    expect(result).toEqual({ date: "2026-06-29", imported: 0, skipped: 1 });
+    expect(calls).toEqual([]);
+    expect(cleared).toEqual(["GMO_SOY:mn7r_requires_uah_vat_source_USD"]);
+  });
+
   it("skips unsupported MN7R positions without failing the import", async () => {
     process.env.INDEX_TENANT = "spike-ua";
     process.env.MN7R_API_URL = "http://monitor.test";
