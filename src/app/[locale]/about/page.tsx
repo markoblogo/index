@@ -15,6 +15,7 @@ const HIDDEN_PUBLIC_RESPONDENT_IDS = new Set([
   "fop-solovey",
   SPIKE_ADMIN_FALLBACK_RESPONDENT_ID,
 ]);
+const SHOW_PUBLIC_RESPONDENTS_SECTION = false;
 
 const respondentLinks = new Map([
   [MN7R_RESPONDENT_ID, "https://mn7r.com/"],
@@ -105,6 +106,7 @@ export default async function AboutPage({
         </div>
       </section>
 
+      {SHOW_PUBLIC_RESPONDENTS_SECTION ? (
       <section className="border-y border-black bg-uga-mist">
         <div className="mx-auto max-w-7xl px-6 py-10 lg:px-8 lg:py-14">
           <div className="grid gap-8 lg:grid-cols-[23rem_1fr] lg:items-start">
@@ -150,6 +152,7 @@ export default async function AboutPage({
           </div>
         </div>
       </section>
+      ) : null}
 
       <section className="mx-auto max-w-7xl px-6 py-10 lg:px-8 lg:py-12">
         <div className="grid border border-black bg-uga-dark text-white lg:grid-cols-[20rem_1fr]">
@@ -430,6 +433,7 @@ function SpikeAboutPage({
         </section>
       ) : null}
 
+      {SHOW_PUBLIC_RESPONDENTS_SECTION ? (
       <section className="border-y border-white/10 bg-[#090909]">
         <div className="mx-auto grid max-w-[1900px] gap-6 px-6 py-10 lg:grid-cols-[24rem_1fr] lg:px-8 lg:py-14">
           <div>
@@ -498,6 +502,7 @@ function SpikeAboutPage({
           </div>
         </div>
       </section>
+      ) : null}
 
       <section className="mx-auto max-w-[1900px] px-6 py-10 lg:px-8 lg:py-12">
         <div className="rounded-[1.5rem] border border-white/12 bg-[radial-gradient(circle_at_90%_0%,rgba(255,63,115,0.22),transparent_28rem),#080808] p-6 lg:grid lg:grid-cols-[22rem_1fr] lg:gap-8">
