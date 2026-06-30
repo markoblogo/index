@@ -847,14 +847,19 @@ function isTrustedSsiBrokerRespondent(respondentId: string, respondentName: stri
   }
 
   const normalized = normalizeTrustedRespondentName(`${respondentId} ${respondentName ?? ""}`);
-  return (
-    normalized.includes("фоп вікторія") ||
-    normalized.includes("фоп виктория") ||
-    normalized.includes("fop viktoria") ||
-    normalized.includes("фоп соловей") ||
-    normalized.includes("fop solovey")
-  );
+  return TRUSTED_SSI_BROKER_RESPONDENT_TOKENS.some((token) => normalized.includes(token));
 }
+
+const TRUSTED_SSI_BROKER_RESPONDENT_TOKENS = [
+  "фоп вікторія",
+  "фоп виктория",
+  "fop viktoria",
+  "фоп соловей",
+  "fop solovey",
+  "контінентал",
+  "континентал",
+  "continental",
+];
 
 function normalizeTrustedRespondentName(value: string) {
   return value.trim().toLowerCase().replace(/\s+/g, " ");
@@ -939,6 +944,7 @@ function buildCalculationCommodity({
     spikeDeviationPct,
     benchmarkBlendedValue,
     excluded: result.excluded
+      .filter((item) => item.deviationPct > 0.005)
       .map((item) => ({
         ...item,
         respondentName: respondentNameById.get(item.respondentId) ?? item.respondentId,
