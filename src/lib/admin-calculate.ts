@@ -23,6 +23,7 @@ import {
   getDailyInputData,
   isAutoPreviousDayOutlier,
   isSubmissionExcluded,
+  isSubmissionManuallyIncluded,
   shouldExcludeSubmission,
   todayInputDate,
 } from "@/lib/admin-daily-inputs";
@@ -819,6 +820,7 @@ function buildDatabaseCalculationInput(
     spikeIndicative: indicative?.priceUsdPerMt.toNumber() ?? null,
     submissions: selectedSubmissions.map(
       (submission): PriceSubmission => ({
+        forceInclude: isSubmissionManuallyIncluded(submission),
         respondentId: submission.respondentId,
         price: shouldExcludeSubmission(submission, previousPublished)
           ? undefined

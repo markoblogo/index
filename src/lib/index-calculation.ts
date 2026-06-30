@@ -4,6 +4,7 @@ export type IndexCalculationStatus =
   | "no_data";
 
 export type PriceSubmission = {
+  forceInclude?: boolean;
   respondentId: string;
   price?: unknown;
 };
@@ -38,6 +39,7 @@ export type IndexCalculationResult = {
 };
 
 type ValidSubmission = {
+  forceInclude?: boolean;
   respondentId: string;
   price: number;
 };
@@ -82,7 +84,11 @@ export function calculateIndexValue({
   for (const submission of validSubmissions) {
     const deviationRatio = Math.abs(submission.price - median) / median;
 
-    if (shouldApplyOutlierFilter && deviationRatio > OUTLIER_THRESHOLD) {
+    if (
+      shouldApplyOutlierFilter &&
+      deviationRatio > OUTLIER_THRESHOLD &&
+      !submission.forceInclude
+    ) {
       excluded.push({
         respondentId: submission.respondentId,
         price: submission.price,

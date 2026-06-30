@@ -69,7 +69,8 @@ export type DailyInputData = {
   cells: DailyInputCell[];
 };
 
-const WARNING_THRESHOLD = 0.02;
+const BENCHMARK_WARNING_THRESHOLD = 0.02;
+const AUTO_PREVIOUS_DAY_OUTLIER_THRESHOLD = 0.05;
 const commodityCodeByMockId: Record<CommodityId, string> = Object.fromEntries(
   getActiveIndexTenant().commodities.map((commodity) => [commodity.id, commodity.dbCode]),
 ) as Record<CommodityId, string>;
@@ -672,7 +673,7 @@ function buildCell({
     price !== null &&
     spikeIndicative !== null &&
     spikeIndicative > 0 &&
-    Math.abs(price - spikeIndicative) / spikeIndicative > WARNING_THRESHOLD;
+    Math.abs(price - spikeIndicative) / spikeIndicative > BENCHMARK_WARNING_THRESHOLD;
 
   return {
     adminChanged,
@@ -757,6 +758,12 @@ export function isSubmissionExcluded(submission: { metadata?: unknown } | null |
   return isJsonObject(submission?.metadata) && submission.metadata.excludedFromIndex === true;
 }
 
+export function isSubmissionManuallyIncluded(
+  submission: { metadata?: unknown } | null | undefined,
+) {
+  return isJsonObject(submission?.metadata) && submission.metadata.excludedFromIndex === false;
+}
+
 export function hasManualExclusionDecision(
   submission: { metadata?: unknown } | null | undefined,
 ) {
@@ -784,7 +791,7 @@ export function isAutoPreviousDayOutlier(
     previousPublished !== null &&
     previousPublished !== undefined &&
     previousPublished > 0 &&
-    Math.abs(price - previousPublished) / previousPublished > WARNING_THRESHOLD
+    Math.abs(price - previousPublished) / previousPublished > AUTO_PREVIOUS_DAY_OUTLIER_THRESHOLD
   );
 }
 

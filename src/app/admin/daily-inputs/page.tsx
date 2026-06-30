@@ -630,7 +630,7 @@ function MatrixCell({
             <SourceBadge active={false} label="Missing" />
           ) : null}
           {cell.autoExcluded ? (
-            <SourceBadge active label="Prev day 2%" tone="warning" />
+            <SourceBadge active label="Prev day 5%" tone="warning" />
           ) : null}
           {cell.excluded ? <SourceBadge active label="Excluded" tone="warning" /> : null}
         </div>

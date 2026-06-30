@@ -83,13 +83,18 @@ export async function upsertRespondentPrice(input: RespondentPriceInput) {
       },
     },
   });
-  const metadata = {
-    ...(isJsonObject(existing?.metadata) && existing.metadata.excludedFromIndex === true
+  const existingExclusionMetadata =
+    isJsonObject(existing?.metadata) &&
+    Object.prototype.hasOwnProperty.call(existing.metadata, "excludedFromIndex")
       ? {
-          excludedFromIndex: true,
+          excludedFromIndex: existing.metadata.excludedFromIndex === true,
+          excludedFromIndexBy: existing.metadata.excludedFromIndexBy,
           excludedFromIndexReason: existing.metadata.excludedFromIndexReason,
+          excludedFromIndexUpdatedAt: existing.metadata.excludedFromIndexUpdatedAt,
         }
-      : {}),
+      : {};
+  const metadata = {
+    ...existingExclusionMetadata,
     ...(isJsonObject(input.meta) ? input.meta : {}),
     currency: input.currency || "USD",
     indexCode: input.indexCode,
