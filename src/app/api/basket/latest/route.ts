@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getBasketLatest, normalizeBasketMarket } from "@/lib/basket/data";
+import { normalizeBasketMarket } from "@/lib/basket/data";
+import { getBasketLatestDbFirst } from "@/lib/basket/server-data";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +10,7 @@ export async function GET(request: Request) {
 
   return NextResponse.json(
     {
-      data: getBasketLatest(market),
+      data: await getBasketLatestDbFirst(market),
       generatedAt: new Date().toISOString(),
     },
     {

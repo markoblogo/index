@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { getBasketSources } from "@/lib/basket/data";
 import { BASKET_SOURCE_REGISTRY } from "@/lib/basket-monitoring/source-registry";
+import { getBasketSourcesDbFirst } from "@/lib/basket/server-data";
 
 export const dynamic = "force-dynamic";
 
@@ -8,7 +8,7 @@ export async function GET() {
   return NextResponse.json(
     {
       data: {
-        sources: getBasketSources(),
+        sources: await getBasketSourcesDbFirst(),
         monitoring: BASKET_SOURCE_REGISTRY,
       },
       generatedAt: new Date().toISOString(),

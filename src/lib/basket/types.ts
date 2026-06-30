@@ -35,6 +35,8 @@ export type BasketObservation = {
   date: string;
   valueUsd: number | null;
   baselineUsd: number;
+  localPrice?: number | null;
+  currencyCode?: string | null;
   source: BasketSource;
   confidence: BasketConfidence;
   status: BasketObservationStatus;

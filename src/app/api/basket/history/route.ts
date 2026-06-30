@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getBasketHistory, normalizeBasketMarket } from "@/lib/basket/data";
+import { normalizeBasketMarket } from "@/lib/basket/data";
+import { getBasketHistoryDbFirst } from "@/lib/basket/server-data";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +13,7 @@ export async function GET(request: Request) {
       data: {
         market,
         mode: "rebasedTo100",
-        series: getBasketHistory(market),
+        series: await getBasketHistoryDbFirst(market),
       },
       generatedAt: new Date().toISOString(),
     },
