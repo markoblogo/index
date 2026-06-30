@@ -325,19 +325,40 @@ function CalculationRow({
         <tr>
           <td className="px-4 pb-4 pt-0" colSpan={showBenchmark ? 8 : 6}>
             <div className="border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">
-              Excluded outliers:{" "}
-              {commodity.excluded
-                .map(
-                  (item) =>
-                    `${item.respondentName} ${formatUsd(item.price)} (${item.deviationPct.toFixed(2)}%)`,
-                )
-                .join("; ")}
+              {formatExcludedRows(commodity.excluded)}
             </div>
           </td>
         </tr>
       ) : null}
     </>
   );
+}
+
+function formatExcludedRows(commodity: AdminCalculationCommodity["excluded"]) {
+  const manual = commodity.filter((item) => item.reason === "manual_exclude_from_index");
+  const automatic = commodity.filter((item) => item.reason !== "manual_exclude_from_index");
+  const parts: string[] = [];
+
+  if (automatic.length > 0) {
+    parts.push(
+      `Excluded outliers: ${automatic
+        .map(
+          (item) =>
+            `${item.respondentName} ${formatUsd(item.price)} (${item.deviationPct.toFixed(2)}%)`,
+        )
+        .join("; ")}`,
+    );
+  }
+
+  if (manual.length > 0) {
+    parts.push(
+      `Manual exclusions: ${manual
+        .map((item) => `${item.respondentName} ${formatUsd(item.price)}`)
+        .join("; ")}`,
+    );
+  }
+
+  return parts.join(" | ");
 }
 
 function Metric({
