@@ -21,6 +21,7 @@ export type CalculateIndexInput = {
   deliveryBasisId: string;
   submissions: PriceSubmission[];
   basketWeight?: number;
+  outlierThreshold?: number;
 };
 
 export type IndexCalculationResult = {
@@ -54,6 +55,7 @@ export function calculateIndexValue({
   deliveryBasisId,
   submissions,
   basketWeight = DEFAULT_BASKET_WEIGHT,
+  outlierThreshold = OUTLIER_THRESHOLD,
 }: CalculateIndexInput): IndexCalculationResult {
   const validSubmissions = submissions.filter(isValidSubmission);
   const rawCount = validSubmissions.length;
@@ -84,11 +86,7 @@ export function calculateIndexValue({
   for (const submission of validSubmissions) {
     const deviationRatio = Math.abs(submission.price - median) / median;
 
-    if (
-      shouldApplyOutlierFilter &&
-      deviationRatio > OUTLIER_THRESHOLD &&
-      !submission.forceInclude
-    ) {
+    if (shouldApplyOutlierFilter && deviationRatio > outlierThreshold && !submission.forceInclude) {
       excluded.push({
         respondentId: submission.respondentId,
         price: submission.price,

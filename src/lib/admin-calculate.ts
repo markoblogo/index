@@ -86,6 +86,7 @@ export type AdminCalculationData = {
 };
 
 const MOCK_BASIS_ID = "fob-black-sea";
+const SSI_OUTLIER_THRESHOLD = 0.06;
 
 export async function getAdminCalculationData(
   date: string,
@@ -198,6 +199,7 @@ async function getMockCalculationData(date: string): Promise<AdminCalculationDat
         date,
         commodityId: commodity.id,
         deliveryBasisId: MOCK_BASIS_ID,
+        outlierThreshold: getCalculationOutlierThreshold(),
         submissions: cells.map((cell) => ({
           respondentId: cell.respondentId,
           price: cell.excluded ? undefined : cell.price,
@@ -321,6 +323,7 @@ async function getDatabaseCalculationData(date: string): Promise<AdminCalculatio
         commodityId: commodity.id,
         deliveryBasisId: basis.id,
         basketWeight: basket.weight.toNumber(),
+        outlierThreshold: getCalculationOutlierThreshold(),
         submissions: calculationInput.submissions,
       });
       const existingCalculation = existingCalculations.get(commodity.id);
@@ -381,6 +384,7 @@ async function persistDatabaseCalculations(
       commodityId: commodity.id,
       deliveryBasisId: basis.id,
       basketWeight: basket.weight.toNumber(),
+      outlierThreshold: getCalculationOutlierThreshold(),
       submissions: calculationInput.submissions,
     });
     const previousCalculation = context.existingCalculations.get(commodity.id);
@@ -848,6 +852,10 @@ function isTrustedSsiBrokerRespondent(respondentId: string, respondentName: stri
 
   const normalized = normalizeTrustedRespondentName(`${respondentId} ${respondentName ?? ""}`);
   return TRUSTED_SSI_BROKER_RESPONDENT_TOKENS.some((token) => normalized.includes(token));
+}
+
+function getCalculationOutlierThreshold() {
+  return getActiveIndexTenant().id === "spike-ua" ? SSI_OUTLIER_THRESHOLD : undefined;
 }
 
 const TRUSTED_SSI_BROKER_RESPONDENT_TOKENS = [
