@@ -30,7 +30,7 @@ export function buildMediaHubMaterialHelpText() {
   return [
     "Вітаємо. Це бот для надсилання матеріалів у Media Hub SSI та 1D3X.",
     "",
-    "Надсилайте сюди посилання або файли, які треба врахувати в наступному weekly або monthly report.",
+    "Надсилайте сюди текст, цитати, посилання або файли, які треба врахувати в наступному weekly або monthly report.",
     "",
     "Обов’язково додайте тег проєкту:",
     "#ssi - для Spike Spot Index, український ринок зернових та олійних",
@@ -44,13 +44,14 @@ export function buildMediaHubMaterialHelpText() {
     "Якщо вказати тільки #ssi або #1d3x, матеріал піде у #weekly за замовчуванням.",
     "",
     "Приклади:",
+    "#ssi #weekly текст або цитата з ринку",
     "#ssi #weekly https://example.com/report.pdf",
     "#1d3x #weekly https://example.com/grain-market-update",
     "#ssi #monthly логістика, файл у вкладенні",
     "#ssi #1d3x #weekly https://example.com/global-wheat-report",
     "",
     "Файли:",
-    "PDF, XLSX, CSV, DOCX, TXT/HTML/MD приймаються для автоматичного аналізу.",
+    "Текстові повідомлення, цитати, PDF, XLSX, CSV, DOCX, TXT/HTML/MD приймаються для автоматичного аналізу.",
     "Скріншоти краще не надсилати: OCR не увімкнено. Надсилайте PDF або таблицю.",
     "",
     "Після відправки бот відповість: прийнято, оброблено, дублікат, або формат не підтримується.",
@@ -70,9 +71,10 @@ export function buildMediaHubMaterialsText(adminMaterialsUrl = "/admin/media-hub
     "#monthly - наступний місячний звіт",
     "#daily - денний звіт, якщо використовується",
     "",
-    "3. Надішліть посилання або файл.",
+    "3. Надішліть текст, цитату, посилання або файл.",
     "",
     "Приклади:",
+    "#ssi #weekly <текст або цитата>",
     "#ssi #weekly <посилання>",
     "#1d3x #weekly <посилання>",
     "#ssi #monthly <файл PDF або XLSX>",
@@ -84,7 +86,7 @@ export function buildMediaHubMaterialsText(adminMaterialsUrl = "/admin/media-hub
     "матеріали можна додати вручну через адмінку:",
     adminMaterialsUrl,
     "",
-    "У адмінці можна вибрати проєкт, тип звіту, вставити посилання або завантажити файл.",
+    "У адмінці можна вибрати проєкт, тип звіту, вставити текст, посилання або завантажити файл.",
   ].join("\n");
 }
 
@@ -111,7 +113,7 @@ export function buildMediaHubTagsText() {
 
 export function buildMissingProjectTagText() {
   return [
-    "Не бачу тегу проєкту. Додайте #ssi або #1d3x до повідомлення, посилання або caption файлу.",
+    "Не бачу тегу проєкту. Додайте #ssi або #1d3x до тексту, посилання або caption файлу.",
     "",
     "Приклад:",
     "#ssi #weekly https://example.com/report.pdf",
@@ -152,7 +154,7 @@ export function buildMediaHubSubmissionReply({
     return `Цей матеріал уже є в системі для ${projectName} за цей період. Дублікат не додано.`;
   }
   if (status === "unsupported" || status === "unsupported_image_ocr") {
-    return "Формат не підтримується для автоматичного аналізу. Надішліть PDF, XLSX, CSV або посилання.";
+    return "Формат не підтримується для автоматичного аналізу. Надішліть текст, PDF, XLSX, CSV або посилання.";
   }
   if (status === "failed") {
     return "Матеріал отримано, але автоматичне читання не вдалося. Він збережений як metadata-only і не буде використаний у звіті без повторної обробки.";

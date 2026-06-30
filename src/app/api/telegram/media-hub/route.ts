@@ -38,6 +38,7 @@ type TelegramMessage = {
   };
   from?: { id?: number | string; username?: string };
   message_id: number;
+  reply_to_message?: TelegramMessage;
   text?: string;
 };
 
@@ -62,6 +63,8 @@ const MEDIA_HUB_BOT_TOKEN_ENV_NAMES = [
 
 const MEDIA_HUB_ROUTE_PATH = "/api/telegram/media-hub";
 const TELEGRAM_ALLOWED_UPDATES = ["message", "edited_message", "callback_query"] as const;
+const MATERIAL_TEXT_MIN_CHARS = 20;
+const MATERIAL_TAG_RE = /(^|\s)#(?:ssi|1d3x|daily|weekly|monthly|source)\b/gi;
 
 export async function GET(request: Request) {
   const auth = isDiagnosticRequestAuthorized(request);
@@ -158,7 +161,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, skippedReason: "sender_not_allowed" });
   }
 
-  const text = [message.text, message.caption].filter(Boolean).join(" ");
+  const text = getTelegramTextWithReply(message);
   const isCorporateGroupMessage = isCorporateTelegramChat(message.chat.id);
   const command = parseMediaHubMaterialBotCommand(message.text);
   if (command) {
@@ -168,7 +171,9 @@ export async function POST(request: Request) {
 
   const routed = parseMediaHubMaterialHashtags(text);
   const urls = extractUrlsFromText(text);
-  const hasIncomingMaterial = urls.length > 0 || Boolean(message.document);
+  const plainTextMaterial = normalizePlainTextMaterial(text);
+  const hasTextMaterial = plainTextMaterial.length >= MATERIAL_TEXT_MIN_CHARS;
+  const hasIncomingMaterial = urls.length > 0 || Boolean(message.document) || hasTextMaterial;
   const inferredTenantIds = isCorporateGroupMessage && routed.tenantIds.length === 0
     ? inferCorporateTelegramTenants(text)
     : [];
@@ -176,7 +181,8 @@ export async function POST(request: Request) {
     ? routed.tenantIds
     : inferredTenantIds;
   if (routed.tenantIds.length === 0) {
-    if (hasIncomingMaterial) {
+    const shouldStorePending = hasIncomingMaterial && !(isCorporateGroupMessage && hasTextMaterial && urls.length === 0 && !message.document);
+    if (shouldStorePending) {
       const pending = await savePendingTelegramMaterial(message, urls);
       await sendTelegramText(
         botToken.value,
@@ -286,6 +292,31 @@ export async function POST(request: Request) {
     }
   }
 
+  if (urls.length === 0 && !message.document && hasTextMaterial) {
+    for (const tenantId of tenantIds) {
+      const result = await ingestMediaHubTextMaterial({
+        kind: routed.kind,
+        receivedFrom: "telegram",
+        sourceType: isCorporateGroupMessage ? "corporate_telegram_group" : "telegram_text",
+        telegramChatId: String(message.chat.id),
+        telegramFromId: message.from?.id ? String(message.from.id) : undefined,
+        telegramMessageId: String(message.message_id),
+        tenantId,
+        text: plainTextMaterial,
+      });
+      results.push(result);
+      await replyForResult({
+        botToken: botToken.value,
+        kind: routed.kind,
+        label: "Telegram text",
+        message,
+        sourceType: "text",
+        status: result.extractionStatus,
+        tenantId,
+      });
+    }
+  }
+
   if (isCorporateGroupMessage && results.length === 0 && text.trim()) {
     for (const tenantId of tenantIds) {
       const result = await ingestMediaHubTextMaterial({
@@ -312,7 +343,7 @@ export async function POST(request: Request) {
   }
 
   if (results.length === 0) {
-    await sendTelegramText(botToken.value, String(message.chat.id), "Матеріал не знайдено. Надішліть посилання або PDF/XLSX/CSV/TXT файл з #ssi або #1d3x.");
+    await sendTelegramText(botToken.value, String(message.chat.id), "Матеріал не знайдено. Надішліть текст, цитату, посилання або PDF/XLSX/CSV/TXT файл з #ssi або #1d3x.");
   }
 
   return NextResponse.json({ ok: true, results });
@@ -348,7 +379,7 @@ async function savePendingTelegramMaterial(message: TelegramMessage, urls: strin
     message.document?.file_id ?? null,
     message.document?.file_name ?? null,
     message.document?.mime_type ?? null,
-    [message.text, message.caption].filter(Boolean).join(" ").trim() || null,
+    getTelegramTextWithReply(message) || null,
   );
   return { status: "saved" as const };
 }
@@ -471,11 +502,50 @@ async function processPendingTelegramMaterial(input: {
         tenantId,
       });
     }
+    const pendingText = normalizePlainTextMaterial(input.pending.text ?? "");
+    if (input.pending.urls.length === 0 && !input.pending.documentFileId && pendingText.length >= MATERIAL_TEXT_MIN_CHARS) {
+      const result = await ingestMediaHubTextMaterial({
+        kind: input.kind,
+        receivedFrom: "telegram",
+        sourceType: "telegram_text",
+        telegramChatId: input.pending.chatId,
+        telegramFromId: input.pending.fromId ?? undefined,
+        telegramMessageId: input.pending.messageId,
+        tenantId,
+        text: pendingText,
+      });
+      results.push(result);
+      await replyForResult({
+        botToken: input.botToken,
+        kind: input.kind,
+        label: "Telegram text",
+        message: input.message,
+        sourceType: "text",
+        status: result.extractionStatus,
+        tenantId,
+      });
+    }
   }
   if (results.length === 0) {
-    await sendTelegramText(input.botToken, String(input.message.chat.id), "Очікуючий матеріал не містить посилання або файлу. Надішліть матеріал повторно.");
+    await sendTelegramText(input.botToken, String(input.message.chat.id), "Очікуючий матеріал не містить тексту, посилання або файлу. Надішліть матеріал повторно.");
   }
   return results;
+}
+
+function getTelegramTextWithReply(message: TelegramMessage) {
+  return [
+    message.text,
+    message.caption,
+    message.reply_to_message?.text,
+    message.reply_to_message?.caption,
+  ].filter(Boolean).join(" ").trim();
+}
+
+function normalizePlainTextMaterial(text: string) {
+  return text
+    .replace(MATERIAL_TAG_RE, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 async function ensurePendingTelegramMaterialStorage() {

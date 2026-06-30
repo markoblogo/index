@@ -17,6 +17,7 @@ export type MediaHubManualMaterialKind =
 export type MediaHubManualMaterialSourceType =
   | "telegram_file"
   | "telegram_link"
+  | "telegram_text"
   | "corporate_telegram_group"
   | "admin_upload"
   | "admin_link"
@@ -325,7 +326,7 @@ export async function ingestMediaHubTextMaterial(input: {
   originalUrl?: string;
   receivedFrom: "telegram" | "admin" | "scheduler";
   sourceDomain?: string;
-  sourceType: Extract<MediaHubManualMaterialSourceType, "corporate_telegram_group" | "scheduled_api">;
+  sourceType: Extract<MediaHubManualMaterialSourceType, "telegram_text" | "corporate_telegram_group" | "scheduled_api">;
   telegramChatId?: string;
   telegramFromId?: string;
   telegramMessageId?: string;
