@@ -465,7 +465,7 @@ async function persistDatabaseCalculations(
           exclusionReason: manuallyExcluded
             ? "manual_exclude_from_index"
             : autoPreviousDayExcluded
-              ? "previous_day_2pct_deviation"
+              ? "previous_day_5pct_deviation"
               : excluded ? "outside_2pct_median_band" : null,
         };
       }),
@@ -819,15 +819,45 @@ function buildDatabaseCalculationInput(
     selectedSubmissions,
     spikeIndicative: indicative?.priceUsdPerMt.toNumber() ?? null,
     submissions: selectedSubmissions.map(
-      (submission): PriceSubmission => ({
-        forceInclude: isSubmissionManuallyIncluded(submission),
-        respondentId: submission.respondentId,
-        price: shouldExcludeSubmission(submission, previousPublished)
-          ? undefined
-          : submission.priceUsdPerMt.toNumber(),
-      }),
+      (submission): PriceSubmission => {
+        const trustedBroker = isTrustedSsiBrokerRespondent(
+          submission.respondentId,
+          respondentNameById.get(submission.respondentId),
+        );
+        const manuallyExcluded = isSubmissionExcluded(submission);
+        const forceInclude =
+          !manuallyExcluded &&
+          (isSubmissionManuallyIncluded(submission) || trustedBroker);
+
+        return {
+          forceInclude,
+          respondentId: submission.respondentId,
+          price: manuallyExcluded || (!forceInclude && shouldExcludeSubmission(submission, previousPublished))
+            ? undefined
+            : submission.priceUsdPerMt.toNumber(),
+        };
+      },
     ),
   };
+}
+
+function isTrustedSsiBrokerRespondent(respondentId: string, respondentName: string | undefined) {
+  if (getActiveIndexTenant().id !== "spike-ua") {
+    return false;
+  }
+
+  const normalized = normalizeTrustedRespondentName(`${respondentId} ${respondentName ?? ""}`);
+  return (
+    normalized.includes("фоп вікторія") ||
+    normalized.includes("фоп виктория") ||
+    normalized.includes("fop viktoria") ||
+    normalized.includes("фоп соловей") ||
+    normalized.includes("fop solovey")
+  );
+}
+
+function normalizeTrustedRespondentName(value: string) {
+  return value.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
 function isPastTradeDate(date: string) {
@@ -941,7 +971,7 @@ function buildCalculationCommodity({
                       100,
                   )
                 : 0,
-            reason: "previous_day_2pct_deviation",
+            reason: "previous_day_5pct_deviation",
           })),
       ),
     published,
