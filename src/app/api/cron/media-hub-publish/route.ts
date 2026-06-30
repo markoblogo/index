@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { autoPublishSpikeDailyIndices } from "@/lib/auto-publish";
 import { isCronRequestAuthorized } from "@/lib/cron-auth";
 import { hasDatabaseUrl } from "@/lib/db";
 import { getActiveIndexConfig } from "@/lib/index-platform";
@@ -88,6 +89,18 @@ export async function GET(request: Request) {
     });
   }
 
+  const shouldEnsureSsiDailyIndices =
+    !isPlatformSite() &&
+    (forceKind ?? plan.kind) === "daily" &&
+    getActiveIndexConfig().id === "spike-ua";
+  const ssiAutoPublish = shouldEnsureSsiDailyIndices
+    ? await autoPublishSpikeDailyIndices(plan.date, {
+        generateAiBrief: false,
+        publishMediaHub: false,
+        replaceExisting: false,
+      })
+    : null;
+
   const publication = await runDueMediaHubPublication({
     date: plan.date,
     forceKind,
@@ -96,6 +109,7 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     ...publication,
+    ssiAutoPublish,
     catchupRoute: isRetryCron,
     catchupWindowMinutes: isRetryCron
       ? getMediaHubPublicationCatchupWindowMinutes()
