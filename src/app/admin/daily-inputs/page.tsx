@@ -241,7 +241,7 @@ export default async function DailyInputsPage({
 
           {commodityGroups.map((group) => (
             <details
-              className="overflow-hidden border border-black bg-white"
+              className="border border-black bg-white"
               id={group.key}
               key={group.key}
               open={group.defaultOpen}
@@ -263,7 +263,7 @@ export default async function DailyInputsPage({
                 </span>
               </summary>
 
-              <div className="overflow-x-auto">
+              <div className="max-h-[72vh] overflow-auto">
                 <table className="min-w-full border-collapse text-left">
                   <thead className="sticky top-0 z-20 bg-uga-dark text-white shadow-[0_10px_24px_rgba(0,0,0,0.22)]">
                     <tr>
@@ -272,7 +272,7 @@ export default async function DailyInputsPage({
                       </th>
                       {group.commodities.map((commodity) => (
                         <th
-                          className={`${isCompactView ? "min-w-[13rem]" : "min-w-[15rem]"} border-l border-white/10 px-3 py-4 align-bottom text-xs font-semibold uppercase tracking-[0.12em] text-white/70`}
+                          className={`${isCompactView ? "min-w-[13rem]" : "min-w-[15rem]"} bg-uga-dark border-l border-white/10 px-3 py-4 align-bottom text-xs font-semibold uppercase tracking-[0.12em] text-white/70`}
                           key={commodity.id}
                         >
                           <span className="mb-2 block text-[0.58rem] uppercase tracking-[0.18em] text-uga-lime">
