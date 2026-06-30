@@ -2,14 +2,19 @@ import { cookies } from "next/headers";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { PlatformLanding } from "@/components/platform/platform-landing";
+import { BasketLanding } from "@/components/basket/basket-landing";
 import {
   detectLocaleFromCountry,
   isLocale,
   LOCALE_COOKIE,
 } from "@/lib/i18n";
-import { isPlatformSite } from "@/lib/platform-site";
+import { isBasketSite, isPlatformSite } from "@/lib/platform-site";
 
 export default async function HomeRedirect() {
+  if (isBasketSite()) {
+    return <BasketLanding />;
+  }
+
   if (isPlatformSite()) {
     return <PlatformLanding />;
   }

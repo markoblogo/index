@@ -2,33 +2,54 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import {
+  getBasketSiteUrl,
   getPlatformSiteUrl,
+  isBasketSite,
   isPlatformSite,
   normalizePublicUrl,
 } from "@/lib/platform-site";
 import "./globals.css";
 
 const platformSite = isPlatformSite();
-const activeIndex = platformSite ? null : getActiveIndexConfig();
-const appIcon = platformSite
+const basketSite = isBasketSite();
+const activeIndex = platformSite || basketSite ? null : getActiveIndexConfig();
+const appIcon = basketSite
+  ? "/brand/1d-icon.png"
+  : platformSite
   ? "/brand/1d-icon.png"
   : activeIndex?.id === "spike-ua"
     ? "/spike-icon.svg"
     : "/icon.png";
 
 export const metadata: Metadata = {
-  title: platformSite
+  title: basketSite
+    ? {
+        default: "1D3X Basket | Consumer basket indices",
+        template: "%s | 1D3X Basket",
+      }
+    : platformSite
     ? {
         default: "1d3x | Local Commodity Index Infrastructure",
         template: "%s | 1d3x",
       }
     : activeIndex?.name,
-  description: platformSite
+  description: basketSite
+    ? "Big Mac, Starbucks Latte and iPhone prices turned into consumer basket indices for the real world."
+    : platformSite
     ? "Commodity index infrastructure for local agricultural markets, built with institutional partners and market leaders."
     : activeIndex?.id === "spike-ua"
       ? "Daily SPIKE SPOT INDEX for export and processing commodity markets."
       : "Daily spot export price index for the Ukrainian Grain Association.",
-  keywords: platformSite
+  keywords: basketSite
+    ? [
+        "1D3X Basket",
+        "Big Mac Index",
+        "Starbucks Latte Index",
+        "iPhone Index",
+        "consumer basket index",
+        "global price index",
+      ]
+    : platformSite
     ? [
         "commodity index infrastructure",
         "agricultural commodity indices",
@@ -38,12 +59,29 @@ export const metadata: Metadata = {
         "1d3x",
       ]
     : undefined,
-  alternates: platformSite ? { canonical: "/" } : undefined,
+  alternates: platformSite || basketSite ? { canonical: "/" } : undefined,
   robots: {
     follow: true,
     index: true,
   },
-  openGraph: platformSite
+  openGraph: basketSite
+    ? {
+        description:
+          "Big Mac, Starbucks Latte and iPhone prices turned into consumer basket indices for the real world.",
+        images: [
+          {
+            alt: "1D3X Basket",
+            height: 736,
+            url: "/brand/1d3x-logo.webp",
+            width: 2140,
+          },
+        ],
+        siteName: "1D3X Basket",
+        title: "1D3X Basket | Consumer basket indices",
+        type: "website",
+        url: "/",
+      }
+    : platformSite
     ? {
         description:
           "1d3x builds local commodity index products with institutional partners and market leaders.",
@@ -61,7 +99,15 @@ export const metadata: Metadata = {
         url: "/",
       }
     : undefined,
-  twitter: platformSite
+  twitter: basketSite
+    ? {
+        card: "summary_large_image",
+        description:
+          "Big Mac, Starbucks Latte and iPhone prices turned into consumer basket indices.",
+        images: ["/brand/1d3x-logo.webp"],
+        title: "1D3X Basket | Consumer basket indices",
+      }
+    : platformSite
     ? {
         card: "summary_large_image",
         description:
@@ -76,7 +122,9 @@ export const metadata: Metadata = {
     apple: appIcon,
   },
   metadataBase: new URL(
-    platformSite
+    basketSite
+      ? getBasketSiteUrl()
+      : platformSite
       ? getPlatformSiteUrl()
       : normalizePublicUrl(
           process.env.NEXT_PUBLIC_SITE_URL,
@@ -94,7 +142,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         className="antialiased"
-        data-index={activeIndex?.theme.dataAttribute ?? "platform"}
+        data-index={basketSite ? "basket" : activeIndex?.theme.dataAttribute ?? "platform"}
       >
         <script
           dangerouslySetInnerHTML={{

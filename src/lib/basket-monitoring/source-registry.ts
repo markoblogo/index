@@ -1,0 +1,88 @@
+import type { BasketMonitoringSourceRegistration } from "@/lib/basket-monitoring/source-types";
+
+export const BASKET_SOURCE_REGISTRY: BasketMonitoringSourceRegistration[] = [
+  {
+    id: "economist-bigmac",
+    label: "The Economist Big Mac Index dataset",
+    kind: "price_dataset",
+    enabled: true,
+    cadence: "monthly",
+  },
+  {
+    id: "starbucks-menu-monitor",
+    label: "Monitored Starbucks menu prices",
+    kind: "brand_menu",
+    enabled: true,
+    cadence: "monthly",
+  },
+  {
+    id: "gcpdex-starbucks",
+    label: "GCPDex Starbucks Latte Index reference dataset",
+    kind: "price_dataset",
+    enabled: true,
+    cadence: "monthly",
+  },
+  {
+    id: "apple-store-retail",
+    label: "Apple Store / authorized retailer price monitoring",
+    kind: "retail_price",
+    enabled: true,
+    cadence: "monthly",
+  },
+  {
+    id: "picodi-iphone-index",
+    label: "Picodi iPhone Index annual report",
+    kind: "price_dataset",
+    enabled: true,
+    cadence: "monthly",
+  },
+  {
+    id: "tenscope-iphone-affordability",
+    label: "Tenscope iPhone Affordability Index",
+    kind: "price_dataset",
+    enabled: true,
+    cadence: "monthly",
+  },
+  {
+    id: "apple-price-compare",
+    label: "ApplePriceCompare Apple Store country price tables",
+    kind: "retail_price",
+    enabled: true,
+    cadence: "monthly",
+  },
+  {
+    id: "fred-usd-broad",
+    label: "FRED DTWEXBGS nominal broad U.S. dollar index",
+    kind: "external_market_series",
+    enabled: true,
+    cadence: "daily",
+  },
+  {
+    id: "fred-brent",
+    label: "FRED DCOILBRENTEU Brent crude oil spot price",
+    kind: "external_market_series",
+    enabled: true,
+    cadence: "daily",
+  },
+  {
+    id: "fred-wti",
+    label: "FRED DCOILWTICO WTI crude oil spot price",
+    kind: "external_market_series",
+    enabled: true,
+    cadence: "daily",
+  },
+  {
+    id: "basket-global-media",
+    label: "Basket consumer price media group: The Economist, GCPDex, Visual Capitalist, Investopedia, SwitchOnBusiness, Picodi, Tenscope, Yahoo Finance, CNBC, Reuters, Bloomberg",
+    kind: "news",
+    enabled: true,
+    cadence: "monthly",
+  },
+  {
+    id: "basket-community-signals",
+    label: "Community and blog signals for emerging consumer indices, verified before publication",
+    kind: "rss",
+    enabled: true,
+    cadence: "weekly",
+  },
+];
