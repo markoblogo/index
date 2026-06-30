@@ -1,3 +1,4 @@
+import { createHash, randomUUID } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { db, hasDatabaseUrl } from "@/lib/db";
@@ -5,6 +6,7 @@ import { generateAndStoreDailyAiMarketBriefs } from "@/lib/ai-market-brief-lazy"
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import { computePublishedChange } from "@/lib/index-publish";
 import {
+  normalizeMediaHubTelegramChatId,
   publishMediaHubSnapshotReport,
   sendMediaHubReportTelegram,
 } from "@/lib/media-hub-publication-scheduler";
@@ -37,6 +39,7 @@ export type AutoPublishPlanItem = {
 export type AutoPublishResult = {
   aiBrief?: Awaited<ReturnType<typeof generateAndStoreDailyAiMarketBriefs>> | null;
   date: string;
+  mediaHub?: Awaited<ReturnType<typeof ensureDailyMediaHubPublication>> | null;
   published: number;
   skippedReason: string | null;
 };
@@ -130,10 +133,11 @@ export async function autoPublishSpikeDailyIndices(
   }
 
   if (existingPublishedCount > 0 && !options.replaceExisting) {
+    let mediaHub: AutoPublishResult["mediaHub"] = null;
     if (options.publishMediaHub !== false) {
-      await ensureDailyMediaHubPublication(date);
+      mediaHub = await ensureDailyMediaHubPublication(date);
     }
-    return { date, published: 0, skippedReason: "already_published" };
+    return { date, mediaHub, published: 0, skippedReason: "already_published" };
   }
 
   const submissions = await db.priceSubmission.findMany({
@@ -342,24 +346,236 @@ export async function autoPublishSpikeDailyIndices(
         })
       : null;
 
+  let mediaHub: AutoPublishResult["mediaHub"] = null;
   if (published > 0 && options.publishMediaHub !== false) {
-    await ensureDailyMediaHubPublication(date);
+    mediaHub = await ensureDailyMediaHubPublication(date);
   }
 
   return {
     aiBrief,
     date,
+    mediaHub,
     published,
     skippedReason: published > 0 ? null : "no_publishable_positions",
   };
 }
 
 async function ensureDailyMediaHubPublication(date: string) {
-  await publishMediaHubSnapshotReport("daily", date);
-  await sendMediaHubReportTelegram("daily", date, {
-    audience: "spike",
-    locale: "uk",
+  try {
+    const report = await publishMediaHubSnapshotReport("daily", date);
+    const telegram = await sendMediaHubReportTelegram("daily", date, {
+      audience: "spike",
+      locale: "uk",
+    });
+    return { report, status: "published" as const, telegram };
+  } catch (error) {
+    const fallback = await publishSsiDailyFallbackReport(date, safeErrorMessage(error));
+    return {
+      error: safeErrorMessage(error),
+      fallback,
+      status: "fallback_published" as const,
+    };
+  }
+}
+
+async function publishSsiDailyFallbackReport(date: string, sourceError: string) {
+  const activeIndex = getActiveIndexConfig();
+  const tradeDate = dateToUtcDate(date);
+  const rows = await db.publishedIndex.findMany({
+    include: {
+      basket: true,
+      commodity: true,
+      deliveryBasis: true,
+    },
+    orderBy: [{ commodity: { sortOrder: "asc" } }, { commodity: { nameUk: "asc" } }],
+    where: {
+      locked: true,
+      status: "published",
+      tradeDate,
+    },
   });
+  const title = `SSI daily index update - ${date}`;
+  const lines = rows
+    .slice(0, 18)
+    .map((row) => {
+      const value = row.valueUsdPerMt.toNumber().toFixed(1);
+      const change =
+        row.changeAbsUsdPerMt === null
+          ? ""
+          : ` (${formatSignedNumber(row.changeAbsUsdPerMt.toNumber())} USD/t)`;
+      return `- ${row.commodity.nameUk}: ${value} USD/t${change}`;
+    });
+  const summary =
+    lines.length > 0
+      ? lines
+      : ["- Published SSI index rows were not found for the selected date."];
+  const contentJson = {
+    generatedAt: new Date().toISOString(),
+    kind: "daily",
+    periodEndDate: date,
+    periodStartDate: date,
+    summary,
+    title,
+    totals: {
+      items: rows.length,
+      sources: 1,
+      windows: 1,
+    },
+    windows: [
+      {
+        feed: [],
+        itemCount: rows.length,
+        label: "Daily",
+        progressLabel: "published",
+        sourceCount: 1,
+        summaryBody: summary.join("\n"),
+        summaryTitle: "Published SSI index values",
+        topSources: [],
+        topTopics: [],
+        window: "day",
+      },
+    ],
+  };
+  const contentHash = createHash("sha256")
+    .update(JSON.stringify(contentJson))
+    .digest("hex");
+
+  let stored = false;
+  try {
+    await db.$executeRawUnsafe(
+      `
+        INSERT INTO "MediaHubReport" (
+          "id",
+          "tenantId",
+          "kind",
+          "periodStart",
+          "periodEnd",
+          "title",
+          "status",
+          "contentHash",
+          "contentJson",
+          "sourceDigest",
+          "createdAt",
+          "updatedAt"
+        )
+        VALUES ($1, $2, 'daily', $3::date, $3::date, $4, 'published', $5, $6::jsonb, $7::jsonb, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        ON CONFLICT ("tenantId", "kind", "periodEnd")
+        DO UPDATE SET
+          "title" = EXCLUDED."title",
+          "status" = 'published',
+          "contentHash" = EXCLUDED."contentHash",
+          "contentJson" = EXCLUDED."contentJson",
+          "sourceDigest" = EXCLUDED."sourceDigest",
+          "updatedAt" = CURRENT_TIMESTAMP
+      `,
+      randomUUID(),
+      activeIndex.id,
+      date,
+      title,
+      contentHash,
+      JSON.stringify(contentJson),
+      JSON.stringify({ fallback: true, sourceError }),
+    );
+    stored = true;
+  } catch (storageError) {
+    console.warn("SSI daily fallback MediaHub storage failed.", safeErrorMessage(storageError));
+  }
+
+  let telegram: Awaited<ReturnType<typeof sendSsiFallbackTelegram>>;
+  try {
+    telegram = await sendSsiFallbackTelegram(date, summary);
+  } catch (telegramError) {
+    telegram = {
+      error: safeErrorMessage(telegramError),
+      status: "failed" as const,
+    };
+  }
+  return { rows: rows.length, stored, telegram };
+}
+
+async function sendSsiFallbackTelegram(date: string, summary: string[]) {
+  const botToken = firstNonEmpty([
+    process.env.SPIKE_TELEGRAM_BOT_TOKEN,
+    process.env.INDEX_TELEGRAM_BOT_TOKEN,
+  ]);
+  const chatId = firstNonEmpty([
+    process.env.SPIKE_MEDIA_HUB_TELEGRAM_CHAT_ID,
+    process.env.MEDIA_HUB_TELEGRAM_CHAT_ID,
+    process.env.SPIKE_AI_TELEGRAM_CHAT_ID,
+    process.env.SPIKE_WEEKLY_REPORT_TELEGRAM_CHAT_ID,
+    process.env.INDEX_TELEGRAM_SMOKE_CHAT_ID,
+  ]);
+
+  if (!botToken || !chatId) {
+    return { reason: "telegram_not_configured", status: "skipped" as const };
+  }
+
+  const text = fitTelegramMessage(
+    [
+      `<b>Spike Spot Index daily update</b>`,
+      escapeHtml(date),
+      "",
+      "<b>Published SSI index values</b>",
+      ...summary.map(escapeHtml),
+      "",
+      "<i>Fallback MediaHub digest based on published SSI index data. Not a trading recommendation.</i>",
+      "",
+      "<b>Spike Spot Index</b>",
+      "https://spike.1d3x.com/",
+    ].join("\n"),
+  );
+  const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+    body: JSON.stringify({
+      chat_id: normalizeMediaHubTelegramChatId(chatId),
+      disable_web_page_preview: true,
+      parse_mode: "HTML",
+      text,
+    }),
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+  });
+
+  if (!response.ok) {
+    return {
+      error: await response.text(),
+      status: "failed" as const,
+    };
+  }
+
+  const payload = (await response.json()) as { result?: { message_id?: number } };
+  return {
+    messageIds: payload.result?.message_id ? [payload.result.message_id] : [],
+    status: "sent" as const,
+  };
+}
+
+function fitTelegramMessage(text: string) {
+  const maxLength = 3900;
+  if (text.length <= maxLength) {
+    return text;
+  }
+  return `${text.slice(0, maxLength - 120).trim()}\n\n<i>Report shortened to fit one Telegram message.</i>`;
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+function formatSignedNumber(value: number) {
+  return `${value > 0 ? "+" : ""}${value.toFixed(1)}`;
+}
+
+function firstNonEmpty(values: Array<string | undefined>) {
+  for (const value of values) {
+    const trimmed = value?.trim();
+    if (trimmed) {
+      return trimmed;
+    }
+  }
+  return null;
 }
 
 export function buildAutoPublishPlan({
