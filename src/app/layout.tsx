@@ -71,9 +71,9 @@ export const metadata: Metadata = {
         images: [
           {
             alt: "1D3X Basket",
-            height: 736,
-            url: "/brand/1d3x-logo.webp",
-            width: 2140,
+            height: 1520,
+            url: "/basket/assets/og-basket.webp",
+            width: 2048,
           },
         ],
         siteName: "1D3X Basket",
@@ -104,7 +104,7 @@ export const metadata: Metadata = {
         card: "summary_large_image",
         description:
           "Big Mac, Starbucks Latte and iPhone prices turned into consumer basket indices.",
-        images: ["/brand/1d3x-logo.webp"],
+        images: ["/basket/assets/og-basket.webp"],
         title: "1D3X Basket | Consumer basket indices",
       }
     : platformSite

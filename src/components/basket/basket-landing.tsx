@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState, type ReactNode } from "react";
 import { BASKET_MARKETS, BASKET_PRODUCTS } from "@/lib/basket/products";
@@ -110,6 +111,15 @@ export function BasketLanding({ embed = false, initialMarket = "GLOBAL" }: { emb
           </ul>
         </InfoPanel>
         <InfoPanel id="api" title="API Access" cta="API documentation">
+          <div className="mb-4 flex justify-end">
+            <Image
+              alt="API access visual"
+              className="h-28 w-32 rounded-lg object-cover opacity-90 shadow-2xl shadow-[#b96cff]/20"
+              height={300}
+              src="/basket/assets/api-cube.webp"
+              width={280}
+            />
+          </div>
           <ul className="grid gap-2 text-sm leading-6 text-white/68">
             <li>Latest values and history</li>
             <li>Cross-index comparison</li>
@@ -119,6 +129,13 @@ export function BasketLanding({ embed = false, initialMarket = "GLOBAL" }: { emb
           <p className="mt-4 text-xs text-white/42">Access available on request.</p>
         </InfoPanel>
         <InfoPanel id="media" title="Monthly Basket Review" cta="Read latest report">
+          <Image
+            alt="Monthly Basket Review visual"
+            className="mb-4 h-28 w-full rounded-lg object-cover opacity-90"
+            height={260}
+            src="/basket/assets/media-monthly-review.webp"
+            width={250}
+          />
           <p className="text-xs font-semibold uppercase text-white/45">{report.month}</p>
           <h3 className="mt-3 text-xl font-black">{report.title}</h3>
           <p className="mt-3 text-sm leading-6 text-white/62">{report.summary}</p>
@@ -215,23 +232,40 @@ function ProductStage({ compact = false }: { compact?: boolean }) {
       <div className="basket-glow basket-glow-gold" />
       <div className="basket-glow basket-glow-green" />
       <div className="basket-glow basket-glow-purple" />
-      <div className="basket-product basket-burger">
-        <div className="burger-top" />
-        <div className="burger-layer burger-cheese" />
-        <div className="burger-layer burger-patty" />
-        <div className="burger-layer burger-lettuce" />
-        <div className="burger-bottom" />
+      <div className="basket-orbit basket-orbit-gold" />
+      <div className="basket-orbit basket-orbit-green" />
+      <div className="basket-orbit basket-orbit-purple" />
+      <div className="basket-particles basket-particles-gold" />
+      <div className="basket-particles basket-particles-green" />
+      <div className="basket-particles basket-particles-purple" />
+      <div className="basket-product basket-product-image basket-burger">
+        <Image
+          alt="Big Mac product visual"
+          fill
+          priority={!compact}
+          sizes="(max-width: 900px) 44vw, 30vw"
+          src="/basket/assets/hero-bigmac.webp"
+        />
       </div>
-      <div className="basket-product basket-cup">
-        <div className="cup-steam" />
-        <div className="cup-lid" />
-        <div className="cup-body">
-          <span>STAR</span>
-        </div>
+      <div className="basket-product basket-product-image basket-cup">
+        <div className="cup-steam" aria-hidden="true" />
+        <Image
+          alt="Starbucks Latte product visual"
+          fill
+          priority={!compact}
+          sizes="(max-width: 900px) 34vw, 22vw"
+          src="/basket/assets/hero-latte.webp"
+        />
       </div>
-      <div className="basket-product basket-phone">
-        <div className="phone-camera" />
-        <div className="phone-logo" />
+      <div className="basket-product basket-product-image basket-phone">
+        <div className="phone-sweep" aria-hidden="true" />
+        <Image
+          alt="iPhone product visual"
+          fill
+          priority={!compact}
+          sizes="(max-width: 900px) 31vw, 20vw"
+          src="/basket/assets/hero-iphone.webp"
+        />
       </div>
     </div>
   );
@@ -441,71 +475,125 @@ function BasketStyles() {
         filter: blur(22px);
         opacity: .78;
       }
-      .basket-glow-gold { width: 20rem; height: 20rem; left: 7%; top: 34%; background: rgba(255,196,46,.16); }
-      .basket-glow-green { width: 22rem; height: 22rem; left: 38%; top: 20%; background: rgba(56,255,174,.13); }
-      .basket-glow-purple { width: 24rem; height: 24rem; right: 1%; top: 28%; background: rgba(185,108,255,.17); }
+      .basket-glow-gold { width: 22rem; height: 22rem; left: 6%; top: 34%; background: rgba(255,196,46,.2); }
+      .basket-glow-green { width: 24rem; height: 24rem; left: 39%; top: 18%; background: rgba(56,255,174,.16); }
+      .basket-glow-purple { width: 26rem; height: 26rem; right: 0; top: 25%; background: rgba(185,108,255,.22); }
+      .basket-orbit {
+        position: absolute;
+        border-radius: 999px;
+        border: 1px solid rgba(255,255,255,.16);
+        transform: perspective(480px) rotateX(68deg);
+        filter: drop-shadow(0 0 12px currentColor);
+        opacity: .78;
+      }
+      .basket-orbit:after {
+        content: "";
+        position: absolute;
+        inset: -5px;
+        border-radius: inherit;
+        border: 1px solid currentColor;
+        opacity: .42;
+      }
+      .basket-orbit-gold { color: #ffc42e; left: 10%; top: 61%; width: 19rem; height: 5.4rem; }
+      .basket-orbit-green { color: #19ff9a; left: 43%; top: 61%; width: 16rem; height: 5rem; }
+      .basket-orbit-purple { color: #b96cff; right: 5%; top: 63%; width: 16rem; height: 5rem; }
+      .basket-particles {
+        position: absolute;
+        width: 14rem;
+        height: 14rem;
+        border-radius: 999px;
+        opacity: .72;
+        background:
+          radial-gradient(circle at 18% 26%, currentColor 0 1px, transparent 2px),
+          radial-gradient(circle at 42% 12%, currentColor 0 1px, transparent 2px),
+          radial-gradient(circle at 78% 34%, currentColor 0 1.5px, transparent 3px),
+          radial-gradient(circle at 65% 82%, currentColor 0 1px, transparent 2px),
+          radial-gradient(circle at 22% 72%, currentColor 0 1.5px, transparent 3px);
+        animation: basket-particle-drift 12s ease-in-out infinite;
+      }
+      .basket-particles-gold { color: #ffc42e; left: 11%; top: 25%; }
+      .basket-particles-green { color: #19ff9a; left: 48%; top: 13%; animation-delay: -3s; }
+      .basket-particles-purple { color: #b96cff; right: 7%; top: 20%; animation-delay: -6s; }
       .basket-product {
         position: absolute;
         animation: basket-float 7s ease-in-out infinite;
         transform-style: preserve-3d;
       }
-      .basket-burger { left: 4%; top: 34%; width: min(28vw, 330px); height: 220px; }
-      .basket-cup { left: 39%; top: 20%; width: min(23vw, 250px); height: 360px; animation-delay: -2s; }
-      .basket-phone { right: 4%; top: 25%; width: min(20vw, 230px); height: 390px; animation-delay: -4s; transform: rotate(12deg); }
-      .burger-top, .burger-bottom, .burger-layer {
-        position: absolute;
-        left: 6%;
-        right: 6%;
-        border-radius: 999px;
-        box-shadow: 0 18px 40px rgba(0,0,0,.45);
+      .basket-product-image img {
+        object-fit: contain;
+        filter: drop-shadow(0 34px 55px rgba(0,0,0,.46));
       }
-      .burger-top { top: 4%; height: 46%; border-radius: 999px 999px 52px 52px; background: radial-gradient(circle at 35% 18%, #fff4bd 1px, transparent 3px), radial-gradient(circle at 52% 24%, #fff4bd 1px, transparent 3px), radial-gradient(circle at 68% 19%, #fff4bd 1px, transparent 3px), linear-gradient(#f4b947, #9b5218); }
-      .burger-cheese { top: 46%; height: 12%; border-radius: 16px; background: #ffc42e; }
-      .burger-patty { top: 54%; height: 18%; border-radius: 18px; background: linear-gradient(#4c2114, #1d0d08); }
-      .burger-lettuce { top: 68%; height: 12%; border-radius: 22px; background: #83d33d; }
-      .burger-bottom { top: 76%; height: 23%; border-radius: 42px 42px 999px 999px; background: linear-gradient(#d98a2b, #8d4417); }
-      .cup-steam {
-        position: absolute;
-        left: 34%;
-        top: -8%;
-        width: 32%;
-        height: 26%;
-        border-radius: 50%;
-        background: radial-gradient(ellipse, rgba(255,255,255,.45), transparent 62%);
-        filter: blur(6px);
+      .basket-product-image {
+        overflow: hidden;
       }
-      .cup-lid { position: absolute; inset: 3% 8% auto; height: 17%; border-radius: 50%; background: linear-gradient(#fff4e1, #d8bf97); }
-      .cup-body {
-        position: absolute;
-        inset: 15% 15% 0;
-        display: grid;
-        place-items: center;
-        color: #0f6845;
-        font-weight: 900;
-        border-radius: 18% 18% 30% 30%;
-        background: linear-gradient(90deg, #f5e3bc, #fff4db 45%, #cdb37f);
-        clip-path: polygon(8% 0, 92% 0, 78% 100%, 22% 100%);
+      .basket-burger {
+        -webkit-mask-image: radial-gradient(ellipse at 50% 52%, #000 0 58%, rgba(0,0,0,.76) 66%, transparent 78%);
+        mask-image: radial-gradient(ellipse at 50% 52%, #000 0 58%, rgba(0,0,0,.76) 66%, transparent 78%);
+      }
+      .basket-cup {
+        -webkit-mask-image: radial-gradient(ellipse at 48% 52%, #000 0 54%, rgba(0,0,0,.74) 66%, transparent 82%);
+        mask-image: radial-gradient(ellipse at 48% 52%, #000 0 54%, rgba(0,0,0,.74) 66%, transparent 82%);
       }
       .basket-phone {
-        border-radius: 2rem;
-        background: linear-gradient(135deg, #20152d, #6e527e 42%, #14131d);
-        border: 2px solid rgba(255,255,255,.24);
-        box-shadow: 0 30px 80px rgba(160,80,255,.28);
+        -webkit-mask-image: radial-gradient(ellipse at 54% 52%, #000 0 58%, rgba(0,0,0,.78) 70%, transparent 84%);
+        mask-image: radial-gradient(ellipse at 54% 52%, #000 0 58%, rgba(0,0,0,.78) 70%, transparent 84%);
       }
-      .phone-camera { position: absolute; left: 12%; top: 8%; width: 4.8rem; height: 4.8rem; border-radius: 1.2rem; background: radial-gradient(circle at 28% 30%, #05070d 0 12%, transparent 13%), radial-gradient(circle at 68% 30%, #05070d 0 12%, transparent 13%), radial-gradient(circle at 48% 68%, #05070d 0 12%, transparent 13%), rgba(255,255,255,.16); }
-      .phone-logo { position: absolute; inset: 45% 0 auto; margin: auto; width: 3rem; height: 3rem; border-radius: 50%; background: rgba(255,255,255,.72); }
+      .basket-burger { left: 0; top: 23%; z-index: 1; width: min(34vw, 380px); height: min(35vw, 396px); }
+      .basket-cup { left: 39%; top: 7%; z-index: 2; width: min(24vw, 280px); height: min(43vw, 501px); animation-delay: -2s; }
+      .basket-phone { right: 1%; top: 13%; z-index: 3; width: min(22vw, 260px); height: min(43vw, 450px); animation-delay: -4s; transform: rotate(8deg); }
+      .cup-steam {
+        position: absolute;
+        left: 28%;
+        top: -2%;
+        width: 42%;
+        height: 22%;
+        border-radius: 50%;
+        background: radial-gradient(ellipse, rgba(255,255,255,.45), transparent 62%);
+        filter: blur(7px);
+        animation: basket-steam 5s ease-in-out infinite;
+        z-index: 2;
+      }
+      .phone-sweep {
+        position: absolute;
+        inset: 8% 18% auto;
+        height: 80%;
+        transform: rotate(15deg) translateX(-120%);
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,.22), transparent);
+        mix-blend-mode: screen;
+        animation: basket-phone-sweep 6.5s ease-in-out infinite;
+        z-index: 2;
+      }
       @keyframes basket-float {
         0%, 100% { transform: translate3d(0,0,0) rotate(-2deg); }
         50% { transform: translate3d(0,-18px,0) rotate(4deg); }
       }
+      @keyframes basket-particle-drift {
+        0%, 100% { transform: translate3d(0,0,0) rotate(0deg); opacity: .55; }
+        50% { transform: translate3d(14px,-18px,0) rotate(8deg); opacity: .9; }
+      }
+      @keyframes basket-steam {
+        0%, 100% { transform: translateY(0) scale(.92); opacity: .42; }
+        50% { transform: translateY(-16px) scale(1.12); opacity: .72; }
+      }
+      @keyframes basket-phone-sweep {
+        0%, 42% { transform: rotate(15deg) translateX(-130%); opacity: 0; }
+        55% { opacity: .72; }
+        72%, 100% { transform: rotate(15deg) translateX(150%); opacity: 0; }
+      }
       @media (prefers-reduced-motion: reduce) {
-        .basket-product { animation: none !important; }
+        .basket-product,
+        .basket-particles,
+        .cup-steam,
+        .phone-sweep { animation: none !important; }
       }
       @media (max-width: 900px) {
         .basket-stage { min-height: 420px; }
-        .basket-burger { left: 0; top: 30%; width: 42vw; }
-        .basket-cup { left: 33%; top: 10%; width: 34vw; }
-        .basket-phone { right: 0; top: 23%; width: 30vw; height: 300px; }
+        .basket-burger { left: 0; top: 44%; width: 45vw; height: 47vw; }
+        .basket-cup { left: 35%; top: 4%; width: 36vw; height: 65vw; }
+        .basket-phone { right: -2%; top: 16%; width: 34vw; height: 59vw; }
+        .basket-orbit-gold { left: 0; top: 70%; width: 43vw; }
+        .basket-orbit-green { left: 31%; top: 66%; width: 34vw; }
+        .basket-orbit-purple { right: 0; top: 67%; width: 32vw; }
       }
     `}</style>
   );
