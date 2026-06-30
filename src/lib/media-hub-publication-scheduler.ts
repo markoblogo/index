@@ -325,7 +325,11 @@ export async function publishMediaHubSnapshotReport(
     const { content, manualMaterials, periodStartDate, primarySnapshot, snapshots } =
       await buildTransientMediaHubSnapshotReport(kind, periodEndDate);
     const tenantId = isPlatformSite() ? "1d3x" : getActiveIndexConfig().id;
-    const reportStatus = content.validation?.status === "needs_review"
+    const canPublishStandardSsiDailyReport =
+      tenantId === "spike-ua" &&
+      kind === "daily" &&
+      Boolean(content.dailyReports?.uk?.indexSection);
+    const reportStatus = content.validation?.status === "needs_review" && !canPublishStandardSsiDailyReport
       ? "needs_review"
       : "published";
     const contentHash = createHash("sha256")
@@ -474,7 +478,11 @@ export async function sendMediaHubReportTelegram(
     return { skippedReason: "report_content_invalid", status: "skipped" as const };
   }
 
-  if (content.validation?.status === "needs_review") {
+  const canSendStandardSsiDailyReport =
+    options.audience === "spike" &&
+    kind === "daily" &&
+    Boolean(content.dailyReports?.[options.locale]?.indexSection);
+  if (content.validation?.status === "needs_review" && !canSendStandardSsiDailyReport) {
     return { skippedReason: "evidence_validation_needs_review", status: "skipped" as const };
   }
 

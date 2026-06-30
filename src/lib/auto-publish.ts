@@ -369,8 +369,8 @@ async function ensureDailyMediaHubPublication(date: string) {
     });
     if (
       report.status === "needs_review" ||
-      telegram.status === "skipped" ||
-      telegram.status === "failed"
+      telegram.status === "failed" ||
+      (telegram.status === "skipped" && telegram.skippedReason !== "already_sent")
     ) {
       const fallback = await publishSsiDailyFallbackReport(
         date,
