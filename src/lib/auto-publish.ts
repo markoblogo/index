@@ -367,6 +367,22 @@ async function ensureDailyMediaHubPublication(date: string) {
       audience: "spike",
       locale: "uk",
     });
+    if (
+      report.status === "needs_review" ||
+      telegram.status === "skipped" ||
+      telegram.status === "failed"
+    ) {
+      const fallback = await publishSsiDailyFallbackReport(
+        date,
+        `media_hub_report_${report.status}_telegram_${telegram.status}`,
+      );
+      return {
+        fallback,
+        report,
+        status: "fallback_published" as const,
+        telegram,
+      };
+    }
     return { report, status: "published" as const, telegram };
   } catch (error) {
     const fallback = await publishSsiDailyFallbackReport(date, safeErrorMessage(error));
