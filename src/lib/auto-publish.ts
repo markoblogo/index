@@ -578,6 +578,10 @@ function firstNonEmpty(values: Array<string | undefined>) {
   return null;
 }
 
+function safeErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
+
 export function buildAutoPublishPlan({
   basisByCommodityId,
   submissions,
