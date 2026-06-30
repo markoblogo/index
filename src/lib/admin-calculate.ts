@@ -444,6 +444,7 @@ async function persistDatabaseCalculations(
     const autoPreviousDayExcludedRespondentIds = new Set(
       calculationInput.selectedSubmissions
         .filter((submission) =>
+          !calculationInput.forceIncludedRespondentIds.has(submission.respondentId) &&
           isAutoPreviousDayOutlier(submission, calculationInput.previousPublished),
         )
         .map((submission) => submission.respondentId),
@@ -818,20 +819,27 @@ function buildDatabaseCalculationInput(
     context.previousPublishedIndices.get(commodityId)?.valueUsdPerMt.toNumber() ?? null;
 
   return {
+    forceIncludedRespondentIds: new Set(
+      selectedSubmissions
+        .filter((submission) =>
+          isForceIncludedCalculationSubmission(
+            submission,
+            respondentNameById.get(submission.respondentId),
+          ),
+        )
+        .map((submission) => submission.respondentId),
+    ),
     respondentNameById,
     previousPublished,
     selectedSubmissions,
     spikeIndicative: indicative?.priceUsdPerMt.toNumber() ?? null,
     submissions: selectedSubmissions.map(
       (submission): PriceSubmission => {
-        const trustedBroker = isTrustedSsiBrokerRespondent(
-          submission.respondentId,
+        const manuallyExcluded = isSubmissionExcluded(submission);
+        const forceInclude = isForceIncludedCalculationSubmission(
+          submission,
           respondentNameById.get(submission.respondentId),
         );
-        const manuallyExcluded = isSubmissionExcluded(submission);
-        const forceInclude =
-          !manuallyExcluded &&
-          (isSubmissionManuallyIncluded(submission) || trustedBroker);
 
         return {
           forceInclude,
@@ -843,6 +851,17 @@ function buildDatabaseCalculationInput(
       },
     ),
   };
+}
+
+function isForceIncludedCalculationSubmission(
+  submission: { metadata?: unknown; respondentId: string },
+  respondentName: string | undefined,
+) {
+  return (
+    !isSubmissionExcluded(submission) &&
+    (isSubmissionManuallyIncluded(submission) ||
+      isTrustedSsiBrokerRespondent(submission.respondentId, respondentName))
+  );
 }
 
 function isTrustedSsiBrokerRespondent(respondentId: string, respondentName: string | undefined) {
@@ -971,6 +990,14 @@ function buildCalculationCommodity({
           })),
         selectedSubmissions
           .filter((submission) =>
+            !selectedSubmissions.some(
+              (candidate) =>
+                candidate.respondentId === submission.respondentId &&
+                isForceIncludedCalculationSubmission(
+                  candidate,
+                  respondentNameById.get(candidate.respondentId),
+                ),
+            ) &&
             isAutoPreviousDayOutlier(submission, previousPublished),
           )
           .map((submission) => ({
