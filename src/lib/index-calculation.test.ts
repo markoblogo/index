@@ -66,6 +66,26 @@ describe("calculateIndexValue", () => {
     ]);
   });
 
+  it("keeps an explicitly force-included high outlier in the calculation", () => {
+    const result = calculateIndexValue({
+      ...baseInput,
+      submissions: [
+        submission("r1", 210),
+        submission("r2", 211),
+        submission("r3", 212),
+        submission("r4", 213),
+        submission("r5", 214),
+        submission("r6", 215),
+        submission("r7", 216),
+        { ...submission("r8", 260), forceInclude: true },
+      ],
+    });
+
+    expect(result.status).toBe("publishable");
+    expect(result.usedCount).toBe(8);
+    expect(result.excluded).toEqual([]);
+  });
+
   it("excludes one low outlier beyond two percent of the median", () => {
     const result = calculateIndexValue({
       ...baseInput,
