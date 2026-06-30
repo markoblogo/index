@@ -97,7 +97,7 @@ const jsonLd = {
       email: "partnerships@1d3x.com",
       description:
         "Commodity index infrastructure for local agricultural markets, built with institutional partners and market leaders.",
-      sameAs: ["https://uga.1d3x.com", "https://spike.1d3x.com"],
+      sameAs: ["https://uga.1d3x.com", "https://spike.1d3x.com", "https://pop.1d3x.com"],
     },
     {
       "@type": "WebSite",
@@ -464,6 +464,51 @@ export function PlatformLanding() {
                 </div>
               </article>
             ))}
+            <article className="overflow-hidden rounded-[1.5rem] border border-black/12 bg-[#05070d] text-white shadow-xl shadow-black/10">
+              <div className="grid gap-0 lg:grid-cols-[0.92fr_1.08fr]">
+                <div className="p-6 sm:p-8 lg:p-10">
+                  <p className="text-xs font-black uppercase tracking-[0.24em] text-[#ffc42e]">
+                    New consumer-price surface
+                  </p>
+                  <h3 className="mt-5 max-w-xl text-4xl font-black leading-[0.92] tracking-[-0.04em] sm:text-5xl">
+                    1D3X Basket
+                  </h3>
+                  <p className="mt-5 max-w-2xl text-base leading-7 text-white/66">
+                    Big Mac, Starbucks Latte and iPhone prices turned into
+                    consumer basket indices, source confidence and embeddable
+                    analytics.
+                  </p>
+                  <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+                    <a
+                      className="inline-flex h-11 items-center justify-center rounded-full border border-[#ffc42e] bg-[#ffc42e] px-5 text-xs font-black uppercase tracking-[0.12em] text-black transition hover:bg-white"
+                      href="https://pop.1d3x.com"
+                    >
+                      Open Basket
+                    </a>
+                    <a
+                      className="inline-flex h-11 items-center justify-center rounded-full border border-white/18 px-5 text-xs font-black uppercase tracking-[0.12em] text-white/72 transition hover:border-white hover:text-white"
+                      href="https://pop.1d3x.com/embed/basket/site"
+                    >
+                      Embed preview
+                    </a>
+                  </div>
+                </div>
+                <a
+                  aria-label="Open 1D3X Basket"
+                  className="relative block min-h-[280px] overflow-hidden border-t border-white/10 bg-black lg:border-l lg:border-t-0"
+                  href="https://pop.1d3x.com"
+                >
+                  <Image
+                    alt="1D3X Basket product preview"
+                    className="object-cover opacity-90 transition duration-500 hover:scale-[1.03]"
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 50vw"
+                    src="/basket/assets/og-basket.webp"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#05070d] via-transparent to-transparent" />
+                </a>
+              </div>
+            </article>
           </div>
         </div>
       </section>

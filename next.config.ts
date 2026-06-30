@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const allowedEmbedOrigins =
   process.env.ALLOWED_EMBED_ORIGINS ??
-  "'self' http://localhost:* http://127.0.0.1:*";
+  "'self' https://1d3x.com https://www.1d3x.com https://spike.1d3x.com https://pop.1d3x.com http://localhost:* http://127.0.0.1:*";
 const scriptSrc =
   process.env.NODE_ENV === "development"
     ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"

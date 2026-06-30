@@ -7,9 +7,12 @@ export async function GET(request: Request) {
   const origin = `${url.protocol}//${url.host}`;
   const script = `
 (function() {
+  var views = { cards: true, chart: true, site: true, hero: true };
+  var heights = { cards: '360px', chart: '520px', site: '900px', hero: '520px' };
   var nodes = document.querySelectorAll('[data-1d3x-basket]');
   nodes.forEach(function(node) {
     var view = node.getAttribute('data-view') || 'chart';
+    if (!views[view]) view = 'chart';
     var market = node.getAttribute('data-market') || 'GLOBAL';
     var src = ${JSON.stringify(origin)} + '/embed/basket/' + encodeURIComponent(view) + '?market=' + encodeURIComponent(market);
     var iframe = document.createElement('iframe');
@@ -17,7 +20,7 @@ export async function GET(request: Request) {
     iframe.title = '1D3X Basket';
     iframe.loading = 'lazy';
     iframe.style.width = '100%';
-    iframe.style.height = node.getAttribute('data-height') || (view === 'site' ? '900px' : '520px');
+    iframe.style.height = node.getAttribute('data-height') || heights[view];
     iframe.style.border = '0';
     iframe.style.borderRadius = node.getAttribute('data-radius') || '8px';
     iframe.allowFullscreen = true;
