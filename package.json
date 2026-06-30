@@ -23,7 +23,10 @@
     "provision:uga-admin": "node scripts/provision-uga-admin.mjs",
     "provision:spike-manual-respondents": "tsx scripts/provision-spike-manual-respondents.ts",
     "audit:respondent": "tsx scripts/respondent-telegram-audit.ts",
-    "monitor:respondent-telegram": "tsx scripts/respondent-telegram-healthcheck.ts"
+    "monitor:respondent-telegram": "tsx scripts/respondent-telegram-healthcheck.ts",
+    "basket:ingest": "tsx scripts/basket-ingest.ts",
+    "basket:review": "tsx scripts/basket-review.ts",
+    "basket:publish": "tsx scripts/basket-publish.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
