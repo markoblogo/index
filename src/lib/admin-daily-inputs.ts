@@ -71,6 +71,7 @@ export type DailyInputData = {
 
 const BENCHMARK_WARNING_THRESHOLD = 0.02;
 const AUTO_PREVIOUS_DAY_OUTLIER_THRESHOLD = 0.05;
+const MANUAL_EXCLUDE_FROM_INDEX_REASON = "admin_manual_exclude_from_index";
 const commodityCodeByMockId: Record<CommodityId, string> = Object.fromEntries(
   getActiveIndexTenant().commodities.map((commodity) => [commodity.id, commodity.dbCode]),
 ) as Record<CommodityId, string>;
@@ -750,12 +751,17 @@ function buildSubmissionMetadata(
     ...base,
     excludedFromIndex: excluded,
     excludedFromIndexBy: username,
+    excludedFromIndexReason: excluded ? MANUAL_EXCLUDE_FROM_INDEX_REASON : null,
     excludedFromIndexUpdatedAt: new Date().toISOString(),
   } satisfies Prisma.InputJsonObject;
 }
 
 export function isSubmissionExcluded(submission: { metadata?: unknown } | null | undefined) {
-  return isJsonObject(submission?.metadata) && submission.metadata.excludedFromIndex === true;
+  return (
+    isJsonObject(submission?.metadata) &&
+    submission.metadata.excludedFromIndex === true &&
+    submission.metadata.excludedFromIndexReason === MANUAL_EXCLUDE_FROM_INDEX_REASON
+  );
 }
 
 export function isSubmissionManuallyIncluded(
