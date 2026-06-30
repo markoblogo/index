@@ -116,7 +116,11 @@ export async function recalculateAdminIndices(formData: FormData, user: DemoUser
   const date = String(formData.get("date") ?? todayInputDate());
 
   if (await isPublicationLockedForDate(date)) {
-    redirect(`/admin/calculate?date=${date}&notice=locked`);
+    if (!canManuallyUnlockPublicationDate(date)) {
+      redirect(`/admin/calculate?date=${date}&notice=locked`);
+    }
+
+    await unlockPublishedIndicesForRecalculation(date, user);
   }
 
   if (!hasDatabaseUrl()) {
@@ -137,6 +141,56 @@ export async function recalculateAdminIndices(formData: FormData, user: DemoUser
 
   await persistDatabaseCalculations(date, user);
   redirect(`/admin/calculate?date=${date}&notice=recalculated_database`);
+}
+
+async function unlockPublishedIndicesForRecalculation(date: string, user: DemoUser) {
+  if (!hasDatabaseUrl()) return;
+
+  const tradeDate = dateToUtcDate(date);
+  const basisCodes = getConfiguredDeliveryBasisCodes();
+  const lockedRows = await db.publishedIndex.findMany({
+    where: {
+      tradeDate,
+      deliveryBasis: { code: { in: basisCodes } },
+      locked: true,
+      status: "published",
+    },
+    select: {
+      id: true,
+      commodityId: true,
+      valueUsdPerMt: true,
+    },
+  });
+
+  if (lockedRows.length === 0) return;
+
+  await db.publishedIndex.updateMany({
+    where: { id: { in: lockedRows.map((row) => row.id) } },
+    data: { locked: false },
+  });
+
+  await db.auditLog.create({
+    data: {
+      actorRole: "admin",
+      action: "index.recalculate_auto_unlock",
+      entityType: "PublishedIndex",
+      summary: `Auto-unlocked ${lockedRows.length} published index values before recalculation on ${date}.`,
+      beforeJson: {
+        locked: true,
+        tradeDate: date,
+        rows: lockedRows.map((row) => ({
+          id: row.id,
+          commodityId: row.commodityId,
+          valueUsdPerMt: row.valueUsdPerMt.toNumber(),
+        })),
+      },
+      afterJson: {
+        locked: false,
+        tradeDate: date,
+        username: user.username,
+      },
+    },
+  });
 }
 
 export async function publishAdminIndices(formData: FormData, user: DemoUser) {

@@ -148,10 +148,12 @@ export function CalculationWorkspace({
           <input name="date" type="hidden" value={date} />
           <button
             className="w-full rounded-full border border-black/15 px-5 py-3 text-sm font-semibold text-uga-dark transition hover:border-uga-green hover:text-uga-green disabled:cursor-not-allowed disabled:opacity-45 lg:w-auto"
-            disabled={data.lockedForPublication}
+            disabled={data.lockedForPublication && !data.canUnlockPublication}
             type="submit"
           >
-            Recalculate
+            {data.lockedForPublication && data.canUnlockPublication
+              ? "Unlock + recalculate"
+              : "Recalculate"}
           </button>
         </form>
       </div>
