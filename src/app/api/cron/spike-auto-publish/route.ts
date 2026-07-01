@@ -60,7 +60,7 @@ export async function GET(request: Request) {
     : [...new Set([getPreviousBusinessDate(date), date])];
   const shouldImportMonitor = url.searchParams.get("import") === "1";
   const replaceExisting = url.searchParams.get("replace") === "1";
-  const shouldSyncSources = url.searchParams.get("sync") !== "0";
+  const shouldSyncSources = url.searchParams.get("sync") === "1";
   const shouldPublishMediaHub = url.searchParams.get("mediaHub") !== "0";
 
   const sourceSync = shouldSyncSources
