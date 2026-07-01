@@ -1125,11 +1125,24 @@ function buildMediaHubTelegramMessages(input: {
   periodEndDate: string;
   tenant: "spike" | "platform";
 }) {
-  const text = buildMediaHubTelegramText(input);
+  const text = input.tenant === "spike"
+    ? normalizeTelegramCurrencyUnits(buildMediaHubTelegramText(input))
+    : buildMediaHubTelegramText(input);
   if (input.kind === "daily") {
     return [fitSingleTelegramMessage(text)];
   }
   return splitTelegramMessageBySections(text);
+}
+
+function normalizeTelegramCurrencyUnits(text: string) {
+  return text
+    .replace(/\bUSD\s*\/\s*(?:t|т|mt|тонн(?:а|у|и)?|тон)\b/gi, "$")
+    .replace(/\b(?:дол\.?|долар(?:ів|и|а)?|доллар(?:ов|ы|а)?)\s*\/\s*(?:t|т|mt|тонн(?:а|у|и)?|тон)\b/gi, "$")
+    .replace(/\$\s*\/\s*(?:t|т|mt|тонн(?:а|у|и)?|тон)\b/gi, "$")
+    .replace(/\bEUR\s*\/\s*(?:t|т|mt|тонн(?:а|у|и)?|тон)\b/gi, "€")
+    .replace(/€\s*\/\s*(?:t|т|mt|тонн(?:а|у|и)?|тон)\b/gi, "€")
+    .replace(/\b(?:UAH|грн\.?|грив(?:ень|ні|ня)?)\s*\/\s*(?:t|т|mt|тонн(?:а|у|и)?|тон)\b/gi, "₴")
+    .replace(/₴\s*\/\s*(?:t|т|mt|тонн(?:а|у|и)?|тон)\b/gi, "₴");
 }
 
 function fitSingleTelegramMessage(text: string) {
