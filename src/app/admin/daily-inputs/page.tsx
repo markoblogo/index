@@ -193,10 +193,10 @@ export default async function DailyInputsPage({
 
       {isSpike ? <Mn7rMonitorDiagnostics audit={mn7rAudit} /> : null}
 
-      <form action={save} className="grid gap-5">
+      <form action={save} className="grid min-w-0 gap-5">
         <input name="date" type="hidden" value={date} />
         <input name="view" type="hidden" value={viewMode} />
-        <div className="grid gap-4">
+        <div className="grid min-w-0 gap-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap gap-2">
               {commodityGroups.map((group) => (
@@ -241,7 +241,7 @@ export default async function DailyInputsPage({
 
           {commodityGroups.map((group) => (
             <details
-              className="border border-black bg-white"
+              className="min-w-0 overflow-hidden border border-black bg-white"
               id={group.key}
               key={group.key}
               open={group.defaultOpen}
@@ -264,7 +264,7 @@ export default async function DailyInputsPage({
               </summary>
 
               <div
-                className="max-h-[72vh] max-w-full overflow-x-auto overflow-y-auto overscroll-contain [scrollbar-gutter:stable]"
+                className="block max-h-[72vh] w-full max-w-full overflow-x-scroll overflow-y-auto overscroll-contain [scrollbar-gutter:stable]"
                 tabIndex={0}
               >
                 <table className="w-max min-w-full border-collapse text-left">
@@ -275,7 +275,7 @@ export default async function DailyInputsPage({
                       </th>
                       {group.commodities.map((commodity) => (
                         <th
-                          className={`${isCompactView ? "min-w-[13rem]" : "min-w-[15rem]"} bg-uga-dark border-l border-white/10 px-3 py-4 align-bottom text-xs font-semibold uppercase tracking-[0.12em] text-white/70`}
+                          className={`${isCompactView ? "w-[13rem] min-w-[13rem]" : "w-[15rem] min-w-[15rem]"} bg-uga-dark border-l border-white/10 px-3 py-4 align-bottom text-xs font-semibold uppercase tracking-[0.12em] text-white/70`}
                           key={commodity.id}
                         >
                           <span className="mb-2 block text-[0.58rem] uppercase tracking-[0.18em] text-uga-lime">
@@ -313,7 +313,7 @@ export default async function DailyInputsPage({
                           if (!cell) {
                             return (
                               <td
-                                className={`${isCompactView ? "min-w-[13rem]" : "min-w-[15rem]"} border-l border-black/10 px-3 py-3`}
+                                className={`${isCompactView ? "w-[13rem] min-w-[13rem]" : "w-[15rem] min-w-[15rem]"} border-l border-black/10 px-3 py-3`}
                                 key={commodity.id}
                               />
                             );
@@ -581,8 +581,8 @@ function MatrixCell({
     <td
       className={
         hasVisibleWarning
-          ? `${compact ? "min-w-[13rem]" : "min-w-[15rem]"} admin-warning-cell border-l border-black/10 bg-red-50 px-2.5 py-2.5 align-top`
-          : `${compact ? "min-w-[13rem]" : "min-w-[15rem]"} border-l border-black/10 px-2.5 py-2.5 align-top`
+          ? `${compact ? "w-[13rem] min-w-[13rem]" : "w-[15rem] min-w-[15rem]"} admin-warning-cell border-l border-black/10 bg-red-50 px-2.5 py-2.5 align-top`
+          : `${compact ? "w-[13rem] min-w-[13rem]" : "w-[15rem] min-w-[15rem]"} border-l border-black/10 px-2.5 py-2.5 align-top`
       }
     >
       <div className={`${compact ? "grid gap-1.5" : "grid gap-2"}`}>
