@@ -386,13 +386,14 @@ function NewsThemeCard({ theme }: { theme: DailyNewsTheme }) {
 
 function formatIndexValueForSite(value: number | null) {
   if (value === null) return "—";
-  return Number.isInteger(value) ? String(value) : value.toFixed(1);
+  return String(Math.round(value));
 }
 
 function formatSignedForSite(value: number | null) {
   if (value === null) return "n/a";
-  if (value === 0) return "0";
-  return `${value > 0 ? "+" : ""}${Number.isInteger(value) ? value : value.toFixed(1)}`;
+  const rounded = Math.round(value);
+  if (rounded === 0) return "0";
+  return `${rounded > 0 ? "+" : ""}${rounded}`;
 }
 
 function formatArchivePeriod(report: MediaHubReportArchiveItem) {

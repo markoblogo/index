@@ -401,7 +401,8 @@ function standardDeviation(values: number[]) {
 }
 
 function formatSigned(value: number) {
-  return `${value > 0 ? "+" : ""}${value.toFixed(1)}`;
+  const rounded = Math.round(value);
+  return `${rounded > 0 ? "+" : ""}${rounded}`;
 }
 
 function computeChangeFromPreviousFriday(
@@ -426,11 +427,9 @@ function getPreviousFridayDate(date: string) {
   return value.toISOString().slice(0, 10);
 }
 
-function formatUsdPerT(value: number, locale: Locale) {
-  const rounded = Math.round(value * 10) / 10;
-  const amount = Number.isInteger(rounded) ? rounded.toFixed(0) : rounded.toFixed(1);
-  const unit = locale === "uk" ? "$/т" : "$/t";
-  return `${rounded > 0 ? "+" : ""}${amount}${unit}`;
+function formatUsdPerT(value: number) {
+  const rounded = Math.round(value);
+  return `${rounded > 0 ? "+" : ""}${rounded}$`;
 }
 
 function formatShortDate(date: string, locale: Locale) {

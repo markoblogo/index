@@ -485,7 +485,7 @@ function formatBasis(basis: string, locale: Locale) {
 }
 
 function formatNumber(value: number) {
-  return Number.isInteger(value) ? String(value) : value.toFixed(1);
+  return String(Math.round(value));
 }
 
 function formatHumanDate(date: string, locale: Locale) {
