@@ -423,6 +423,9 @@ export async function sendMediaHubReportTelegram(
   if (!hasDatabaseUrl() && options.audience !== "platform") {
     return { skippedReason: "database_not_configured", status: "skipped" as const };
   }
+  if (options.audience === "platform" && isId3xMediaHubTelegramPaused()) {
+    return { skippedReason: "id3x_telegram_paused", status: "skipped" as const };
+  }
 
   const tenantId = options.audience === "platform" ? "1d3x" : getActiveIndexConfig().id;
   const report = hasDatabaseUrl()
@@ -2014,6 +2017,12 @@ export function normalizeMediaHubTelegramChatId(value: string) {
   }
 
   return trimmed;
+}
+
+function isId3xMediaHubTelegramPaused() {
+  return /^(1|true|yes)$/i.test(
+    process.env.ID3X_MEDIA_HUB_TELEGRAM_PAUSED?.trim() ?? "",
+  );
 }
 
 function getIsoWeekday(date: string) {
