@@ -1051,6 +1051,9 @@ function buildMediaHubTelegramText(input: {
   const primaryWindow = windows[0] ?? input.content.windows[0];
   const localized = input.content.localized?.[input.locale];
   const dailyReport = input.kind === "daily" ? input.content.dailyReports?.[input.locale] : undefined;
+  if (input.tenant === "spike" && input.kind === "daily" && input.locale === "uk" && dailyReport) {
+    return buildSsiDailyTelegramText(input.periodEndDate, dailyReport);
+  }
   const title =
     input.tenant === "platform"
       ? `🌍 <b>1D3X Media Hub · ${reportKindLabel(input.kind, input.locale)}</b>`
@@ -1115,6 +1118,134 @@ function buildMediaHubTelegramText(input: {
   );
 
   return lines.join("\n");
+}
+
+function buildSsiDailyTelegramText(periodEndDate: string, dailyReport: MediaHubDailyReportView) {
+  const indexSection = dailyReport.indexSection;
+  const lines = [
+    `🇺🇦 <b>SPIKE SPOT INDEX UKRAINE · ${escapeHtml(formatShortTelegramDate(periodEndDate))}</b>`,
+  ];
+
+  if (indexSection) {
+    const exportGroups = indexSection.groups.filter((group) => group.id !== "processing");
+    const processingGroup = indexSection.groups.find((group) => group.id === "processing");
+    const exportItems = exportGroups.flatMap((group) => group.items).filter((item) => item.value !== null);
+    const processingItems = processingGroup?.items.filter((item) => item.value !== null) ?? [];
+
+    if (exportItems.length > 0) {
+      lines.push(
+        "",
+        "-----------------------------",
+        "<b>🌎 ЕКСПОРТНИЙ РИНОК</b>",
+        ...renderSsiDailyTelegramBasisBlock(exportItems, "export"),
+      );
+    }
+
+    if (processingItems.length > 0) {
+      lines.push(
+        "",
+        "-----------------------------",
+        "<b>🏭 РИНОК ПЕРЕРОБКИ</b>",
+        ...renderSsiDailyTelegramBasisBlock(processingItems, "processing"),
+      );
+    }
+  }
+
+  const newsItems = buildSsiDailyTelegramMarketReview(dailyReport.newsSection);
+  if (newsItems.length > 0) {
+    lines.push(
+      "",
+      "-----------------------------",
+      "<b>📰 РИНКОВИЙ ОГЛЯД</b>",
+      ...newsItems.map((item) => `• ${escapeHtml(item)}`),
+    );
+  }
+
+  lines.push(
+    "",
+    "-----------------------------",
+    "🔗 <b>Powered by 1D3X Platform</b> · https://spike.1d3x.com/",
+  );
+
+  return lines.join("\n");
+}
+
+function renderSsiDailyTelegramBasisBlock(
+  items: NonNullable<MediaHubDailyReportView["indexSection"]>["groups"][number]["items"],
+  mode: "export" | "processing",
+) {
+  const byBasis = new Map<string, typeof items>();
+  for (const item of items) {
+    const bucket = byBasis.get(item.basis) ?? [];
+    bucket.push(item);
+    byBasis.set(item.basis, bucket);
+  }
+
+  return [...byBasis.entries()].flatMap(([basis, basisItems]) => [
+    "",
+    `<b>${escapeHtml(formatSsiDailyTelegramBasis(basis))}</b>`,
+    ...basisItems.map((item) => {
+      const vat = item.vatIncluded ? " в т.ч. ПДВ" : "";
+      return `• ${escapeHtml(formatSsiDailyTelegramCommodityName(item.name, item.commodityCode, basis, mode))} - ${formatWholeValueCurrency(item.value)}${vat} (${formatWholeSignedCurrency(item.dayChange)})`;
+    }),
+  ]);
+}
+
+function buildSsiDailyTelegramMarketReview(newsSection: MediaHubDailyReportView["newsSection"]) {
+  const preferredThemeIds = ["grains", "oilseeds", "processing", "key_signals"];
+  return newsSection.themes
+    .filter((theme) => preferredThemeIds.includes(theme.id))
+    .flatMap((theme) => theme.items)
+    .filter((item) => item.trim().length > 0)
+    .slice(0, 4);
+}
+
+function formatSsiDailyTelegramBasis(basis: string) {
+  if (/FCA Чоп/i.test(basis)) return "FCA Чоп, Україна";
+  if (/СРТ ЗАВОД|CPT Crush|processing/i.test(basis)) return "СРТ завод, Україна";
+  return "CPT Одеса, Україна";
+}
+
+function formatSsiDailyTelegramCommodityName(
+  name: string,
+  commodityCode: string,
+  basis: string,
+  mode: "export" | "processing",
+) {
+  const normalized = `${commodityCode} ${name}`.toUpperCase();
+  const isChop = /FCA ЧОП|FCA_CHOP|CHOP/.test(`${basis} ${commodityCode}`.toUpperCase());
+
+  if (normalized.includes("WHT_115") || normalized.includes("ПРОДОВОЛЬЧ")) return "Пшениця 11.5pro";
+  if (normalized.includes("FEED_WHT") || normalized.includes("ФУРАЖ")) return "Пшениця фураж";
+  if (normalized.includes("CORN") || normalized.includes("КУКУРУД")) return "Кукурудза";
+  if (normalized.includes("SUNFLOWER") || normalized.includes("СОНЯШ")) return "Соняшник 48%";
+  if (normalized.includes("SOYBEAN_NON_GMO") || normalized.includes("СОЯ НЕ") || normalized.includes("СОЯ НE")) {
+    return "Соя НЕ-ГМО 33pro";
+  }
+  if (normalized.includes("GMO_SOY") || normalized.includes("СОЯ ГМО")) {
+    return mode === "processing" ? "Соя ГМО 37pro" : "Соя ГМО 33pro";
+  }
+  if (normalized.includes("RAPESEED") || normalized.includes("РІПАК")) {
+    if (mode === "processing") return "Ріпак НЕ-ГМО 48%";
+    return isChop ? "Ріпак НЕ-ГМО 40%" : "Ріпак НЕ-ГМО 42%";
+  }
+  return name.replace(/\s+CPT Port$/i, "").replace(/\s+FCA Чоп$/i, "");
+}
+
+function formatWholeValueCurrency(value: number | null) {
+  if (value === null) return "н/д";
+  return `${Math.round(value)}$`;
+}
+
+function formatWholeSignedCurrency(value: number | null) {
+  if (value === null) return "н/д";
+  const rounded = Math.round(value);
+  return `${rounded > 0 ? "+" : ""}${rounded}$`;
+}
+
+function formatShortTelegramDate(date: string) {
+  const [year, month, day] = date.split("-");
+  return `${day}.${month}.${year?.slice(-2)}`;
 }
 
 function buildMediaHubTelegramMessages(input: {
