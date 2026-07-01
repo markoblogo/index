@@ -239,6 +239,18 @@ async function getDatabaseLatestData(): Promise<PublicLatestItem[]> {
           tradeDate: { lte: visibleTradeDateAtMidnightUtc },
         },
       });
+      const previousPublished = published
+        ? await db.publishedIndex.findFirst({
+            orderBy: { tradeDate: "desc" },
+            where: {
+              commodityId: commodity.id,
+              deliveryBasisId: basis.id,
+              basketId: basket.id,
+              status: "published",
+              tradeDate: { lt: published.tradeDate },
+            },
+          })
+        : null;
       const submissionFallback =
         submissionFallbackByCommodityId.get(commodity.id) ??
         (published ? null : latestSubmissionFallbackByCommodityId.get(commodity.id));
@@ -255,6 +267,12 @@ async function getDatabaseLatestData(): Promise<PublicLatestItem[]> {
       const fallbackChange = displayFallback
         ? computeChange(displayFallback.value, previous)
         : null;
+      const publishedChange = published
+        ? computeChange(
+            published.valueUsdPerMt.toNumber(),
+            previousPublished?.valueUsdPerMt.toNumber() ?? null,
+          )
+        : null;
 
       return {
         commodityId: mockCommodityIdByCode[commodity.code] ?? "corn",
@@ -269,9 +287,9 @@ async function getDatabaseLatestData(): Promise<PublicLatestItem[]> {
         valueUsdPerMt:
           displayFallback?.value ?? published?.valueUsdPerMt.toNumber() ?? null,
         changeAbs: formatPublicChangeAbs(
-          fallbackChange?.changeAbs ?? published?.changeAbsUsdPerMt?.toNumber() ?? 0,
+          fallbackChange?.changeAbs ?? publishedChange?.changeAbs ?? 0,
         ),
-        changePct: fallbackChange?.changePct ?? published?.changePct?.toNumber() ?? 0,
+        changePct: fallbackChange?.changePct ?? publishedChange?.changePct ?? 0,
         respondents: displayFallback?.rawCount ?? activeRespondentCount,
       };
     }),

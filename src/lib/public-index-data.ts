@@ -352,8 +352,12 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
 
     const latest = publishedIndex.valueUsdPerMt.toNumber();
     const latestDate = publishedIndex.tradeDate.toISOString().slice(0, 10);
+    const publishedChange = computeChange(
+      latest,
+      getPreviousHistoryValue(history, latestDate),
+    );
     const aiComment = buildCardAiComment({
-      dayChange: formatPublicChangeAbs(publishedIndex.changeAbsUsdPerMt?.toNumber() ?? 0),
+      dayChange: formatPublicChangeAbs(publishedChange.changeAbs),
       history,
       latest,
       latestDate,
@@ -365,8 +369,8 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
       code: commodity.code,
       name: { uk: commodity.nameUk, en: commodity.nameEn },
       latest,
-      absoluteChange: formatPublicChangeAbs(publishedIndex.changeAbsUsdPerMt?.toNumber() ?? 0),
-      percentChange: publishedIndex.changePct?.toNumber() ?? 0,
+      absoluteChange: formatPublicChangeAbs(publishedChange.changeAbs),
+      percentChange: publishedChange.changePct,
       sparkline: buildRealSparkline(history, latest),
       aiComment,
     };
@@ -409,14 +413,24 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
       };
     }
 
+    const latest = publishedIndex.valueUsdPerMt.toNumber();
+    const latestDate = publishedIndex.tradeDate.toISOString().slice(0, 10);
+    const publishedChange = computeChange(
+      latest,
+      getPreviousHistoryValue(
+        recentPublishedByCommodityId.get(commodity.id) ?? [],
+        latestDate,
+      ),
+    );
+
     return {
       id: `${mockCommodity.id}-${publishedIndex.tradeDate.toISOString()}`,
       commodityId: mockCommodity.id,
-      date: publishedIndex.tradeDate.toISOString().slice(0, 10),
+      date: latestDate,
       basis: basisConfig.name,
-      price: publishedIndex.valueUsdPerMt.toNumber(),
-      absoluteChange: formatPublicChangeAbs(publishedIndex.changeAbsUsdPerMt?.toNumber() ?? 0),
-      percentChange: publishedIndex.changePct?.toNumber() ?? 0,
+      price: latest,
+      absoluteChange: formatPublicChangeAbs(publishedChange.changeAbs),
+      percentChange: publishedChange.changePct,
       respondents: activeRespondentCount,
     };
   });
@@ -494,7 +508,23 @@ function computeChangeFromPreviousFriday(
     .sort((first, second) => first.date.localeCompare(second.date))
     .at(-1);
 
-  return reference ? roundOne(latest - reference.value) : null;
+  if (!reference) {
+    return null;
+  }
+
+  return roundOne(latest - reference.value);
+}
+
+function getPreviousHistoryValue(
+  history: Array<{ date: string; value: number }>,
+  latestDate: string,
+) {
+  return (
+    history
+      .filter((point) => point.date < latestDate)
+      .sort((first, second) => first.date.localeCompare(second.date))
+      .at(-1)?.value ?? null
+  );
 }
 
 function getPreviousFridayDate(date: string) {

@@ -1080,10 +1080,11 @@ function dedupeItems(items: RssNewsItem[]) {
   for (const item of items) {
     const titleKey = normalizeTitle(item.title);
     const urlKey = canonicalizeUrl(item.url);
+    const recentTitleSlot = findRecentTitleSlot(titleSlots.get(titleKey), item.publishedAt);
     const slotKey =
       (urlKey && urlSlots.get(urlKey)) ||
-      findRecentTitleSlot(titleSlots.get(titleKey), item.publishedAt) ||
-      dedupeKey(item);
+      recentTitleSlot ||
+      (urlKey || titleWindowKey(titleKey, item.publishedAt));
     const existing = slots.get(slotKey);
     if (!existing || compareDedupeCandidate(item, existing) > 0) {
       slots.set(slotKey, item);
@@ -1116,6 +1117,10 @@ function findRecentTitleSlot(slots: Array<{ publishedAt: number; slotKey: string
 
 function dedupeKey(item: RssNewsItem) {
   return canonicalizeUrl(item.url) || normalizeTitle(item.title);
+}
+
+function titleWindowKey(titleKey: string, publishedAt: string) {
+  return `${titleKey || publishedAt}:${Date.parse(publishedAt) || publishedAt}`;
 }
 
 function compareDedupeCandidate(candidate: RssNewsItem, existing: RssNewsItem) {
