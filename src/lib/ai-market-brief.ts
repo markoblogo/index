@@ -1182,7 +1182,8 @@ function formatSigned(value: number) {
   return `${rounded > 0 ? "+" : ""}${rounded}`;
 }
 
-function formatUsdPerT(value: number) {
+function formatUsdPerT(value: number, locale?: Locale) {
+  void locale;
   const rounded = Math.round(value);
   return `${rounded > 0 ? "+" : ""}${rounded}$`;
 }

@@ -427,7 +427,8 @@ function getPreviousFridayDate(date: string) {
   return value.toISOString().slice(0, 10);
 }
 
-function formatUsdPerT(value: number) {
+function formatUsdPerT(value: number, locale?: Locale) {
+  void locale;
   const rounded = Math.round(value);
   return `${rounded > 0 ? "+" : ""}${rounded}$`;
 }
