@@ -25,6 +25,9 @@ type SavedItem = {
 };
 
 const CURRENCY_LABEL = "USD/t";
+const SURVEY_GROUP_ORDER = ["grains-export", "oilseeds-crush", "oilseeds-export", "chop-export"] as const;
+
+type SurveyGroupKey = typeof SURVEY_GROUP_ORDER[number];
 
 export function RespondentSurveyForm({
   data,
@@ -46,6 +49,10 @@ export function RespondentSurveyForm({
   }, [submissionStatus, labels.submit, labels.submitLoading]);
 
   const isSubmitting = submissionStatus === "submitting";
+  const groupedCommodities = useMemo(
+    () => buildSurveyCommodityGroups(data.commodities),
+    [data.commodities],
+  );
 
   const getSummaryFromForm = (formData: FormData): SavedItem[] => {
     return data.commodities
@@ -173,48 +180,49 @@ export function RespondentSurveyForm({
       {isTelegramFlow ? (
         <input name="respondentChannel" type="hidden" value="telegram" />
       ) : null}
-      <div className="grid gap-4">
-        {data.commodities.map((commodity) => (
-          <div key={commodity.id}>
-            {data.commodities.findIndex((item) => item.id === commodity.id) === 0 ||
-            data.commodities[data.commodities.findIndex((item) => item.id === commodity.id) - 1]
-              ?.category !== commodity.category ? (
-              <div className="mb-3 mt-2 border-b border-black pb-2">
+      <div className="grid gap-5">
+        {groupedCommodities.map((group) => (
+          <section className="grid gap-0" key={group.key}>
+            <div className="mb-1 mt-2 border-b border-black pb-2">
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-uga-green">
-                  {formatCategoryLabel(commodity.category, locale)}
+                {formatSurveyGroupLabel(group.key, locale)}
                 </p>
               </div>
-            ) : null}
-            <label className="grid min-w-0 gap-3 border-b border-black/10 py-4 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_minmax(11rem,14rem)] sm:items-center">
-              <span className="min-w-0">
-                <span className="block text-base font-semibold text-uga-dark">
-                  {commodity.name}
+            {group.commodities.map((commodity) => (
+              <label
+                className="grid min-w-0 gap-3 border-b border-black/10 py-4 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_minmax(11rem,14rem)] sm:items-center"
+                key={commodity.id}
+              >
+                <span className="min-w-0">
+                  <span className="block text-base font-semibold text-uga-dark">
+                    {commodity.name}
+                  </span>
+                  <span className="mt-1 block text-xs font-semibold uppercase tracking-[0.14em] text-black/45">
+                    {commodity.code} · {commodity.basisLabel}
+                  </span>
                 </span>
-                <span className="mt-1 block text-xs font-semibold uppercase tracking-[0.14em] text-black/45">
-                  {commodity.code} · {commodity.basisLabel}
+                <span className="grid min-w-0 gap-1">
+                  <span className="text-xs font-semibold uppercase tracking-[0.14em] text-black/45">
+                    {labels.price}
+                  </span>
+                  <span className="grid gap-0.5 text-[0.68rem] font-semibold leading-4 text-black/50">
+                    {getPriceHintLines(commodity.category, locale).map((line) => (
+                      <span key={line}>• {line}</span>
+                    ))}
+                  </span>
+                  <input
+                    className="box-border w-full min-w-0 border border-black/20 px-3 py-2.5 text-base font-semibold focus:border-uga-green focus:ring-uga-green"
+                    defaultValue={commodity.price ?? ""}
+                    inputMode="decimal"
+                    name={`price:${commodity.id}`}
+                    placeholder="USD/t"
+                    type="text"
+                    required={false}
+                  />
                 </span>
-              </span>
-              <span className="grid min-w-0 gap-1">
-                <span className="text-xs font-semibold uppercase tracking-[0.14em] text-black/45">
-                  {labels.price}
-                </span>
-                <span className="grid gap-0.5 text-[0.68rem] font-semibold leading-4 text-black/50">
-                  {getPriceHintLines(commodity.category, locale).map((line) => (
-                    <span key={line}>• {line}</span>
-                  ))}
-                </span>
-                <input
-                  className="box-border w-full min-w-0 border border-black/20 px-3 py-2.5 text-base font-semibold focus:border-uga-green focus:ring-uga-green"
-                  defaultValue={commodity.price ?? ""}
-                  inputMode="decimal"
-                  name={`price:${commodity.id}`}
-                  placeholder="USD/t"
-                  type="text"
-                  required={false}
-                />
-              </span>
-            </label>
-          </div>
+              </label>
+            ))}
+          </section>
         ))}
       </div>
 
@@ -260,16 +268,52 @@ export function RespondentSurveyForm({
   );
 }
 
-function formatCategoryLabel(category: string, locale: SurveyLocale) {
-  if (category === "processors") {
-    return locale === "uk" ? "Oilseeds crush" : "Oilseeds crush";
+function buildSurveyCommodityGroups(commodities: RespondentSurveyData["commodities"]) {
+  return SURVEY_GROUP_ORDER
+    .map((key) => ({
+      key,
+      commodities: commodities.filter((commodity) => getSurveyGroupKey(commodity) === key),
+    }))
+    .filter((group) => group.commodities.length > 0);
+}
+
+function getSurveyGroupKey(
+  commodity: RespondentSurveyData["commodities"][number],
+): SurveyGroupKey {
+  if (isChopExportCommodity(commodity)) {
+    return "chop-export";
   }
 
-  if (category === "seasonal-export") {
-    return locale === "uk" ? "Oilseeds Export" : "Oilseeds Export";
+  if (commodity.category === "processors") {
+    return "oilseeds-crush";
   }
 
-  return locale === "uk" ? "Grains Export" : "Grains Export";
+  if (commodity.category === "seasonal-export") {
+    return "oilseeds-export";
+  }
+
+  return "grains-export";
+}
+
+function isChopExportCommodity(commodity: RespondentSurveyData["commodities"][number]) {
+  const value = `${commodity.code} ${commodity.basisLabel}`.toLowerCase();
+  return value.includes("fca_chop") || value.includes("fca chop") || value.includes("чоп");
+}
+
+function formatSurveyGroupLabel(group: SurveyGroupKey, locale: SurveyLocale) {
+  if (group === "oilseeds-crush") {
+    return locale === "uk" ? "OILSEEDS crush" : "OILSEEDS crush";
+  }
+
+  if (group === "oilseeds-export") {
+    return locale === "uk" ? "OILSEEDS export" : "OILSEEDS export";
+  }
+
+  if (group === "chop-export") {
+    return locale === "uk" ? "CHOP export" : "CHOP export";
+  }
+
+  return locale === "uk" ? "GRAINS export" : "GRAINS export";
 }
 
 function getPriceHintLines(category: string, locale: SurveyLocale) {

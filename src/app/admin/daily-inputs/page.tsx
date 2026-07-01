@@ -263,11 +263,14 @@ export default async function DailyInputsPage({
                 </span>
               </summary>
 
-              <div className="max-h-[72vh] overflow-auto">
-                <table className="min-w-full border-collapse text-left">
+              <div
+                className="max-h-[72vh] max-w-full overflow-x-auto overflow-y-auto overscroll-contain [scrollbar-gutter:stable]"
+                tabIndex={0}
+              >
+                <table className="w-max min-w-full border-collapse text-left">
                   <thead className="sticky top-0 z-20 bg-uga-dark text-white shadow-[0_10px_24px_rgba(0,0,0,0.22)]">
                     <tr>
-                      <th className="sticky left-0 z-30 min-w-[17rem] border-r border-white/10 bg-uga-dark px-4 py-4 text-xs font-semibold uppercase tracking-[0.16em] text-white/70">
+                      <th className="sticky left-0 z-30 w-[17rem] min-w-[17rem] border-r border-white/10 bg-uga-dark px-4 py-4 text-xs font-semibold uppercase tracking-[0.16em] text-white/70">
                         Respondent
                       </th>
                       {group.commodities.map((commodity) => (
@@ -294,7 +297,7 @@ export default async function DailyInputsPage({
                   <tbody>
                     {data.respondents.map((respondent) => (
                       <tr className="border-t border-black/10" key={respondent.id}>
-                        <th className="sticky left-0 z-10 min-w-[17rem] border-r border-black/10 bg-white px-4 py-4 align-top">
+                        <th className="sticky left-0 z-10 w-[17rem] min-w-[17rem] border-r border-black/10 bg-white px-4 py-4 align-top">
                           <p className="text-base font-semibold text-uga-dark">
                             {respondent.name}
                           </p>
