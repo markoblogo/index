@@ -320,4 +320,46 @@ describe("media hub publication scheduler", () => {
     expect(text).toContain("Ukraine harvesting progress and port logistics");
     expect(text).not.toContain("Brazil soybean exports");
   });
+
+  it("sends SSI WhatsApp webhook messages with an abort signal", async () => {
+    vi.stubEnv("SSI_WHATSAPP_ENABLED", "1");
+    vi.stubEnv("SSI_WHATSAPP_WEBHOOK_URL", "https://worker.example.com/send");
+    vi.stubEnv("SSI_WHATSAPP_WEBHOOK_SECRET", "worker-secret");
+    vi.stubEnv("SSI_WHATSAPP_TARGET_GROUP_NAME", "SPIKE INDEX");
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ ok: true }), {
+        headers: { "content-type": "application/json" },
+        status: 200,
+      }),
+    );
+
+    try {
+      await expect(__mediaHubPublicationSchedulerTestHooks.sendMediaHubReportWhatsApp({
+        content: {
+          generatedAt: "2026-07-04T12:00:00.000Z",
+          kind: "weekly",
+          localized: {
+            en: {
+              summary: ["Ukraine port logistics supported grain market execution."],
+              title: "Weekly report",
+            },
+          },
+          periodEndDate: "2026-07-04",
+          periodStartDate: "2026-06-29",
+          summary: [],
+          title: "Weekly report",
+          totals: { items: 0, sources: 0, windows: 0 },
+          windows: [],
+        },
+        kind: "weekly",
+        locale: "en",
+        periodEndDate: "2026-07-04",
+        tenant: "spike",
+      })).resolves.toMatchObject({ status: "sent" });
+      const init = fetchMock.mock.calls[0]?.[1] as RequestInit | undefined;
+      expect(init?.signal).toBeInstanceOf(AbortSignal);
+    } finally {
+      fetchMock.mockRestore();
+    }
+  });
 });

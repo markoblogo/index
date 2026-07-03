@@ -138,6 +138,7 @@ const DEFAULT_SPIKE_MEDIA_HUB_DAILY_REPORT_TIME = "19:10";
 const DEFAULT_PLATFORM_MEDIA_HUB_DAILY_REPORT_TIME = "19:15";
 const DEFAULT_MEDIA_HUB_WEEKLY_REPORT_TIME = "15:00";
 const TELEGRAM_DELIVERY_TIMEOUT_MS = 15_000;
+const WHATSAPP_WEBHOOK_TIMEOUT_MS = 15_000;
 
 export function getMediaHubPublicationPlan(date = getParisLocalDate()): MediaHubPublicationPlan {
   const weekday = getIsoWeekday(date);
@@ -386,14 +387,14 @@ async function sendMediaHubReportWhatsApp(input: {
     return { skippedReason: "whatsapp_empty_message", status: "skipped" as const };
   }
 
-  const response = await fetch(webhookUrl, {
+  const response = await fetchWithTimeout(webhookUrl, {
     body: JSON.stringify({ groupId, groupName, text }),
     headers: {
       "Authorization": `Bearer ${secret}`,
       "Content-Type": "application/json",
     },
     method: "POST",
-  });
+  }, WHATSAPP_WEBHOOK_TIMEOUT_MS);
   const payloadText = await response.text();
 
   if (!response.ok) {
@@ -1658,6 +1659,7 @@ export const __mediaHubPublicationSchedulerTestHooks = {
   buildSsiDailyWhatsAppText,
   buildSsiNonDailyWhatsAppText,
   convertTelegramHtmlToWhatsAppText,
+  sendMediaHubReportWhatsApp,
 };
 
 export function buildMediaHubTelegramMessages(input: {
