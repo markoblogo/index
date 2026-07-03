@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { timingSafeEqualString } from "@/lib/cron-auth";
+import { isBearerTokenAuthorized } from "@/lib/cron-auth";
 import { getCurrentDemoUser } from "@/lib/demo-auth";
 import { autoPublishSpikeDailyIndices, formatDateKyiv } from "@/lib/auto-publish";
 import { runDueMediaHubPublication } from "@/lib/media-hub-publication-scheduler";
@@ -18,15 +18,8 @@ type CatchupBody = {
 
 export async function POST(request: Request) {
   const user = await getCurrentDemoUser();
-  const headerSecret = request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
-  const configuredSecret = process.env.SPIKE_DAILY_CATCHUP_SECRET;
   const hasAdminRole = user?.role === "admin";
-  const hasSecret = Boolean(
-    headerSecret &&
-      configuredSecret &&
-      configuredSecret.length > 0 &&
-      timingSafeEqualString(headerSecret, configuredSecret),
-  );
+  const hasSecret = isBearerTokenAuthorized(request, [process.env.SPIKE_DAILY_CATCHUP_SECRET]);
 
   if (!hasAdminRole && !hasSecret) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

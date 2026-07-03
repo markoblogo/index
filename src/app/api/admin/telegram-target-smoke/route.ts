@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { timingSafeEqualString } from "@/lib/cron-auth";
+import { isBearerTokenAuthorized } from "@/lib/cron-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -84,12 +84,10 @@ export async function POST(request: Request) {
 }
 
 function isAuthorized(request: Request) {
-  const configured =
+  return isBearerTokenAuthorized(request, [
     process.env.TELEGRAM_TARGET_SMOKE_SECRET ??
-    process.env.MEDIA_HUB_SMOKE_TEST_SECRET;
-  if (!configured) return false;
-  const bearer = request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
-  return timingSafeEqualString(bearer, configured);
+      process.env.MEDIA_HUB_SMOKE_TEST_SECRET,
+  ]);
 }
 
 function normalizeTelegramChatId(value: string) {

@@ -4,6 +4,13 @@ export function isCronRequestAuthorized(
   request: Request,
   secrets: Array<string | null | undefined>,
 ) {
+  return isBearerTokenAuthorized(request, secrets);
+}
+
+export function isBearerTokenAuthorized(
+  request: Request,
+  secrets: Array<string | null | undefined>,
+) {
   const expectedSecrets = secrets.filter(
     (secret): secret is string => typeof secret === "string" && secret.length > 0,
   );

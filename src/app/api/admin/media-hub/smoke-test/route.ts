@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { timingSafeEqualString } from "@/lib/cron-auth";
+import { isBearerTokenAuthorized } from "@/lib/cron-auth";
 import { runMediaHubApiMonitoring } from "@/lib/media-hub-api-monitoring";
 import { ingestScheduledMediaHubSources } from "@/lib/media-hub-manual-materials";
 import {
@@ -124,11 +124,7 @@ export async function POST(request: Request) {
 }
 
 function isAuthorized(request: Request) {
-  const configured = process.env.MEDIA_HUB_SMOKE_TEST_SECRET;
-  if (!configured) return false;
-  const authorization = request.headers.get("authorization");
-  const bearer = authorization?.match(/^Bearer\s+(.+)$/i)?.[1];
-  return timingSafeEqualString(bearer, configured);
+  return isBearerTokenAuthorized(request, [process.env.MEDIA_HUB_SMOKE_TEST_SECRET]);
 }
 
 function normalizeDate(value: string | undefined) {

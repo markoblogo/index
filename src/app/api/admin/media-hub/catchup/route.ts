@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { timingSafeEqualString } from "@/lib/cron-auth";
+import { isBearerTokenAuthorized } from "@/lib/cron-auth";
 import { runDueMediaHubPublication } from "@/lib/media-hub-publication-scheduler";
 import { isPlatformSite } from "@/lib/platform-site";
 import { type MediaHubPublicationKind } from "@/lib/media-hub-publication-scheduler";
@@ -64,14 +64,10 @@ export async function POST(request: Request) {
 }
 
 function isAuthorized(request: Request) {
-  const secrets = [
+  return isBearerTokenAuthorized(request, [
     process.env.MEDIA_HUB_REPAIR_SECRET,
     process.env.MEDIA_HUB_SMOKE_TEST_SECRET,
-  ].filter((secret): secret is string => Boolean(secret));
-  if (secrets.length === 0) return false;
-
-  const bearer = request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
-  return Boolean(bearer && secrets.some((secret) => timingSafeEqualString(bearer, secret)));
+  ]);
 }
 
 function normalizeKind(value: string | undefined): MediaHubPublicationKind | undefined {

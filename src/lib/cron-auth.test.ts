@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { isCronRequestAuthorized, timingSafeEqualString } from "@/lib/cron-auth";
+import {
+  isBearerTokenAuthorized,
+  isCronRequestAuthorized,
+  timingSafeEqualString,
+} from "@/lib/cron-auth";
 
 describe("isCronRequestAuthorized", () => {
   it("fails closed when no secret is configured", () => {
@@ -33,5 +37,22 @@ describe("isCronRequestAuthorized", () => {
     expect(timingSafeEqualString("cron", "cron-secret")).toBe(false);
     expect(timingSafeEqualString("wrong-secret", "cron-secret")).toBe(false);
     expect(timingSafeEqualString(null, "cron-secret")).toBe(false);
+  });
+
+  it("authorizes bearer tokens against multiple possible secrets", () => {
+    const request = new Request("https://example.test/api/admin/task", {
+      headers: { authorization: "Bearer repair-secret" },
+    });
+
+    expect(isBearerTokenAuthorized(request, [undefined, "smoke-secret", "repair-secret"])).toBe(true);
+    expect(isBearerTokenAuthorized(request, [undefined, "smoke-secret"])).toBe(false);
+  });
+
+  it("fails closed for admin-style bearer auth when no secret is configured", () => {
+    const request = new Request("https://example.test/api/admin/task", {
+      headers: { authorization: "Bearer anything" },
+    });
+
+    expect(isBearerTokenAuthorized(request, [undefined, "", null])).toBe(false);
   });
 });

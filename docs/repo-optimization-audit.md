@@ -214,7 +214,7 @@ Implemented fixes:
 
 - removed unused `xlsx` dependency; XLSX uploads are currently treated as metadata-only materials and no code imports SheetJS;
 - changed cron/internal shared authorization to fail closed when no secret is configured; previously an empty secret list authorized the request, which made misconfigured cron endpoints unsafe;
-- added unit coverage for cron bearer-token authorization;
+- added unit coverage for cron/admin bearer-token authorization and centralized admin Bearer auth in the shared fail-closed helper;
 - switched shared cron/admin/webhook secret comparison to timing-safe string comparison and made Telegram MediaHub/respondent webhooks fail closed when their webhook secret is missing;
 - expanded MediaHub manual-material URL safety checks to block localhost, single-label intranet hosts, private IPv4 ranges, link-local metadata IPs and private/link-local IPv6 targets before server-side fetching;
 - moved MediaHub PDF extraction's `child_process`/filesystem dependencies behind lazy imports so cron/API route tracing no longer pulls the whole project into the Turbopack NFT list;
