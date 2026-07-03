@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import { timingSafeEqualString } from "@/lib/cron-auth";
 import { db, hasDatabaseUrl } from "@/lib/db";
+import { fetchWithTimeout } from "@/lib/fetch-timeout";
 import {
   extractUrlsFromText,
   ingestMediaHubFileMaterial,
@@ -27,6 +28,8 @@ import {
 } from "@/lib/media-hub-material-bot";
 
 export const dynamic = "force-dynamic";
+
+const TELEGRAM_API_TIMEOUT_MS = 15_000;
 
 type TelegramMessage = {
   caption?: string;
@@ -683,7 +686,11 @@ function buildAccessDeniedText(message: TelegramMessage) {
 }
 
 async function downloadTelegramFile(botToken: string, fileId: string) {
-  const metadataResponse = await fetch(`https://api.telegram.org/bot${botToken}/getFile?file_id=${encodeURIComponent(fileId)}`);
+  const metadataResponse = await fetchWithTimeout(
+    `https://api.telegram.org/bot${botToken}/getFile?file_id=${encodeURIComponent(fileId)}`,
+    {},
+    TELEGRAM_API_TIMEOUT_MS,
+  );
   if (!metadataResponse.ok) {
     safeWarn("media_hub_telegram_get_file_failed", { status: metadataResponse.status });
     return null;
@@ -693,7 +700,11 @@ async function downloadTelegramFile(botToken: string, fileId: string) {
   if (!filePath) {
     return null;
   }
-  const fileResponse = await fetch(`https://api.telegram.org/file/bot${botToken}/${filePath}`);
+  const fileResponse = await fetchWithTimeout(
+    `https://api.telegram.org/file/bot${botToken}/${filePath}`,
+    {},
+    TELEGRAM_API_TIMEOUT_MS,
+  );
   if (!fileResponse.ok) {
     safeWarn("media_hub_telegram_file_download_failed", { status: fileResponse.status });
     return null;
@@ -735,11 +746,11 @@ async function replyForResult({
 }
 
 async function sendTelegramText(botToken: string, chatId: string, text: string) {
-  const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+  const response = await fetchWithTimeout(`https://api.telegram.org/bot${botToken}/sendMessage`, {
     body: JSON.stringify({ chat_id: chatId, text }),
     headers: { "Content-Type": "application/json" },
     method: "POST",
-  }).catch((error: unknown) => {
+  }, TELEGRAM_API_TIMEOUT_MS).catch((error: unknown) => {
     safeWarn("media_hub_telegram_send_exception", {
       message: getSafeErrorMessage(error),
     });
@@ -790,11 +801,11 @@ async function callTelegramBotApi(
   method: "getMe" | "getWebhookInfo" | "setWebhook",
   body?: Record<string, unknown>,
 ) {
-  const response = await fetch(`https://api.telegram.org/bot${botToken}/${method}`, {
+  const response = await fetchWithTimeout(`https://api.telegram.org/bot${botToken}/${method}`, {
     body: body ? JSON.stringify(body) : undefined,
     headers: body ? { "Content-Type": "application/json" } : undefined,
     method: body ? "POST" : "GET",
-  }).catch((error: unknown) => ({
+  }, TELEGRAM_API_TIMEOUT_MS).catch((error: unknown) => ({
     error: getSafeErrorMessage(error),
     ok: false,
   }));

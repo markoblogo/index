@@ -32,6 +32,9 @@ describe("media hub telegram route", () => {
     await postTelegramUpdate(buildMessageUpdate("/start"));
 
     expectSentTelegramText("Вітаємо. Це бот");
+    const fetchMock = vi.mocked(fetch);
+    const init = fetchMock.mock.calls[0]?.[1] as RequestInit | undefined;
+    expect(init?.signal).toBeInstanceOf(AbortSignal);
   });
 
   it("/help returns help text", async () => {
