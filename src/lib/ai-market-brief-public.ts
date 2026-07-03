@@ -182,7 +182,7 @@ async function resolvePublishedAiMarketBrief({
       return mapped;
     }
 
-    if (process.env.SPIKE_AI_BRIEF_AUTO_REPAIR !== "0") {
+    if (shouldAutoRepairPublicAiBrief()) {
       const adminModule = await import("@/lib/ai-market-brief");
       await adminModule.generateAndStoreDailyAiMarketBrief({
         date: latestDate,
@@ -210,6 +210,10 @@ async function resolvePublishedAiMarketBrief({
   return buildDeterministicAiMarketBrief(history, locale, activeRespondentCount, {
     fallbackReason: stored ? "locale_mismatch" : "demo_or_missing_saved_brief",
   });
+}
+
+export function shouldAutoRepairPublicAiBrief() {
+  return process.env.SPIKE_AI_BRIEF_PUBLIC_AUTO_REPAIR === "1";
 }
 
 function buildDeterministicAiMarketBrief(
