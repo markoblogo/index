@@ -1,10 +1,6 @@
 import "server-only";
 
-import { execFileSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
-import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { basename, join } from "node:path";
 import { db, hasDatabaseUrl } from "@/lib/db";
 import type { MediaHubPublicationKind } from "@/lib/media-hub-publication-scheduler";
 
@@ -281,7 +277,7 @@ export async function ingestMediaHubLinkMaterial(input: {
 
   const extraction = await extractMaterialContent({
     bytes,
-    filename: basename(new URL(canonicalUrl).pathname) || undefined,
+    filename: getBasename(new URL(canonicalUrl).pathname) || undefined,
     mimeType: contentType,
   });
 
@@ -783,7 +779,7 @@ async function extractMaterialContent(input: {
     };
   }
   if (mimeType.includes("pdf") || filename.endsWith(".pdf")) {
-    const pdf = extractPdfContent(input.bytes, input.filename ?? filename);
+    const pdf = await extractPdfContent(input.bytes, input.filename ?? filename);
     const text = pdf.text;
     return enhanceVisualAssets({
       assets: [
@@ -1003,13 +999,32 @@ function extractOpenAiResponseText(payload: unknown): string {
     .join("\n") ?? "";
 }
 
-function extractPdfContent(bytes: Buffer, filename: string) {
+async function extractPdfContent(bytes: Buffer, filename: string) {
+  const [
+    { execFileSync },
+    { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync },
+    { tmpdir },
+    { join },
+  ] = await Promise.all([
+    import("node:child_process"),
+    import("node:fs"),
+    import("node:os"),
+    import("node:path"),
+  ]);
   const tmp = mkdtempSync(join(tmpdir(), "media-hub-pdf-"));
   const pdfPath = join(tmp, sanitizeFilename(filename || "material.pdf"));
   try {
     writeFileSync(pdfPath, bytes);
-    const textResult = tryExtractPdfTextWithPoppler(pdfPath);
-    const previewAssets = tryRenderPdfPreviewAssets(pdfPath);
+    const textResult = tryExtractPdfTextWithPoppler(pdfPath, execFileSync);
+    const previewAssets = tryRenderPdfPreviewAssets(pdfPath, {
+      execFileSync,
+      join,
+      mkdtempSync,
+      readdirSync,
+      readFileSync,
+      rmSync,
+      tmpdir,
+    });
     return {
       parser: textResult ? "pdftotext" : "fallback",
       previewAssets,
@@ -1020,8 +1035,11 @@ function extractPdfContent(bytes: Buffer, filename: string) {
   }
 }
 
-function tryExtractPdfTextWithPoppler(pdfPath: string) {
-  if (!commandExists("pdftotext")) {
+function tryExtractPdfTextWithPoppler(
+  pdfPath: string,
+  execFileSync: typeof import("node:child_process").execFileSync,
+) {
+  if (!commandExists("pdftotext", execFileSync)) {
     return "";
   }
   try {
@@ -1035,25 +1053,36 @@ function tryExtractPdfTextWithPoppler(pdfPath: string) {
   }
 }
 
-function tryRenderPdfPreviewAssets(pdfPath: string): ExtractedMaterialAssetDraft[] {
-  if (process.env.MEDIA_HUB_ENABLE_PDF_PREVIEWS === "0" || !commandExists("pdftoppm")) {
+function tryRenderPdfPreviewAssets(
+  pdfPath: string,
+  io: {
+    execFileSync: typeof import("node:child_process").execFileSync;
+    join: typeof import("node:path").join;
+    mkdtempSync: typeof import("node:fs").mkdtempSync;
+    readdirSync: typeof import("node:fs").readdirSync;
+    readFileSync: typeof import("node:fs").readFileSync;
+    rmSync: typeof import("node:fs").rmSync;
+    tmpdir: typeof import("node:os").tmpdir;
+  },
+): ExtractedMaterialAssetDraft[] {
+  if (process.env.MEDIA_HUB_ENABLE_PDF_PREVIEWS === "0" || !commandExists("pdftoppm", io.execFileSync)) {
     return [];
   }
-  const prefix = join(mkdtempSync(join(tmpdir(), "media-hub-pdf-preview-")), "page");
+  const prefix = io.join(io.mkdtempSync(io.join(io.tmpdir(), "media-hub-pdf-preview-")), "page");
   const previewDir = prefix.replace(/\/page$/, "");
   try {
     const maxPages = getMaxPreviewPages();
-    execFileSync("pdftoppm", ["-f", "1", "-l", String(maxPages), "-png", "-r", "96", pdfPath, prefix], {
+    io.execFileSync("pdftoppm", ["-f", "1", "-l", String(maxPages), "-png", "-r", "96", pdfPath, prefix], {
       maxBuffer: 512 * 1024,
       timeout: 8000,
     });
-    return readdirSync(previewDir)
+    return io.readdirSync(previewDir)
       .filter((name) => name.endsWith(".png"))
       .sort()
       .slice(0, maxPages)
       .map((name, index) => {
-        const path = join(previewDir, name);
-        const bytes = readFileSync(path);
+        const path = io.join(previewDir, name);
+        const bytes = io.readFileSync(path);
         return {
           assetType: "preview_image",
           byteSize: bytes.length,
@@ -1069,11 +1098,14 @@ function tryRenderPdfPreviewAssets(pdfPath: string): ExtractedMaterialAssetDraft
   } catch {
     return [];
   } finally {
-    rmSync(previewDir, { force: true, recursive: true });
+    io.rmSync(previewDir, { force: true, recursive: true });
   }
 }
 
-function commandExists(command: string) {
+function commandExists(
+  command: string,
+  execFileSync: typeof import("node:child_process").execFileSync,
+) {
   try {
     execFileSync("sh", ["-lc", `command -v ${command}`], { stdio: "ignore", timeout: 1000 });
     return true;
@@ -1342,7 +1374,11 @@ function detectLanguage(text: string) {
 }
 
 function sanitizeFilename(value: string) {
-  return basename(value).replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120) || "upload.bin";
+  return getBasename(value).replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120) || "upload.bin";
+}
+
+function getBasename(value: string) {
+  return value.split(/[\\/]/).filter(Boolean).pop() ?? "";
 }
 
 function toIsoDate(date: Date) {
