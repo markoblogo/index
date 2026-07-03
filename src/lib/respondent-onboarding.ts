@@ -335,6 +335,7 @@ async function sendRespondentOnboardingEmail({
 }
 
 async function sendRespondentLinkedTelegramWelcome({
+  auth,
   contact,
   respondent,
 }: {
