@@ -234,6 +234,7 @@ Implemented fixes:
 - extended the shared external fetch timeout to SSI WhatsApp MediaHub webhook delivery calls;
 - extended the shared external fetch timeout to MediaHub manual-material OpenAI visual summarization calls;
 - extended the shared external fetch timeout to UGA demo-mode sync reads from the public SPIKE API;
+- extended the shared external fetch timeout to Telegram channel HTML source collection used by report-source collector jobs;
 - added npm overrides for vulnerable transitive tooling packages:
   - `@prisma/dev@0.24.14`;
   - `esbuild@^0.28.1`;

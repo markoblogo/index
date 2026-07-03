@@ -3,6 +3,7 @@ import "server-only";
 import { createHash, randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { db, hasDatabaseUrl } from "@/lib/db";
+import { fetchWithTimeout } from "@/lib/fetch-timeout";
 import {
   getReportWorkspaceConfig,
   listReportWorkspaceResources,
@@ -10,6 +11,8 @@ import {
   type ReportWorkspaceResource,
 } from "@/lib/report-workspace";
 import { getActiveIndexConfig } from "@/lib/index-platform";
+
+const TELEGRAM_CHANNEL_FETCH_TIMEOUT_MS = 15_000;
 
 type StoredTelegramPostRow = {
   channelHandle: string;
@@ -403,14 +406,14 @@ async function fetchTelegramChannelPage(handle: string, beforePostId?: string | 
     url.searchParams.set("before", beforePostId);
   }
 
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     headers: {
       "User-Agent":
         "Mozilla/5.0 (compatible; SpikeSpotIndexBot/1.0; +https://spike.broker)",
     },
     method: "GET",
     next: { revalidate: 0 },
-  });
+  }, TELEGRAM_CHANNEL_FETCH_TIMEOUT_MS);
 
   if (!response.ok) {
     throw new Error(`Telegram channel fetch failed for ${handle}: ${response.status}`);
@@ -731,3 +734,7 @@ function escapeRegExp(value: string) {
 function revalidateTelegramCollectorViews() {
   revalidatePath("/admin/reports");
 }
+
+export const __telegramSourceCollectorTestHooks = {
+  fetchTelegramChannelPage,
+};
