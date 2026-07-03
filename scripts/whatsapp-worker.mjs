@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { createServer } from "node:http";
-import { mkdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import process from "node:process";
 import qrImage from "qrcode";
@@ -11,7 +11,7 @@ const { Client, LocalAuth } = pkg;
 
 loadEnvFile(resolve(process.cwd(), ".env.whatsapp.local"));
 
-const PORT = Number.parseInt(process.env.WHATSAPP_WORKER_PORT || "8787", 10);
+const PORT = Number.parseInt(process.env.PORT || process.env.WHATSAPP_WORKER_PORT || "8787", 10);
 const SECRET = process.env.WHATSAPP_WORKER_SECRET || process.env.SSI_WHATSAPP_WEBHOOK_SECRET;
 const DEFAULT_GROUP_NAME = process.env.SSI_WHATSAPP_TARGET_GROUP_NAME || "SPIKE INDEX";
 const DEFAULT_GROUP_ID = process.env.SSI_WHATSAPP_TARGET_GROUP_ID || "";
@@ -26,6 +26,7 @@ if (!SECRET) {
 mkdirSync(SESSION_PATH, { recursive: true });
 
 let ready = false;
+let lastError = null;
 const client = new Client({
   authStrategy: new LocalAuth({ dataPath: SESSION_PATH }),
   puppeteer: {
@@ -45,25 +46,52 @@ client.on("qr", (qr) => {
 
 client.on("ready", () => {
   ready = true;
+  lastError = null;
   console.log(`WhatsApp worker ready. Default group: ${DEFAULT_GROUP_NAME}`);
 });
 
 client.on("auth_failure", (message) => {
   ready = false;
+  lastError = `auth_failure: ${message}`;
   console.error("WhatsApp auth failure:", message);
 });
 
 client.on("disconnected", (reason) => {
   ready = false;
+  lastError = `disconnected: ${reason}`;
   console.error("WhatsApp disconnected:", reason);
 });
 
-client.initialize();
+client.initialize().catch((error) => {
+  ready = false;
+  lastError = error instanceof Error ? error.message : "WhatsApp initialize failed";
+  console.error("WhatsApp initialize failed:", error);
+});
 
 createServer(async (request, response) => {
   try {
-    if (request.method === "GET" && request.url === "/health") {
-      return sendJson(response, 200, { ready, status: "ok" });
+    if (request.method === "GET" && (request.url === "/health" || request.url === "/status")) {
+      return sendJson(response, 200, {
+        groupIdConfigured: Boolean(DEFAULT_GROUP_ID),
+        groupName: DEFAULT_GROUP_NAME,
+        lastError,
+        ready,
+        sessionPath: SESSION_PATH,
+        status: "ok",
+      });
+    }
+    if (request.method === "GET" && request.url === "/qr") {
+      if (!existsSync(QR_PATH)) {
+        return sendJson(response, 404, { error: "QR not generated yet", ready });
+      }
+
+      const image = readFileSync(QR_PATH);
+      response.writeHead(200, {
+        "Cache-Control": "no-store",
+        "Content-Type": "image/png",
+      });
+      response.end(image);
+      return;
     }
     if (request.method !== "POST" || request.url !== "/send") {
       return sendJson(response, 404, { error: "Not found" });
@@ -105,6 +133,19 @@ createServer(async (request, response) => {
 }).listen(PORT, () => {
   console.log(`WhatsApp worker listening on http://localhost:${PORT}`);
 });
+
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
+
+async function shutdown() {
+  console.log("WhatsApp worker shutting down...");
+  try {
+    await client.destroy();
+  } catch (error) {
+    console.error("WhatsApp destroy failed:", error);
+  }
+  process.exit(0);
+}
 
 async function findGroupByName(groupName) {
   const chats = await client.getChats();

@@ -1704,9 +1704,11 @@ function flattenDailyReportSummary(report: MediaHubDailyReportView | undefined) 
 }
 
 export async function getMediaHubReportArchive(input: {
+  date?: string;
   kind?: Exclude<MediaHubPublicationKind, "none">;
   limit?: number;
   locale: Locale;
+  query?: string;
   tenantId?: string;
 }) {
   if (!hasDatabaseUrl()) {
@@ -1717,12 +1719,20 @@ export async function getMediaHubReportArchive(input: {
     await ensureMediaHubReportStorage();
 
     const tenantId = input.tenantId ?? (isPlatformSite() ? "1d3x" : getActiveIndexConfig().id);
+    const searchQuery = input.query?.trim();
+    const searchPattern = searchQuery ? `%${searchQuery}%` : null;
     const rows = await db.$queryRawUnsafe<MediaHubReportRow[]>(
       `
         SELECT *
         FROM "MediaHubReport"
         WHERE "tenantId" = $1
           AND ($2::text IS NULL OR "kind" = $2)
+          AND ($4::date IS NULL OR ("periodStart" <= $4::date AND "periodEnd" >= $4::date))
+          AND (
+            $5::text IS NULL
+            OR "title" ILIKE $5
+            OR "contentJson"::text ILIKE $5
+          )
           AND "status" = 'published'
         ORDER BY
           "periodEnd" DESC,
@@ -1737,6 +1747,8 @@ export async function getMediaHubReportArchive(input: {
       tenantId,
       input.kind ?? null,
       input.limit ?? 36,
+      input.date ?? null,
+      searchPattern,
     );
 
     return rows.flatMap((row): MediaHubReportArchiveItem[] => {

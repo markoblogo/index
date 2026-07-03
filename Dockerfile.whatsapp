@@ -1,0 +1,25 @@
+FROM ghcr.io/puppeteer/puppeteer:24.31.0
+
+WORKDIR /app
+
+USER root
+
+COPY package.json package-lock.json ./
+ENV PUPPETEER_CACHE_DIR=/home/pptruser/.cache/puppeteer
+RUN npm ci --omit=dev --ignore-scripts \
+    && mkdir -p /home/pptruser/.cache/puppeteer \
+    && npx puppeteer browsers install chrome \
+    && chown -R pptruser:pptruser /home/pptruser/.cache \
+    && npm cache clean --force
+
+COPY scripts/whatsapp-worker.mjs ./scripts/whatsapp-worker.mjs
+
+ENV NODE_ENV=production \
+    WHATSAPP_SESSION_PATH=/data/whatsapp-session \
+    WHATSAPP_QR_PATH=/data/whatsapp-qr.png
+
+RUN mkdir -p /data
+
+EXPOSE 8787
+
+CMD ["npm", "run", "whatsapp:worker"]

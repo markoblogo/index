@@ -17,6 +17,7 @@ import { MonitoringFeed } from "./monitoring-feed";
 export function PublicMediaHub({
   archive = [],
   archiveHref,
+  archiveQuery = {},
   locale,
   profile,
   selectedWindow,
@@ -26,7 +27,13 @@ export function PublicMediaHub({
   archiveHref?: (filter: {
     date?: string;
     kind?: MediaHubReportArchiveItem["kind"];
+    q?: string;
   }) => string;
+  archiveQuery?: {
+    date?: string;
+    kind?: MediaHubReportArchiveItem["kind"];
+    q?: string;
+  };
   locale: Locale;
   profile: MediaHubSiteProfile;
   selectedWindow: MediaHubWindowKey;
@@ -46,6 +53,7 @@ export function PublicMediaHub({
     { kind: "weekly", label: copy.weekly },
     { kind: "monthly", label: copy.monthly },
   ];
+  const archiveHasQuery = Boolean(archiveQuery.date || archiveQuery.kind || archiveQuery.q);
 
   return (
     <div
@@ -162,20 +170,95 @@ export function PublicMediaHub({
       ) : null}
 
       <section className="mx-auto max-w-[1900px] px-5 pb-8 sm:px-8 lg:px-10">
-        <div className="rounded-[2rem] border border-white/10 bg-[var(--media-hub-panel)] p-5">
-          <div className="flex flex-wrap items-center justify-between gap-4">
+        <details
+          className="group rounded-[2rem] border border-white/10 bg-[var(--media-hub-panel)] p-5"
+          open={archiveHasQuery}
+        >
+          <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-4">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.18em] text-white/42">
                 {copy.reportArchive}
               </p>
               <h2 className="mt-1 text-2xl font-black">{copy.publishedReports}</h2>
+              <p className="mt-2 text-sm leading-6 text-white/54">
+                {copy.archiveHint}
+              </p>
             </div>
+            <div className="flex items-center gap-3">
+              <span className="rounded-full border border-white/12 px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-white/54">
+                {archive.length} {copy.results}
+              </span>
+              <span className="rounded-full border border-[color:var(--media-hub-accent)] px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-[var(--media-hub-accent)]">
+                <span className="group-open:hidden">{copy.openArchive}</span>
+                <span className="hidden group-open:inline">{copy.closeArchive}</span>
+              </span>
+            </div>
+          </summary>
+
+          <div className="mt-5 rounded-[1.4rem] border border-white/10 bg-black/14 p-4">
             {archiveHref ? (
-              <div className="flex flex-wrap gap-2">
+              <form className="grid gap-3 lg:grid-cols-[0.9fr_0.9fr_1.4fr_auto]" action={archiveHref({})} method="get">
+                <label className="grid gap-1.5 text-xs font-black uppercase tracking-[0.14em] text-white/42">
+                  {copy.reportType}
+                  <select
+                    className="rounded-full border border-white/12 bg-[var(--media-hub-card)] px-3 py-2 text-sm font-bold normal-case tracking-normal text-white outline-none"
+                    defaultValue={archiveQuery.kind ?? ""}
+                    name="kind"
+                  >
+                    <option value="">{copy.all}</option>
+                    <option value="daily">{copy.daily}</option>
+                    <option value="weekly">{copy.weekly}</option>
+                    <option value="monthly">{copy.monthly}</option>
+                  </select>
+                </label>
+                <label className="grid gap-1.5 text-xs font-black uppercase tracking-[0.14em] text-white/42">
+                  {copy.archiveDate}
+                  <input
+                    className="rounded-full border border-white/12 bg-[var(--media-hub-card)] px-3 py-2 text-sm font-bold normal-case tracking-normal text-white outline-none"
+                    defaultValue={archiveQuery.date ?? ""}
+                    name="date"
+                    type="date"
+                  />
+                </label>
+                <label className="grid gap-1.5 text-xs font-black uppercase tracking-[0.14em] text-white/42">
+                  {copy.archiveSearch}
+                  <input
+                    className="rounded-full border border-white/12 bg-[var(--media-hub-card)] px-3 py-2 text-sm font-bold normal-case tracking-normal text-white outline-none placeholder:text-white/30"
+                    defaultValue={archiveQuery.q ?? ""}
+                    name="q"
+                    placeholder={copy.archiveSearchPlaceholder}
+                    type="search"
+                  />
+                </label>
+                <div className="flex items-end gap-2">
+                  <button
+                    className="rounded-full bg-[var(--media-hub-accent)] px-5 py-2.5 text-xs font-black uppercase tracking-[0.12em] text-[var(--media-hub-accent-ink)]"
+                    type="submit"
+                  >
+                    {copy.find}
+                  </button>
+                  {archiveHasQuery ? (
+                    <Link
+                      className="rounded-full border border-white/12 px-4 py-2.5 text-xs font-black uppercase tracking-[0.12em] text-white/54 hover:text-white"
+                      href={archiveHref({})}
+                    >
+                      {copy.reset}
+                    </Link>
+                  ) : null}
+                </div>
+              </form>
+            ) : null}
+
+            {archiveHref ? (
+              <div className="mt-4 flex flex-wrap gap-2">
                 {archiveFilters.map((filter) => (
                   <Link
-                    className="rounded-full border border-white/12 px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-white/62 hover:border-[color:var(--media-hub-accent)] hover:text-white"
-                    href={archiveHref({ kind: filter.kind })}
+                    className={`rounded-full border px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] ${
+                      archiveQuery.kind === filter.kind || (!archiveQuery.kind && !filter.kind)
+                        ? "border-[color:var(--media-hub-accent)] text-[var(--media-hub-accent)]"
+                        : "border-white/12 text-white/62 hover:border-[color:var(--media-hub-accent)] hover:text-white"
+                    }`}
+                    href={archiveHref({ date: archiveQuery.date, kind: filter.kind, q: archiveQuery.q })}
                     key={filter.label}
                   >
                     {filter.label}
@@ -183,43 +266,44 @@ export function PublicMediaHub({
                 ))}
               </div>
             ) : null}
+
+            {archive.length > 0 ? (
+              <div className="mt-4 max-h-[32rem] overflow-y-auto pr-1">
+                <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                  {archive.map((report) => (
+                    <Link
+                      className="rounded-[1rem] border border-white/10 bg-[var(--media-hub-card)] px-3 py-2.5 transition hover:border-[color:var(--media-hub-accent)]"
+                      href={archiveHref?.({
+                        date: report.periodEndDate,
+                        kind: report.kind,
+                      }) ?? "#"}
+                      key={`${report.kind}-${report.periodEndDate}`}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-xs font-black uppercase tracking-[0.14em] text-[var(--media-hub-accent)]">
+                          {report.kind}
+                        </span>
+                        <span className="text-xs font-black text-white/46">
+                          {formatArchivePeriod(report)}
+                        </span>
+                      </div>
+                      <h3 className="mt-1 truncate text-sm font-bold text-white/78">
+                        {report.summaryTitle}
+                      </h3>
+                      <p className="mt-1 text-xs text-white/42">
+                        {report.itemCount} {copy.items} · {report.sourceCount} {copy.sources}
+                      </p>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="mt-4 rounded-[1.25rem] border border-white/10 bg-[var(--media-hub-card)] p-4 text-sm leading-6 text-white/58">
+                {archiveHasQuery ? copy.noArchiveResults : copy.noReports}
+              </div>
+            )}
           </div>
-          {archive.length > 0 ? (
-            <div className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-              {archive.slice(0, 12).map((report) => (
-                <Link
-                  className="rounded-[1rem] border border-white/10 bg-[var(--media-hub-card)] px-3 py-2.5 transition hover:border-[color:var(--media-hub-accent)]"
-                  href={archiveHref?.({
-                    date: report.periodEndDate,
-                    kind: report.kind,
-                  }) ?? "#"}
-                  key={`${report.kind}-${report.periodEndDate}`}
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-xs font-black uppercase tracking-[0.14em] text-[var(--media-hub-accent)]">
-                      {report.kind}
-                    </span>
-                    <span className="text-xs font-black text-white/46">
-                      {formatArchivePeriod(report)}
-                    </span>
-                  </div>
-                  <h3 className="mt-1 truncate text-sm font-bold text-white/78">
-                    {report.summaryTitle}
-                  </h3>
-                  <p className="mt-1 text-xs text-white/42">
-                    {report.itemCount} {copy.items} · {report.sourceCount} {copy.sources}
-                  </p>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <div className="mt-4 rounded-[1.25rem] border border-white/10 bg-[var(--media-hub-card)] p-4 text-sm leading-6 text-white/58">
-              {locale === "uk"
-                ? "Опублікованих звітів ще немає. Вони з’являться тут після першої daily, weekly або monthly публікації."
-                : "No reports published yet. Reports will appear here after the first daily, weekly or monthly publication."}
-            </div>
-          )}
-        </div>
+        </details>
       </section>
 
       <section className="mx-auto max-w-[1900px] px-5 pb-8 sm:px-8 lg:px-10">
@@ -451,13 +535,22 @@ function getMediaHubCopy(locale: Locale) {
   if (locale === "uk") {
     return {
       all: "Усі",
+      archiveDate: "Дата",
+      archiveHint: "Блок згорнутий за замовчуванням. Відкрийте його або знайдіть звіт за датою, типом чи текстом.",
+      archiveSearch: "Пошук",
+      archiveSearchPlaceholder: "Тема, ринок, культура...",
       clusters: "кластерів",
+      closeArchive: "Згорнути",
       daily: "День",
       deskSnapshot: "Стан моніторингу",
       distribution: "Розподіл",
       distributionNote: "Моніторинг джерел знизу, редакційний звіт зверху.",
+      find: "Знайти",
       items: "матеріалів",
       monthly: "Місяць",
+      noArchiveResults: "За цими фільтрами звітів не знайдено.",
+      noReports: "Опублікованих звітів ще немає. Вони з’являться тут після першої daily, weekly або monthly публікації.",
+      openArchive: "Відкрити",
       publishedReports: "Опубліковані звіти",
       pulse: "Пульс",
       reportArchive: "Архів звітів",
@@ -470,16 +563,28 @@ function getMediaHubCopy(locale: Locale) {
 
   return {
       all: "All",
+      archiveDate: "Date",
+      archiveHint: "Collapsed by default. Open it or find a report by date, type or text.",
+      archiveSearch: "Search",
+      archiveSearchPlaceholder: "Topic, market, commodity...",
       clusters: "clusters",
+      closeArchive: "Collapse",
       daily: "Daily",
     deskSnapshot: "Desk Snapshot",
     distribution: "Distribution",
     distributionNote: "Raw monitoring below, editorial summary above.",
+    find: "Find",
     items: "items",
     monthly: "Monthly",
+    noArchiveResults: "No reports match these filters.",
+    noReports: "No reports published yet. Reports will appear here after the first daily, weekly or monthly publication.",
+    openArchive: "Open",
     publishedReports: "Published reports",
     pulse: "Pulse",
     reportArchive: "Report archive",
+    reportType: "Type",
+    reset: "Reset",
+    results: "results",
     sources: "sources",
     topicClusters: "Topic clusters",
     topics: "topics",
@@ -527,3 +632,6 @@ function parseProgressRatio(label: string) {
   }
   return Math.max(0, Math.min(1, current / total));
 }
+      reportType: "Тип",
+      reset: "Скинути",
+      results: "результатів",

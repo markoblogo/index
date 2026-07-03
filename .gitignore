@@ -13,6 +13,6 @@ tsconfig.tsbuildinfo
 .vercel
 .local/
 .env*
-.whatsapp-session/
+.whatsapp-session*/
 .wwebjs_cache/
 tmp/

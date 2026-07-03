@@ -18,7 +18,7 @@ import { isPlatformSite } from "@/lib/platform-site";
 export const dynamic = "force-dynamic";
 
 type PlatformMediaHubPageProps = {
-  searchParams: Promise<{ date?: string; kind?: string; window?: string }>;
+  searchParams: Promise<{ date?: string; kind?: string; q?: string; window?: string }>;
 };
 
 export default async function PlatformMediaHubPage({
@@ -32,6 +32,7 @@ export default async function PlatformMediaHubPage({
   const requestedKind = search.kind ? normalizeKind(search.kind) : undefined;
   const requestedWindow = search.window ? normalizeWindow(search.window) : undefined;
   const requestedDate = normalizeDate(search.date);
+  const requestedQuery = normalizeQuery(search.q);
   const summaryKind = requestedKind ?? (requestedWindow ? windowToKind(requestedWindow) : undefined);
   const [liveWindows, publishedSummary, archive] = await Promise.all([
     get1d3xRssWindows(),
@@ -42,8 +43,10 @@ export default async function PlatformMediaHubPage({
       tenantId: "1d3x",
     }),
     getMediaHubReportArchive({
+      date: requestedDate,
       kind: summaryKind,
       locale: "en",
+      query: requestedQuery,
       tenantId: "1d3x",
     }),
   ]);
@@ -69,10 +72,16 @@ export default async function PlatformMediaHubPage({
       <PublicMediaHub
         locale="en"
         archive={archive}
+        archiveQuery={{
+          date: requestedDate,
+          kind: requestedKind,
+          q: requestedQuery,
+        }}
         archiveHref={(filter) => {
           const params = new URLSearchParams();
           if (filter.kind) params.set("kind", filter.kind);
           if (filter.date) params.set("date", filter.date);
+          if (filter.q) params.set("q", filter.q);
           const query = params.toString();
           return query ? `/media-hub?${query}` : "/media-hub";
         }}
@@ -98,6 +107,11 @@ function normalizeKind(value: string): Exclude<MediaHubPublicationKind, "none"> 
 
 function normalizeDate(value: string | undefined) {
   return value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : undefined;
+}
+
+function normalizeQuery(value: string | undefined) {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed.slice(0, 120) : undefined;
 }
 
 function kindToWindow(kind: string | undefined): MediaHubWindowKey {
