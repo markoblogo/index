@@ -3,6 +3,7 @@ import "server-only";
 import { createHash, randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { db, hasDatabaseUrl } from "@/lib/db";
+import { fetchWithTimeout } from "@/lib/fetch-timeout";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import type { Locale } from "@/lib/i18n";
 import { runMediaHubApiMonitoring } from "@/lib/media-hub-api-monitoring";
@@ -136,6 +137,7 @@ const DEFAULT_MEDIA_HUB_TIMEZONE = "Europe/Kyiv";
 const DEFAULT_SPIKE_MEDIA_HUB_DAILY_REPORT_TIME = "19:10";
 const DEFAULT_PLATFORM_MEDIA_HUB_DAILY_REPORT_TIME = "19:15";
 const DEFAULT_MEDIA_HUB_WEEKLY_REPORT_TIME = "15:00";
+const TELEGRAM_DELIVERY_TIMEOUT_MS = 15_000;
 
 export function getMediaHubPublicationPlan(date = getParisLocalDate()): MediaHubPublicationPlan {
   const weekday = getIsoWeekday(date);
@@ -1038,7 +1040,7 @@ async function sendTelegramMessages(
   const messageIds: number[] = [];
 
   for (const text of messages) {
-    const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+    const response = await fetchWithTimeout(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       body: JSON.stringify({
         chat_id: chatId,
         disable_web_page_preview: true,
@@ -1047,7 +1049,7 @@ async function sendTelegramMessages(
       }),
       headers: { "Content-Type": "application/json" },
       method: "POST",
-    });
+    }, TELEGRAM_DELIVERY_TIMEOUT_MS);
 
     if (!response.ok) {
       return {
@@ -2496,7 +2498,7 @@ async function sendMonthlyMediaHubTelegram(content: ReturnType<typeof buildMonth
         )
       : ["• n/a"]),
   ].join("\n");
-  const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+  const response = await fetchWithTimeout(`https://api.telegram.org/bot${botToken}/sendMessage`, {
     body: JSON.stringify({
       chat_id: chatId,
       disable_web_page_preview: true,
@@ -2505,7 +2507,7 @@ async function sendMonthlyMediaHubTelegram(content: ReturnType<typeof buildMonth
     }),
     headers: { "Content-Type": "application/json" },
     method: "POST",
-  });
+  }, TELEGRAM_DELIVERY_TIMEOUT_MS);
 
   if (!response.ok) {
     return [];

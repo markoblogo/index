@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { isBearerTokenAuthorized } from "@/lib/cron-auth";
+import { fetchWithTimeout } from "@/lib/fetch-timeout";
 
 export const dynamic = "force-dynamic";
+
+const TELEGRAM_DELIVERY_TIMEOUT_MS = 15_000;
 
 type SmokeBody = {
   chatId?: string;
@@ -37,7 +40,7 @@ export async function POST(request: Request) {
   }
 
   const chatId = normalizeTelegramChatId(configuredChatId);
-  const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+  const response = await fetchWithTimeout(`https://api.telegram.org/bot${botToken}/sendMessage`, {
     body: JSON.stringify({
       chat_id: chatId,
       disable_notification: true,
@@ -46,7 +49,7 @@ export async function POST(request: Request) {
     }),
     headers: { "Content-Type": "application/json" },
     method: "POST",
-  });
+  }, TELEGRAM_DELIVERY_TIMEOUT_MS);
   const payload = await response.json().catch(() => null) as {
     description?: string;
     error_code?: number;

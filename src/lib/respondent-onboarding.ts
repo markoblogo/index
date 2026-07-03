@@ -20,6 +20,7 @@ type OnboardingContact = {
 };
 
 const ONBOARDING_EMAIL_TIMEOUT_MS = 15_000;
+const TELEGRAM_DELIVERY_TIMEOUT_MS = 15_000;
 
 type OnboardingRespondent = {
   id: string;
@@ -823,7 +824,7 @@ async function sendTelegramText({
             url,
           }
         : null;
-  const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+  const response = await fetchWithTimeout(`https://api.telegram.org/bot${token}/sendMessage`, {
     body: JSON.stringify({
       chat_id: chatId,
       reply_markup: button
@@ -835,7 +836,7 @@ async function sendTelegramText({
     }),
     headers: { "Content-Type": "application/json" },
     method: "POST",
-  });
+  }, TELEGRAM_DELIVERY_TIMEOUT_MS);
   const payload = (await response.json().catch(() => ({}))) as {
     description?: string;
     ok?: boolean;

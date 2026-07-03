@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { db, hasDatabaseUrl } from "@/lib/db";
 import { generateAndStoreDailyAiMarketBriefs } from "@/lib/ai-market-brief-lazy";
+import { fetchWithTimeout } from "@/lib/fetch-timeout";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import { computePublishedChange } from "@/lib/index-publish";
 import {
@@ -27,6 +28,8 @@ export type AutoPublishSubmission = {
   status: string;
   updatedAt: Date;
 };
+
+const TELEGRAM_DELIVERY_TIMEOUT_MS = 15_000;
 
 export type AutoPublishPlanItem = {
   latestUpdatedAt: Date;
@@ -540,7 +543,7 @@ async function sendSsiFallbackTelegram(date: string, summary: string[]) {
       "https://spike.1d3x.com/",
     ].join("\n"),
   );
-  const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+  const response = await fetchWithTimeout(`https://api.telegram.org/bot${botToken}/sendMessage`, {
     body: JSON.stringify({
       chat_id: normalizeMediaHubTelegramChatId(chatId),
       disable_web_page_preview: true,
@@ -549,7 +552,7 @@ async function sendSsiFallbackTelegram(date: string, summary: string[]) {
     }),
     headers: { "Content-Type": "application/json" },
     method: "POST",
-  });
+  }, TELEGRAM_DELIVERY_TIMEOUT_MS);
 
   if (!response.ok) {
     return {

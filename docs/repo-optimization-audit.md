@@ -227,6 +227,7 @@ Implemented fixes:
 - added an abort timeout to the legacy Last30Days JSON MediaHub source so one slow external JSON endpoint cannot stall report-source collection;
 - added a shared external fetch timeout helper and applied it to OpenAI report/brief generation, AI Telegram delivery and Resend contact delivery calls;
 - extended the shared external fetch timeout to Resend respondent schedule, respondent onboarding, password reset and Spike admin invite emails;
+- extended the shared external fetch timeout to Telegram delivery paths for SSI auto-publish fallback, respondent survey/confirmation messages, MediaHub report publishing and Telegram target smoke tests;
 - added npm overrides for vulnerable transitive tooling packages:
   - `@prisma/dev@0.24.14`;
   - `esbuild@^0.28.1`;

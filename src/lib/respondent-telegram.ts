@@ -1,11 +1,14 @@
 import { randomBytes } from "node:crypto";
 import { db, hasDatabaseUrl } from "@/lib/db";
+import { fetchWithTimeout } from "@/lib/fetch-timeout";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import { syncIndexPositionDirectory } from "@/lib/position-directory-sync";
 
 export type TelegramTrigger = "manual" | "scheduled" | "smoke";
 
 export type TelegramReminderLevel = "initial" | "reminder_18" | "final_19";
+
+const TELEGRAM_DELIVERY_TIMEOUT_MS = 15_000;
 
 export type TelegramRecipient = {
   chatId: string;
@@ -386,7 +389,7 @@ async function sendTelegramSurveyMessage({
   }
 
   const surveyUrl = await createSurveyUrl(recipient);
-  const response = await fetch(
+  const response = await fetchWithTimeout(
     `https://api.telegram.org/bot${botToken}/sendMessage`,
     {
       body: JSON.stringify({
@@ -407,6 +410,7 @@ async function sendTelegramSurveyMessage({
       headers: { "Content-Type": "application/json" },
       method: "POST",
     },
+    TELEGRAM_DELIVERY_TIMEOUT_MS,
   );
   const payload = (await response.json().catch(() => ({}))) as {
     description?: string;
@@ -456,7 +460,7 @@ async function sendTelegramConfirmationMessage({
   respondentId: string;
   summary: Array<{ name: string; price: number }>;
 }) {
-  const response = await fetch(
+  const response = await fetchWithTimeout(
     `https://api.telegram.org/bot${botToken}/sendMessage`,
     {
       body: JSON.stringify({
@@ -467,6 +471,7 @@ async function sendTelegramConfirmationMessage({
       headers: { "Content-Type": "application/json" },
       method: "POST",
     },
+    TELEGRAM_DELIVERY_TIMEOUT_MS,
   );
   const payload = (await response.json().catch(() => ({}))) as {
     description?: string;
