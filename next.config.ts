@@ -9,7 +9,6 @@ const scriptSrc =
     : "script-src 'self' 'unsafe-inline'";
 
 const nextConfig: NextConfig = {
-  outputFileTracingRoot: process.cwd(),
   env: {
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
   },

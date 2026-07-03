@@ -125,15 +125,9 @@ export function CurrencyValue({
 }
 
 function useDisplayCurrency() {
-  const [currency, setCurrencyState] = useState<DisplayCurrency>("USD");
+  const [currency, setCurrencyState] = useState<DisplayCurrency>(() => readStoredCurrency() ?? "USD");
 
   useEffect(() => {
-    const storedCurrency = readStoredCurrency();
-
-    if (storedCurrency) {
-      setCurrencyState(storedCurrency);
-    }
-
     function handleStorage(event: StorageEvent) {
       if (event.key !== STORAGE_KEY) {
         return;

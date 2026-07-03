@@ -1,17 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 type Theme = "light" | "dark";
 
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>("light");
-
-  useEffect(() => {
-    const activeTheme =
-      document.documentElement.dataset.theme === "dark" ? "dark" : "light";
-    setTheme(activeTheme);
-  }, []);
+  const [theme, setTheme] = useState<Theme>(() => getDocumentTheme());
 
   function toggleTheme() {
     const nextTheme = theme === "dark" ? "light" : "dark";
@@ -32,6 +26,14 @@ export function ThemeToggle() {
       {isDark ? <SunIcon /> : <MoonIcon />}
     </button>
   );
+}
+
+function getDocumentTheme(): Theme {
+  if (typeof document === "undefined") {
+    return "light";
+  }
+
+  return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
 }
 
 function SunIcon() {

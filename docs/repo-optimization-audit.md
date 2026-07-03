@@ -198,3 +198,43 @@ This pass adds:
 - deploy-script integration in `package.json`
 
 This does not solve the full structural problem, but it prevents repeat failure modes and creates a stable base for the next passes.
+
+## 2026-07-03 reliability and dependency hardening pass
+
+Scope covered in this pass:
+
+- repository health audit via `npm run audit:repo`;
+- unit/regression suite via `npm run test`;
+- ESLint via `npm run lint`;
+- production build via `npm run build`;
+- dependency vulnerability review via `npm audit --audit-level=moderate`;
+- targeted source scan for common risky patterns and accidentally committed secrets.
+
+Implemented fixes:
+
+- removed unused `xlsx` dependency; XLSX uploads are currently treated as metadata-only materials and no code imports SheetJS;
+- added npm overrides for vulnerable transitive tooling packages:
+  - `@prisma/dev@0.24.14`;
+  - `esbuild@^0.28.1`;
+  - `@hono/node-server@^1.19.13`;
+- upgraded `next` and `eslint-config-next` to `16.2.10`;
+- migrated ESLint config from `FlatCompat` to the native Next flat-config exports;
+- fixed Next 16 route-wrapper compatibility by making alias cron routes export `dynamic = "force-dynamic"` directly instead of re-exporting route segment config;
+- fixed React compiler lint findings:
+  - theme toggles now initialize from DOM state lazily instead of setting state synchronously in mount effects;
+  - currency toggle initializes from local storage lazily;
+  - MediaHub distribution chart precomputes donut slices without mutating render-local cursor state;
+- removed unused `dedupeKey` helper from MediaHub RSS ingestion.
+
+Verification status after the pass:
+
+- `npm run test`: 24 test files, 132 tests passed;
+- `npm run lint`: passed;
+- `npm run build`: passed on Next `16.2.10`;
+- `npm audit --audit-level=moderate`: only the upstream Next bundled `postcss@8.4.31` advisory remains. The app also has top-level `postcss@8.5.16`, but Next currently vendors its own copy under `node_modules/next/node_modules/postcss`. The documented `npm audit fix --force` path would downgrade Next and is not acceptable.
+
+Residual risks and follow-up:
+
+- Turbopack emits an NFT tracing warning for `src/lib/media-hub-manual-materials.ts` because PDF preview extraction uses server-only filesystem and child-process operations (`pdftotext`/`pdftoppm`) in MediaHub ingestion routes. Build succeeds, but this path should be split so upload extraction helpers are isolated from cron/reporting hot paths.
+- The remaining `postcss` audit item should be rechecked when a Next release vendors `postcss >= 8.5.10`; do not apply `npm audit fix --force` because it proposes a breaking downgrade.
+- Production env verification still requires actual deployment secrets (`DATABASE_URL`, cron secrets, Telegram/Resend keys, etc.) and cannot be proven from a clean local shell.

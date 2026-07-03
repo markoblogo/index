@@ -1115,10 +1115,6 @@ function findRecentTitleSlot(slots: Array<{ publishedAt: number; slotKey: string
   )?.slotKey;
 }
 
-function dedupeKey(item: RssNewsItem) {
-  return canonicalizeUrl(item.url) || normalizeTitle(item.title);
-}
-
 function titleWindowKey(titleKey: string, publishedAt: string) {
   return `${titleKey || publishedAt}:${Date.parse(publishedAt) || publishedAt}`;
 }

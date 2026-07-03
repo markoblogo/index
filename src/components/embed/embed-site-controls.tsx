@@ -1,17 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 type Theme = "light" | "dark";
 
 export function EmbedSiteThemeButton() {
-  const [theme, setTheme] = useState<Theme>("light");
-
-  useEffect(() => {
-    const initialTheme =
-      document.documentElement.dataset.theme === "dark" ? "dark" : "light";
-    setTheme(initialTheme);
-  }, []);
+  const [theme, setTheme] = useState<Theme>(() => getDocumentTheme());
 
   function toggleTheme() {
     const nextTheme = theme === "dark" ? "light" : "dark";
@@ -30,6 +24,14 @@ export function EmbedSiteThemeButton() {
       {theme === "dark" ? "☼" : "☾"}
     </button>
   );
+}
+
+function getDocumentTheme(): Theme {
+  if (typeof document === "undefined") {
+    return "light";
+  }
+
+  return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
 }
 
 export function EmbedSiteFullscreenButton({

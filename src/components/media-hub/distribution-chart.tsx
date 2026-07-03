@@ -69,7 +69,6 @@ function DonutChart({
 }) {
   const radius = 40;
   const strokeWidth = 15;
-  let cursor = 0;
 
   if (total <= 0) {
     return (
@@ -92,6 +91,16 @@ function DonutChart({
     );
   }
 
+  const slices = distribution.reduce<Array<DistributionSlice & { end: number; start: number }>>(
+    (acc, slice) => {
+      const previous = acc.at(-1)?.end ?? 0;
+      const end = previous + slice.value;
+      acc.push({ ...slice, end, start: previous });
+      return acc;
+    },
+    [],
+  );
+
   return (
     <svg
       aria-label="Source distribution"
@@ -101,10 +110,9 @@ function DonutChart({
       role="img"
       viewBox="0 0 100 100"
     >
-      {distribution.map((slice) => {
-        const start = (cursor / total) * 360;
-        cursor += slice.value;
-        const end = (cursor / total) * 360;
+      {slices.map((slice) => {
+        const start = (slice.start / total) * 360;
+        const end = (slice.end / total) * 360;
         const isFullCircle = end - start >= 359.99;
 
         if (isFullCircle) {
