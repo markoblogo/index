@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { Locale } from "@/lib/i18n";
+import { fetchWithTimeout } from "@/lib/fetch-timeout";
 import type { MediaHubWindowSnapshot } from "@/lib/media-hub";
 import type { MediaHubManualMaterialDigest } from "@/lib/media-hub-manual-materials";
 import { buildMediaHubReportPrompt } from "@/lib/media-hub-report-prompts";
@@ -23,6 +24,8 @@ type GenerationResult = {
   error?: string;
   report?: MediaHubLocalizedReport;
 };
+
+const OPENAI_REPORT_TIMEOUT_MS = 60_000;
 
 export async function generateMediaHubLlmReports(input: {
   kind: MediaHubReportKind;
@@ -129,19 +132,19 @@ async function callResponsesApi(input: {
     requestBody.tools = [{ type: "web_search_preview" }];
   }
 
-  let response = await fetch("https://api.openai.com/v1/responses", {
+  let response = await fetchWithTimeout("https://api.openai.com/v1/responses", {
     body: JSON.stringify(requestBody),
     headers: openAiHeaders(input.apiKey),
     method: "POST",
-  });
+  }, OPENAI_REPORT_TIMEOUT_MS);
 
   if (!response.ok && useWebSearch) {
     delete requestBody.tools;
-    response = await fetch("https://api.openai.com/v1/responses", {
+    response = await fetchWithTimeout("https://api.openai.com/v1/responses", {
       body: JSON.stringify(requestBody),
       headers: openAiHeaders(input.apiKey),
       method: "POST",
-    });
+    }, OPENAI_REPORT_TIMEOUT_MS);
   }
 
   if (!response.ok) {
@@ -159,7 +162,7 @@ async function callChatCompletionsApi(input: {
   model: string;
   prompt: string;
 }): Promise<GenerationResult> {
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+  const response = await fetchWithTimeout("https://api.openai.com/v1/chat/completions", {
     body: JSON.stringify({
       max_tokens: getMaxOutputTokens(input.kind),
       messages: [
@@ -178,7 +181,7 @@ async function callChatCompletionsApi(input: {
     }),
     headers: openAiHeaders(input.apiKey),
     method: "POST",
-  });
+  }, OPENAI_REPORT_TIMEOUT_MS);
 
   if (!response.ok) {
     return { error: await safeOpenAiResponseError(response) };

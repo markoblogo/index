@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { fetchWithTimeout } from "@/lib/fetch-timeout";
 import {
   buildRequestRateLimitKey,
   consumeRequestRateLimit,
@@ -6,6 +7,7 @@ import {
 
 const MAX_FIELD_LENGTH = 4000;
 const CONTACT_RATE_LIMIT = { limit: 5, windowMs: 10 * 60 * 1000 };
+const CONTACT_EMAIL_TIMEOUT_MS = 15_000;
 
 export async function POST(request: Request) {
   const rateLimit = consumeRequestRateLimit(
@@ -56,7 +58,7 @@ export async function POST(request: Request) {
   const resourceLabel = cleanField(process.env.PLATFORM_CONTACT_RESOURCE_LABEL ?? "1d3x");
   const replyTo = email;
 
-  const response = await fetch("https://api.resend.com/emails", {
+  const response = await fetchWithTimeout("https://api.resend.com/emails", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -85,7 +87,7 @@ export async function POST(request: Request) {
         `<p>${escapeHtml(message).replace(/\n/g, "<br />")}</p>`,
       ].join(""),
     }),
-  });
+  }, CONTACT_EMAIL_TIMEOUT_MS);
 
   if (!response.ok) {
     return NextResponse.json(

@@ -16,6 +16,7 @@ import {
   listReportWorkspaceResources,
   renderReportTelegramTemplate,
 } from "@/lib/report-workspace";
+import { fetchWithTimeout } from "@/lib/fetch-timeout";
 import type { MediaHubEvidenceItem } from "@/lib/media-hub-evidence";
 import { getActiveRespondentCountData } from "@/lib/respondent-directory-lazy";
 import { getDailyTelegramDigest } from "@/lib/telegram-source-collector";
@@ -39,6 +40,8 @@ type GenerateOptions = {
 
 const BRIEF_KIND = "daily_market_brief";
 const PROVIDER = "openai";
+const OPENAI_BRIEF_TIMEOUT_MS = 45_000;
+const TELEGRAM_DELIVERY_TIMEOUT_MS = 15_000;
 let storageReady: Promise<void> | null = null;
 
 export async function getPublishedAiMarketBrief({
@@ -377,7 +380,7 @@ export async function sendAiBriefTelegramSummary(
     localized.telegramTemplate,
     latestData,
   );
-  const response = await fetch(
+  const response = await fetchWithTimeout(
     `https://api.telegram.org/bot${botToken}/sendMessage`,
     {
       body: JSON.stringify({
@@ -389,6 +392,7 @@ export async function sendAiBriefTelegramSummary(
       headers: { "Content-Type": "application/json" },
       method: "POST",
     },
+    TELEGRAM_DELIVERY_TIMEOUT_MS,
   );
 
   if (!response.ok) {
@@ -517,7 +521,7 @@ async function callOpenAiBrief(
     input.locale === "uk"
       ? "Write every public text value in Ukrainian only. Keep commodity codes, price units, and proper nouns as needed, but all explanations, bullets, labels, and sentences must be Ukrainian."
       : "Write every public text value in English only. Keep commodity codes, price units, and proper nouns as needed, but all explanations, bullets, labels, and sentences must be English.";
-  const response = await fetch("https://api.openai.com/v1/responses", {
+  const response = await fetchWithTimeout("https://api.openai.com/v1/responses", {
     body: JSON.stringify({
       input: [
         {
@@ -538,7 +542,7 @@ async function callOpenAiBrief(
       "Content-Type": "application/json",
     },
     method: "POST",
-  });
+  }, OPENAI_BRIEF_TIMEOUT_MS);
 
   if (!response.ok) {
     throw new Error(

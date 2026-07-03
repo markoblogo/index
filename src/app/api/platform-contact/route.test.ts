@@ -27,6 +27,8 @@ describe("platform contact route", () => {
     expect(responses[5].status).toBe(429);
     expect(responses[5].headers.get("retry-after")).toBeTruthy();
     expect(fetchMock).toHaveBeenCalledTimes(5);
+    const init = fetchMock.mock.calls[0]?.[1] as RequestInit | undefined;
+    expect(init?.signal).toBeInstanceOf(AbortSignal);
   });
 });
 
