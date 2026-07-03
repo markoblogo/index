@@ -226,6 +226,7 @@ Implemented fixes:
   - `@prisma/dev@0.24.14`;
   - `esbuild@^0.28.1`;
   - `@hono/node-server@^1.19.13`;
+- expanded the production environment checker into a project-aware preflight for `1d3x`, `spike-ua-index` and `uga-index`, including critical cron/webhook/WhatsApp/tenant-mode validation without printing secret values;
 - upgraded `next` and `eslint-config-next` to `16.2.10`;
 - migrated ESLint config from `FlatCompat` to the native Next flat-config exports;
 - fixed Next 16 route-wrapper compatibility by making alias cron routes export `dynamic = "force-dynamic"` directly instead of re-exporting route segment config;

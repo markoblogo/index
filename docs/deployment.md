@@ -26,25 +26,34 @@ cat .vercel/project.json
 vercel link --yes --project <project-name> --scope abvcreative
 ```
 
-3. Deploy to production of the linked project:
+3. Run the project-specific production environment preflight against the env
+   you are about to use:
+
+```bash
+npm run check:production-env -- --project spike-ua-index
+npm run check:production-env -- --project uga-index
+npm run check:production-env -- --project 1d3x
+```
+
+4. Deploy to production of the linked project:
 
 ```bash
 vercel --prod
 ```
 
-4. Verify the production URL points to the expected deployment:
+5. Verify the production URL points to the expected deployment:
 
 ```bash
 vercel inspect https://<current-deployment-url>
 ```
 
-5. Validate by cURL against the tenant route:
+6. Validate by cURL against the tenant route:
 
 ```bash
 curl -L https://spike-ua.cr0pto.com/en/about | rg -o "Spot-Market Handbook|Download PDF"
 ```
 
-6. In browser, always hard-reload with cache bypass (`Ctrl/Cmd+Shift+R`) after release.
+7. In browser, always hard-reload with cache bypass (`Ctrl/Cmd+Shift+R`) after release.
 
 ### Common failure mode to avoid
 
