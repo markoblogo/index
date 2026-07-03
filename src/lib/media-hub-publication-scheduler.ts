@@ -247,12 +247,16 @@ export async function runDueMediaHubPublication(options: {
       locale: isPlatformSite() ? "en" : "uk",
       })
       : { skippedReason: "site_only", status: "skipped" as const };
+    const whatsapp = !isPlatformSite()
+      ? await sendMediaHubReportWhatsAppForKind("daily", plan.date)
+      : { skippedReason: "platform_whatsapp_disabled", status: "skipped" as const };
 
     return {
       plan: { ...plan, kind },
       result: {
         report,
         telegram,
+        whatsapp,
         status: "daily_media_hub_report_persisted",
       },
     };
@@ -267,6 +271,9 @@ export async function runDueMediaHubPublication(options: {
         locale: isPlatformSite() ? "en" : "uk",
       })
       : { skippedReason: "site_only", status: "skipped" as const };
+    const whatsapp = !isPlatformSite()
+      ? await sendMediaHubReportWhatsAppForKind("weekly", plan.date)
+      : { skippedReason: "platform_whatsapp_disabled", status: "skipped" as const };
 
     return {
       plan: { ...plan, kind },
@@ -274,6 +281,7 @@ export async function runDueMediaHubPublication(options: {
         report,
         status: "weekly_media_hub_processed",
         telegram,
+        whatsapp,
       },
     };
   }
@@ -305,6 +313,121 @@ export async function runDueMediaHubPublication(options: {
       status: "skipped",
     },
   };
+}
+
+export async function sendMediaHubReportWhatsAppForKind(
+  kind: Exclude<MediaHubPublicationKind, "none">,
+  periodEndDate: string,
+) {
+  if (!hasDatabaseUrl()) {
+    return { skippedReason: "database_not_configured", status: "skipped" as const };
+  }
+
+  const tenantId = getActiveIndexConfig().id;
+  const report = await getMediaHubReport(kind, periodEndDate, tenantId);
+  if (!report) {
+    return { skippedReason: "report_not_found", status: "skipped" as const };
+  }
+  if (report.status === "needs_review") {
+    return { skippedReason: "evidence_validation_needs_review", status: "skipped" as const };
+  }
+
+  const content = parseMediaHubReportContent(report.contentJson);
+  if (!content) {
+    return { skippedReason: "report_content_invalid", status: "skipped" as const };
+  }
+
+  return sendMediaHubReportWhatsApp({
+    content,
+    kind,
+    locale: "en",
+    periodEndDate,
+    tenant: "spike",
+  });
+}
+
+async function sendMediaHubReportWhatsApp(input: {
+  content: MediaHubReportContentJson;
+  kind: Exclude<MediaHubPublicationKind, "none">;
+  locale: Locale;
+  periodEndDate: string;
+  tenant: "spike" | "platform";
+}) {
+  if (input.tenant !== "spike") {
+    return { skippedReason: "whatsapp_only_enabled_for_spike", status: "skipped" as const };
+  }
+
+  if (process.env.SSI_WHATSAPP_ENABLED !== "1") {
+    return { skippedReason: "whatsapp_disabled", status: "skipped" as const };
+  }
+
+  const webhookUrl = process.env.SSI_WHATSAPP_WEBHOOK_URL?.trim();
+  const secret = process.env.SSI_WHATSAPP_WEBHOOK_SECRET?.trim();
+  const groupId = process.env.SSI_WHATSAPP_TARGET_GROUP_ID?.trim();
+  const groupName = process.env.SSI_WHATSAPP_TARGET_GROUP_NAME?.trim();
+
+  if (!webhookUrl || !secret || (!groupId && !groupName)) {
+    return { skippedReason: "whatsapp_not_configured", status: "skipped" as const };
+  }
+
+  const latestData = input.kind === "daily" ? await getPublicLatestData() : [];
+  const text = buildMediaHubTelegramMessages({
+    content: input.content,
+    kind: input.kind,
+    latestData,
+    locale: input.locale,
+    periodEndDate: input.periodEndDate,
+    tenant: input.tenant,
+  }).map(convertTelegramHtmlToWhatsAppText).join("\n\n").trim();
+
+  if (!text) {
+    return { skippedReason: "whatsapp_empty_message", status: "skipped" as const };
+  }
+
+  const response = await fetch(webhookUrl, {
+    body: JSON.stringify({ groupId, groupName, text }),
+    headers: {
+      "Authorization": `Bearer ${secret}`,
+      "Content-Type": "application/json",
+    },
+    method: "POST",
+  });
+  const payloadText = await response.text();
+
+  if (!response.ok) {
+    return { error: payloadText, status: "failed" as const };
+  }
+
+  return { response: safeJson(payloadText), status: "sent" as const };
+}
+
+function convertTelegramHtmlToWhatsAppText(value: string) {
+  return decodeBasicHtmlEntities(
+    value
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<\/b>/gi, "*")
+      .replace(/<b>/gi, "*")
+      .replace(/<\/i>/gi, "_")
+      .replace(/<i>/gi, "_")
+      .replace(/<[^>]+>/g, ""),
+  );
+}
+
+function decodeBasicHtmlEntities(value: string) {
+  return value
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+}
+
+function safeJson(value: string) {
+  try {
+    return JSON.parse(value) as unknown;
+  } catch {
+    return value;
+  }
 }
 
 export async function publishMediaHubSnapshotReport(
@@ -1248,7 +1371,7 @@ function formatShortTelegramDate(date: string) {
   return `${day}.${month}.${year?.slice(-2)}`;
 }
 
-function buildMediaHubTelegramMessages(input: {
+export function buildMediaHubTelegramMessages(input: {
   content: MediaHubReportContentJson;
   kind: Exclude<MediaHubPublicationKind, "none">;
   latestData: PublicLatestItem[];

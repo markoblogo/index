@@ -23,7 +23,8 @@
     "provision:uga-admin": "node scripts/provision-uga-admin.mjs",
     "provision:spike-manual-respondents": "tsx scripts/provision-spike-manual-respondents.ts",
     "audit:respondent": "tsx scripts/respondent-telegram-audit.ts",
-    "monitor:respondent-telegram": "tsx scripts/respondent-telegram-healthcheck.ts"
+    "monitor:respondent-telegram": "tsx scripts/respondent-telegram-healthcheck.ts",
+    "whatsapp:worker": "node scripts/whatsapp-worker.mjs"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -33,9 +34,12 @@
     "@prisma/client": "^7.8.0",
     "next": "^15.3.0",
     "pg": "^8.20.0",
+    "qrcode": "^1.5.4",
+    "qrcode-terminal": "^0.12.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "telegram": "^2.26.22",
+    "whatsapp-web.js": "^1.34.7",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
