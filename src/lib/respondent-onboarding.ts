@@ -167,18 +167,24 @@ export async function handleRespondentTelegramStart(update: unknown) {
     locale: updatedContact.preferredLocale === "en" ? "en" : "uk",
     respondentId: updatedContact.respondentId,
   });
+  const authForTelegramStart = updatedContact.respondent.authAccount
+    ? {
+        loginEmail: updatedContact.respondent.authAccount.loginEmail,
+        passwordSetupStatus: updatedContact.respondent.authAccount.passwordSetupStatus,
+        temporaryPassword: updatedContact.respondent.authAccount.temporaryPassword,
+      }
+    : null;
+  const credentials = buildTelegramTemporaryCredentialsBlock(
+    authForTelegramStart,
+    updatedContact.preferredLocale === "en" ? "en" : "uk",
+  );
   const welcomeText = alreadyLinkedToSameChat
     ? buildSpikeTelegramAlreadyLinkedText({
         companyName: updatedContact.respondent.legalName,
+        credentials,
       })
     : buildTelegramStartText({
-        auth: updatedContact.respondent.authAccount
-          ? {
-              loginEmail: updatedContact.respondent.authAccount.loginEmail,
-              passwordSetupStatus: updatedContact.respondent.authAccount.passwordSetupStatus,
-              temporaryPassword: updatedContact.respondent.authAccount.temporaryPassword,
-            }
-          : null,
+        auth: authForTelegramStart,
         companyName: updatedContact.respondent.legalName,
         locale: updatedContact.preferredLocale === "en" ? "en" : "uk",
       });
@@ -637,9 +643,17 @@ export function buildSpikeTelegramStartText({
   ].join("\n");
 }
 
-export function buildSpikeTelegramAlreadyLinkedText({ companyName }: { companyName: string }) {
+export function buildSpikeTelegramAlreadyLinkedText({
+  companyName,
+  credentials = [],
+}: {
+  companyName: string;
+  credentials?: string[];
+}) {
   return [
     `Ви вже підключені до SPIKE SPOT INDEX для ${companyName}.`,
+    "",
+    ...credentials,
     "Натисніть кнопку нижче, щоб відкрити форму цін.",
   ].join("\n");
 }
