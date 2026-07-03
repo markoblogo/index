@@ -7,8 +7,41 @@ vi.mock("@/lib/db", () => ({
   hasDatabaseUrl: () => false,
 }));
 vi.mock("@/lib/index-platform", () => ({
+  getCommodityCategory: (commodity: { category?: string }) => commodity.category ?? "all-seasons",
   getActiveIndexConfig: () => ({
-    commodities: [],
+    commodities: [
+      {
+        category: "all-seasons",
+        code: "CORN",
+        dbCode: "CORN",
+        group: "export",
+        id: "corn",
+        name: { en: "Corn", uk: "Кукурудза" },
+        shortName: { en: "Corn", uk: "Кукурудза" },
+        sortOrder: 1,
+      },
+      {
+        category: "all-seasons",
+        code: "WHT_115",
+        dbCode: "WHT_115",
+        group: "export",
+        id: "milling-wheat",
+        name: { en: "Milling Wheat", uk: "Продовольча пшениця" },
+        shortName: { en: "Milling Wheat", uk: "Продовольча пшениця" },
+        sortOrder: 2,
+      },
+      {
+        category: "processors",
+        code: "GMO_SOY",
+        dbCode: "GMO_SOY",
+        group: "processing",
+        id: "gmo-soybean",
+        name: { en: "GMO soybean", uk: "Соя ГМО" },
+        shortName: { en: "GMO soybean", uk: "Соя ГМО" },
+        sortOrder: 7,
+        vatIncluded: true,
+      },
+    ],
     deliveryBases: [{ code: "CPT_ODESSA", basketCode: "EXPORT" }],
     id: "spike-ua",
     legalName: { en: "Spike", uk: "Spike" },
@@ -192,5 +225,99 @@ describe("media hub publication scheduler", () => {
     expect(text).not.toContain("*📊 Spot Index Ukraine*");
     expect(text).not.toContain("д/д");
     expect(text).not.toContain("т/т");
+  });
+
+  it("keeps SSI daily WhatsApp in the short English format when saved dailyReports are absent", () => {
+    const [html] = __mediaHubPublicationSchedulerTestHooks.buildMediaHubWhatsAppMessages({
+      content: {
+        generatedAt: "2026-07-03T16:10:00.000Z",
+        kind: "daily",
+        localized: {
+          en: {
+            summary: [
+              "Ukraine fieldwork and harvesting remain central for domestic grain price formation.",
+              "CBOT futures moved lower on broad global macro pressure.",
+            ],
+            title: "Daily report",
+          },
+        },
+        periodEndDate: "2026-07-03",
+        periodStartDate: "2026-07-03",
+        summary: [],
+        title: "SPIKE SPOT INDEX · daily report",
+        totals: { items: 0, sources: 0, windows: 0 },
+        windows: [],
+      },
+      kind: "daily",
+      latestData: [
+        {
+          basis: "CPT Odesa, Ukraine (export)",
+          changeAbs: -2,
+          changePct: -0.9,
+          commodityCode: "CORN",
+          commodityId: "corn",
+          commodityNameEn: "Corn",
+          commodityNameUk: "Кукурудза",
+          date: "2026-07-03",
+          respondents: 4,
+          valueUsdPerMt: 210,
+        },
+        {
+          basis: "CPT Crush, Ukraine (processing)",
+          changeAbs: 0,
+          changePct: 0,
+          commodityCode: "GMO_SOY",
+          commodityId: "gmo-soybean",
+          commodityNameEn: "GMO soybean",
+          commodityNameUk: "Соя ГМО",
+          date: "2026-07-03",
+          respondents: 3,
+          valueUsdPerMt: 459,
+        },
+      ],
+      locale: "en",
+      periodEndDate: "2026-07-03",
+      tenant: "spike",
+    });
+    const text = __mediaHubPublicationSchedulerTestHooks.convertTelegramHtmlToWhatsAppText(html);
+
+    expect(text).toContain("🇺🇦 *SPIKE SPOT INDEX UKRAINE* · *03.07.26*");
+    expect(text).toContain("* Corn – 210$ (-2$)");
+    expect(text).toContain("* Soybeans GMO 37pro – 459$ incl. VAT (0$)");
+    expect(text).toContain("📰 *MARKET OVERVIEW*");
+    expect(text).toContain("Ukraine fieldwork and harvesting");
+    expect(text).not.toContain("daily report");
+    expect(text).not.toContain("*📊 Spot Index Ukraine*");
+    expect(text).not.toContain("д/д");
+  });
+
+  it("filters SSI weekly WhatsApp overview to Ukraine-focused market context", () => {
+    const html = __mediaHubPublicationSchedulerTestHooks.buildSsiNonDailyWhatsAppText(
+      "2026-07-04",
+      "weekly",
+      {
+        generatedAt: "2026-07-04T12:00:00.000Z",
+        kind: "weekly",
+        localized: {
+          en: {
+            summary: [
+              "Ukraine harvesting progress and port logistics shaped grain price expectations.",
+              "Brazil soybean exports accelerated on stronger China demand.",
+            ],
+            title: "Weekly report",
+          },
+        },
+        periodEndDate: "2026-07-04",
+        periodStartDate: "2026-06-29",
+        summary: [],
+        title: "Weekly report",
+        totals: { items: 0, sources: 0, windows: 0 },
+        windows: [],
+      },
+    );
+    const text = __mediaHubPublicationSchedulerTestHooks.convertTelegramHtmlToWhatsAppText(html);
+
+    expect(text).toContain("Ukraine harvesting progress and port logistics");
+    expect(text).not.toContain("Brazil soybean exports");
   });
 });

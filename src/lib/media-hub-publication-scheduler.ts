@@ -431,14 +431,15 @@ function buildMediaHubWhatsAppMessages(input: {
   tenant: "spike" | "platform";
 }) {
   if (input.tenant === "spike" && input.kind === "daily") {
-    const dailyReport = input.content.dailyReports?.en ?? input.content.dailyReports?.uk;
-    if (dailyReport) {
-      return [buildSsiDailyWhatsAppText(
-        input.periodEndDate,
-        dailyReport,
-        input.content.localized?.en?.summary ?? [],
-      )];
-    }
+    const dailyReport =
+      input.content.dailyReports?.en ??
+      input.content.dailyReports?.uk ??
+      buildSsiDailyWhatsAppFallbackReport(input.content, input.latestData, input.periodEndDate);
+    return [buildSsiDailyWhatsAppText(
+      input.periodEndDate,
+      dailyReport,
+      input.content.localized?.en?.summary ?? [],
+    )];
   }
 
   if (input.tenant === "spike" && (input.kind === "weekly" || input.kind === "monthly")) {
@@ -449,6 +450,28 @@ function buildMediaHubWhatsAppMessages(input: {
     normalizeSsiWhatsAppFooter(input.tenant, message),
   );
   return input.kind === "daily" ? [messages.join("\n\n")] : messages;
+}
+
+function buildSsiDailyWhatsAppFallbackReport(
+  content: MediaHubReportContentJson,
+  latestData: PublicLatestItem[],
+  periodEndDate: string,
+) {
+  const localized = content.localized?.en;
+  const fallbackSummary = dedupeNonEmpty([
+    ...(localized?.summary ?? []),
+    ...content.summary,
+    ...content.windows.flatMap((window) => window.summaryBody),
+  ]);
+
+  return buildSsiDailyReportView({
+    historyData: [],
+    latestData,
+    locale: "en",
+    localizedSummary: fallbackSummary,
+    localizedTitle: localized?.title || content.title,
+    periodEndDate,
+  });
 }
 
 function buildSsiDailyWhatsAppText(
@@ -517,6 +540,7 @@ function buildSsiNonDailyWhatsAppText(
   const summary = content.localized?.en?.summary ?? content.summary ?? [];
   const overview = dedupeNonEmpty(summary.map((item) => normalizeSsiWhatsAppMarketSentence(item)))
     .filter((item) => item.length > 0)
+    .filter((item) => isUkraineFocusedWhatsAppMarketSentence(item))
     .slice(0, 10);
   const lines = [
     `🇺🇦 <b>SPIKE SPOT INDEX UKRAINE</b> · <b>${escapeHtml(title)}</b> · <b>${escapeHtml(formatShortTelegramDate(periodEndDate))}</b>`,
@@ -627,24 +651,27 @@ function buildSsiDailyWhatsAppMarketOverview(
   newsSection: MediaHubDailyReportView["newsSection"],
   englishSummary: string[],
 ) {
-  const ukrainePattern = /\b(Ukraine|Ukrainian|Odesa|Odessa|Black Sea|Danube|CPT|FCA|Chop|harvest|harvesting|sowing|planting|fieldwork|field work|crop|export|port|processing|domestic|farm|plant|crush|logistics)\b/i;
   const fieldworkPattern = /\b(harvest|harvesting|sowing|planting|fieldwork|field work|crop progress|winter crop|spring crop)\b/i;
   const preferredThemeIds = ["key_signals", "grains", "oilseeds", "processing", "logistics"];
   const summaryItems = englishSummary
     .map((item) => normalizeSsiWhatsAppMarketSentence(item))
-    .filter((item) => item.length > 0 && ukrainePattern.test(item));
+    .filter((item) => item.length > 0 && isUkraineFocusedWhatsAppMarketSentence(item));
   const items = newsSection.themes
     .filter((theme) => preferredThemeIds.includes(theme.id))
     .flatMap((theme) => theme.items)
     .map((item) => normalizeSsiWhatsAppMarketSentence(item))
     .filter((item) => item.length > 0);
-  const focused = items.filter((item) => ukrainePattern.test(item));
+  const focused = items.filter((item) => isUkraineFocusedWhatsAppMarketSentence(item));
   const base = dedupeNonEmpty(summaryItems.length > 0 ? summaryItems : focused.length > 0 ? focused : items);
   const fieldwork = dedupeNonEmpty([...summaryItems, ...focused, ...items]).find((item) => fieldworkPattern.test(item));
   const enriched = fieldwork && !base.includes(fieldwork) ? [fieldwork, ...base] : base;
   return enriched
     .filter((item) => !/\b(USDA|CBOT|Euronext|MATIF)\b/i.test(item) || /\bUkraine|Ukrainian\b/i.test(item))
     .slice(0, 4);
+}
+
+function isUkraineFocusedWhatsAppMarketSentence(value: string) {
+  return /\b(Ukraine|Ukrainian|Odesa|Odessa|Black Sea|Danube|CPT|FCA|Chop|harvest|harvesting|sowing|planting|fieldwork|field work|crop|export|port|processing|domestic|farm|plant|crush|logistics)\b/i.test(value);
 }
 
 function normalizeSsiWhatsAppMarketSentence(value: string) {
@@ -1625,6 +1652,7 @@ function formatShortTelegramDate(date: string) {
 }
 
 export const __mediaHubPublicationSchedulerTestHooks = {
+  buildMediaHubWhatsAppMessages,
   buildSsiDailyWhatsAppText,
   buildSsiNonDailyWhatsAppText,
   convertTelegramHtmlToWhatsAppText,
