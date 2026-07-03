@@ -117,8 +117,10 @@ describe("requestPasswordReset", () => {
       from?: string;
       reply_to?: string;
     };
+    const init = fetchMock.mock.calls[0]?.[1] as RequestInit | undefined;
     expect(payload.from).toBe("UGA Index <security@uga.ua>");
     expect(payload.reply_to).toBe("support@uga.ua");
+    expect(init?.signal).toBeInstanceOf(AbortSignal);
     expect(auditLogCreate).toHaveBeenCalledWith({
       data: expect.objectContaining({
         action: "auth.password_reset_email_sent",

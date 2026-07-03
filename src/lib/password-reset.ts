@@ -9,11 +9,13 @@ import {
   type SessionSourceUser,
 } from "@/lib/demo-auth";
 import { SITE_CONFIG } from "@/lib/constants";
+import { fetchWithTimeout } from "@/lib/fetch-timeout";
 import { isSpikeAdminEmail } from "@/lib/spike-admin-access";
 import { setPermanentPasswordForUser } from "@/lib/password-setup";
 import type { Locale } from "@/lib/i18n";
 
 const PASSWORD_RESET_TTL_MS = 1000 * 60 * 60 * 2;
+const PASSWORD_RESET_EMAIL_TIMEOUT_MS = 15_000;
 
 type PasswordResetTarget = {
   email: string;
@@ -367,7 +369,7 @@ export async function sendPasswordResetEmail({
     .join("");
 
   try {
-    const response = await fetch("https://api.resend.com/emails", {
+    const response = await fetchWithTimeout("https://api.resend.com/emails", {
       body: JSON.stringify({
         from: getPasswordResetSender(),
         html,
@@ -381,7 +383,7 @@ export async function sendPasswordResetEmail({
         "Content-Type": "application/json",
       },
       method: "POST",
-    });
+    }, PASSWORD_RESET_EMAIL_TIMEOUT_MS);
     const payload = (await response.json().catch(() => ({}))) as {
       id?: string;
       message?: string;

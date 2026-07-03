@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { allowMockFallback, db, hasDatabaseUrl } from "@/lib/db";
+import { fetchWithTimeout } from "@/lib/fetch-timeout";
 import {
   getRespondentDirectoryData,
   getRespondentEmailScheduleData,
@@ -8,6 +9,8 @@ import {
 } from "@/lib/respondent-directory-lazy";
 
 type SendTrigger = "manual" | "scheduled";
+
+const EMAIL_DELIVERY_TIMEOUT_MS = 15_000;
 
 type DeliveryResult = {
   email: string;
@@ -125,7 +128,7 @@ async function sendRespondentEmail({
 
   try {
     const surveyUrl = await getRecipientSurveyUrl(schedule, recipient);
-    const response = await fetch("https://api.resend.com/emails", {
+    const response = await fetchWithTimeout("https://api.resend.com/emails", {
       body: JSON.stringify({
         from: schedule.sender,
         html: renderHtmlEmail(schedule, recipient, surveyUrl),
@@ -139,7 +142,7 @@ async function sendRespondentEmail({
         "Content-Type": "application/json",
       },
       method: "POST",
-    });
+    }, EMAIL_DELIVERY_TIMEOUT_MS);
     const payload = (await response.json().catch(() => ({}))) as {
       id?: string;
       message?: string;

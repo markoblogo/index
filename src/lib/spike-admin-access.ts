@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { db, hasDatabaseUrl } from "@/lib/db";
+import { fetchWithTimeout } from "@/lib/fetch-timeout";
 
 export type SpikeAdminUser = {
   email: string;
@@ -20,6 +21,8 @@ export type SpikeAdminInviteResult = {
     | "skipped_no_email_provider"
     | "updated";
 };
+
+const ADMIN_INVITE_EMAIL_TIMEOUT_MS = 15_000;
 
 export const SPIKE_ADMIN_USERS: SpikeAdminUser[] = [
   {
@@ -201,7 +204,7 @@ async function sendSpikeAdminInvite({
     "SPIKE SPOT INDEX <onboarding@resend.dev>";
 
   try {
-    const response = await fetch("https://api.resend.com/emails", {
+    const response = await fetchWithTimeout("https://api.resend.com/emails", {
       body: JSON.stringify({
         from: sender,
         html: message.html,
@@ -215,7 +218,7 @@ async function sendSpikeAdminInvite({
         "Content-Type": "application/json",
       },
       method: "POST",
-    });
+    }, ADMIN_INVITE_EMAIL_TIMEOUT_MS);
     const payload = (await response.json().catch(() => ({}))) as {
       id?: string;
       message?: string;

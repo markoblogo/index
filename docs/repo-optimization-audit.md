@@ -226,6 +226,7 @@ Implemented fixes:
 - extended the same hashed request limiter to password reset completion and password setup POST endpoints to reduce token/password brute-force attempts;
 - added an abort timeout to the legacy Last30Days JSON MediaHub source so one slow external JSON endpoint cannot stall report-source collection;
 - added a shared external fetch timeout helper and applied it to OpenAI report/brief generation, AI Telegram delivery and Resend contact delivery calls;
+- extended the shared external fetch timeout to Resend respondent schedule, respondent onboarding, password reset and Spike admin invite emails;
 - added npm overrides for vulnerable transitive tooling packages:
   - `@prisma/dev@0.24.14`;
   - `esbuild@^0.28.1`;

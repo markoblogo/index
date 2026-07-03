@@ -2,6 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { db, hasDatabaseUrl } from "@/lib/db";
 import { SITE_CONFIG } from "@/lib/constants";
+import { fetchWithTimeout } from "@/lib/fetch-timeout";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import {
   createRespondentTelegramSurveyUrl,
@@ -17,6 +18,8 @@ type OnboardingContact = {
   telegramChatId: string | null;
   telegramUsername: string | null;
 };
+
+const ONBOARDING_EMAIL_TIMEOUT_MS = 15_000;
 
 type OnboardingRespondent = {
   id: string;
@@ -281,7 +284,7 @@ async function sendRespondentOnboardingEmail({
     telegramDeepLink: telegramLink.deepLink,
     temporaryPassword: auth.temporaryPassword ?? "",
   });
-  const response = await fetch("https://api.resend.com/emails", {
+  const response = await fetchWithTimeout("https://api.resend.com/emails", {
     body: JSON.stringify({
       from: getOnboardingSender(),
       html: message.html,
@@ -295,7 +298,7 @@ async function sendRespondentOnboardingEmail({
       "Content-Type": "application/json",
     },
     method: "POST",
-  });
+  }, ONBOARDING_EMAIL_TIMEOUT_MS);
   const payload = (await response.json().catch(() => ({}))) as {
     id?: string;
     message?: string;
