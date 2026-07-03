@@ -172,6 +172,13 @@ export async function handleRespondentTelegramStart(update: unknown) {
         companyName: updatedContact.respondent.legalName,
       })
     : buildTelegramStartText({
+        auth: updatedContact.respondent.authAccount
+          ? {
+              loginEmail: updatedContact.respondent.authAccount.loginEmail,
+              passwordSetupStatus: updatedContact.respondent.authAccount.passwordSetupStatus,
+              temporaryPassword: updatedContact.respondent.authAccount.temporaryPassword,
+            }
+          : null,
         companyName: updatedContact.respondent.legalName,
         locale: updatedContact.preferredLocale === "en" ? "en" : "uk",
       });
@@ -348,6 +355,13 @@ async function sendRespondentLinkedTelegramWelcome({
     respondentId: respondent.id,
   });
   const text = buildTelegramStartText({
+    auth: auth.temporaryPassword
+      ? {
+          loginEmail: auth.loginEmail,
+          passwordSetupStatus: "temporary",
+          temporaryPassword: auth.temporaryPassword,
+        }
+      : null,
     companyName: respondent.legalName,
     locale: contact.preferredLocale,
   });
@@ -443,20 +457,28 @@ function buildOnboardingEmailMessage({
 }
 
 function buildTelegramStartText({
+  auth,
   companyName,
   locale,
 }: {
+  auth?: {
+    loginEmail: string;
+    passwordSetupStatus: string;
+    temporaryPassword: string | null;
+  } | null;
   companyName: string;
   locale: "uk" | "en";
 }) {
+  const credentials = buildTelegramTemporaryCredentialsBlock(auth, locale);
   if (SITE_CONFIG.tenantId === "spike-ua") {
-    return buildSpikeTelegramStartText({ companyName });
+    return buildSpikeTelegramStartText({ companyName, credentials });
   }
 
   if (locale === "en") {
     return [
       `You are connected to ${SITE_CONFIG.name} for ${companyName}.`,
       "",
+      ...credentials,
       "Open your personal form and submit the first daily prices. Starting next workday, Telegram reminders will arrive here automatically.",
     ].join("\n");
   }
@@ -464,8 +486,46 @@ function buildTelegramStartText({
   return [
     `Вас підключено до ${SITE_CONFIG.name} для ${companyName}.`,
     "",
+    ...credentials,
     "Відкрийте персональну форму і зробіть перше щоденне подання цін. Починаючи з наступного робочого дня, нагадування в Telegram приходитимуть сюди автоматично.",
   ].join("\n");
+}
+
+function buildTelegramTemporaryCredentialsBlock(
+  auth: {
+    loginEmail: string;
+    passwordSetupStatus: string;
+    temporaryPassword: string | null;
+  } | null | undefined,
+  locale: "uk" | "en",
+) {
+  if (
+    !auth ||
+    auth.passwordSetupStatus !== "temporary" ||
+    !auth.temporaryPassword
+  ) {
+    return [];
+  }
+
+  if (locale === "en") {
+    return [
+      "Website access:",
+      `Login: ${auth.loginEmail}`,
+      `Temporary password: ${auth.temporaryPassword}`,
+      "",
+      "After first sign-in, set a permanent password.",
+      "",
+    ];
+  }
+
+  return [
+    "Дані для входу на сайт:",
+    `Логін: ${auth.loginEmail}`,
+    `Тимчасовий пароль: ${auth.temporaryPassword}`,
+    "",
+    "Після першого входу встановіть постійний пароль.",
+    "",
+  ];
 }
 
 export function buildSpikeRespondentOnboardingEmailMessage({
@@ -548,12 +608,19 @@ export function buildSpikeRespondentOnboardingEmailMessage({
   return { html, subject, text };
 }
 
-export function buildSpikeTelegramStartText({ companyName }: { companyName: string }) {
+export function buildSpikeTelegramStartText({
+  companyName,
+  credentials = [],
+}: {
+  companyName: string;
+  credentials?: string[];
+}) {
   return [
     `Вітаємо! Telegram підключено до SPIKE SPOT INDEX для ${companyName}.`,
     "",
     "SPIKE SPOT INDEX — незалежний бенчмарк спотових цін аграрного ринку України.",
     "",
+    ...credentials,
     "Що буде далі:",
     "✅ З понеділка по п’ятницю після 17:00 бот надсилатиме персональну форму для внесення цін.",
     "✅ Заповнення займає близько 1 хвилини.",
