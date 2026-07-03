@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 
 import { isCronRequestAuthorized } from "@/lib/cron-auth";
 import { db } from "@/lib/db";
+import { fetchWithTimeout } from "@/lib/fetch-timeout";
 import {
   MN7R_MONITOR_RESPONDENT_ID,
   SPIKE_ADMIN_FALLBACK_RESPONDENT_ID,
@@ -11,6 +12,9 @@ import { syncIndexPositionDirectoryTx } from "@/lib/position-directory-sync";
 import { sendRespondentTelegramNotifications } from "@/lib/respondent-telegram";
 
 export const dynamic = "force-dynamic";
+
+const SETUP_EMAIL_TIMEOUT_MS = 15_000;
+const SETUP_TELEGRAM_TIMEOUT_MS = 15_000;
 
 const fopSolovey = {
   id: "fop-solovey",
@@ -483,7 +487,7 @@ async function sendOnboardingEmail(temporaryPassword: string) {
   const siteUrl =
     process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
     "https://spike-ua.cr0pto.com";
-  const response = await fetch("https://api.resend.com/emails", {
+  const response = await fetchWithTimeout("https://api.resend.com/emails", {
     body: JSON.stringify({
       from: "SPIKE SPOT INDEX <onboarding@resend.dev>",
       html: `
@@ -510,7 +514,7 @@ async function sendOnboardingEmail(temporaryPassword: string) {
       "Content-Type": "application/json",
     },
     method: "POST",
-  });
+  }, SETUP_EMAIL_TIMEOUT_MS);
 
   if (!response.ok) {
     throw new Error(
@@ -542,7 +546,7 @@ async function sendOnboardingTelegram(temporaryPassword: string) {
     "Після встановлення власного пароля надалі входьте саме з ним.",
   ].join("\n");
 
-  const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+  const response = await fetchWithTimeout(`https://api.telegram.org/bot${token}/sendMessage`, {
     body: JSON.stringify({
       chat_id: fopSolovey.telegramChatId,
       reply_markup: {
@@ -559,7 +563,7 @@ async function sendOnboardingTelegram(temporaryPassword: string) {
     }),
     headers: { "Content-Type": "application/json" },
     method: "POST",
-  });
+  }, SETUP_TELEGRAM_TIMEOUT_MS);
   const payload = (await response.json().catch(() => ({}))) as {
     description?: string;
     ok?: boolean;
