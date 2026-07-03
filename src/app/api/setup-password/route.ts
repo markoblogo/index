@@ -9,10 +9,33 @@ import {
   parseDemoSessionCookieValue,
 } from "@/lib/demo-auth";
 import { setPermanentPasswordForUser } from "@/lib/password-setup";
+import {
+  buildRequestRateLimitKey,
+  consumeRequestRateLimit,
+} from "@/lib/request-rate-limit";
+
+const PASSWORD_SETUP_RATE_LIMIT = { limit: 8, windowMs: 15 * 60 * 1000 };
 
 export async function POST(request: NextRequest) {
   const formData = await request.formData();
   const setupSession = String(formData.get("setupSession") ?? "");
+  const setupRateLimit = consumeRequestRateLimit(
+    buildRequestRateLimitKey(
+      request,
+      "password-setup",
+      setupSession || request.cookies.get(DEMO_SESSION_COOKIE)?.value || "",
+    ),
+    PASSWORD_SETUP_RATE_LIMIT,
+  );
+  if (!setupRateLimit.allowed) {
+    const setupUrl = new URL("/setup-password", request.url);
+    setupUrl.searchParams.set("error", "rate_limited");
+    const response = NextResponse.redirect(setupUrl, 303);
+    response.headers.set("Cache-Control", "no-store");
+    response.headers.set("Retry-After", String(setupRateLimit.retryAfterSeconds));
+    return response;
+  }
+
   const user =
     parseDemoSessionCookieValue(request.cookies.get(DEMO_SESSION_COOKIE)?.value) ??
     parseDemoSessionCookieValue(setupSession) ??

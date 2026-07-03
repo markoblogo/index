@@ -223,6 +223,7 @@ Implemented fixes:
 - wrapped public latest/history API routes with structured `503` responses and `Cache-Control: no-store` on data-loading failures, preventing generic uncaught 500s from being cached by edge/CDN layers;
 - disabled public AI market-brief auto-repair by default so public GET traffic cannot trigger OpenAI spend unless `SPIKE_AI_BRIEF_PUBLIC_AUTO_REPAIR=1` is explicitly enabled;
 - added a shared hashed in-memory request rate limiter and applied it to public contact and password-reset request endpoints, reducing email/workflow spam risk while avoiding storage of raw IP/email keys;
+- extended the same hashed request limiter to password reset completion and password setup POST endpoints to reduce token/password brute-force attempts;
 - added npm overrides for vulnerable transitive tooling packages:
   - `@prisma/dev@0.24.14`;
   - `esbuild@^0.28.1`;
