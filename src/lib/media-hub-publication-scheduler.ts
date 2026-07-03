@@ -513,7 +513,7 @@ function buildSsiNonDailyWhatsAppText(
   kind: "weekly" | "monthly",
   content: MediaHubReportContentJson,
 ) {
-  const title = kind === "weekly" ? "WEEKLY MARKET REPORT" : "MONTHLY MARKET REPORT";
+  const title = kind === "weekly" ? "WEEKLY REPORT" : "MONTHLY REPORT";
   const summary = content.localized?.en?.summary ?? content.summary ?? [];
   const overview = dedupeNonEmpty(summary.map((item) => normalizeSsiWhatsAppMarketSentence(item)))
     .filter((item) => item.length > 0)
@@ -607,15 +607,15 @@ function formatSsiDailyWhatsAppCommodityName(
   if (normalized.includes("FEED_WHT") || normalized.includes("FEED") || normalized.includes("ФУРАЖ")) return "Feed Wheat";
   if (normalized.includes("CORN") || normalized.includes("КУКУРУД")) return "Corn";
   if (normalized.includes("SUNFLOWER") || normalized.includes("СОНЯШ")) return "Sunflower 48% oil";
+  if (normalized.includes("RAPESEED") || normalized.includes("РІПАК")) {
+    if (mode === "processing") return "Rapeseed NGMO 48% oil";
+    return isChop ? "Rapeseed NGMO 40% oil" : "Rapeseed NGMO 42% oil";
+  }
   if (normalized.includes("SOYBEAN_NON_GMO") || normalized.includes("NON-GMO") || normalized.includes("NGMO") || normalized.includes("СОЯ НЕ")) {
     return "Soybeans NGMO 33pro";
   }
   if (normalized.includes("GMO_SOY") || normalized.includes("GMO SOY") || normalized.includes("СОЯ ГМО")) {
     return mode === "processing" ? "Soybeans GMO 37pro" : "Soybeans GMO 33pro";
-  }
-  if (normalized.includes("RAPESEED") || normalized.includes("РІПАК")) {
-    if (mode === "processing") return "Rapeseed NGMO 48% oil";
-    return isChop ? "Rapeseed NGMO 40% oil" : "Rapeseed NGMO 42% oil";
   }
   return name
     .replace(/\s+CPT Port$/i, "")
@@ -627,7 +627,8 @@ function buildSsiDailyWhatsAppMarketOverview(
   newsSection: MediaHubDailyReportView["newsSection"],
   englishSummary: string[],
 ) {
-  const ukrainePattern = /\b(Ukraine|Ukrainian|Odesa|Odessa|Black Sea|Danube|CPT|FCA|Chop|harvest|sowing|planting|field|crop|export|port|processing|domestic|farm|plant|crush|logistics)\b/i;
+  const ukrainePattern = /\b(Ukraine|Ukrainian|Odesa|Odessa|Black Sea|Danube|CPT|FCA|Chop|harvest|harvesting|sowing|planting|fieldwork|field work|crop|export|port|processing|domestic|farm|plant|crush|logistics)\b/i;
+  const fieldworkPattern = /\b(harvest|harvesting|sowing|planting|fieldwork|field work|crop progress|winter crop|spring crop)\b/i;
   const preferredThemeIds = ["key_signals", "grains", "oilseeds", "processing", "logistics"];
   const summaryItems = englishSummary
     .map((item) => normalizeSsiWhatsAppMarketSentence(item))
@@ -638,13 +639,25 @@ function buildSsiDailyWhatsAppMarketOverview(
     .map((item) => normalizeSsiWhatsAppMarketSentence(item))
     .filter((item) => item.length > 0);
   const focused = items.filter((item) => ukrainePattern.test(item));
-  return dedupeNonEmpty(summaryItems.length > 0 ? summaryItems : focused.length > 0 ? focused : items).slice(0, 4);
+  const base = dedupeNonEmpty(summaryItems.length > 0 ? summaryItems : focused.length > 0 ? focused : items);
+  const fieldwork = dedupeNonEmpty([...summaryItems, ...focused, ...items]).find((item) => fieldworkPattern.test(item));
+  const enriched = fieldwork && !base.includes(fieldwork) ? [fieldwork, ...base] : base;
+  return enriched
+    .filter((item) => !/\b(USDA|CBOT|Euronext|MATIF)\b/i.test(item) || /\bUkraine|Ukrainian\b/i.test(item))
+    .slice(0, 4);
 }
 
 function normalizeSsiWhatsAppMarketSentence(value: string) {
   return value
     .replace(/\bUSD\s*\/\s*(?:t|mt|tonne|ton)\b/gi, "$")
     .replace(/\bUSD\/t\b/gi, "$")
+    .replace(/\$\s*\/\s*(?:t|mt|tonne|ton)\b/gi, "$")
+    .replace(/\bUAH\s*\/\s*(?:t|mt|tonne|ton)\b/gi, "₴")
+    .replace(/\bEUR\s*\/\s*(?:t|mt|tonne|ton)\b/gi, "€")
+    .replace(/^\s*(?:🔎|🌾|🌻|🏭|🚚|⚖️|🌍|📰)\s*/u, "")
+    .replace(/^Main signals\s*:?/i, "")
+    .replace(/^Market overview\s*:?/i, "")
+    .replace(/^Ukraine market overview\s*:?/i, "")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -1610,6 +1623,12 @@ function formatShortTelegramDate(date: string) {
   const [year, month, day] = date.split("-");
   return `${day}.${month}.${year?.slice(-2)}`;
 }
+
+export const __mediaHubPublicationSchedulerTestHooks = {
+  buildSsiDailyWhatsAppText,
+  buildSsiNonDailyWhatsAppText,
+  convertTelegramHtmlToWhatsAppText,
+};
 
 export function buildMediaHubTelegramMessages(input: {
   content: MediaHubReportContentJson;

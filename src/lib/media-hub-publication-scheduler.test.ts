@@ -20,6 +20,7 @@ vi.mock("@/lib/platform-site", () => ({
 }));
 
 import {
+  __mediaHubPublicationSchedulerTestHooks,
   getMediaHubMonitoringPlan,
   getMediaHubPublicationPlan,
   isMediaHubPublicationDue,
@@ -91,5 +92,105 @@ describe("media hub publication scheduler", () => {
     expect(normalizeMediaHubTelegramChatId("4847957467")).toBe("-1004847957467");
     expect(normalizeMediaHubTelegramChatId("-1004847957467")).toBe("-1004847957467");
     expect(normalizeMediaHubTelegramChatId("353706900")).toBe("353706900");
+  });
+
+  it("renders SSI daily WhatsApp as a short English Ukraine-focused market update", () => {
+    const html = __mediaHubPublicationSchedulerTestHooks.buildSsiDailyWhatsAppText(
+      "2026-07-03",
+      {
+        indexSection: {
+          groups: [
+            {
+              id: "all_season",
+              items: [
+                {
+                  basis: "CPT Odesa, Ukraine (export)",
+                  commodityCode: "CORN",
+                  dayChange: -2,
+                  name: "Corn",
+                  previousFridayChange: -3,
+                  value: 210,
+                  vatIncluded: false,
+                },
+                {
+                  basis: "CPT Odesa, Ukraine (export)",
+                  commodityCode: "WHT_115",
+                  dayChange: -1,
+                  name: "Milling Wheat",
+                  previousFridayChange: -6,
+                  value: 207,
+                  vatIncluded: false,
+                },
+              ],
+              title: "GRAINS EXPORT",
+            },
+            {
+              id: "seasonal",
+              items: [
+                {
+                  basis: "FCA Chop, Ukraine (export)",
+                  commodityCode: "RAPESEED_NON_GMO_FCA_CHOP",
+                  dayChange: -5,
+                  name: "Rapeseed non-GMO FCA Chop",
+                  previousFridayChange: 0,
+                  value: 565,
+                  vatIncluded: false,
+                },
+              ],
+              title: "OILSEEDS EXPORT",
+            },
+            {
+              id: "processing",
+              items: [
+                {
+                  basis: "CPT Crush, Ukraine (processing)",
+                  commodityCode: "GMO_SOY",
+                  dayChange: 0,
+                  name: "GMO soybean",
+                  previousFridayChange: -33,
+                  value: 459,
+                  vatIncluded: true,
+                },
+              ],
+              title: "OILSEEDS CRUSH",
+            },
+          ],
+          title: "Spot Index Ukraine",
+        },
+        newsSection: {
+          themes: [
+            {
+              id: "grains",
+              items: [
+                "Ukraine harvest progress remains the key driver for wheat and corn price formation.",
+                "Brazil corn exports were active but outside the Ukraine-focused brief.",
+              ],
+              title: "Grains",
+            },
+          ],
+        },
+      },
+      [
+        "Ukraine fieldwork and harvest progress remain central for grain market pricing.",
+        "CBOT wheat futures moved lower without a direct Ukraine price signal.",
+      ],
+    );
+    const text = __mediaHubPublicationSchedulerTestHooks.convertTelegramHtmlToWhatsAppText(html);
+
+    expect(text).toContain("🇺🇦 *SPIKE SPOT INDEX UKRAINE* · *03.07.26*");
+    expect(text).toContain("🌎 *EXPORT MARKET*");
+    expect(text).toContain("*CPT Odesa, Ukraine*");
+    expect(text).toContain("* Corn – 210$ (-2$)");
+    expect(text).toContain("* Wheat 11.5pro – 207$ (-1$)");
+    expect(text).toContain("* Rapeseed NGMO 40% oil – 565$ (-5$)");
+    expect(text).toContain("🏭 *PROCESSING MARKET*");
+    expect(text).toContain("* Soybeans GMO 37pro – 459$ incl. VAT (0$)");
+    expect(text).toContain("📰 *MARKET OVERVIEW*");
+    expect(text).toContain("Ukraine fieldwork and harvest progress");
+    expect(text).toContain("🔗 _Powered by 1D3X Platform_ · https://spike.1d3x.com/");
+    expect(text).not.toContain("daily report");
+    expect(text).not.toContain("*📊 Spot Index Ukraine*");
+    expect(text).not.toContain("д/д");
+    expect(text).not.toContain("т/т");
   });
 });
