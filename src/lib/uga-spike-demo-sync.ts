@@ -1,4 +1,5 @@
 import { db, hasDatabaseUrl } from "@/lib/db";
+import { fetchWithTimeout } from "@/lib/fetch-timeout";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import {
   getDeliveryBasketCodeForCommodityCode,
@@ -41,6 +42,7 @@ const allowedCommodityCodes = new Set([
 ]);
 
 const excludedCommodityIds = new Set(["sunflower"]);
+const SPIKE_PUBLIC_API_TIMEOUT_MS = 15_000;
 
 export async function syncUgaDemoIndicesFromSpike({
   mode = "history",
@@ -122,13 +124,13 @@ async function fetchSpikePublicIndexData(
     `/api/public/${mode === "latest" ? "latest" : "history"}`,
     normalizeBaseUrl(sourceBaseUrl),
   );
-  const response = await fetch(endpoint, {
+  const response = await fetchWithTimeout(endpoint, {
     cache: "no-store",
     headers: {
       accept: "application/json",
       "user-agent": "UGA-Index-demo-sync/1.0",
     },
-  });
+  }, SPIKE_PUBLIC_API_TIMEOUT_MS);
 
   if (!response.ok) {
     throw new Error(
