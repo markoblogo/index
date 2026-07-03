@@ -7,7 +7,7 @@ export function isCronRequestAuthorized(
   );
 
   if (expectedSecrets.length === 0) {
-    return true;
+    return false;
   }
 
   const authHeader = request.headers.get("authorization");
