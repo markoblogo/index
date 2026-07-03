@@ -21,16 +21,29 @@ const baselineSecurityHeaders = [
     value: "camera=(), microphone=(), geolocation=(), payment=()",
   },
 ];
+const defaultImageRemoteHosts = [
+  "1d3x.com",
+  "spike.1d3x.com",
+  "uga.1d3x.com",
+  "cdn.jsdelivr.net",
+  "raw.githubusercontent.com",
+  "github.com",
+];
+
+export function buildImageRemotePatterns(extraHosts = process.env.NEXT_IMAGE_ALLOWED_HOSTS) {
+  return [...new Set([...defaultImageRemoteHosts, ...parseImageRemoteHosts(extraHosts)])]
+    .map((hostname) => ({
+      hostname,
+      protocol: "https" as const,
+    }));
+}
 
 const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
   },
   images: {
-    remotePatterns: [
-      { hostname: "**", protocol: "https" },
-      { hostname: "**", protocol: "http" },
-    ],
+    remotePatterns: buildImageRemotePatterns(),
   },
   async headers() {
     const frameAncestors = allowedEmbedOrigins.includes("'self'")
@@ -65,3 +78,28 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+
+function parseImageRemoteHosts(value: string | undefined) {
+  return (value ?? "")
+    .split(",")
+    .map((item) => normalizeImageRemoteHost(item))
+    .filter((item): item is string => Boolean(item));
+}
+
+function normalizeImageRemoteHost(value: string) {
+  const trimmed = value.trim().toLowerCase();
+  if (!trimmed) return "";
+
+  try {
+    if (/^https?:\/\//i.test(trimmed)) {
+      return new URL(trimmed).hostname;
+    }
+  } catch {
+    return "";
+  }
+
+  const host = trimmed.split("/")[0];
+  if (!/^[a-z0-9.*-]+$/.test(host)) return "";
+  if (host === "**" || host === "*") return "";
+  return host;
+}

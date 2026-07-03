@@ -217,6 +217,7 @@ Implemented fixes:
 - added unit coverage for cron/admin bearer-token authorization and centralized admin Bearer auth in the shared fail-closed helper;
 - switched shared cron/admin/webhook secret comparison to timing-safe string comparison and made Telegram MediaHub/respondent webhooks fail closed when their webhook secret is missing;
 - added baseline security headers across all routes (`X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`) while keeping embed-specific CSP/frame rules separate;
+- narrowed `next/image` remote host policy from arbitrary `http/https` hosts to known HTTPS asset domains plus explicit `NEXT_IMAGE_ALLOWED_HOSTS` overrides;
 - expanded MediaHub manual-material URL safety checks to block localhost, single-label intranet hosts, private IPv4 ranges, link-local metadata IPs and private/link-local IPv6 targets before server-side fetching;
 - moved MediaHub PDF extraction's `child_process`/filesystem dependencies behind lazy imports so cron/API route tracing no longer pulls the whole project into the Turbopack NFT list;
 - wrapped public latest/history API routes with structured `503` responses and `Cache-Control: no-store` on data-loading failures, preventing generic uncaught 500s from being cached by edge/CDN layers;
