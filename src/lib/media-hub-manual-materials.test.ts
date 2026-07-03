@@ -29,6 +29,7 @@ const {
   extractMaterialContent,
   extractUrlsFromText,
   getMediaHubManualMaterialPeriod,
+  isUnsafeMaterialUrl,
   parseMediaHubMaterialHashtags,
 } = __mediaHubManualMaterialTestHooks;
 const {
@@ -82,6 +83,22 @@ describe("media hub manual materials", () => {
       "https://example.com/a",
       "https://example.org/b",
     ]);
+  });
+
+  it("blocks local, private and link-local material URLs", () => {
+    expect(isUnsafeMaterialUrl("https://example.com/report.pdf")).toBe(false);
+    expect(isUnsafeMaterialUrl("http://localhost/report.pdf")).toBe(true);
+    expect(isUnsafeMaterialUrl("http://metadata.localhost/report.pdf")).toBe(true);
+    expect(isUnsafeMaterialUrl("http://internal/report.pdf")).toBe(true);
+    expect(isUnsafeMaterialUrl("http://127.0.0.1/report.pdf")).toBe(true);
+    expect(isUnsafeMaterialUrl("http://0.0.0.0/report.pdf")).toBe(true);
+    expect(isUnsafeMaterialUrl("http://10.0.0.5/report.pdf")).toBe(true);
+    expect(isUnsafeMaterialUrl("http://172.16.0.5/report.pdf")).toBe(true);
+    expect(isUnsafeMaterialUrl("http://192.168.1.5/report.pdf")).toBe(true);
+    expect(isUnsafeMaterialUrl("http://169.254.169.254/latest/meta-data")).toBe(true);
+    expect(isUnsafeMaterialUrl("http://[::1]/report.pdf")).toBe(true);
+    expect(isUnsafeMaterialUrl("http://[fe80::1]/report.pdf")).toBe(true);
+    expect(isUnsafeMaterialUrl("http://[fc00::1]/report.pdf")).toBe(true);
   });
 
   it("calculates weekly and monthly reporting periods", () => {

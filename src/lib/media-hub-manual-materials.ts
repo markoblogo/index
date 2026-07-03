@@ -1225,12 +1225,22 @@ function isUnsafeMaterialUrl(value: string) {
   try {
     const url = new URL(value);
     const host = url.hostname.toLowerCase();
-    return host === "localhost" ||
+    const normalizedHost = host.replace(/^\[|\]$/g, "");
+    return normalizedHost === "localhost" ||
+      normalizedHost.endsWith(".localhost") ||
+      !normalizedHost.includes(".") && !normalizedHost.includes(":") ||
+      normalizedHost === "0.0.0.0" ||
+      normalizedHost === "127.0.0.1" ||
+      normalizedHost === "::" ||
+      normalizedHost === "::1" ||
+      /^fc[0-9a-f]*:/i.test(normalizedHost) ||
+      /^fd[0-9a-f]*:/i.test(normalizedHost) ||
+      normalizedHost.startsWith("fe80:") ||
+      /^169\.254\./.test(normalizedHost) ||
       host === "127.0.0.1" ||
-      host === "::1" ||
-      /^10\./.test(host) ||
-      /^192\.168\./.test(host) ||
-      /^172\.(1[6-9]|2\d|3[0-1])\./.test(host);
+      /^10\./.test(normalizedHost) ||
+      /^192\.168\./.test(normalizedHost) ||
+      /^172\.(1[6-9]|2\d|3[0-1])\./.test(normalizedHost);
   } catch {
     return true;
   }
@@ -1360,5 +1370,6 @@ export const __mediaHubManualMaterialTestHooks = {
   extractMaterialContent,
   extractUrlsFromText,
   getMediaHubManualMaterialPeriod,
+  isUnsafeMaterialUrl,
   parseMediaHubMaterialHashtags,
 };
