@@ -371,7 +371,7 @@ async function sendMediaHubReportWhatsApp(input: {
   }
 
   const latestData = input.kind === "daily" ? await getPublicLatestData() : [];
-  const text = buildMediaHubTelegramMessages({
+  const text = buildMediaHubWhatsAppMessages({
     content: input.content,
     kind: input.kind,
     latestData,
@@ -420,6 +420,204 @@ function decodeBasicHtmlEntities(value: string) {
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'");
+}
+
+function buildMediaHubWhatsAppMessages(input: {
+  content: MediaHubReportContentJson;
+  kind: Exclude<MediaHubPublicationKind, "none">;
+  latestData: PublicLatestItem[];
+  locale: Locale;
+  periodEndDate: string;
+  tenant: "spike" | "platform";
+}) {
+  if (input.tenant === "spike" && input.kind === "daily") {
+    const dailyReport = input.content.dailyReports?.en;
+    if (dailyReport) {
+      return [buildSsiDailyWhatsAppText(input.periodEndDate, dailyReport)];
+    }
+  }
+
+  const messages = buildMediaHubTelegramMessages(input).map((message) =>
+    normalizeSsiWhatsAppFooter(input.tenant, message),
+  );
+  return input.kind === "daily" ? [messages.join("\n\n")] : messages;
+}
+
+function buildSsiDailyWhatsAppText(periodEndDate: string, dailyReport: MediaHubDailyReportView) {
+  const indexSection = dailyReport.indexSection;
+  const lines = [
+    `🇺🇦 <b>SPIKE SPOT INDEX UKRAINE</b> · <b>${escapeHtml(formatShortTelegramDate(periodEndDate))}</b>`,
+  ];
+
+  if (indexSection) {
+    const exportItems = indexSection.groups
+      .filter((group) => group.id !== "processing")
+      .flatMap((group) => group.items)
+      .filter((item) => item.value !== null && shouldShowSsiWhatsAppExportItem(item));
+    const processingItems = indexSection.groups
+      .find((group) => group.id === "processing")
+      ?.items.filter((item) => item.value !== null) ?? [];
+
+    if (exportItems.length > 0) {
+      lines.push(
+        "",
+        "-----------------------------",
+        "🌎 <b>EXPORT MARKET</b>",
+        ...renderSsiDailyWhatsAppBasisBlock(exportItems, "export"),
+      );
+    }
+
+    if (processingItems.length > 0) {
+      lines.push(
+        "",
+        "-----------------------------",
+        "🏭 <b>PROCESSING MARKET</b>",
+        ...renderSsiDailyWhatsAppBasisBlock(processingItems, "processing"),
+      );
+    }
+  }
+
+  const newsItems = buildSsiDailyWhatsAppMarketOverview(dailyReport.newsSection);
+  if (newsItems.length > 0) {
+    lines.push(
+      "",
+      "-----------------------------",
+      "📰 <b>MARKET OVERVIEW</b>",
+      ...newsItems.map((item) => `* ${escapeHtml(item)}`),
+    );
+  }
+
+  lines.push(
+    "",
+    "-----------------------------",
+    "🔗 <i>Powered by 1D3X Platform</i> · https://spike.1d3x.com/",
+  );
+
+  return lines.join("\n");
+}
+
+function renderSsiDailyWhatsAppBasisBlock(
+  items: NonNullable<MediaHubDailyReportView["indexSection"]>["groups"][number]["items"],
+  mode: "export" | "processing",
+) {
+  const byBasis = new Map<string, typeof items>();
+  for (const item of items) {
+    const bucket = byBasis.get(item.basis) ?? [];
+    bucket.push(item);
+    byBasis.set(item.basis, bucket);
+  }
+
+  const sortedEntries = [...byBasis.entries()].sort(([a], [b]) => {
+    const aRank = /FCA/i.test(a) ? 2 : /Crush|processing|завод/i.test(a) ? 3 : 1;
+    const bRank = /FCA/i.test(b) ? 2 : /Crush|processing|завод/i.test(b) ? 3 : 1;
+    return aRank - bRank;
+  });
+
+  return sortedEntries.flatMap(([basis, basisItems]) => [
+    "",
+    `<b>${escapeHtml(formatSsiDailyWhatsAppBasis(basis, mode))}</b>`,
+    ...sortSsiWhatsAppItems(basisItems).map((item) => {
+      const vat = item.vatIncluded ? " incl. VAT" : "";
+      return `* ${escapeHtml(formatSsiDailyWhatsAppCommodityName(item.name, item.commodityCode, item.basis, mode))} – ${formatWholeValueCurrency(item.value)}${vat} (${formatWholeSignedCurrency(item.dayChange)})`;
+    }),
+  ]);
+}
+
+function shouldShowSsiWhatsAppExportItem(
+  item: NonNullable<MediaHubDailyReportView["indexSection"]>["groups"][number]["items"][number],
+) {
+  const normalized = `${item.commodityCode} ${item.name} ${item.basis}`.toUpperCase();
+  const isChop = normalized.includes("FCA") || normalized.includes("CHOP") || normalized.includes("ЧОП");
+  if (!isChop) return true;
+  return normalized.includes("CORN") || normalized.includes("КУКУРУД") || normalized.includes("RAPESEED") || normalized.includes("РІПАК");
+}
+
+function sortSsiWhatsAppItems(
+  items: NonNullable<MediaHubDailyReportView["indexSection"]>["groups"][number]["items"],
+) {
+  return [...items].sort((a, b) => ssiWhatsAppCommodityRank(a) - ssiWhatsAppCommodityRank(b));
+}
+
+function ssiWhatsAppCommodityRank(
+  item: NonNullable<MediaHubDailyReportView["indexSection"]>["groups"][number]["items"][number],
+) {
+  const normalized = `${item.commodityCode} ${item.name}`.toUpperCase();
+  if (normalized.includes("CORN") || normalized.includes("КУКУРУД")) return 10;
+  if (normalized.includes("WHT_115") || normalized.includes("MILLING") || normalized.includes("ПРОДОВОЛЬЧ")) return 20;
+  if (normalized.includes("FEED_WHT") || normalized.includes("FEED") || normalized.includes("ФУРАЖ")) return 30;
+  if (normalized.includes("GMO_SOY") || normalized.includes("GMO SOY") || normalized.includes("СОЯ ГМО")) return 40;
+  if (normalized.includes("SOYBEAN_NON_GMO") || normalized.includes("NON-GMO") || normalized.includes("NGMO") || normalized.includes("СОЯ НЕ")) return 50;
+  if (normalized.includes("RAPESEED") || normalized.includes("РІПАК")) return 60;
+  if (normalized.includes("SUNFLOWER") || normalized.includes("СОНЯШ")) return 70;
+  return 100;
+}
+
+function formatSsiDailyWhatsAppBasis(basis: string, mode: "export" | "processing") {
+  if (mode === "processing" || /СРТ ЗАВОД|CPT Crush|processing/i.test(basis)) return "CPT Plant, Ukraine";
+  if (/FCA Чоп|FCA Chop|FCA_CHOP|CHOP/i.test(basis)) return "FCA Chop, Ukraine";
+  return "CPT Odesa, Ukraine";
+}
+
+function formatSsiDailyWhatsAppCommodityName(
+  name: string,
+  commodityCode: string,
+  basis: string,
+  mode: "export" | "processing",
+) {
+  const normalized = `${commodityCode} ${name}`.toUpperCase();
+  const isChop = /FCA ЧОП|FCA_CHOP|CHOP/.test(`${basis} ${commodityCode}`.toUpperCase());
+
+  if (normalized.includes("WHT_115") || normalized.includes("MILLING") || normalized.includes("ПРОДОВОЛЬЧ")) return "Wheat 11.5pro";
+  if (normalized.includes("FEED_WHT") || normalized.includes("FEED") || normalized.includes("ФУРАЖ")) return "Feed Wheat";
+  if (normalized.includes("CORN") || normalized.includes("КУКУРУД")) return "Corn";
+  if (normalized.includes("SUNFLOWER") || normalized.includes("СОНЯШ")) return "Sunflower 48% oil";
+  if (normalized.includes("SOYBEAN_NON_GMO") || normalized.includes("NON-GMO") || normalized.includes("NGMO") || normalized.includes("СОЯ НЕ")) {
+    return "Soybeans NGMO 33pro";
+  }
+  if (normalized.includes("GMO_SOY") || normalized.includes("GMO SOY") || normalized.includes("СОЯ ГМО")) {
+    return mode === "processing" ? "Soybeans GMO 37pro" : "Soybeans GMO 33pro";
+  }
+  if (normalized.includes("RAPESEED") || normalized.includes("РІПАК")) {
+    if (mode === "processing") return "Rapeseed NGMO 48% oil";
+    return isChop ? "Rapeseed NGMO 40% oil" : "Rapeseed NGMO 42% oil";
+  }
+  return name
+    .replace(/\s+CPT Port$/i, "")
+    .replace(/\s+FCA Chop$/i, "")
+    .replace(/\s+FCA Чоп$/i, "");
+}
+
+function buildSsiDailyWhatsAppMarketOverview(newsSection: MediaHubDailyReportView["newsSection"]) {
+  const ukrainePattern = /\b(Ukraine|Ukrainian|Odesa|Odessa|Black Sea|Danube|CPT|FCA|Chop|harvest|sowing|planting|field|crop|export|port|processing|domestic)\b/i;
+  const preferredThemeIds = ["key_signals", "grains", "oilseeds", "processing", "logistics"];
+  const items = newsSection.themes
+    .filter((theme) => preferredThemeIds.includes(theme.id))
+    .flatMap((theme) => theme.items)
+    .map((item) => normalizeSsiWhatsAppMarketSentence(item))
+    .filter((item) => item.length > 0);
+  const focused = items.filter((item) => ukrainePattern.test(item));
+  return dedupeNonEmpty(focused.length > 0 ? focused : items).slice(0, 4);
+}
+
+function normalizeSsiWhatsAppMarketSentence(value: string) {
+  return value
+    .replace(/\bUSD\s*\/\s*(?:t|mt|tonne|ton)\b/gi, "$")
+    .replace(/\bUSD\/t\b/gi, "$")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normalizeSsiWhatsAppFooter(tenant: "spike" | "platform", text: string) {
+  if (tenant !== "spike") return text;
+  const lines = text.split("\n");
+  const footerStart = lines.findIndex((line) => line.includes("AI-assisted Media Hub digest"));
+  const body = footerStart >= 0 ? lines.slice(0, footerStart) : lines;
+  return [
+    ...body.filter((line) => !/^<b>Spike Spot Index<\/b>$/.test(line.trim()) && !/^https:\/\/spike\.1d3x\.com\/?$/.test(line.trim())),
+    "",
+    "-----------------------------",
+    "🔗 <i>Powered by 1D3X Platform</i> · https://spike.1d3x.com/",
+  ].join("\n").trim();
 }
 
 function safeJson(value: string) {
