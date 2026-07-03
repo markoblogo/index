@@ -229,6 +229,7 @@ Implemented fixes:
 - extended the shared external fetch timeout to Resend respondent schedule, respondent onboarding, password reset and Spike admin invite emails;
 - extended the shared external fetch timeout to Telegram delivery paths for SSI auto-publish fallback, respondent survey/confirmation messages, MediaHub report publishing and Telegram target smoke tests;
 - extended the shared external fetch timeout to MediaHub Telegram webhook API calls, including `getFile`, file download, bot status/setup calls and access-denied/submission replies;
+- extended the shared external fetch timeout to weekly AI report OpenAI cover/text generation and weekly Telegram `sendPhoto`/`sendMessage` delivery calls;
 - added npm overrides for vulnerable transitive tooling packages:
   - `@prisma/dev@0.24.14`;
   - `esbuild@^0.28.1`;

@@ -3,6 +3,7 @@ import "server-only";
 import { createHash, randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { db, hasDatabaseUrl } from "@/lib/db";
+import { fetchWithTimeout } from "@/lib/fetch-timeout";
 import { createGeneratedMediaAsset } from "@/lib/generated-media-asset";
 import type { Locale } from "@/lib/i18n";
 import { getActiveIndexConfig } from "@/lib/index-platform";
@@ -40,6 +41,10 @@ export type WeeklySourceType =
   | "market_news"
   | "admin_note"
   | "other";
+
+const OPENAI_WEEKLY_REPORT_TIMEOUT_MS = 60_000;
+const OPENAI_WEEKLY_COVER_TIMEOUT_MS = 60_000;
+const TELEGRAM_WEEKLY_DELIVERY_TIMEOUT_MS = 15_000;
 
 export type WeeklySourceScope = "permanent" | "one_off";
 
@@ -668,7 +673,7 @@ export async function generateWeeklyCoverAsset(
   const model = process.env.SPIKE_WEEKLY_COVER_MODEL || "gpt-image-1";
   const quality = process.env.SPIKE_WEEKLY_COVER_QUALITY || "medium";
   const size = process.env.SPIKE_WEEKLY_COVER_SIZE || "1536x1024";
-  const response = await fetch("https://api.openai.com/v1/images/generations", {
+  const response = await fetchWithTimeout("https://api.openai.com/v1/images/generations", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -681,7 +686,7 @@ export async function generateWeeklyCoverAsset(
       quality,
       size,
     }),
-  });
+  }, OPENAI_WEEKLY_COVER_TIMEOUT_MS);
 
   if (!response.ok) {
     const error = await response.text();
@@ -1073,7 +1078,7 @@ export async function generateWeeklyReportDraft(
       : "Write every public value in Ukrainian only. Keep structure concise and professional.";
   if (apiKey) {
     try {
-      const response = await fetch("https://api.openai.com/v1/responses", {
+      const response = await fetchWithTimeout("https://api.openai.com/v1/responses", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${apiKey}`,
@@ -1147,7 +1152,7 @@ export async function generateWeeklyReportDraft(
             },
           ],
         }),
-      });
+      }, OPENAI_WEEKLY_REPORT_TIMEOUT_MS);
 
       if (response.ok) {
         rawAiJson = await response.json();
@@ -1410,7 +1415,7 @@ export async function sendWeeklyReportTelegramNow(
       report.content.blogDraft?.title ||
       report.title
     ).slice(0, 1024);
-    const coverResponse = await fetch(
+    const coverResponse = await fetchWithTimeout(
       `https://api.telegram.org/bot${botToken}/sendPhoto`,
       {
         method: "POST",
@@ -1422,6 +1427,7 @@ export async function sendWeeklyReportTelegramNow(
           photo: coverImageUrl,
         }),
       },
+      TELEGRAM_WEEKLY_DELIVERY_TIMEOUT_MS,
     );
 
     if (!coverResponse.ok) {
@@ -1446,7 +1452,7 @@ export async function sendWeeklyReportTelegramNow(
   }
 
   for (const text of report.content.telegramMessages) {
-    const response = await fetch(
+    const response = await fetchWithTimeout(
       `https://api.telegram.org/bot${botToken}/sendMessage`,
       {
         method: "POST",
@@ -1458,6 +1464,7 @@ export async function sendWeeklyReportTelegramNow(
           text,
         }),
       },
+      TELEGRAM_WEEKLY_DELIVERY_TIMEOUT_MS,
     );
 
     if (!response.ok) {
