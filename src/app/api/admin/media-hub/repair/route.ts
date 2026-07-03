@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { timingSafeEqualString } from "@/lib/cron-auth";
 import { runMediaHubApiMonitoring } from "@/lib/media-hub-api-monitoring";
 import { ingestScheduledMediaHubSources } from "@/lib/media-hub-manual-materials";
 import {
@@ -65,7 +66,7 @@ function isAuthorized(request: Request) {
   if (secrets.length === 0) return false;
 
   const bearer = request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
-  return Boolean(bearer && secrets.includes(bearer));
+  return Boolean(bearer && secrets.some((secret) => timingSafeEqualString(bearer, secret)));
 }
 
 function normalizeDate(value: string | undefined) {

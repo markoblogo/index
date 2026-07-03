@@ -98,6 +98,14 @@ describe("media hub telegram route", () => {
     expect(response.status).toBe(401);
   });
 
+  it("missing webhook secret fails closed", async () => {
+    delete process.env.TELEGRAM_MEDIA_HUB_WEBHOOK_SECRET;
+
+    const response = await postTelegramUpdate(buildMessageUpdate("/start"), "test-secret");
+
+    expect(response.status).toBe(401);
+  });
+
   it("sendMessage failure is logged safely", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     vi.stubGlobal("fetch", vi.fn(async () => new Response("telegram failed", { status: 500 })));

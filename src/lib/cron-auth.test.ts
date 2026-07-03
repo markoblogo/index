@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isCronRequestAuthorized } from "@/lib/cron-auth";
+import { isCronRequestAuthorized, timingSafeEqualString } from "@/lib/cron-auth";
 
 describe("isCronRequestAuthorized", () => {
   it("fails closed when no secret is configured", () => {
@@ -26,5 +26,12 @@ describe("isCronRequestAuthorized", () => {
 
     expect(isCronRequestAuthorized(missing, ["cron-secret"])).toBe(false);
     expect(isCronRequestAuthorized(mismatched, ["cron-secret"])).toBe(false);
+  });
+
+  it("compares secret strings without accepting partial or different-length values", () => {
+    expect(timingSafeEqualString("cron-secret", "cron-secret")).toBe(true);
+    expect(timingSafeEqualString("cron", "cron-secret")).toBe(false);
+    expect(timingSafeEqualString("wrong-secret", "cron-secret")).toBe(false);
+    expect(timingSafeEqualString(null, "cron-secret")).toBe(false);
   });
 });

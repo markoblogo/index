@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
+import { timingSafeEqualString } from "@/lib/cron-auth";
 import { db, hasDatabaseUrl } from "@/lib/db";
 import {
   extractUrlsFromText,
@@ -123,10 +124,10 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const secret = process.env.TELEGRAM_MEDIA_HUB_WEBHOOK_SECRET;
   const provided = request.headers.get("x-telegram-bot-api-secret-token");
-  if (secret && provided !== secret) {
+  if (!secret || !timingSafeEqualString(provided, secret)) {
     safeWarn("media_hub_telegram_webhook_secret_mismatch", {
       hasProvided: Boolean(provided),
-      hasSecret: true,
+      hasSecret: Boolean(secret),
     });
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -653,7 +654,7 @@ function isDiagnosticRequestAuthorized(request: Request) {
       hasHeaderSecret: Boolean(request.headers.get("x-telegram-bot-api-secret-token")),
       hasQuerySecret: Boolean(url.searchParams.get("secret")),
     },
-    ok: provided === configuredSecret,
+    ok: timingSafeEqualString(provided, configuredSecret),
   };
 }
 

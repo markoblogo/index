@@ -215,6 +215,7 @@ Implemented fixes:
 - removed unused `xlsx` dependency; XLSX uploads are currently treated as metadata-only materials and no code imports SheetJS;
 - changed cron/internal shared authorization to fail closed when no secret is configured; previously an empty secret list authorized the request, which made misconfigured cron endpoints unsafe;
 - added unit coverage for cron bearer-token authorization;
+- switched shared cron/admin/webhook secret comparison to timing-safe string comparison and made Telegram MediaHub/respondent webhooks fail closed when their webhook secret is missing;
 - expanded MediaHub manual-material URL safety checks to block localhost, single-label intranet hosts, private IPv4 ranges, link-local metadata IPs and private/link-local IPv6 targets before server-side fetching;
 - wrapped public latest/history API routes with structured `503` responses and `Cache-Control: no-store` on data-loading failures, preventing generic uncaught 500s from being cached by edge/CDN layers;
 - added npm overrides for vulnerable transitive tooling packages:

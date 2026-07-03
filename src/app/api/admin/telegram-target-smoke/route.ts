@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { timingSafeEqualString } from "@/lib/cron-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -88,7 +89,7 @@ function isAuthorized(request: Request) {
     process.env.MEDIA_HUB_SMOKE_TEST_SECRET;
   if (!configured) return false;
   const bearer = request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
-  return bearer === configured;
+  return timingSafeEqualString(bearer, configured);
 }
 
 function normalizeTelegramChatId(value: string) {

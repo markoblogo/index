@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { timingSafeEqualString } from "@/lib/cron-auth";
 import {
   sendMediaHubReportWhatsAppForKind,
   type MediaHubPublicationKind,
@@ -9,7 +10,7 @@ export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
   const headerSecret = request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
   const configuredSecret = process.env.SPIKE_DAILY_CATCHUP_SECRET || process.env.CRON_SECRET;
-  if (!headerSecret || !configuredSecret || headerSecret !== configuredSecret) {
+  if (!headerSecret || !configuredSecret || !timingSafeEqualString(headerSecret, configuredSecret)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

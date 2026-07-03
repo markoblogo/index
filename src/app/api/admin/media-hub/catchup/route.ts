@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { timingSafeEqualString } from "@/lib/cron-auth";
 import { runDueMediaHubPublication } from "@/lib/media-hub-publication-scheduler";
 import { isPlatformSite } from "@/lib/platform-site";
 import { type MediaHubPublicationKind } from "@/lib/media-hub-publication-scheduler";
@@ -70,7 +71,7 @@ function isAuthorized(request: Request) {
   if (secrets.length === 0) return false;
 
   const bearer = request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
-  return Boolean(bearer && secrets.includes(bearer));
+  return Boolean(bearer && secrets.some((secret) => timingSafeEqualString(bearer, secret)));
 }
 
 function normalizeKind(value: string | undefined): MediaHubPublicationKind | undefined {

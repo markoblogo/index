@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { timingSafeEqualString } from "@/lib/cron-auth";
 import { getCurrentDemoUser } from "@/lib/demo-auth";
 import { autoPublishSpikeDailyIndices, formatDateKyiv } from "@/lib/auto-publish";
 import { runDueMediaHubPublication } from "@/lib/media-hub-publication-scheduler";
@@ -24,7 +25,7 @@ export async function POST(request: Request) {
     headerSecret &&
       configuredSecret &&
       configuredSecret.length > 0 &&
-      headerSecret === configuredSecret,
+      timingSafeEqualString(headerSecret, configuredSecret),
   );
 
   if (!hasAdminRole && !hasSecret) {
