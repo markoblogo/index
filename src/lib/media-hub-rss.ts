@@ -556,13 +556,7 @@ async function readLegacyLast30DaysPayload(): Promise<unknown | null> {
   const url = process.env.LAST30DAYS_JSON_URL?.trim();
   if (url) {
     try {
-      const response = await fetch(url, {
-        headers: { accept: "application/json" },
-        next: { revalidate: 600 },
-      });
-      if (response.ok) {
-        return response.json();
-      }
+      return await fetchJsonWithTimeout(url);
     } catch {
       return null;
     }
@@ -577,6 +571,25 @@ async function readLegacyLast30DaysPayload(): Promise<unknown | null> {
     return JSON.parse(await readFile(path, "utf8"));
   } catch {
     return null;
+  }
+}
+
+async function fetchJsonWithTimeout(url: string) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(url, {
+      headers: { accept: "application/json" },
+      next: { revalidate: 600 },
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      return null;
+    }
+    return response.json();
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
@@ -1520,6 +1533,7 @@ export const __mediaHubRssTestHooks = {
   listCorporateMediaHubRssSources,
   normalizeTitle,
   parseBlogHtmlList,
+  readLegacyLast30DaysPayload,
   scoreNews,
   toHostname,
   toRootDomain,

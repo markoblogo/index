@@ -15,6 +15,7 @@ const {
   listCorporateMediaHubRssSources,
   normalizeTitle,
   parseBlogHtmlList,
+  readLegacyLast30DaysPayload,
   scoreNews,
 } = __mediaHubRssTestHooks;
 
@@ -204,5 +205,38 @@ describe("media hub RSS source hygiene", () => {
       "mn7r.bsky.social",
       "at://did:plc:abc/app.bsky.feed.post/3lxyz",
     )).toBe("https://bsky.app/profile/mn7r.bsky.social/post/3lxyz");
+  });
+
+  it("applies an abort signal to legacy Last30Days JSON URL fetches", async () => {
+    const previousUrl = process.env.LAST30DAYS_JSON_URL;
+    const previousPath = process.env.LAST30DAYS_JSON_PATH;
+    process.env.LAST30DAYS_JSON_URL = "https://example.com/last30days.json";
+    delete process.env.LAST30DAYS_JSON_PATH;
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify([{ title: "Ukraine wheat exports", url: "https://example.com/a" }]), {
+        headers: { "content-type": "application/json" },
+        status: 200,
+      }),
+    );
+
+    try {
+      await expect(readLegacyLast30DaysPayload()).resolves.toEqual([
+        { title: "Ukraine wheat exports", url: "https://example.com/a" },
+      ]);
+      const init = fetchMock.mock.calls[0]?.[1] as RequestInit | undefined;
+      expect(init?.signal).toBeInstanceOf(AbortSignal);
+    } finally {
+      fetchMock.mockRestore();
+      if (previousUrl === undefined) {
+        delete process.env.LAST30DAYS_JSON_URL;
+      } else {
+        process.env.LAST30DAYS_JSON_URL = previousUrl;
+      }
+      if (previousPath === undefined) {
+        delete process.env.LAST30DAYS_JSON_PATH;
+      } else {
+        process.env.LAST30DAYS_JSON_PATH = previousPath;
+      }
+    }
   });
 });
