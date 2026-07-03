@@ -235,6 +235,7 @@ Implemented fixes:
 - extended the shared external fetch timeout to MediaHub manual-material OpenAI visual summarization calls;
 - extended the shared external fetch timeout to UGA demo-mode sync reads from the public SPIKE API;
 - extended the shared external fetch timeout to Telegram channel HTML source collection used by report-source collector jobs;
+- added a shared grammY-based Telegram connector for MediaHub/index Telegram work, including `message`/`channel_post` normalization, media/link/caption/forward extraction, `telegram:{chat_id}:{message_id}` idempotency keys, read/post policy checks and outbound `sendMessage`/`sendPhoto`/`sendDocument`/`copyMessage`/`forwardMessage` helpers;
 - added npm overrides for vulnerable transitive tooling packages:
   - `@prisma/dev@0.24.14`;
   - `esbuild@^0.28.1`;

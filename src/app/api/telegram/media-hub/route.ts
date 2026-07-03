@@ -26,6 +26,11 @@ import {
   getMediaHubReportKindLabel,
   parseMediaHubMaterialBotCommand,
 } from "@/lib/media-hub-material-bot";
+import {
+  evaluateTelegramConnectorPolicy,
+  normalizeTelegramUpdate,
+  type TelegramConnectorMessage,
+} from "@/lib/telegram-connector";
 
 export const dynamic = "force-dynamic";
 
@@ -66,7 +71,7 @@ const MEDIA_HUB_BOT_TOKEN_ENV_NAMES = [
 ] as const;
 
 const MEDIA_HUB_ROUTE_PATH = "/api/telegram/media-hub";
-const TELEGRAM_ALLOWED_UPDATES = ["message", "edited_message", "callback_query"] as const;
+const TELEGRAM_ALLOWED_UPDATES = ["message", "edited_message", "channel_post", "edited_channel_post", "callback_query"] as const;
 const MATERIAL_TEXT_MIN_CHARS = 20;
 const MATERIAL_TAG_RE = /(^|\s)#(?:ssi|1d3x|daily|weekly|monthly|source)\b/gi;
 
@@ -151,18 +156,20 @@ export async function POST(request: Request) {
   }
 
   const payload = await request.json().catch(() => null);
+  const normalizedMessage = normalizeTelegramUpdate(payload);
   const message = extractMessage(payload);
-  if (!message) {
+  if (!message || !normalizedMessage) {
     return NextResponse.json({ ok: true, skippedReason: "no_message" });
   }
+  const idempotencyKey = normalizedMessage.idempotencyKey;
 
-  if (!isAllowedMediaHubTelegramSender(message)) {
+  if (!isAllowedMediaHubTelegramSender(message, normalizedMessage)) {
     await sendTelegramText(
       botToken.value,
       String(message.chat.id),
       buildAccessDeniedText(message),
     );
-    return NextResponse.json({ ok: true, skippedReason: "sender_not_allowed" });
+    return NextResponse.json({ idempotencyKey, ok: true, skippedReason: "sender_not_allowed" });
   }
 
   const text = getTelegramTextWithReply(message);
@@ -170,7 +177,7 @@ export async function POST(request: Request) {
   const command = parseMediaHubMaterialBotCommand(message.text);
   if (command) {
     await handleBotCommand(botToken.value, message, command);
-    return NextResponse.json({ command, ok: true });
+    return NextResponse.json({ command, idempotencyKey, ok: true });
   }
 
   const routed = parseMediaHubMaterialHashtags(text);
@@ -195,7 +202,7 @@ export async function POST(request: Request) {
           ? "Матеріал отримано. Надішліть наступним повідомленням теги: #ssi або #1d3x та #weekly/#monthly/#daily."
           : "Матеріал отримано, але тимчасове збереження недоступне. Надішліть матеріал повторно разом із тегами #ssi або #1d3x.",
       );
-      return NextResponse.json({ ok: true, pending });
+      return NextResponse.json({ idempotencyKey, ok: true, pending });
     }
     if (isCorporateGroupMessage && tenantIds.length === 0 && text.trim()) {
       await ingestMediaHubTextMaterial({
@@ -210,12 +217,12 @@ export async function POST(request: Request) {
       });
       if (tenantIds.length === 0) {
         await sendTelegramText(botToken.value, String(message.chat.id), "Матеріал збережено як corporate Telegram unrouted. Додайте #ssi або #1d3x, щоб він автоматично потрапив у відповідний Media Hub report.");
-        return NextResponse.json({ ok: true, skippedReason: "corporate_telegram_unrouted" });
+        return NextResponse.json({ idempotencyKey, ok: true, skippedReason: "corporate_telegram_unrouted" });
       }
     }
     if (tenantIds.length === 0) {
       await sendTelegramText(botToken.value, String(message.chat.id), buildMissingProjectTagText());
-      return NextResponse.json({ ok: true, skippedReason: "missing_tenant_hashtag" });
+      return NextResponse.json({ idempotencyKey, ok: true, skippedReason: "missing_tenant_hashtag" });
     }
   }
 
@@ -231,7 +238,7 @@ export async function POST(request: Request) {
         pending,
         tenantIds,
       });
-      return NextResponse.json({ ok: true, pendingApplied: true, results: pendingResults });
+      return NextResponse.json({ idempotencyKey, ok: true, pendingApplied: true, results: pendingResults });
     }
   }
 
@@ -350,7 +357,7 @@ export async function POST(request: Request) {
     await sendTelegramText(botToken.value, String(message.chat.id), "Матеріал не знайдено. Надішліть текст, цитату, посилання або PDF/XLSX/CSV/TXT файл з #ssi або #1d3x.");
   }
 
-  return NextResponse.json({ ok: true, results });
+  return NextResponse.json({ idempotencyKey, ok: true, results });
 }
 
 async function savePendingTelegramMaterial(message: TelegramMessage, urls: string[]) {
@@ -600,21 +607,35 @@ function extractMessage(update: unknown): TelegramMessage | null {
   if (!update || typeof update !== "object") {
     return null;
   }
-  const candidate = (update as { message?: unknown; edited_message?: unknown }).message ??
-    (update as { edited_message?: unknown }).edited_message;
+  const payload = update as {
+    channel_post?: unknown;
+    edited_channel_post?: unknown;
+    edited_message?: unknown;
+    message?: unknown;
+  };
+  const candidate = payload.message ??
+    payload.channel_post ??
+    payload.edited_message ??
+    payload.edited_channel_post;
   if (!candidate || typeof candidate !== "object") {
     return null;
   }
   return candidate as TelegramMessage;
 }
 
-function isAllowedMediaHubTelegramSender(message: TelegramMessage) {
+function isAllowedMediaHubTelegramSender(
+  message: TelegramMessage,
+  normalizedMessage: Pick<TelegramConnectorMessage, "chatId">,
+) {
   const chatAllowlist = parseAllowlist(process.env.MEDIA_HUB_MATERIAL_ALLOWED_TELEGRAM_CHAT_IDS);
   const userAllowlist = parseAllowlist(process.env.MEDIA_HUB_MATERIAL_ALLOWED_TELEGRAM_USER_IDS);
-  const chatId = String(message.chat.id);
   const userId = message.from?.id ? String(message.from.id) : "";
+  const policy = evaluateTelegramConnectorPolicy(normalizedMessage, {
+    manualApprovalRequired: false,
+    readableChatIds: chatAllowlist,
+  });
 
-  return (chatAllowlist.length === 0 || chatAllowlist.includes(chatId)) &&
+  return policy.readAllowed &&
     (userAllowlist.length === 0 || userAllowlist.includes(userId));
 }
 
