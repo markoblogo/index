@@ -2,6 +2,7 @@ import "server-only";
 
 import { createHash, randomUUID } from "node:crypto";
 import { db, hasDatabaseUrl } from "@/lib/db";
+import { fetchWithTimeout as fetchExternalWithTimeout } from "@/lib/fetch-timeout";
 import type { MediaHubPublicationKind } from "@/lib/media-hub-publication-scheduler";
 
 export type MediaHubManualMaterialKind =
@@ -22,6 +23,8 @@ export type MediaHubManualMaterialSourceType =
   | "scheduled_html";
 
 export type MediaHubManualMaterialTenant = "spike-ua" | "1d3x" | "corporate-unrouted";
+
+const OPENAI_VISUAL_SUMMARY_TIMEOUT_MS = 45_000;
 
 export type MaterialIngestResult = {
   extractionStatus: string;
@@ -928,7 +931,7 @@ async function summarizeVisualAssetWithOpenAi(input: {
   pageNumber?: number;
 }) {
   try {
-    const response = await fetch("https://api.openai.com/v1/responses", {
+    const response = await fetchExternalWithTimeout("https://api.openai.com/v1/responses", {
       body: JSON.stringify({
         input: [{
           content: [
@@ -959,7 +962,7 @@ async function summarizeVisualAssetWithOpenAi(input: {
         "Content-Type": "application/json",
       },
       method: "POST",
-    });
+    }, OPENAI_VISUAL_SUMMARY_TIMEOUT_MS);
     if (!response.ok) {
       return { error: `openai_${response.status}` };
     }

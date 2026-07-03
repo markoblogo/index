@@ -138,6 +138,8 @@ describe("media hub manual materials", () => {
     });
 
     expect(fetch).toHaveBeenCalledWith("https://api.openai.com/v1/responses", expect.any(Object));
+    const init = vi.mocked(fetch).mock.calls[0]?.[1] as RequestInit | undefined;
+    expect(init?.signal).toBeInstanceOf(AbortSignal);
     expect(extraction.assets.some((asset) =>
       asset.assetType === "visual_summary" &&
       asset.visualSummary?.includes("Wheat table"),

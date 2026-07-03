@@ -232,6 +232,7 @@ Implemented fixes:
 - extended the shared external fetch timeout to weekly AI report OpenAI cover/text generation and weekly Telegram `sendPhoto`/`sendMessage` delivery calls;
 - extended the shared external fetch timeout to the internal Spike setup onboarding email and Telegram re-onboarding delivery calls;
 - extended the shared external fetch timeout to SSI WhatsApp MediaHub webhook delivery calls;
+- extended the shared external fetch timeout to MediaHub manual-material OpenAI visual summarization calls;
 - added npm overrides for vulnerable transitive tooling packages:
   - `@prisma/dev@0.24.14`;
   - `esbuild@^0.28.1`;
