@@ -554,6 +554,9 @@ function getMediaHubCopy(locale: Locale) {
       publishedReports: "Опубліковані звіти",
       pulse: "Пульс",
       reportArchive: "Архів звітів",
+      reportType: "Тип",
+      reset: "Скинути",
+      results: "результатів",
       sources: "джерел",
       topicClusters: "Тематичні кластери",
       topics: "тем",
@@ -562,14 +565,14 @@ function getMediaHubCopy(locale: Locale) {
   }
 
   return {
-      all: "All",
-      archiveDate: "Date",
-      archiveHint: "Collapsed by default. Open it or find a report by date, type or text.",
-      archiveSearch: "Search",
-      archiveSearchPlaceholder: "Topic, market, commodity...",
-      clusters: "clusters",
-      closeArchive: "Collapse",
-      daily: "Daily",
+    all: "All",
+    archiveDate: "Date",
+    archiveHint: "Collapsed by default. Open it or find a report by date, type or text.",
+    archiveSearch: "Search",
+    archiveSearchPlaceholder: "Topic, market, commodity...",
+    clusters: "clusters",
+    closeArchive: "Collapse",
+    daily: "Daily",
     deskSnapshot: "Desk Snapshot",
     distribution: "Distribution",
     distributionNote: "Raw monitoring below, editorial summary above.",
@@ -632,6 +635,3 @@ function parseProgressRatio(label: string) {
   }
   return Math.max(0, Math.min(1, current / total));
 }
-      reportType: "Тип",
-      reset: "Скинути",
-      results: "результатів",
