@@ -55,6 +55,8 @@ const PROJECT_WARNINGS = {
   "uga-index": ["UGA_PASSWORD_RESET_SENDER", "UGA_PASSWORD_RESET_REPLY_TO"],
 };
 
+const TELEGRAM_MEDIA_HUB_PROJECTS = new Set(["1d3x", "spike-ua-index"]);
+
 export function validateProductionEnv(env = process.env, options = {}) {
   const project = normalizeProject(options.project ?? env.VERCEL_PROJECT ?? env.VERCEL_PROJECT_NAME ?? "");
   const missing = [];
@@ -103,6 +105,19 @@ export function validateProductionEnv(env = process.env, options = {}) {
       if (!hasValue(env, "SSI_WHATSAPP_WEBHOOK_SECRET")) missing.push("SSI_WHATSAPP_WEBHOOK_SECRET");
       if (!hasValue(env, "SSI_WHATSAPP_TARGET_GROUP_ID") && !hasValue(env, "SSI_WHATSAPP_TARGET_GROUP_NAME")) {
         missing.push("SSI_WHATSAPP_TARGET_GROUP_ID or SSI_WHATSAPP_TARGET_GROUP_NAME");
+      }
+    }
+
+    if (TELEGRAM_MEDIA_HUB_PROJECTS.has(project)) {
+      if (
+        !hasValue(env, "TELEGRAM_CONNECTOR_READ_CHAT_IDS") &&
+        !hasValue(env, "MEDIA_HUB_MATERIAL_ALLOWED_TELEGRAM_CHAT_IDS") &&
+        !hasValue(env, "MEDIA_HUB_MATERIAL_ALLOWED_TELEGRAM_USER_IDS")
+      ) {
+        warnings.push("Telegram MediaHub ingestion has no read/user allowlist; set TELEGRAM_CONNECTOR_READ_CHAT_IDS or MEDIA_HUB_MATERIAL_ALLOWED_TELEGRAM_*");
+      }
+      if (env.TELEGRAM_CONNECTOR_MANUAL_APPROVAL_REQUIRED === "0" && !hasValue(env, "TELEGRAM_CONNECTOR_POST_CHAT_IDS")) {
+        invalid.push("TELEGRAM_CONNECTOR_POST_CHAT_IDS is required when TELEGRAM_CONNECTOR_MANUAL_APPROVAL_REQUIRED=0");
       }
     }
   }

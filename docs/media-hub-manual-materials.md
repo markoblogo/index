@@ -157,6 +157,9 @@ Required environment variables:
 - `NEXT_PUBLIC_SITE_URL` - fallback base URL when `MEDIA_HUB_TELEGRAM_WEBHOOK_URL` is not set.
 - `MEDIA_HUB_MATERIAL_ALLOWED_TELEGRAM_USER_IDS` - optional allowlist; empty means all users are accepted.
 - `MEDIA_HUB_MATERIAL_ALLOWED_TELEGRAM_CHAT_IDS` - optional allowlist; empty means all chats are accepted.
+- `TELEGRAM_CONNECTOR_READ_CHAT_IDS` - shared grammY connector read allowlist for MediaHub/index Telegram ingestion.
+- `TELEGRAM_CONNECTOR_POST_CHAT_IDS` - shared grammY connector post allowlist for outbound/autopost targets.
+- `TELEGRAM_CONNECTOR_MANUAL_APPROVAL_REQUIRED` - defaults to approval required; if set to `0`, production preflight requires `TELEGRAM_CONNECTOR_POST_CHAT_IDS`.
 
 If either allowlist is configured and the sender is not allowed, the bot replies with an access-denied message containing the sender chat id and user id.
 
@@ -184,6 +187,6 @@ curl -sS "https://api.telegram.org/bot$MEDIA_HUB_TELEGRAM_BOT_TOKEN/setWebhook" 
   -d '{
     "url": "https://spike.1d3x.com/api/telegram/media-hub",
     "secret_token": "'"$TELEGRAM_MEDIA_HUB_WEBHOOK_SECRET"'",
-    "allowed_updates": ["message", "edited_message", "callback_query"]
+    "allowed_updates": ["message", "edited_message", "channel_post", "edited_channel_post", "callback_query"]
   }'
 ```

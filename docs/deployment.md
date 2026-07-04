@@ -35,6 +35,12 @@ npm run check:production-env -- --project uga-index
 npm run check:production-env -- --project 1d3x
 ```
 
+The preflight does not print secret values. It fails closed for missing cron,
+webhook and WhatsApp secrets, and warns when MediaHub Telegram ingestion has no
+read allowlist. If Telegram autopost manual approval is disabled with
+`TELEGRAM_CONNECTOR_MANUAL_APPROVAL_REQUIRED=0`, an explicit
+`TELEGRAM_CONNECTOR_POST_CHAT_IDS` allowlist is required.
+
 4. Deploy to production of the linked project:
 
 ```bash

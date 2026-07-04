@@ -242,6 +242,7 @@ Implemented fixes:
   - `esbuild@^0.28.1`;
   - `@hono/node-server@^1.19.13`;
 - expanded the production environment checker into a project-aware preflight for `1d3x`, `spike-ua-index` and `uga-index`, including critical cron/webhook/WhatsApp/tenant-mode validation without printing secret values;
+- extended the production environment checker with Telegram connector safety checks: warning on unrestricted MediaHub Telegram ingestion and failure when manual autopost approval is disabled without explicit post target allowlist;
 - upgraded `next` and `eslint-config-next` to `16.2.10`;
 - migrated ESLint config from `FlatCompat` to the native Next flat-config exports;
 - fixed Next 16 route-wrapper compatibility by making alias cron routes export `dynamic = "force-dynamic"` directly instead of re-exporting route segment config;
