@@ -123,7 +123,7 @@ export function getMediaHubReportTextForValidation(content: {
   const chunks: string[] = [];
   chunks.push(content.title ?? "");
   chunks.push(...(content.summary ?? []));
-  chunks.push(JSON.stringify(content.localized ?? ""));
+  chunks.push(...extractLocalizedSummaryLines(content.localized));
   chunks.push(JSON.stringify(content.dailyReports ?? ""));
   return chunks.join("\n");
 }
@@ -139,7 +139,7 @@ function extractRiskyClaims(text: string) {
 }
 
 const RISKY_CLAIM_PATTERN =
-  /(\d+(?:[.,]\d+)?\s*(?:%|млн|million|тис|thousand|тонн|tons|t\b|usd)|очікується|прогноз|врожай|експорт може|може зрости|може зниз|нижч|вищ|forecast|harvest|production|exports? (?:may|could|will)|expected|projected|lower|higher)/i;
+  /(\d+(?:[.,]\d+)?\s*(?:%|млн|million|тис|thousand|тонн|tons|t\b|usd)|очікується|прогноз|врожайність|експорт може|може зрости|може зниз|нижч|вищ|forecast|production|exports? (?:may|could|will)|expected|projected|lower|higher)/i;
 
 const STOP_WORDS = new Set([
   "the", "and", "for", "with", "from", "that", "this", "are", "was", "were",
@@ -172,7 +172,28 @@ function meaningfulTerms(value: string) {
 }
 
 function isHighRiskClaim(value: string) {
-  return /(очікується|прогноз|врожай|експорт може|forecast|harvest|production|expected|projected|\d+(?:[.,]\d+)?\s*(?:%|млн|million|тонн|tons))/i.test(value);
+  return /(очікується|прогноз|врожайність|експорт може|forecast|production|expected|projected|\d+(?:[.,]\d+)?\s*(?:%|млн|million|тонн|tons))/i.test(value);
+}
+
+function extractLocalizedSummaryLines(value: unknown) {
+  if (!value || typeof value !== "object") {
+    return [];
+  }
+
+  return ["uk", "en"].flatMap((locale) => {
+    const report = (value as Record<string, unknown>)[locale];
+    if (!report || typeof report !== "object") {
+      return [];
+    }
+    const summary = (report as { summary?: unknown }).summary;
+    const title = (report as { title?: unknown }).title;
+    return [
+      typeof title === "string" ? title : "",
+      ...(Array.isArray(summary)
+        ? summary.filter((line): line is string => typeof line === "string")
+        : []),
+    ].filter(Boolean);
+  });
 }
 
 function dedupeEvidence(items: MediaHubEvidenceItem[]) {
