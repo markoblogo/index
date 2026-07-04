@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic";
 
 type CatchupBody = {
   date?: string;
+  deletePreviousTelegram?: boolean;
   force?: boolean;
   kind?: "daily" | "weekly" | "monthly";
   resend?: boolean;
@@ -40,6 +41,9 @@ export async function POST(request: Request) {
       (isPlatformSite() ? "daily" : "daily"),
   );
   const resend = query.get("resend") === "1" ? true : body.resend === true;
+  const deletePreviousTelegram = query.get("deletePreviousTelegram") === "1"
+    ? true
+    : body.deletePreviousTelegram === true;
   const sendTelegram = query.get("sendTelegram") === "0"
     ? false
     : query.get("sendTelegram") === "1"
@@ -48,6 +52,7 @@ export async function POST(request: Request) {
 
   const result = await runDueMediaHubPublication({
     date,
+    deletePreviousTelegram,
     forceKind: kind,
     forceTelegram: resend,
     publishTelegram: sendTelegram,

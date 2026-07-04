@@ -231,6 +231,7 @@ export function isMediaHubPublicationCatchupDue(
 
 export async function runDueMediaHubPublication(options: {
   date?: string;
+  deletePreviousTelegram?: boolean;
   forceKind?: MediaHubPublicationKind;
   forceTelegram?: boolean;
   publishTelegram?: boolean;
@@ -242,6 +243,11 @@ export async function runDueMediaHubPublication(options: {
   const publishTelegram = options.publishTelegram !== false;
 
   if (kind === "daily") {
+    const telegramCleanup = publishTelegram && options.deletePreviousTelegram
+      ? await deletePreviousMediaHubTelegramMessages("daily", plan.date, {
+        audience: isPlatformSite() ? "platform" : "spike",
+      })
+      : { status: "skipped" as const, skippedReason: "delete_previous_telegram_disabled" };
     const report = await publishMediaHubSnapshotReport("daily", plan.date);
     const telegram = publishTelegram
       ? await sendMediaHubReportTelegram("daily", plan.date, {
@@ -259,6 +265,7 @@ export async function runDueMediaHubPublication(options: {
       result: {
         report,
         telegram,
+        telegramCleanup,
         whatsapp,
         status: "daily_media_hub_report_persisted",
       },
@@ -266,6 +273,11 @@ export async function runDueMediaHubPublication(options: {
   }
 
   if (kind === "weekly") {
+    const telegramCleanup = publishTelegram && options.deletePreviousTelegram
+      ? await deletePreviousMediaHubTelegramMessages("weekly", plan.date, {
+        audience: isPlatformSite() ? "platform" : "spike",
+      })
+      : { status: "skipped" as const, skippedReason: "delete_previous_telegram_disabled" };
     const report = await publishMediaHubSnapshotReport("weekly", plan.date);
     const telegram = publishTelegram
       ? await sendMediaHubReportTelegram("weekly", plan.date, {
@@ -284,12 +296,18 @@ export async function runDueMediaHubPublication(options: {
         report,
         status: "weekly_media_hub_processed",
         telegram,
+        telegramCleanup,
         whatsapp,
       },
     };
   }
 
   if (kind === "monthly") {
+    const telegramCleanup = publishTelegram && options.deletePreviousTelegram
+      ? await deletePreviousMediaHubTelegramMessages("monthly", plan.date, {
+        audience: isPlatformSite() ? "platform" : "spike",
+      })
+      : { status: "skipped" as const, skippedReason: "delete_previous_telegram_disabled" };
     const report = await publishMediaHubSnapshotReport("monthly", plan.date);
     const telegram = publishTelegram
       ? await sendMediaHubReportTelegram("monthly", plan.date, {
@@ -305,6 +323,7 @@ export async function runDueMediaHubPublication(options: {
         report,
         status: "monthly_media_hub_processed",
         telegram,
+        telegramCleanup,
       },
     };
   }
@@ -1080,6 +1099,104 @@ export async function sendMediaHubReportTelegram(
   );
 
   return { messageIds: sent.messageIds, status: "sent" as const };
+}
+
+async function deletePreviousMediaHubTelegramMessages(
+  kind: Exclude<MediaHubPublicationKind, "none">,
+  periodEndDate: string,
+  options: {
+    audience: "spike" | "platform";
+  },
+) {
+  if (!hasDatabaseUrl()) {
+    return { skippedReason: "database_not_configured", status: "skipped" as const };
+  }
+  if (options.audience === "platform" && isId3xMediaHubTelegramPaused()) {
+    return { skippedReason: "id3x_telegram_paused", status: "skipped" as const };
+  }
+
+  const tenantId = options.audience === "platform" ? "1d3x" : getActiveIndexConfig().id;
+  const report = await getMediaHubReport(kind, periodEndDate, tenantId);
+  const messageIds = parseJsonNumberArray(report?.telegramMessageIds);
+  if (messageIds.length === 0) {
+    return { deletedMessageIds: [], skippedReason: "no_previous_messages", status: "skipped" as const };
+  }
+
+  const config = getMediaHubTelegramDeliveryConfig(options.audience, kind);
+  if (!config) {
+    return { skippedReason: "telegram_not_configured", status: "skipped" as const };
+  }
+
+  const deletedMessageIds: number[] = [];
+  const failedMessageIds: Array<{ error: string; messageId: number }> = [];
+  for (const messageId of messageIds) {
+    const response = await fetchWithTimeout(`https://api.telegram.org/bot${config.botToken}/deleteMessage`, {
+      body: JSON.stringify({
+        chat_id: normalizeMediaHubTelegramChatId(config.chatId),
+        message_id: messageId,
+      }),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    }, TELEGRAM_DELIVERY_TIMEOUT_MS);
+    const payloadText = await response.text();
+    if (response.ok) {
+      deletedMessageIds.push(messageId);
+    } else {
+      failedMessageIds.push({ error: payloadText.slice(0, 300), messageId });
+    }
+  }
+
+  await db.$executeRawUnsafe(
+    `
+      UPDATE "MediaHubReport"
+      SET "telegramSentAt" = NULL,
+          "telegramMessageIds" = '[]'::jsonb,
+          "updatedAt" = NOW()
+      WHERE "tenantId" = $1
+        AND "kind" = $2
+        AND "periodEnd" = $3::date
+    `,
+    tenantId,
+    kind,
+    periodEndDate,
+  );
+
+  return failedMessageIds.length > 0
+    ? { deletedMessageIds, failedMessageIds, status: "partial" as const }
+    : { deletedMessageIds, status: "deleted" as const };
+}
+
+function getMediaHubTelegramDeliveryConfig(
+  audience: "spike" | "platform",
+  kind: Exclude<MediaHubPublicationKind, "none">,
+) {
+  const botToken =
+    audience === "platform"
+      ? process.env.ID3X_TELEGRAM_BOT_TOKEN ??
+        process.env.SPIKE_TELEGRAM_BOT_TOKEN ??
+        process.env.INDEX_TELEGRAM_BOT_TOKEN
+      : process.env.SPIKE_TELEGRAM_BOT_TOKEN ??
+        process.env.INDEX_TELEGRAM_BOT_TOKEN;
+  const chatId =
+    audience === "platform"
+      ? process.env.ID3X_MEDIA_HUB_TELEGRAM_CHAT_ID ??
+        process.env.MEDIA_HUB_TELEGRAM_CHAT_ID ??
+        process.env.SPIKE_WEEKLY_REPORT_TELEGRAM_CHAT_ID ??
+        process.env.SPIKE_AI_TELEGRAM_CHAT_ID ??
+        process.env.INDEX_TELEGRAM_SMOKE_CHAT_ID
+      : kind === "daily"
+        ? process.env.SPIKE_MEDIA_HUB_TELEGRAM_CHAT_ID ??
+          process.env.MEDIA_HUB_TELEGRAM_CHAT_ID ??
+          process.env.SPIKE_AI_TELEGRAM_CHAT_ID ??
+          process.env.SPIKE_WEEKLY_REPORT_TELEGRAM_CHAT_ID ??
+          process.env.INDEX_TELEGRAM_SMOKE_CHAT_ID
+        : process.env.SPIKE_MEDIA_HUB_TELEGRAM_CHAT_ID ??
+          process.env.MEDIA_HUB_TELEGRAM_CHAT_ID ??
+          process.env.SPIKE_WEEKLY_REPORT_TELEGRAM_CHAT_ID ??
+          process.env.SPIKE_AI_TELEGRAM_CHAT_ID ??
+          process.env.INDEX_TELEGRAM_SMOKE_CHAT_ID;
+
+  return botToken && chatId ? { botToken, chatId } : null;
 }
 
 async function getPublicationSnapshots(windowKey: MediaHubWindowKey) {
