@@ -159,10 +159,47 @@ responses support conditional `If-None-Match` requests and return `304` when
 the stable `data` payload has not changed. Health and public data failures use
 `Cache-Control: no-store`.
 
-## Production TODO
+## Production release checklist
 
-- Replace preview authentication with production auth, password setup emails and hashed credentials.
-- Integrate real benchmark indicative ingestion.
-- Add payment and entitlement flows for paid access.
-- Add member-only analytics and access control for UGA members.
-- Keep `UGA_INDEX_RUNTIME_MODE=production` enabled so database failures do not silently show mock data.
+Before promoting a change for any index tenant:
+
+1. Confirm CI is green or run the same local gates:
+
+```bash
+npm run audit:repo
+npm run lint
+npm run test
+npm run build
+```
+
+2. Run the project-specific environment preflight for the target Vercel project:
+
+```bash
+npm run check:production-env -- --project spike-ua-index
+npm run check:production-env -- --project uga-index
+npm run check:production-env -- --project 1d3x
+```
+
+3. Confirm the runtime/URL boundary:
+
+- SSI must use `NEXT_PUBLIC_SITE_URL=https://spike.1d3x.com` or an approved SSI alias.
+- UGA must use `NEXT_PUBLIC_SITE_URL=https://index.uga.ua` or an approved UGA alias.
+- 1D3X must use `NEXT_PUBLIC_SITE_URL=https://1d3x.com` or `https://www.1d3x.com`.
+
+4. Confirm messaging safety:
+
+- Telegram ingestion should be restricted by `TELEGRAM_CONNECTOR_READ_CHAT_IDS` or route-level MediaHub allowlists.
+- Telegram autoposting without manual approval requires `TELEGRAM_CONNECTOR_POST_CHAT_IDS`.
+- SSI WhatsApp posting requires the Railway worker URL/secret and a persistent WhatsApp session volume.
+
+5. Confirm privileged admin/internal routes:
+
+- Internal cron/admin routes require the shared internal bearer/cron secret.
+- Temporary SPIKE credential disclosure additionally requires `SPIKE_SETUP_EXPOSE_SECRET`.
+- Public API routes should return cache headers and ETags; failure responses must remain `no-store`.
+
+Current known follow-ups:
+
+- Continue shrinking the largest source modules tracked by `npm run audit:repo`.
+- Keep Poppler installed only where PDF previews are required; otherwise the lazy fallback path is acceptable.
+- Keep `UGA_INDEX_RUNTIME_MODE=production` enabled in UGA production so database failures do not silently show mock data.

@@ -1855,15 +1855,15 @@ function buildDeterministicWeeklyReport(
             title: "Border direction",
             body:
               locale === "uk"
-                ? `Прикордонна кукурудза FCA Чоп завершила тиждень на рівні ${formatValue(borderCorn?.latestValue)} USD/t, а її тижнева зміна становила ${formatSigned(borderCorn?.weeklyChangeAbs ?? 0)} USD/t. Це підтверджує окрему поведінку border-ланцюга порівняно з портовими позиціями.`
-                : `FCA Chop border corn closed the week at ${formatValue(borderCorn?.latestValue)} USD/t, with a weekly move of ${formatSigned(borderCorn?.weeklyChangeAbs ?? 0)} USD/t. This confirms a border-lane behaviour separate from port-side positions.`,
+                ? `Прикордонна кукурудза FCA Чоп завершила тиждень на рівні ${formatTelegramMoney(borderCorn?.latestValue)}, а її тижнева зміна становила ${formatTelegramSignedMoney(borderCorn?.weeklyChangeAbs ?? 0)}. Це підтверджує окрему поведінку border-ланцюга порівняно з портовими позиціями.`
+                : `FCA Chop border corn closed the week at ${formatTelegramMoney(borderCorn?.latestValue)}, with a weekly move of ${formatTelegramSignedMoney(borderCorn?.weeklyChangeAbs ?? 0)}. This confirms a border-lane behaviour separate from port-side positions.`,
           },
           {
             title: "Port direction",
             body:
               locale === "uk"
-                ? `Портові export позиції залишаються базовою точкою для weekly reading: кукурудза ${formatValue(corn?.latestValue)} USD/t, пшениця 11.5% ${formatValue(wheat?.latestValue)} USD/t. Саме вони задають головний тон для читання експортного попиту.`
-                : `Port-side export positions remain the weekly reference point: corn ${formatValue(corn?.latestValue)} USD/t and 11.5% wheat ${formatValue(wheat?.latestValue)} USD/t. They set the main tone for export-demand reading.`,
+                ? `Портові export позиції залишаються базовою точкою для weekly reading: кукурудза ${formatTelegramMoney(corn?.latestValue)}, пшениця 11.5% ${formatTelegramMoney(wheat?.latestValue)}. Саме вони задають головний тон для читання експортного попиту.`
+                : `Port-side export positions remain the weekly reference point: corn ${formatTelegramMoney(corn?.latestValue)} and 11.5% wheat ${formatTelegramMoney(wheat?.latestValue)}. They set the main tone for export-demand reading.`,
           },
           {
             title: "Watch next week",
@@ -1889,22 +1889,22 @@ function buildDeterministicWeeklyReport(
             title: "Spot Index Ukraine",
             body:
               locale === "uk"
-                ? `Тижнева картина показує, що кукурудза змінилася на ${formatSigned(corn?.weeklyChangeAbs ?? 0)} USD/t, пшениця 11.5% — на ${formatSigned(wheat?.weeklyChangeAbs ?? 0)} USD/t, а фуражна пшениця — на ${formatSigned(feedWheat?.weeklyChangeAbs ?? 0)} USD/t. Це дає читачу не список цифр, а структуру руху.`
-                : `The weekly picture shows corn changed by ${formatSigned(corn?.weeklyChangeAbs ?? 0)} USD/t, 11.5% wheat by ${formatSigned(wheat?.weeklyChangeAbs ?? 0)} USD/t, and feed wheat by ${formatSigned(feedWheat?.weeklyChangeAbs ?? 0)} USD/t. This gives structure rather than a raw list of numbers.`,
+                ? `Тижнева картина показує, що кукурудза змінилася на ${formatTelegramSignedMoney(corn?.weeklyChangeAbs ?? 0)}, пшениця 11.5% — на ${formatTelegramSignedMoney(wheat?.weeklyChangeAbs ?? 0)}, а фуражна пшениця — на ${formatTelegramSignedMoney(feedWheat?.weeklyChangeAbs ?? 0)}. Це дає читачу не список цифр, а структуру руху.`
+                : `The weekly picture shows corn changed by ${formatTelegramSignedMoney(corn?.weeklyChangeAbs ?? 0)}, 11.5% wheat by ${formatTelegramSignedMoney(wheat?.weeklyChangeAbs ?? 0)}, and feed wheat by ${formatTelegramSignedMoney(feedWheat?.weeklyChangeAbs ?? 0)}. This gives structure rather than a raw list of numbers.`,
           },
           {
             title: "Corn",
             body:
               locale === "uk"
-                ? `Основний експортний benchmark кукурудзи завершив тиждень на ${formatValue(corn?.latestValue)} USD/t, тоді як FCA Чоп закрився на ${formatValue(borderCorn?.latestValue)} USD/t. Це залишає окремий коридор між портом і кордоном.`
-                : `The core export corn benchmark closed the week at ${formatValue(corn?.latestValue)} USD/t, while FCA Chop closed at ${formatValue(borderCorn?.latestValue)} USD/t. That keeps a separate corridor between port and border.`,
+                ? `Основний експортний benchmark кукурудзи завершив тиждень на ${formatTelegramMoney(corn?.latestValue)}, тоді як FCA Чоп закрився на ${formatTelegramMoney(borderCorn?.latestValue)}. Це залишає окремий коридор між портом і кордоном.`
+                : `The core export corn benchmark closed the week at ${formatTelegramMoney(corn?.latestValue)}, while FCA Chop closed at ${formatTelegramMoney(borderCorn?.latestValue)}. That keeps a separate corridor between port and border.`,
           },
           {
             title: "Wheat",
             body:
               locale === "uk"
-                ? `Пшениця 11.5% завершила тиждень на ${formatValue(wheat?.latestValue)} USD/t, а фуражна пшениця — на ${formatValue(feedWheat?.latestValue)} USD/t. Різниця між ними підказує, де ринок залишає більшу цінову дисципліну, а де готовий платити за простіший quality mix.`
-                : `11.5% wheat ended the week at ${formatValue(wheat?.latestValue)} USD/t, while feed wheat ended at ${formatValue(feedWheat?.latestValue)} USD/t. The spread helps show where the market keeps stricter pricing discipline and where it pays for a simpler quality mix.`,
+                ? `Пшениця 11.5% завершила тиждень на ${formatTelegramMoney(wheat?.latestValue)}, а фуражна пшениця — на ${formatTelegramMoney(feedWheat?.latestValue)}. Різниця між ними підказує, де ринок залишає більшу цінову дисципліну, а де готовий платити за простіший quality mix.`
+                : `11.5% wheat ended the week at ${formatTelegramMoney(wheat?.latestValue)}, while feed wheat ended at ${formatTelegramMoney(feedWheat?.latestValue)}. The spread helps show where the market keeps stricter pricing discipline and where it pays for a simpler quality mix.`,
           },
           {
             title: "Export geography",
@@ -1944,15 +1944,15 @@ function buildDeterministicWeeklyReport(
             title: "Spot Index Ukraine",
             body:
               locale === "uk"
-                ? `Соя ГМО завершила тиждень на ${formatValue(soybean?.latestValue)} USD/t, а соняшник — на ${formatValue(sunflower?.latestValue)} USD/t. Ці позиції формують основу для читання переробного сегмента.`
-                : `GMO soybean closed the week at ${formatValue(soybean?.latestValue)} USD/t, while sunflower finished at ${formatValue(sunflower?.latestValue)} USD/t. These positions form the base for reading the processing segment.`,
+                ? `Соя ГМО завершила тиждень на ${formatTelegramMoney(soybean?.latestValue)}, а соняшник — на ${formatTelegramMoney(sunflower?.latestValue)}. Ці позиції формують основу для читання переробного сегмента.`
+                : `GMO soybean closed the week at ${formatTelegramMoney(soybean?.latestValue)}, while sunflower finished at ${formatTelegramMoney(sunflower?.latestValue)}. These positions form the base for reading the processing segment.`,
           },
           {
             title: "Sunflower",
             body:
               locale === "uk"
-                ? `Соняшник показав тижневий рух ${formatSigned(sunflower?.weeklyChangeAbs ?? 0)} USD/t і залишився однією з головних позицій для читання переробки та внутрішнього попиту.`
-                : `Sunflower posted a weekly move of ${formatSigned(sunflower?.weeklyChangeAbs ?? 0)} USD/t and remained one of the key positions for reading processing and domestic demand.`,
+                ? `Соняшник показав тижневий рух ${formatTelegramSignedMoney(sunflower?.weeklyChangeAbs ?? 0)} і залишився однією з головних позицій для читання переробки та внутрішнього попиту.`
+                : `Sunflower posted a weekly move of ${formatTelegramSignedMoney(sunflower?.weeklyChangeAbs ?? 0)} and remained one of the key positions for reading processing and domestic demand.`,
           },
           {
             title: "Rapeseed",
@@ -1965,8 +1965,8 @@ function buildDeterministicWeeklyReport(
             title: "Soybean",
             body:
               locale === "uk"
-                ? `Соя ГМО показала тижневий рух ${formatSigned(soybean?.weeklyChangeAbs ?? 0)} USD/t і залишається однією з найбільш чутливих позицій у переробному кошику.`
-                : `GMO soybean posted a weekly move of ${formatSigned(soybean?.weeklyChangeAbs ?? 0)} USD/t and remains one of the most sensitive positions in the processing basket.`,
+                ? `Соя ГМО показала тижневий рух ${formatTelegramSignedMoney(soybean?.weeklyChangeAbs ?? 0)} і залишається однією з найбільш чутливих позицій у переробному кошику.`
+                : `GMO soybean posted a weekly move of ${formatTelegramSignedMoney(soybean?.weeklyChangeAbs ?? 0)} and remains one of the most sensitive positions in the processing basket.`,
           },
           {
             title: "Oils / meals / processing products",
@@ -2148,9 +2148,9 @@ export function buildWeeklyTelegramMessages(
     formatTelegramWeekEnd(weekEndDate),
     [
       `🧠 <b>Аналітичний висновок тижня</b>\nЗерновий блок читався через кукурудзу, пшеницю та різницю між портом і кордоном, яка задавала ринкову опору тижня.`,
-      `📈 <b>Spot Index Ukraine</b>\n• Кукурудза, пшениця 11.5% та фуражна пшениця показали тижневий рух у межах опублікованих значень.\n• FCA Чоп: ${formatValue(borderCorn?.latestValue)} USD/t.\n• Ринок читав не лише самі ціни, а й різницю між портом і кордоном.`,
-      `🌽 <b>Кукурудза</b>\n• Кукурудза закріпилася як головна експортна опора тижня.\n• Опубліковане значення: ${formatValue(corn?.latestValue)} USD/t.\n• Тижневий рух: ${formatSigned(corn?.weeklyChangeAbs ?? 0)} USD/t.`,
-      `🌾 <b>Пшениця</b>\n• Пшениця 11.5% та фуражна пшениця показали власну структуру попиту.\n• Пшениця 11.5%: ${formatValue(wheat?.latestValue)} USD/t.\n• Фуражна пшениця: ${formatValue(feedWheat?.latestValue)} USD/t.`,
+      `📈 <b>Spot Index Ukraine</b>\n• Кукурудза, пшениця 11.5% та фуражна пшениця показали тижневий рух у межах опублікованих значень.\n• FCA Чоп: ${formatTelegramMoney(borderCorn?.latestValue)}.\n• Ринок читав не лише самі ціни, а й різницю між портом і кордоном.`,
+      `🌽 <b>Кукурудза</b>\n• Кукурудза закріпилася як головна експортна опора тижня.\n• Опубліковане значення: ${formatTelegramMoney(corn?.latestValue)}.\n• Тижневий рух: ${formatTelegramSignedMoney(corn?.weeklyChangeAbs ?? 0)}.`,
+      `🌾 <b>Пшениця</b>\n• Пшениця 11.5% та фуражна пшениця показали власну структуру попиту.\n• Пшениця 11.5%: ${formatTelegramMoney(wheat?.latestValue)}.\n• Фуражна пшениця: ${formatTelegramMoney(feedWheat?.latestValue)}.`,
       `🌍 <b>Експортна географія</b>\nПоточний тиждень найкраще читався через CPT Одеса та FCA Чоп, що допомогло окремо побачити портову й прикордонну логіку.`,
       `🌐 <b>Зовнішній ринковий фон</b>\nЗовнішній фон залишався важливим для читання зерна через futures tone, експортний попит і ширший чорноморський контекст.`,
       `👀 <b>На що дивитися наступного тижня</b>\n• Чи посилиться експортний попит.\n• Чи підтвердиться напрямок по кукурудзі.\n• Чи залишиться пшениця в окремому ціновому коридорі.`,
@@ -2162,8 +2162,8 @@ export function buildWeeklyTelegramMessages(
     [
       `🧠 <b>Аналітичний висновок тижня</b>\nОлійний блок читався через соняшник і сою, а також через те, як ці позиції впливали на тон переробки та суміжні продукти.`,
       `📈 <b>Spot Index Ukraine</b>\n• Соняшник і соя ГМО залишилися головними опорними позиціями переробного сегмента.\n• Тиждень читався через переробку, внутрішній попит і експортний фон.`,
-      `🌻 <b>Соняшник</b>\n• Соняшник залишився ключовим для читання переробного ринку.\n• Опубліковане значення: ${formatValue(sunflower?.latestValue)} USD/t.\n• Тижневий рух: ${formatSigned(sunflower?.weeklyChangeAbs ?? 0)} USD/t.`,
-      `🌱 <b>Соя</b>\n• Соя ГМО зберегла важливість для переробного кошика.\n• Опубліковане значення: ${formatValue(soybean?.latestValue)} USD/t.\n• Тижневий рух: ${formatSigned(soybean?.weeklyChangeAbs ?? 0)} USD/t.`,
+      `🌻 <b>Соняшник</b>\n• Соняшник залишився ключовим для читання переробного ринку.\n• Опубліковане значення: ${formatTelegramMoney(sunflower?.latestValue)}.\n• Тижневий рух: ${formatTelegramSignedMoney(sunflower?.weeklyChangeAbs ?? 0)}.`,
+      `🌱 <b>Соя</b>\n• Соя ГМО зберегла важливість для переробного кошика.\n• Опубліковане значення: ${formatTelegramMoney(soybean?.latestValue)}.\n• Тижневий рух: ${formatTelegramSignedMoney(soybean?.weeklyChangeAbs ?? 0)}.`,
       `🛢 <b>Олії, макуха та продукти переробки</b>\nСуміжні продукти читаються через базові олійні позиції та зміну тону переробки.`,
       `🌍 <b>Експортна географія</b>\nДля олійних важливо дивитися не тільки на benchmark, а й на маршрути, попит переробників і цінову реакцію в суміжних продуктах.`,
       `🌐 <b>Зовнішній ринковий фон</b>\nСвітовий попит на олії, біржовий тон і реакція суміжних ринків залишаються ключовим контекстом.`,
@@ -2407,12 +2407,13 @@ function findSummary(manifest: WeeklyReportManifest, code: string) {
   return manifest.weeklySummary.find((item) => item.code === code) ?? null;
 }
 
-function formatValue(value: number | null | undefined) {
-  return value == null ? "—" : value.toFixed(1);
+function formatTelegramMoney(value: number | null | undefined) {
+  return value == null ? "—" : `${Math.round(value)}$`;
 }
 
-function formatSigned(value: number) {
-  return `${value > 0 ? "+" : ""}${roundOne(value).toFixed(1)}`;
+function formatTelegramSignedMoney(value: number) {
+  const rounded = Math.round(value);
+  return `${rounded > 0 ? "+" : ""}${rounded}$`;
 }
 
 function roundOne(value: number) {
