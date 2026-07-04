@@ -7,6 +7,9 @@ type SsiNonDailyReportContent = {
   evidence?: MediaHubEvidenceItem[];
   localized?: Partial<Record<Locale, MediaHubLocalizedReport>>;
   summary: string[];
+  validation?: {
+    unsupportedClaims?: Array<{ claim: string }>;
+  };
   windows: Array<{
     feed: MediaHubWindowSnapshot["feed"];
     summaryBody: string[];
@@ -43,6 +46,9 @@ export function buildSsiNonDailyStructuredMessages(input: {
 }
 
 function collectSsiFacts(content: SsiNonDailyReportContent, locale: Locale) {
+  const unsupported = (content.validation?.unsupportedClaims ?? [])
+    .map((item) => normalizeFact(item.claim, locale))
+    .filter(Boolean);
   const localized = content.localized?.[locale]?.summary ?? [];
   const fallbackLocalized = locale === "en" ? content.localized?.en?.summary ?? [] : [];
   const feed = content.windows.flatMap((window) => window.feed)
@@ -63,6 +69,7 @@ function collectSsiFacts(content: SsiNonDailyReportContent, locale: Locale) {
   ])
     .map((item) => normalizeFact(item, locale))
     .filter((item) => item.length > 30)
+    .filter((item) => !unsupported.some((claim) => isSameFact(item, claim)))
     .filter((item) => locale === "uk" || isUkraineFocused(item));
 }
 
@@ -215,6 +222,16 @@ function getMeta(kind: "weekly" | "monthly", locale: Locale) {
 
 function isUkraineFocused(value: string) {
   return /\b(Ukraine|Ukrainian|Odesa|Odessa|Danube|Black Sea|Chop|CPT|FCA|port|border|rail|export|processing|domestic|farm|plant|crush|logistics|harvest|sowing)\b/i.test(value);
+}
+
+function isSameFact(a: string, b: string) {
+  const left = comparable(a);
+  const right = comparable(b);
+  return Boolean(left && right && (left.includes(right) || right.includes(left)));
+}
+
+function comparable(value: string) {
+  return value.toLowerCase().replace(/[^\p{L}\p{N}%$€₴]+/gu, " ").replace(/\s+/g, " ").trim();
 }
 
 function fitSingleMessage(text: string) {
