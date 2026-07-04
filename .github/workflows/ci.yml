@@ -15,34 +15,6 @@ jobs:
     name: Quality gates
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    env:
-      ALLOWED_EMBED_ORIGINS: https://example.com
-      CRON_SECRET: 12345678901234567890123456789012
-      DATABASE_URL: postgresql://user:pass@example.com:5432/index
-      DEMO_AUTH_SECRET: 12345678901234567890123456789012
-      MEDIA_HUB_MATERIAL_ALLOWED_TELEGRAM_CHAT_IDS: '-1001'
-      MEDIA_HUB_REPAIR_SECRET: repair-secret
-      MEDIA_HUB_SMOKE_TEST_SECRET: smoke-secret
-      MEDIA_HUB_TELEGRAM_CHAT_ID: '-1001'
-      NEXT_PUBLIC_SITE_URL: https://example.com
-      OPENAI_API_KEY: sk-ci-placeholder
-      PLATFORM_CONTACT_TO_EMAIL: ops@example.com
-      RESEND_API_KEY: re_ci_placeholder
-      RESPONDENT_EMAIL_CRON_SECRET: respondent-email-secret
-      RESPONDENT_TELEGRAM_CRON_SECRET: respondent-telegram-secret
-      SPIKE_AUTO_PUBLISH_CRON_SECRET: spike-auto-secret
-      SPIKE_DAILY_CATCHUP_SECRET: spike-catchup-secret
-      SPIKE_MEDIA_HUB_CRON_SECRET: spike-media-secret
-      SPIKE_MEDIA_HUB_TELEGRAM_CHAT_ID: '-1001'
-      SPIKE_TELEGRAM_BOT_TOKEN: spike-token-placeholder
-      TELEGRAM_CONNECTOR_POST_CHAT_IDS: '-1001'
-      TELEGRAM_CONNECTOR_READ_CHAT_IDS: '-1001'
-      TELEGRAM_MEDIA_HUB_WEBHOOK_SECRET: media-webhook-secret
-      TELEGRAM_RESPONDENT_WEBHOOK_SECRET: respondent-webhook-secret
-      UGA_INDEX_RUNTIME_MODE: production
-      UGA_PASSWORD_RESET_REPLY_TO: inbox@example.com
-      UGA_PASSWORD_RESET_SENDER: UGA Index <security@example.com>
-      UGA_TELEGRAM_BOT_TOKEN: uga-token-placeholder
     steps:
       - name: Checkout
         uses: actions/checkout@v4
