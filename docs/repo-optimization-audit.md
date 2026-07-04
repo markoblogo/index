@@ -236,6 +236,7 @@ Implemented fixes:
 - extended the shared external fetch timeout to UGA demo-mode sync reads from the public SPIKE API;
 - extended the shared external fetch timeout to Telegram channel HTML source collection used by report-source collector jobs;
 - added a shared grammY-based Telegram connector for MediaHub/index Telegram work, including `message`/`channel_post` normalization, media/link/caption/forward extraction, `telegram:{chat_id}:{message_id}` idempotency keys, read/post policy checks and outbound `sendMessage`/`sendPhoto`/`sendDocument`/`copyMessage`/`forwardMessage` helpers;
+- split MediaHub PDF/Poppler extraction into a lazy `media-hub-pdf-extraction` module so scheduler/reporting imports of manual materials no longer carry `child_process`, temporary filesystem and Poppler preview code unless a PDF is actually ingested;
 - added npm overrides for vulnerable transitive tooling packages:
   - `@prisma/dev@0.24.14`;
   - `esbuild@^0.28.1`;
@@ -259,6 +260,6 @@ Verification status after the pass:
 
 Residual risks and follow-up:
 
-- Turbopack emits an NFT tracing warning for `src/lib/media-hub-manual-materials.ts` because PDF preview extraction uses server-only filesystem and child-process operations (`pdftotext`/`pdftoppm`) in MediaHub ingestion routes. Build succeeds, but this path should be split so upload extraction helpers are isolated from cron/reporting hot paths.
+- PDF preview extraction still depends on host Poppler utilities (`pdftotext`/`pdftoppm`) when previews are enabled. The dependency is now isolated behind lazy PDF ingestion, but production hosts without Poppler will still fall back to byte-level text extraction/no previews.
 - The remaining `postcss` audit item should be rechecked when a Next release vendors `postcss >= 8.5.10`; do not apply `npm audit fix --force` because it proposes a breaking downgrade.
 - Production env verification still requires actual deployment secrets (`DATABASE_URL`, cron secrets, Telegram/Resend keys, etc.) and cannot be proven from a clean local shell.
