@@ -45,6 +45,11 @@ read allowlist. If Telegram autopost manual approval is disabled with
 `TELEGRAM_CONNECTOR_MANUAL_APPROVAL_REQUIRED=0`, an explicit
 `TELEGRAM_CONNECTOR_POST_CHAT_IDS` allowlist is required.
 
+For the internal SPIKE setup route, `exposeTemporaryPassword=1` is protected by
+an additional `x-spike-setup-expose-secret` header matching
+`SPIKE_SETUP_EXPOSE_SECRET`; cron/internal bearer access alone is intentionally
+not enough to disclose temporary credentials.
+
 4. Deploy to production of the linked project:
 
 ```bash

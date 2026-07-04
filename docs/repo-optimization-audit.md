@@ -245,6 +245,8 @@ Implemented fixes:
 - extended the production environment checker with Telegram connector safety checks: warning on unrestricted MediaHub Telegram ingestion and failure when manual autopost approval is disabled without explicit post target allowlist;
 - upgraded `npm run audit:repo` from an informational report into a threshold-based repo health gate covering `public/` payload size, single public asset size, largest source-file size and minimum test count. Thresholds are configurable through `REPO_AUDIT_MAX_PUBLIC_MB`, `REPO_AUDIT_MAX_PUBLIC_ASSET_MB`, `REPO_AUDIT_MAX_SOURCE_FILE_LINES` and `REPO_AUDIT_MIN_TESTS`;
 - added a GitHub Actions CI workflow for push/PR quality gates: dependency install, repo health audit, production-env preflight for `spike-ua-index`/`uga-index`/`1d3x`, lint, tests and production build;
+- added an extra disclosure guard for the internal SPIKE setup route: `exposeTemporaryPassword=1` now requires a dedicated `x-spike-setup-expose-secret` header matching `SPIKE_SETUP_EXPOSE_SECRET` in addition to internal bearer authorization;
+- documented the admin/internal API authorization matrix in `docs/admin-api-auth-matrix.md` so catch-up, smoke-test, setup and material-ingestion routes have an explicit expected auth mechanism;
 - upgraded `next` and `eslint-config-next` to `16.2.10`;
 - migrated ESLint config from `FlatCompat` to the native Next flat-config exports;
 - fixed Next 16 route-wrapper compatibility by making alias cron routes export `dynamic = "force-dynamic"` directly instead of re-exporting route segment config;

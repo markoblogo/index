@@ -8,6 +8,7 @@ import {
   MN7R_MONITOR_RESPONDENT_ID,
   SPIKE_ADMIN_FALLBACK_RESPONDENT_ID,
 } from "@/lib/index-platform";
+import { isInternalSecretHeaderAuthorized } from "@/lib/internal-admin-auth";
 import { syncIndexPositionDirectoryTx } from "@/lib/position-directory-sync";
 import { sendRespondentTelegramNotifications } from "@/lib/respondent-telegram";
 
@@ -61,6 +62,12 @@ export async function POST(request: Request) {
     url.searchParams.get("sendTelegramSurvey") === "1";
   const shouldExposeTemporaryPassword =
     url.searchParams.get("exposeTemporaryPassword") === "1";
+  if (shouldExposeTemporaryPassword && !canExposeTemporaryPassword(request)) {
+    return NextResponse.json(
+      { error: "Temporary password disclosure is not authorized." },
+      { status: 403 },
+    );
+  }
   const submitDraftsDate = url.searchParams.get("submitDraftsDate");
   const submitDraftsRespondentId =
     url.searchParams.get("submitDraftsRespondentId") ?? fopSolovey.id;
@@ -295,6 +302,14 @@ export async function POST(request: Request) {
     telegramOnboardingSent,
     telegramSurvey,
   });
+}
+
+function canExposeTemporaryPassword(request: Request) {
+  return isInternalSecretHeaderAuthorized(
+    request,
+    "x-spike-setup-expose-secret",
+    process.env.SPIKE_SETUP_EXPOSE_SECRET,
+  );
 }
 
 async function cleanupNonMonitorSubmissions(date: string) {
