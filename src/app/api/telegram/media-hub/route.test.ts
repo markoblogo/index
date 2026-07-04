@@ -120,6 +120,13 @@ describe("media hub telegram route", () => {
       expect.objectContaining({ status: 500 }),
     );
   });
+
+  it("immediately acknowledges received tagged materials", async () => {
+    await postTelegramUpdate(buildMessageUpdate("#ssi #weekly Україна експортувала зерно через портові та прикордонні маршрути протягом тижня."));
+
+    expectSentTelegramText("Матеріал отримано для SSI: weekly.");
+    expectSentTelegramText("Все добре, будемо з ним працювати.");
+  });
 });
 
 async function postTelegramUpdate(update: unknown, secret = "test-secret") {

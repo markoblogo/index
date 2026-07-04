@@ -228,6 +228,14 @@ export async function POST(request: Request) {
 
   const results = [];
 
+  if (hasIncomingMaterial && tenantIds.length > 0) {
+    await sendTelegramText(
+      botToken.value,
+      String(message.chat.id),
+      buildMaterialReceivedAck(routed.kind, tenantIds),
+    );
+  }
+
   if (!hasIncomingMaterial) {
     const pending = await consumePendingTelegramMaterial(message);
     if (pending) {
@@ -358,6 +366,19 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json({ idempotencyKey, ok: true, results });
+}
+
+function buildMaterialReceivedAck(
+  kind: ReturnType<typeof parseMediaHubMaterialHashtags>["kind"],
+  tenantIds: MediaHubManualMaterialTenant[],
+) {
+  const projects = tenantIds.map(getMediaHubProjectName).join(" + ");
+  const reportKind = getMediaHubReportKindLabel(kind);
+  return [
+    `Матеріал отримано для ${projects}: ${reportKind}.`,
+    "Все добре, будемо з ним працювати.",
+    `Буде враховано у звіті за ${reportKind}.`,
+  ].join("\n");
 }
 
 async function savePendingTelegramMaterial(message: TelegramMessage, urls: string[]) {
