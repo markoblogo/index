@@ -109,7 +109,9 @@ export function validateMediaHubReportClaims(input: {
 
   return {
     checkedAt: new Date().toISOString(),
-    status: unsupportedClaims.length > 0 ? "needs_review" as const : "passed" as const,
+    status: unsupportedClaims.some((claim) => claim.severity === "high")
+      ? "needs_review" as const
+      : "passed" as const,
     unsupportedClaims,
   } satisfies MediaHubClaimValidation;
 }
