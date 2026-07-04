@@ -578,7 +578,7 @@ async function storeManualMaterial(input: {
 
   const id = randomUUID();
   const summary = summarizeExtractedMaterial(input.extraction.extractedText);
-  await db.$executeRawUnsafe(
+  const inserted = await db.$queryRawUnsafe<Array<{ id: string }>>(
     `
       INSERT INTO "MediaHubManualMaterial" (
         "id", "tenantId", "kind", "sourceType", "originalUrl", "canonicalUrl",
@@ -598,6 +598,8 @@ async function storeManualMaterial(input: {
         $24, $25, $26, $27,
         NULL, NOW(), NOW()
       )
+      ON CONFLICT ("tenantId", "contentHash") DO NOTHING
+      RETURNING "id"
     `,
     id,
     input.tenantId,
@@ -627,6 +629,28 @@ async function storeManualMaterial(input: {
     input.extraction.extractionStatus,
     getSourceRegistrationStatus(input.sourceType, input.canonicalUrl),
   );
+
+  if (!inserted[0]) {
+    const duplicate = await db.$queryRawUnsafe<Array<{ id: string }>>(
+      `
+        SELECT "id"
+        FROM "MediaHubManualMaterial"
+        WHERE "tenantId" = $1
+          AND "contentHash" = $2
+        LIMIT 1
+      `,
+      input.tenantId,
+      contentHash,
+    );
+
+    return buildResult(
+      input.tenantId,
+      input.kind,
+      "duplicate",
+      "Duplicate material already exists.",
+      duplicate[0]?.id,
+    );
+  }
 
   await storeManualMaterialAssets({
     contentBytes: input.contentBytes,
