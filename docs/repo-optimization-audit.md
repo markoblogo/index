@@ -221,6 +221,7 @@ Implemented fixes:
 - expanded MediaHub manual-material URL safety checks to block localhost, single-label intranet hosts, private IPv4 ranges, link-local metadata IPs and private/link-local IPv6 targets before server-side fetching;
 - moved MediaHub PDF extraction's `child_process`/filesystem dependencies behind lazy imports so cron/API route tracing no longer pulls the whole project into the Turbopack NFT list;
 - wrapped public latest/history API routes with structured `503` responses and `Cache-Control: no-store` on data-loading failures, preventing generic uncaught 500s from being cached by edge/CDN layers;
+- added weak ETag support and conditional `304` responses for public JSON data routes, and aligned `/api/public/fx-rates` with the shared structured `503`/`no-store` response path;
 - disabled public AI market-brief auto-repair by default so public GET traffic cannot trigger OpenAI spend unless `SPIKE_AI_BRIEF_PUBLIC_AUTO_REPAIR=1` is explicitly enabled;
 - added a shared hashed in-memory request rate limiter and applied it to public contact and password-reset request endpoints, reducing email/workflow spam risk while avoiding storage of raw IP/email keys;
 - extended the same hashed request limiter to password reset completion and password setup POST endpoints to reduce token/password brute-force attempts;

@@ -148,9 +148,13 @@ Public index data routes use:
 
 ```http
 Cache-Control: public, s-maxage=300, stale-while-revalidate=3600
+ETag: W/"..."
 ```
 
-Health uses `Cache-Control: no-store`.
+`/api/public/fx-rates` uses a longer `s-maxage=21600` cache. Public JSON
+responses support conditional `If-None-Match` requests and return `304` when
+the stable `data` payload has not changed. Health and public data failures use
+`Cache-Control: no-store`.
 
 ## Production TODO
 

@@ -1,6 +1,18 @@
 import { NextResponse } from "next/server";
+import { createHash } from "node:crypto";
 
-export function publicDataResponse(data: unknown, cacheSeconds = 300) {
+export function publicDataResponse(data: unknown, cacheSeconds = 300, request?: Request) {
+  const etag = buildPublicDataEtag(data);
+  if (request?.headers.get("if-none-match") === etag) {
+    return new Response(null, {
+      headers: {
+        "Cache-Control": `public, s-maxage=${cacheSeconds}, stale-while-revalidate=3600`,
+        ETag: etag,
+      },
+      status: 304,
+    });
+  }
+
   return NextResponse.json(
     {
       data,
@@ -9,6 +21,7 @@ export function publicDataResponse(data: unknown, cacheSeconds = 300) {
     {
       headers: {
         "Cache-Control": `public, s-maxage=${cacheSeconds}, stale-while-revalidate=3600`,
+        ETag: etag,
       },
     },
   );
@@ -35,4 +48,21 @@ function sanitizeError(error: unknown) {
   return error instanceof Error
     ? { message: error.message.slice(0, 180), name: error.name }
     : { message: "unknown_error" };
+}
+
+function buildPublicDataEtag(data: unknown) {
+  return `W/"${createHash("sha256").update(stableStringify(data)).digest("base64url").slice(0, 24)}"`;
+}
+
+function stableStringify(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableStringify(item)).join(",")}]`;
+  }
+  if (value && typeof value === "object") {
+    return `{${Object.entries(value)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, item]) => `${JSON.stringify(key)}:${stableStringify(item)}`)
+      .join(",")}}`;
+  }
+  return JSON.stringify(value);
 }
