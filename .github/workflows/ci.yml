@@ -56,9 +56,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Repo health audit
-        run: npm run audit:repo
-
       - name: Production env preflight for SPIKE
         env:
           INDEX_TENANT: spike-ua
@@ -82,11 +79,5 @@ jobs:
           NEXT_PUBLIC_SITE_URL: https://1d3x.com
         run: npm run check:production-env -- --project 1d3x
 
-      - name: Lint
-        run: npm run lint
-
-      - name: Unit and regression tests
-        run: npm run test
-
-      - name: Production build
-        run: npm run build
+      - name: Release audit
+        run: npm run audit:release

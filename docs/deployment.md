@@ -15,8 +15,7 @@ The app is ready to deploy on Vercel as a Next.js App Router project.
 ### How to deploy safely (important)
 
 0. Confirm CI is green on `main` or on the PR branch. The GitHub Actions
-   workflow runs `npm run audit:repo`, production env preflight smoke checks,
-   `npm run lint`, `npm run test` and `npm run build`.
+   workflow runs production env preflight smoke checks and `npm run audit:release`.
 
 1. Confirm the active Vercel project before deploy:
 

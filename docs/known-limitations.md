@@ -23,6 +23,6 @@
 
 ## Readiness Notes
 
-- `npm run lint`, `npm run test` and `npm run build` should pass before every deploy.
+- `npm run audit:release` should pass before every deploy.
 - Production deployments require `DATABASE_URL`.
 - Public embeds require correct `NEXT_PUBLIC_SITE_URL` and `ALLOWED_EMBED_ORIGINS`.
