@@ -99,6 +99,8 @@ export default async function MethodologyPage({
         </div>
       </section>
 
+      <OperationalReadinessSection locale={locale} variant="uga" />
+
       <section className="mx-auto max-w-7xl px-6 py-8 lg:px-8 lg:py-10">
         <div className="grid border border-black bg-white lg:grid-cols-[1fr_auto] lg:items-center">
           <div className="border-b border-black p-5 lg:border-b-0 lg:border-r">
@@ -280,6 +282,8 @@ function SpikeMethodologyPage({
 
       <SpikeAiPolicySection locale={locale} />
 
+      <OperationalReadinessSection locale={locale} variant="spike" />
+
       <section className="mx-auto max-w-[1900px] px-6 py-8 lg:px-8 lg:py-10">
         <div className="grid gap-5 rounded-[1.35rem] border border-white/12 bg-[#101010] p-5 lg:grid-cols-[1fr_auto] lg:items-center">
           <div>
@@ -346,6 +350,158 @@ function SpikeMethodologyPage({
         </div>
       </section>
     </main>
+  );
+}
+
+function OperationalReadinessSection({
+  locale,
+  variant,
+}: {
+  locale: Locale;
+  variant: "uga" | "spike";
+}) {
+  const isSpike = variant === "spike";
+  const copy =
+    locale === "uk"
+      ? {
+          body:
+            "Платформа розділяє офіційний розрахунок, публікацію, аналітичний шар і зовнішні канали доставки. Це зменшує ризик випадкових змін у вже опублікованих значеннях і робить операційний стан перевірюваним перед релізом.",
+          eyebrow: "Операційна надійність",
+          items: [
+            {
+              description:
+                "Офіційні значення проходять валідацію вибірки, фільтрацію викидів і фіксацію після публікації.",
+              title: "Методологічний контроль",
+            },
+            {
+              description:
+                "Перерахунки, ручні корекції, catch-up запуск і публікаційні події зберігаються як audit trail.",
+              title: "Журнал змін",
+            },
+            {
+              description:
+                "Перед релізом код проходить repo audit, production-env smoke, lint, test suite і production build.",
+              title: "Release gates",
+            },
+            {
+              description:
+                "Публічні сайти, API, MediaHub і канали повідомлень мають окремі tenant/env boundary checks.",
+              title: "Межі tenant-проєктів",
+            },
+          ],
+          note:
+            "Окремі production-секрети, індивідуальні подання респондентів і внутрішні операційні ключі не публікуються.",
+          title: "Як контролюється якість публікації",
+        }
+      : {
+          body:
+            "The platform separates official calculation, publication, analytical interpretation and external delivery channels. This reduces accidental changes to locked values and makes the operational state verifiable before release.",
+          eyebrow: "Operational reliability",
+          items: [
+            {
+              description:
+                "Official values pass sample validation, outlier filtering and post-publication locking.",
+              title: "Methodology controls",
+            },
+            {
+              description:
+                "Recalculations, manual corrections, catch-up runs and publication events are kept as an audit trail.",
+              title: "Change log",
+            },
+            {
+              description:
+                "Before release, the code passes repo audit, production-env smoke, lint, test suite and production build.",
+              title: "Release gates",
+            },
+            {
+              description:
+                "Public sites, APIs, MediaHub and messaging channels use separate tenant/env boundary checks.",
+              title: "Tenant boundaries",
+            },
+          ],
+          note:
+            "Production secrets, individual respondent submissions and internal operational keys are not published.",
+          title: "How publication quality is controlled",
+        };
+
+  if (isSpike) {
+    return (
+      <section className="border-b border-white/10 bg-[#090909]">
+        <div className="mx-auto grid max-w-[1900px] gap-7 px-6 py-10 lg:grid-cols-[24rem_1fr] lg:px-8 lg:py-14">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-[var(--spike-pink)]">
+              {copy.eyebrow}
+            </p>
+            <h2 className="mt-4 text-4xl font-black uppercase leading-none tracking-normal text-white">
+              {copy.title}
+            </h2>
+            <p className="mt-5 text-sm font-semibold leading-6 text-white/58">
+              {copy.body}
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {copy.items.map((item, index) => (
+              <article
+                className="rounded-[1.15rem] border border-white/10 bg-[#f8f8f2] p-5 text-[#050505]"
+                key={item.title}
+              >
+                <p className="text-lg font-black text-[var(--spike-accent)]">
+                  {String(index + 1).padStart(2, "0")}
+                </p>
+                <h3 className="mt-3 text-base font-black uppercase leading-5">
+                  {item.title}
+                </h3>
+                <p className="mt-3 text-sm leading-6 text-black/62">
+                  {item.description}
+                </p>
+              </article>
+            ))}
+            <p className="rounded-[1.15rem] border border-white/10 bg-black/45 p-5 text-xs font-semibold leading-5 text-white/58 sm:col-span-2">
+              {copy.note}
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="border-y border-black bg-uga-dark text-white">
+      <div className="mx-auto grid max-w-7xl gap-8 px-6 py-10 lg:grid-cols-[0.78fr_1.22fr] lg:px-8 lg:py-14">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-uga-lime">
+            {copy.eyebrow}
+          </p>
+          <h2 className="mt-4 text-3xl font-black uppercase leading-tight tracking-normal lg:text-4xl">
+            {copy.title}
+          </h2>
+          <p className="mt-5 text-sm font-semibold leading-6 text-white/68">
+            {copy.body}
+          </p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {copy.items.map((item, index) => (
+            <article
+              className="border border-white/20 bg-white p-4 text-black"
+              key={item.title}
+            >
+              <p className="text-lg font-black text-uga-green">
+                {String(index + 1).padStart(2, "0")}
+              </p>
+              <h3 className="mt-3 text-base font-black uppercase leading-5">
+                {item.title}
+              </h3>
+              <p className="mt-3 text-sm leading-6 text-black/65">
+                {item.description}
+              </p>
+            </article>
+          ))}
+          <p className="border border-white/20 bg-black/20 p-4 text-xs font-semibold leading-5 text-white/68 sm:col-span-2">
+            {copy.note}
+          </p>
+        </div>
+      </div>
+    </section>
   );
 }
 

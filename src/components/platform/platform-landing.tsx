@@ -560,6 +560,61 @@ export function PlatformLanding() {
         </div>
       </section>
 
+      <section className="border-b border-white/10 bg-[#050505] text-white">
+        <div className="mx-auto grid max-w-7xl gap-10 px-5 py-14 sm:px-8 lg:grid-cols-[0.85fr_1.15fr] lg:py-20">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.28em] text-[#d6ff58]">
+              Operational assurance
+            </p>
+            <h2 className="mt-5 text-5xl font-black leading-[0.95] tracking-[-0.04em] sm:text-6xl">
+              Built to be audited before it is published.
+            </h2>
+            <p className="mt-6 text-lg leading-8 text-white/64">
+              Each index tenant runs through repeatable quality gates before
+              release: production-env smoke checks, repo health audit, lint,
+              regression tests and production build. Public methodology,
+              MediaHub delivery and tenant boundaries are treated as part of the
+              operational system, not as afterthoughts.
+            </p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {[
+              {
+                title: "Tenant boundaries",
+                body: "Project URLs, public API surfaces and messaging targets are checked per tenant before release.",
+              },
+              {
+                title: "Publication control",
+                body: "Index values are calculated, reviewed, locked and recorded through auditable publication events.",
+              },
+              {
+                title: "MediaHub resilience",
+                body: "Telegram, WhatsApp and report workflows use explicit secrets, allowlists, timeout bounds and catch-up paths.",
+              },
+              {
+                title: "Release evidence",
+                body: "The platform keeps a single audit gate for CI/local verification plus a documented completion matrix.",
+              },
+            ].map((item, index) => (
+              <article
+                className="rounded-[1.25rem] border border-white/12 bg-[#f3f0e8] p-5 text-black"
+                key={item.title}
+              >
+                <p className="text-xl font-black text-[#5f6f00]">
+                  {String(index + 1).padStart(2, "0")}
+                </p>
+                <h3 className="mt-3 text-lg font-black uppercase leading-5">
+                  {item.title}
+                </h3>
+                <p className="mt-3 text-sm leading-6 text-black/62">
+                  {item.body}
+                </p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section
         className="border-b border-white/10 bg-[#050505] text-white"
         id="partners"
