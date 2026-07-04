@@ -6,6 +6,12 @@ const PROJECT_TENANTS = {
   "uga-index": ["uga-ua"],
 };
 
+const PROJECT_SITE_HOSTS = {
+  "1d3x": ["1d3x.com", "www.1d3x.com"],
+  "spike-ua-index": ["spike.1d3x.com", "spike-ua.cr0pto.com"],
+  "uga-index": ["index.uga.ua", "uga.1d3x.com", "index-uga.cr0pto.com"],
+};
+
 const COMMON_REQUIRED = [
   "DATABASE_URL",
   "NEXT_PUBLIC_SITE_URL",
@@ -81,6 +87,11 @@ export function validateProductionEnv(env = process.env, options = {}) {
     if (expectedTenants.length > 0 && !expectedTenants.includes(tenant)) {
       invalid.push(`INDEX_TENANT/NEXT_PUBLIC_INDEX_TENANT must be one of: ${expectedTenants.join(", ")}`);
     }
+    const expectedHosts = PROJECT_SITE_HOSTS[project] ?? [];
+    const configuredSiteHost = getUrlHost(env.NEXT_PUBLIC_SITE_URL);
+    if (expectedHosts.length > 0 && configuredSiteHost && !expectedHosts.includes(configuredSiteHost)) {
+      invalid.push(`NEXT_PUBLIC_SITE_URL host must be one of: ${expectedHosts.join(", ")}`);
+    }
 
     for (const key of PROJECT_REQUIRED[project] ?? []) {
       if (!hasValue(env, key)) missing.push(key);
@@ -145,6 +156,14 @@ function normalizeProject(value) {
 
 function hasValue(env, key) {
   return typeof env[key] === "string" && env[key].trim().length > 0;
+}
+
+function getUrlHost(value) {
+  try {
+    return new URL(String(value || "")).hostname.toLowerCase();
+  } catch {
+    return "";
+  }
 }
 
 function unique(items) {

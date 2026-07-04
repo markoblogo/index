@@ -44,6 +44,9 @@ webhook and WhatsApp secrets, and warns when MediaHub Telegram ingestion has no
 read allowlist. If Telegram autopost manual approval is disabled with
 `TELEGRAM_CONNECTOR_MANUAL_APPROVAL_REQUIRED=0`, an explicit
 `TELEGRAM_CONNECTOR_POST_CHAT_IDS` allowlist is required.
+It also validates that `NEXT_PUBLIC_SITE_URL` belongs to the expected Vercel
+project domain set, preventing `1d3x`, SSI and UGA deploys from shipping with a
+cross-tenant public URL.
 
 For the internal SPIKE setup route, `exposeTemporaryPassword=1` is protected by
 an additional `x-spike-setup-expose-secret` header matching

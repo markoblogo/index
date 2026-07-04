@@ -17,6 +17,7 @@ describe("check-production-env", () => {
       INDEX_TENANT: "spike-ua",
       MEDIA_HUB_REPAIR_SECRET: "repair",
       MEDIA_HUB_SMOKE_TEST_SECRET: "smoke",
+      NEXT_PUBLIC_SITE_URL: "https://spike.1d3x.com",
       OPENAI_API_KEY: "sk-test",
       SPIKE_AUTO_PUBLISH_CRON_SECRET: "auto",
       SPIKE_DAILY_CATCHUP_SECRET: "catchup",
@@ -44,6 +45,7 @@ describe("check-production-env", () => {
       INDEX_TENANT: "spike-ua",
       MEDIA_HUB_REPAIR_SECRET: "repair",
       MEDIA_HUB_SMOKE_TEST_SECRET: "smoke",
+      NEXT_PUBLIC_SITE_URL: "https://spike.1d3x.com",
       SPIKE_AUTO_PUBLISH_CRON_SECRET: "auto",
       SPIKE_DAILY_CATCHUP_SECRET: "catchup",
       SPIKE_MEDIA_HUB_CRON_SECRET: "media",
@@ -63,6 +65,7 @@ describe("check-production-env", () => {
       MEDIA_HUB_MATERIAL_ALLOWED_TELEGRAM_CHAT_IDS: "-1001",
       MEDIA_HUB_REPAIR_SECRET: "repair",
       MEDIA_HUB_SMOKE_TEST_SECRET: "smoke",
+      NEXT_PUBLIC_SITE_URL: "https://spike.1d3x.com",
       SPIKE_AUTO_PUBLISH_CRON_SECRET: "auto",
       SPIKE_DAILY_CATCHUP_SECRET: "catchup",
       SPIKE_MEDIA_HUB_CRON_SECRET: "media",
@@ -82,6 +85,7 @@ describe("check-production-env", () => {
       INDEX_TENANT: "spike-ua",
       MEDIA_HUB_REPAIR_SECRET: "repair",
       MEDIA_HUB_SMOKE_TEST_SECRET: "smoke",
+      NEXT_PUBLIC_SITE_URL: "https://spike.1d3x.com",
       SPIKE_AUTO_PUBLISH_CRON_SECRET: "auto",
       SPIKE_DAILY_CATCHUP_SECRET: "catchup",
       SPIKE_MEDIA_HUB_CRON_SECRET: "media",
@@ -101,6 +105,7 @@ describe("check-production-env", () => {
     const uga = validateProductionEnv({
       ...baseEnv,
       INDEX_TENANT: "uga-ua",
+      NEXT_PUBLIC_SITE_URL: "https://index.uga.ua",
       RESPONDENT_EMAIL_CRON_SECRET: "email",
       RESPONDENT_TELEGRAM_CRON_SECRET: "telegram",
       UGA_INDEX_RUNTIME_MODE: "demo",
@@ -111,6 +116,7 @@ describe("check-production-env", () => {
       INDEX_TENANT: "spike-ua",
       MEDIA_HUB_REPAIR_SECRET: "repair",
       MEDIA_HUB_SMOKE_TEST_SECRET: "smoke",
+      NEXT_PUBLIC_SITE_URL: "https://spike.1d3x.com",
       SPIKE_AUTO_PUBLISH_CRON_SECRET: "auto",
       SPIKE_DAILY_CATCHUP_SECRET: "catchup",
       SPIKE_MEDIA_HUB_CRON_SECRET: "media",
@@ -126,5 +132,24 @@ describe("check-production-env", () => {
   it("parses project arguments", () => {
     expect(getProjectFromArgs(["--project", "spike-ua-index"])).toBe("spike-ua-index");
     expect(getProjectFromArgs(["--project=uga-index"])).toBe("uga-index");
+  });
+
+  it("rejects project and public site URL host mismatches", () => {
+    const result = validateProductionEnv({
+      ...baseEnv,
+      INDEX_TENANT: "spike-ua",
+      MEDIA_HUB_REPAIR_SECRET: "repair",
+      MEDIA_HUB_SMOKE_TEST_SECRET: "smoke",
+      NEXT_PUBLIC_SITE_URL: "https://1d3x.com",
+      SPIKE_AUTO_PUBLISH_CRON_SECRET: "auto",
+      SPIKE_DAILY_CATCHUP_SECRET: "catchup",
+      SPIKE_MEDIA_HUB_CRON_SECRET: "media",
+      SPIKE_TELEGRAM_BOT_TOKEN: "token",
+      TELEGRAM_MEDIA_HUB_WEBHOOK_SECRET: "media-webhook",
+      TELEGRAM_RESPONDENT_WEBHOOK_SECRET: "respondent-webhook",
+    }, { project: "spike-ua-index" });
+
+    expect(result.ok).toBe(false);
+    expect(result.invalid).toContain("NEXT_PUBLIC_SITE_URL host must be one of: spike.1d3x.com, spike-ua.cr0pto.com");
   });
 });
