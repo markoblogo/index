@@ -15,6 +15,7 @@ describe("check-production-env", () => {
     const result = validateProductionEnv({
       ...baseEnv,
       INDEX_TENANT: "spike-ua",
+      MEDIA_HUB_CATCHUP_SECRET: "manual-catchup",
       MEDIA_HUB_REPAIR_SECRET: "repair",
       MEDIA_HUB_SMOKE_TEST_SECRET: "smoke",
       NEXT_PUBLIC_SITE_URL: "https://spike.1d3x.com",
@@ -43,6 +44,7 @@ describe("check-production-env", () => {
     const result = validateProductionEnv({
       ...baseEnv,
       INDEX_TENANT: "spike-ua",
+      MEDIA_HUB_CATCHUP_SECRET: "manual-catchup",
       MEDIA_HUB_REPAIR_SECRET: "repair",
       MEDIA_HUB_SMOKE_TEST_SECRET: "smoke",
       NEXT_PUBLIC_SITE_URL: "https://spike.1d3x.com",
@@ -83,6 +85,7 @@ describe("check-production-env", () => {
     const result = validateProductionEnv({
       ...baseEnv,
       INDEX_TENANT: "spike-ua",
+      MEDIA_HUB_CATCHUP_SECRET: "manual-catchup",
       MEDIA_HUB_REPAIR_SECRET: "repair",
       MEDIA_HUB_SMOKE_TEST_SECRET: "smoke",
       NEXT_PUBLIC_SITE_URL: "https://spike.1d3x.com",
@@ -114,6 +117,7 @@ describe("check-production-env", () => {
     const spike = validateProductionEnv({
       ...baseEnv,
       INDEX_TENANT: "spike-ua",
+      MEDIA_HUB_CATCHUP_SECRET: "manual-catchup",
       MEDIA_HUB_REPAIR_SECRET: "repair",
       MEDIA_HUB_SMOKE_TEST_SECRET: "smoke",
       NEXT_PUBLIC_SITE_URL: "https://spike.1d3x.com",
@@ -138,6 +142,7 @@ describe("check-production-env", () => {
     const result = validateProductionEnv({
       ...baseEnv,
       INDEX_TENANT: "spike-ua",
+      MEDIA_HUB_CATCHUP_SECRET: "manual-catchup",
       MEDIA_HUB_REPAIR_SECRET: "repair",
       MEDIA_HUB_SMOKE_TEST_SECRET: "smoke",
       NEXT_PUBLIC_SITE_URL: "https://1d3x.com",

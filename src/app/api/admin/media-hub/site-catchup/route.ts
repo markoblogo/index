@@ -56,6 +56,7 @@ export async function POST(request: Request) {
 
 function isAuthorized(request: Request) {
   return isBearerTokenAuthorized(request, [
+    process.env.MEDIA_HUB_CATCHUP_SECRET,
     process.env.MEDIA_HUB_REPAIR_SECRET,
     process.env.MEDIA_HUB_SMOKE_TEST_SECRET,
   ]);
