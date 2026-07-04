@@ -66,9 +66,10 @@ function collectSsiFacts(content: SsiNonDailyReportContent, locale: Locale) {
     ...evidence,
     ...feed,
     ...windowSummary,
-  ])
+  ].flatMap(expandFactCandidates))
     .map((item) => normalizeFact(item, locale))
     .filter((item) => item.length > 30)
+    .filter((item) => isPublishableFact(item))
     .filter((item) => !unsupported.some((claim) => isSameFact(item, claim)))
     .filter((item) => locale === "uk" || isUkraineFocused(item));
 }
@@ -152,8 +153,16 @@ function buildParts(b: ReturnType<typeof bucketFacts>, locale: Locale): ChannelP
 
 function renderPartSections(part: ChannelPart, kind: "weekly" | "monthly") {
   const perSection = kind === "monthly" ? 5 : 4;
+  const used = new Set<string>();
   const rendered = part.sections.flatMap((section) => {
-    const items = dedupe(section.items).slice(0, perSection);
+    const items = dedupe(section.items)
+      .filter((item) => {
+        const key = comparable(item);
+        if (!key || used.has(key)) return false;
+        used.add(key);
+        return true;
+      })
+      .slice(0, perSection);
     return items.length > 0
       ? ["", `<b>${escapeHtml(section.heading)}</b>`, ...items.map((item) => `• ${escapeHtml(item)}`)]
       : [];
@@ -196,13 +205,36 @@ function patterns(locale: Locale) {
 
 function normalizeFact(value: string, locale: Locale) {
   return value
+    .replace(/^\s*(?:[•*\-–—]\s*)+/u, "")
+    .replace(/^\s*\d+[.)]\s*/u, "")
+    .replace(/^\s*(?:[•*\-–—]\s*)+/u, "")
     .replace(/\bUSD\s*\/\s*(?:t|т|mt|тонн(?:а|у|и)?|тон)\b/gi, "$")
     .replace(/\bEUR\s*\/\s*(?:t|т|mt|тонн(?:а|у|и)?|тон)\b/gi, "€")
     .replace(/\b(?:UAH|грн\.?|грив(?:ень|ні|ня)?)\s*\/\s*(?:t|т|mt|тонн(?:а|у|и)?|тон)\b/gi, "₴")
-    .replace(/^\s*(?:🔎|🌾|🌻|🏭|🚚|⚖️|🌍|📰|❗️|🇺🇦|🇫🇷)\s*/u, "")
+    .replace(/^\s*(?:✅|⚡️|🔎|🌾|🌻|🏭|🚚|⚖️|🌍|📰|❗️|🇺🇦|🇫🇷)\s*/u, "")
     .replace(locale === "uk" ? /^Головні сигнали\s*:?/i : /^Main signals\s*:?/i, "")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function expandFactCandidates(value: string | null | undefined) {
+  if (!value) return [];
+  return value
+    .replace(/([;.!?])\s*(✅|⚡️)/gu, "$1\n$2")
+    .split(/\n+|(?=✅)|(?=⚡️)/u)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function isPublishableFact(value: string) {
+  const semicolonCount = (value.match(/;/g) ?? []).length;
+  if (semicolonCount >= 3) return false;
+  if (/\bindex\s+\d+(?:[.,]\d+)?\s*[$€₴]?/i.test(value)) return false;
+  if (/\b(?:CORN|WHT_115|FEED_WHT|GMO_SOY|SOYBEAN_NON_GMO|RAPESEED)[A-Z0-9_]*\b/.test(value)) return false;
+  if (/\b(?:Provider|Source|raw_update|chat_id|message_id)\s*:/i.test(value)) return false;
+  if (/^(?:SUNFLOWER|RAPESEED|SOYBEANS?|CORN|WHEAT|LOGISTICS)\s*:?$/i.test(value)) return false;
+  if (/^(?:СОНЯШНИК|РІПАК|СОЯ|КУКУРУДЗА|ПШЕНИЦЯ|ЛОГІСТИКА)\s*:?$/i.test(value)) return false;
+  return true;
 }
 
 function getMeta(kind: "weekly" | "monthly", locale: Locale) {
@@ -244,7 +276,17 @@ function formatShortDate(date: string) {
 }
 
 function dedupe(items: Array<string | null | undefined>) {
-  return [...new Set(items.map((item) => item?.trim()).filter((item): item is string => Boolean(item)))];
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const item of items) {
+    const value = item?.trim();
+    if (!value) continue;
+    const key = comparable(value).slice(0, 220);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    result.push(value);
+  }
+  return result;
 }
 
 function escapeHtml(value: string) {
