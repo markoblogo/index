@@ -13,6 +13,7 @@
     "audit:repo": "node scripts/audit-repo-health.mjs",
     "audit:release": "npm run audit:repo && npm run lint && npm run test && npm run build",
     "audit:production-env:ci": "node scripts/check-production-env-smoke.mjs",
+    "audit:all": "npm run audit:production-env:ci && npm run audit:release",
     "check:production-env": "node scripts/check-production-env.mjs",
     "db:generate": "prisma generate",
     "db:seed": "prisma db seed",

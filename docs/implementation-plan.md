@@ -37,7 +37,7 @@ Production runtime requires `DATABASE_URL`. Local development may use mock fallb
 
 ## Acceptance Criteria
 
-- `npm run audit:release` passes.
+- `npm run audit:all` passes.
 - Public UGA pages use current basis terminology and no stale partner attribution.
 - Respondent count on public cards/API reflects active respondent records.
 - Admin and respondent routes require a valid session.

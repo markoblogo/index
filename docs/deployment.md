@@ -15,7 +15,7 @@ The app is ready to deploy on Vercel as a Next.js App Router project.
 ### How to deploy safely (important)
 
 0. Confirm CI is green on `main` or on the PR branch. The GitHub Actions
-   workflow runs `npm run audit:production-env:ci` and `npm run audit:release`.
+   workflow runs `npm run audit:all`.
 
 1. Confirm the active Vercel project before deploy:
 
@@ -165,7 +165,7 @@ Before promoting a change for any index tenant:
 1. Confirm CI is green or run the same local gates:
 
 ```bash
-npm run audit:release
+npm run audit:all
 ```
 
 2. Run the project-specific environment preflight for the target Vercel project:

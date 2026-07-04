@@ -7,16 +7,17 @@ This matrix records the current evidence for the cross-project audit across
 items are complete only when the repo has a repeatable gate, code/documentation
 artifact, or current command output proving the claim.
 
-## Repeatable release gate
+## Repeatable full audit gate
 
 Use one local/CI command before promoting a release:
 
 ```bash
-npm run audit:release
+npm run audit:all
 ```
 
 The gate runs:
 
+- `npm run audit:production-env:ci`
 - `npm run audit:repo`
 - `npm run lint`
 - `npm run test`
@@ -24,6 +25,7 @@ The gate runs:
 
 Current local evidence from 2026-07-04:
 
+- production env smoke: passed for `spike-ua-index`, `uga-index` and `1d3x`;
 - repo health audit: passed;
 - lint: passed;
 - tests: 42 files / 184 tests passed;
@@ -38,7 +40,7 @@ npm run check:production-env -- --project uga-index
 npm run check:production-env -- --project 1d3x
 ```
 
-The repo also includes a safe dummy-env smoke gate for CI/local validation of
+The production-env smoke gate can also be run separately for fast validation of
 the checker logic:
 
 ```bash
@@ -49,7 +51,7 @@ npm run audit:production-env:ci
 
 | Area | Status | Evidence | Remaining risk |
 | --- | --- | --- | --- |
-| Build/deploy guardrails | Implemented | tenant deploy scripts, deploy worktree guard, `.vercelignore`, CI workflow, `npm run audit:release` | real Vercel project env still must pass project preflight before deploy |
+| Build/deploy guardrails | Implemented | tenant deploy scripts, deploy worktree guard, `.vercelignore`, CI workflow, `npm run audit:all` | real Vercel project env still must pass project preflight before deploy |
 | Repo health visibility | Implemented | `scripts/audit-repo-health.mjs`, thresholds for public payload, asset size, source-file size and minimum tests | largest modules are below gate but still large enough to deserve future decomposition |
 | Dependency/security baseline | Implemented | Next/ESLint upgrade, dependency overrides, `npm audit` review documented in `docs/repo-optimization-audit.md` | upstream bundled dependencies can still trigger future audit advisories |
 | Cron/internal auth | Implemented | fail-closed shared auth, timing-safe comparisons, tests, `docs/admin-api-auth-matrix.md` | production depends on correct Vercel secrets |
@@ -62,7 +64,7 @@ npm run audit:production-env:ci
 | SSI WhatsApp worker | Implemented/documented | Railway worker docs and webhook delivery timeout path | WhatsApp Web session stability depends on Railway volume and linked device session |
 | Tenant boundary checks | Implemented | project-aware production env checker validates `NEXT_PUBLIC_SITE_URL` host set; `npm run audit:production-env:ci` checks all project profiles with safe dummy env | custom domains must be added to the checker before cutover |
 | Public/site documentation | Updated | deployment checklist, Telegram connector docs, MediaHub manual-material docs, repo audit notes | rendered production sites still require post-deploy smoke checks |
-| CI coverage | Implemented | GitHub Actions runs `npm run audit:production-env:ci` and `npm run audit:release` | CI uses safe dummy env for preflight logic, not real production secrets |
+| CI coverage | Implemented | GitHub Actions runs `npm run audit:all` | CI uses safe dummy env for preflight logic, not real production secrets |
 
 ## Not considered fully proven without production access
 

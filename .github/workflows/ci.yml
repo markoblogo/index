@@ -56,8 +56,5 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Production env preflight smoke
-        run: npm run audit:production-env:ci
-
-      - name: Release audit
-        run: npm run audit:release
+      - name: Full audit
+        run: npm run audit:all
