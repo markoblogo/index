@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import nextDynamic from "next/dynamic";
-import { SITE_CONFIG } from "@/lib/constants";
 import { allowMockFallback, hasDatabaseUrl } from "@/lib/db";
 import { getFxRates } from "@/lib/fx-rates";
 import type { Locale } from "@/lib/i18n";
@@ -8,6 +7,7 @@ import { getActiveIndexConfig } from "@/lib/index-platform";
 import { commodities, type Commodity, type CommodityId } from "@/lib/mock-data";
 import { getPublicHistoryData } from "@/lib/public-api-data";
 import { getActiveRespondentCountData } from "@/lib/respondent-directory-lazy";
+import { getDeliveryBasisConfigForCommodityId } from "@/lib/tenant-basis";
 
 export const dynamic = "force-dynamic";
 
@@ -528,6 +528,7 @@ function PublishedValuesTable({
   locale: Locale;
   rows: AnalyticsPoint[];
 }) {
+  const activeIndex = getActiveIndexConfig();
   const groups = groupRowsByDate(rows);
 
   return (
@@ -565,6 +566,10 @@ function PublishedValuesTable({
                 <tbody className="divide-y divide-black">
                   {group.rows.map((row) => {
                     const commodity = getCommodity(row.commodityId);
+                    const basis = getDeliveryBasisConfigForCommodityId(
+                      row.commodityId,
+                      activeIndex,
+                    );
 
                     return (
                       <tr
@@ -575,7 +580,7 @@ function PublishedValuesTable({
                           {commodity.name[locale]}
                         </td>
                         <td className="px-4 py-3 text-black/60">
-                          {SITE_CONFIG.defaultDeliveryBasis}
+                          {basis.name}
                         </td>
                         <td className="px-4 py-3 font-black text-black">
                           <CurrencyValueAsync
@@ -645,10 +650,10 @@ async function getRealAnalyticsHistory(): Promise<AnalyticsPoint[]> {
       respondents: row.respondents,
       value: row.valueUsdPerMt,
     }))
-    .sort((a, b) =>
-      a.date === b.date
-        ? a.commodityId.localeCompare(b.commodityId)
-        : a.date.localeCompare(b.date),
+    .sort((first, second) =>
+      first.date === second.date
+        ? compareAnalyticsRows(first, second)
+        : first.date.localeCompare(second.date),
     );
 }
 
@@ -665,7 +670,7 @@ function selectRecentPublishedRows(
     .filter((row) => dateSet.has(row.date))
     .sort((first, second) =>
       first.date === second.date
-        ? first.commodityId.localeCompare(second.commodityId)
+        ? compareAnalyticsRows(first, second)
         : second.date.localeCompare(first.date),
     );
 }
@@ -679,8 +684,33 @@ function groupRowsByDate(rows: AnalyticsPoint[]) {
 
   return [...groups.entries()].map(([date, groupRows]) => ({
     date,
-    rows: groupRows,
+    rows: [...groupRows].sort(compareAnalyticsRows),
   }));
+}
+
+function compareAnalyticsRows(first: AnalyticsPoint, second: AnalyticsPoint) {
+  const firstCommodity = getCommodity(first.commodityId);
+  const secondCommodity = getCommodity(second.commodityId);
+  const firstRank = getAnalyticsCommodityRank(firstCommodity);
+  const secondRank = getAnalyticsCommodityRank(secondCommodity);
+
+  return firstRank === secondRank
+    ? first.commodityId.localeCompare(second.commodityId)
+    : firstRank - secondRank;
+}
+
+function getAnalyticsCommodityRank(commodity: Commodity) {
+  const commodityOrder = commodities.findIndex(
+    (item) => item.id === commodity.id,
+  );
+  const groupRank =
+    commodity.group === "processing"
+      ? 3
+      : commodity.category === "seasonal-export"
+        ? 2
+        : 1;
+
+  return groupRank * 1000 + Math.max(commodityOrder, 0);
 }
 
 function buildDemoAnalyticsHistory(

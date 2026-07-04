@@ -924,7 +924,7 @@ function getCopy(locale: Locale) {
         "Різниця між позиціями стискається, що може означати вирівнювання попиту або логістичного тиску.",
       regimePressure: "Market pressure",
       regimePressureBody:
-        "AI-read бачить тиск у поточному рівні або останньому імпульсі відносно архіву.",
+        "AI-read визначає ознаки ринкового тиску, порівнюючи поточний рівень і останній імпульс з історичними даними.",
       regimeRebound: "Rebound / strength",
       regimeReboundBody:
         "Поточний рух виглядає сильнішим за середній тон вибраного архівного вікна.",
@@ -1005,7 +1005,7 @@ function getCopy(locale: Locale) {
       "The gap between positions is narrowing, which can signal a relative demand or logistics reset.",
     regimePressure: "Market pressure",
     regimePressureBody:
-      "The AI read sees pressure in the current level or recent impulse relative to the archive.",
+      "The AI read identifies signs of market pressure by comparing the current level and latest impulse with historical data.",
     regimeRebound: "Rebound / strength",
     regimeReboundBody:
       "The current move looks stronger than the average tone of the selected archive window.",
