@@ -1092,6 +1092,17 @@ function buildSnapshotReportContent(input: {
       snapshots: input.snapshots,
       tenant: input.tenant,
     });
+  let localizedReports = nonDailyFallback?.localized
+    ? {
+        ...input.llm?.localized,
+        uk: input.llm?.localized?.uk?.summary?.length
+          ? input.llm.localized.uk
+          : nonDailyFallback.localized.uk,
+        en: input.llm?.localized?.en?.summary?.length
+          ? input.llm.localized.en
+          : nonDailyFallback.localized.en,
+      }
+    : input.llm?.localized;
   const evidenceFallback = input.kind === "daily" && isPlatformSite()
     ? buildPlatformDailyEvidenceFallback({
         manualMaterials: input.manualMaterials ?? [],
@@ -1117,23 +1128,44 @@ function buildSnapshotReportContent(input: {
     periodEndDate: input.periodEndDate,
     snapshots: input.snapshots,
   });
-  const validation = validateMediaHubReportClaims({
+  let summary = primaryLocalized?.summary?.length
+    ? primaryLocalized.summary
+    : nonDailyFallback?.summary.length
+      ? nonDailyFallback.summary
+    : evidenceFallback?.summary.length
+      ? evidenceFallback.summary
+      : (primary?.summaryBody ?? []);
+  const title = primaryLocalized?.title || evidenceFallback?.title ||
+    (nonDailyFallback?.title || primary?.summaryTitle ||
+      `Media Hub ${input.kind} report · ${input.periodStartDate}—${input.periodEndDate}`);
+  let validation = validateMediaHubReportClaims({
     evidence,
     reportText: getMediaHubReportTextForValidation({
       dailyReports,
-      localized: input.llm?.localized,
-      summary: primaryLocalized?.summary?.length
-        ? primaryLocalized.summary
-        : nonDailyFallback?.summary.length
-          ? nonDailyFallback.summary
-          : evidenceFallback?.summary.length
-            ? evidenceFallback.summary
-            : (primary?.summaryBody ?? []),
-      title: primaryLocalized?.title || evidenceFallback?.title ||
-        (nonDailyFallback?.title || primary?.summaryTitle ||
-          `Media Hub ${input.kind} report · ${input.periodStartDate}—${input.periodEndDate}`),
+      localized: localizedReports,
+      summary,
+      title,
     }),
   });
+  const highRiskUnsupportedClaims = validation.unsupportedClaims
+    .filter((claim) => claim.severity === "high")
+    .map((claim) => claim.claim);
+  if (highRiskUnsupportedClaims.length > 0) {
+    summary = stripUnsupportedClaimLines(summary, highRiskUnsupportedClaims);
+    localizedReports = stripUnsupportedClaimsFromLocalizedReport(
+      localizedReports,
+      highRiskUnsupportedClaims,
+    );
+    validation = validateMediaHubReportClaims({
+      evidence,
+      reportText: getMediaHubReportTextForValidation({
+        dailyReports,
+        localized: localizedReports,
+        summary,
+        title,
+      }),
+    });
+  }
 
   return {
     generatedAt: new Date().toISOString(),
@@ -1152,31 +1184,12 @@ function buildSnapshotReportContent(input: {
     })) ?? [],
     evidence,
     validation,
-    localized: input.llm?.localized,
-    ...(nonDailyFallback?.localized)
-      ? { localized: {
-        ...input.llm?.localized,
-        uk: input.llm?.localized?.uk?.summary?.length
-          ? input.llm.localized.uk
-          : nonDailyFallback.localized.uk,
-        en: input.llm?.localized?.en?.summary?.length
-          ? input.llm.localized.en
-          : nonDailyFallback.localized.en,
-      }}
-      : {},
+    localized: localizedReports,
     dailyReports,
     periodEndDate: input.periodEndDate,
     periodStartDate: input.periodStartDate,
-    summary: primaryLocalized?.summary?.length
-      ? primaryLocalized.summary
-      : nonDailyFallback?.summary.length
-        ? nonDailyFallback.summary
-      : evidenceFallback?.summary.length
-        ? evidenceFallback.summary
-        : (primary?.summaryBody ?? []),
-    title: primaryLocalized?.title || evidenceFallback?.title ||
-      (nonDailyFallback?.title || primary?.summaryTitle ||
-        `Media Hub ${input.kind} report · ${input.periodStartDate}—${input.periodEndDate}`),
+    summary,
+    title,
     totals: {
       items: totalItems,
       sources: totalSources,
@@ -1195,6 +1208,55 @@ function buildSnapshotReportContent(input: {
       window: snapshot.window,
     })),
     };
+}
+
+function stripUnsupportedClaimsFromLocalizedReport(
+  localized: Partial<Record<Locale, MediaHubLocalizedReport>> | undefined,
+  claims: string[],
+) {
+  if (!localized || claims.length === 0) {
+    return localized;
+  }
+
+  return Object.fromEntries(
+    Object.entries(localized).map(([locale, report]) => [
+      locale,
+      report
+        ? {
+            ...report,
+            summary: stripUnsupportedClaimLines(report.summary, claims),
+          }
+        : report,
+    ]),
+  ) as Partial<Record<Locale, MediaHubLocalizedReport>>;
+}
+
+function stripUnsupportedClaimLines(lines: string[] | undefined, claims: string[]) {
+  if (!lines?.length || claims.length === 0) {
+    return lines ?? [];
+  }
+
+  return lines.filter((line) => !claims.some((claim) => isSameUnsupportedClaimLine(line, claim)));
+}
+
+function isSameUnsupportedClaimLine(line: string, claim: string) {
+  const normalizedLine = normalizeUnsupportedClaimText(line);
+  const normalizedClaim = normalizeUnsupportedClaimText(claim);
+
+  return Boolean(
+    normalizedLine &&
+    normalizedClaim &&
+    (normalizedLine.includes(normalizedClaim) || normalizedClaim.includes(normalizedLine)),
+  );
+}
+
+function normalizeUnsupportedClaimText(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/^[\s•*\-–—0-9.)]+/g, "")
+    .replace(/[^\p{L}\p{N}%$€₴]+/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function buildNonDailyFallbackReport(input: {
