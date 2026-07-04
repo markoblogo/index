@@ -9,6 +9,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   if (!isBearerTokenAuthorized(request, [
+    process.env.MEDIA_HUB_CATCHUP_SECRET,
     process.env.SPIKE_DAILY_CATCHUP_SECRET || process.env.CRON_SECRET,
   ])) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

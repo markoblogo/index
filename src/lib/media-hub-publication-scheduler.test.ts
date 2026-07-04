@@ -292,7 +292,7 @@ describe("media hub publication scheduler", () => {
   });
 
   it("filters SSI weekly WhatsApp overview to Ukraine-focused market context", () => {
-    const html = __mediaHubPublicationSchedulerTestHooks.buildSsiNonDailyWhatsAppText(
+    const html = __mediaHubPublicationSchedulerTestHooks.buildSsiNonDailyWhatsAppMessages(
       "2026-07-04",
       "weekly",
       {
@@ -315,8 +315,12 @@ describe("media hub publication scheduler", () => {
         windows: [],
       },
     );
-    const text = __mediaHubPublicationSchedulerTestHooks.convertTelegramHtmlToWhatsAppText(html);
+    const text = html
+      .map(__mediaHubPublicationSchedulerTestHooks.convertTelegramHtmlToWhatsAppText)
+      .join("\n\n");
 
+    expect(html).toHaveLength(3);
+    expect(text).toContain("SPIKE BROKERS | Weekly Commodity & Logistics Market");
     expect(text).toContain("Ukraine harvesting progress and port logistics");
     expect(text).not.toContain("Brazil soybean exports");
   });

@@ -340,13 +340,39 @@ export async function sendMediaHubReportWhatsAppForKind(
     return { skippedReason: "report_content_invalid", status: "skipped" as const };
   }
 
-  return sendMediaHubReportWhatsApp({
+  const result = await sendMediaHubReportWhatsApp({
     content,
     kind,
     locale: "en",
     periodEndDate,
     tenant: "spike",
   });
+  if (result.status === "sent" || result.status === "failed") {
+    await db.$executeRawUnsafe(
+      `
+        UPDATE "MediaHubReport"
+        SET "contentJson" = jsonb_set(
+              COALESCE("contentJson", '{}'::jsonb),
+              '{whatsappDelivery}',
+              $4::jsonb,
+              true
+            ),
+            "updatedAt" = NOW()
+        WHERE "tenantId" = $1
+          AND "kind" = $2
+          AND "periodEnd" = $3::date
+      `,
+      tenantId,
+      kind,
+      periodEndDate,
+      JSON.stringify({
+        at: new Date().toISOString(),
+        result,
+      }),
+    );
+  }
+
+  return result;
 }
 
 async function sendMediaHubReportWhatsApp(input: {
@@ -446,7 +472,7 @@ function buildMediaHubWhatsAppMessages(input: {
   }
 
   if (input.tenant === "spike" && (input.kind === "weekly" || input.kind === "monthly")) {
-    return [buildSsiNonDailyWhatsAppText(input.periodEndDate, input.kind, input.content)];
+    return buildSsiNonDailyWhatsAppMessages(input.periodEndDate, input.kind, input.content);
   }
 
   const messages = buildMediaHubTelegramMessages(input).map((message) =>
@@ -534,29 +560,135 @@ function buildSsiDailyWhatsAppText(
   return lines.join("\n");
 }
 
-function buildSsiNonDailyWhatsAppText(
+function buildSsiNonDailyWhatsAppMessages(
   periodEndDate: string,
   kind: "weekly" | "monthly",
   content: MediaHubReportContentJson,
 ) {
-  const title = kind === "weekly" ? "WEEKLY REPORT" : "MONTHLY REPORT";
-  const summary = content.localized?.en?.summary ?? content.summary ?? [];
-  const overview = dedupeNonEmpty(summary.map((item) => normalizeSsiWhatsAppMarketSentence(item)))
-    .filter((item) => item.length > 0)
-    .filter((item) => isUkraineFocusedWhatsAppMarketSentence(item))
-    .slice(0, 10);
-  const lines = [
-    `🇺🇦 <b>SPIKE SPOT INDEX UKRAINE</b> · <b>${escapeHtml(title)}</b> · <b>${escapeHtml(formatShortTelegramDate(periodEndDate))}</b>`,
-    "",
-    "-----------------------------",
-    "📰 <b>UKRAINE MARKET OVERVIEW</b>",
-    ...overview.map((item) => `* ${escapeHtml(item)}`),
-    "",
-    "-----------------------------",
-    "🔗 <i>Powered by 1D3X Platform</i> · https://spike.1d3x.com/",
+  return buildSsiNonDailyStructuredMessages({
+    content,
+    kind,
+    locale: "en",
+    periodEndDate,
+  });
+}
+
+function buildSsiNonDailyStructuredMessages(input: {
+  content: MediaHubReportContentJson;
+  kind: "weekly" | "monthly";
+  locale: Locale;
+  periodEndDate: string;
+}) {
+  const summary = getSsiNonDailyLocalizedSummary(input.content, input.locale);
+  const buckets = bucketSsiNonDailySummary(summary, input.locale);
+  const meta = getSsiNonDailyMessageMeta(input.kind, input.locale);
+  const parts = [
+    {
+      fallback: input.locale === "uk"
+        ? "Логістичний блок тижня читається через портові, прикордонні та внутрішні маршрути України."
+        : "Ukraine logistics this period should be read through port, border and domestic execution routes.",
+      items: buckets.logistics,
+      title: meta.logistics,
+    },
+    {
+      fallback: input.locale === "uk"
+        ? "Зерновий блок фокусується на експортних цінах, попиті та різниці між базисами CPT Одеса і FCA Чоп."
+        : "The grains block focuses on export prices, demand and the spread between CPT Odesa and FCA Chop bases.",
+      items: buckets.grains,
+      title: meta.grains,
+    },
+    {
+      fallback: input.locale === "uk"
+        ? "Олійний блок фокусується на експорті олійних, переробці, попиті заводів і внутрішньому ринку."
+        : "The oilseeds and processing block focuses on oilseed exports, crush demand and Ukraine domestic processing.",
+      items: buckets.oilseeds,
+      title: meta.oilseeds,
+    },
   ];
 
-  return lines.join("\n");
+  return parts.map((part, index) => fitSingleTelegramMessage([
+    `🇺🇦 <b>${escapeHtml(meta.heading)}</b>`,
+    escapeHtml(formatShortTelegramDate(input.periodEndDate)),
+    "",
+    `<b>${escapeHtml(part.title)}</b>`,
+    "",
+    ...dedupeNonEmpty(part.items).slice(0, input.kind === "monthly" ? 8 : 6)
+      .map((item) => `• ${escapeHtml(item)}`),
+    ...(part.items.length === 0 ? [`• ${escapeHtml(part.fallback)}`] : []),
+    "",
+    index === parts.length - 1
+      ? meta.footer
+      : meta.partFooter,
+  ].join("\n")));
+}
+
+function getSsiNonDailyLocalizedSummary(content: MediaHubReportContentJson, locale: Locale) {
+  return dedupeNonEmpty([
+    ...(content.localized?.[locale]?.summary ?? []),
+    ...(locale === "uk" ? [] : content.localized?.en?.summary ?? []),
+    ...(locale === "uk" ? content.summary : []),
+  ])
+    .map((item) => locale === "en" ? normalizeSsiWhatsAppMarketSentence(item) : normalizeSsiTelegramMarketSentence(item))
+    .filter((item) => locale === "uk" || isUkraineFocusedWhatsAppMarketSentence(item))
+    .filter((item) => item.length > 0);
+}
+
+function bucketSsiNonDailySummary(summary: string[], locale: Locale) {
+  const logisticsPattern = locale === "uk"
+    ? /логіст|порт|одес|дунай|чоп|кордон|заліз|вагон|авто|фрахт|маршрут|перевез/i
+    : /logistics|port|odesa|odessa|danube|chop|border|rail|wagon|truck|freight|route|shipment/i;
+  const grainsPattern = locale === "uk"
+    ? /зерн|кукуруд|пшениц|ячмін|експортн|cpt|fca/i
+    : /grain|corn|wheat|barley|export|cpt|fca/i;
+  const oilseedsPattern = locale === "uk"
+    ? /олій|соя|соняш|ріпак|перероб|завод|олія|шрот|макух/i
+    : /oilseed|soy|soybean|sunflower|rapeseed|canola|crush|processing|plant|oil|meal/i;
+
+  const buckets = {
+    grains: [] as string[],
+    logistics: [] as string[],
+    oilseeds: [] as string[],
+  };
+
+  for (const item of summary) {
+    const pushed = [
+      { bucket: buckets.logistics, pattern: logisticsPattern },
+      { bucket: buckets.oilseeds, pattern: oilseedsPattern },
+      { bucket: buckets.grains, pattern: grainsPattern },
+    ].some(({ bucket, pattern }) => {
+      if (!pattern.test(item)) return false;
+      bucket.push(item);
+      return true;
+    });
+    if (!pushed && isUkraineFocusedWhatsAppMarketSentence(item)) {
+      buckets.grains.push(item);
+    }
+  }
+
+  return buckets;
+}
+
+function getSsiNonDailyMessageMeta(kind: "weekly" | "monthly", locale: Locale) {
+  if (locale === "en") {
+    const title = kind === "weekly" ? "Weekly Commodity & Logistics Market" : "Monthly Commodity & Logistics Market";
+    return {
+      footer: "<i>AI-assisted SSI Media Hub digest based on index data, monitored sources and editorial filters. Not a trading recommendation.</i>\n\n🔗 <i>Powered by 1D3X Platform</i> · https://spike.1d3x.com/",
+      grains: "Part II. Grains export market",
+      heading: `SPIKE BROKERS | ${title}`,
+      logistics: "Part I. Logistics",
+      oilseeds: "Part III. Oilseeds and processing products",
+      partFooter: "<i>Continuation follows in the next part.</i>",
+    };
+  }
+
+  return {
+    footer: "<i>Spike Brokers – Ваш торговий партнер 🌎</i>",
+    grains: "Частина II. Зернові",
+    heading: `SPIKE BROKERS | ${kind === "weekly" ? "Weekly Commodity & Logistics Market" : "Monthly Commodity & Logistics Market"}`,
+    logistics: "Частина I. Логістика",
+    oilseeds: "Частина III. Олійні та продукти переробки",
+    partFooter: "<i>Spike Brokers – Ваш торговий партнер 🌎\nПродовження нижче ⬇️</i>",
+  };
 }
 
 function renderSsiDailyWhatsAppBasisBlock(
@@ -688,6 +820,18 @@ function normalizeSsiWhatsAppMarketSentence(value: string) {
     .replace(/^Main signals\s*:?/i, "")
     .replace(/^Market overview\s*:?/i, "")
     .replace(/^Ukraine market overview\s*:?/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normalizeSsiTelegramMarketSentence(value: string) {
+  return value
+    .replace(/\bUSD\s*\/\s*(?:t|т|mt|тонн(?:а|у|и)?|тон)\b/gi, "$")
+    .replace(/\bEUR\s*\/\s*(?:t|т|mt|тонн(?:а|у|и)?|тон)\b/gi, "€")
+    .replace(/\b(?:UAH|грн\.?|грив(?:ень|ні|ня)?)\s*\/\s*(?:t|т|mt|тонн(?:а|у|и)?|тон)\b/gi, "₴")
+    .replace(/^\s*(?:🔎|🌾|🌻|🏭|🚚|⚖️|🌍|📰)\s*/u, "")
+    .replace(/^Головні сигнали\s*:?/i, "")
+    .replace(/^Ринковий огляд\s*:?/i, "")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -1719,7 +1863,7 @@ function formatShortTelegramDate(date: string) {
 export const __mediaHubPublicationSchedulerTestHooks = {
   buildMediaHubWhatsAppMessages,
   buildSsiDailyWhatsAppText,
-  buildSsiNonDailyWhatsAppText,
+  buildSsiNonDailyWhatsAppMessages,
   convertTelegramHtmlToWhatsAppText,
   sendMediaHubReportWhatsApp,
 };
@@ -1732,6 +1876,15 @@ export function buildMediaHubTelegramMessages(input: {
   periodEndDate: string;
   tenant: "spike" | "platform";
 }) {
+  if (input.tenant === "spike" && (input.kind === "weekly" || input.kind === "monthly")) {
+    return buildSsiNonDailyStructuredMessages({
+      content: input.content,
+      kind: input.kind,
+      locale: "uk",
+      periodEndDate: input.periodEndDate,
+    }).map((message) => normalizeTelegramCurrencyUnits(message));
+  }
+
   const text = input.tenant === "spike"
     ? normalizeTelegramCurrencyUnits(buildMediaHubTelegramText(input))
     : buildMediaHubTelegramText(input);
