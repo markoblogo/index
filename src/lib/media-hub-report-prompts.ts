@@ -122,8 +122,47 @@ export function buildSsiWeeklyMonthlyPrompt(input: {
   tenant: Tenant;
 }) {
   const reportLabel = input.kind === "monthly" ? "Monthly" : "Weekly";
+  const isUk = input.locale === "uk";
+  const requiredStructure = isUk
+    ? [
+        "🇺🇦 SPIKE SPOT INDEX | " + reportLabel + " Commodity & Logistics Market",
+        "Частина I. Логістика",
+        "Основне з експорту за звітний період: 4 concise analytical theses.",
+        "🚚 АВТОМОБІЛЬНІ ПЕРЕВЕЗЕННЯ: road crossings, directions, geography, top commodities if sourced.",
+        "🚝 ЗАЛІЗНИЧНІ ПЕРЕВЕЗЕННЯ: rail grain/oil/meal flows, port vs land split if sourced.",
+        "🚧 У НАПРЯМКУ КОРДОНУ: wagon transfer and accumulation if sourced.",
+        "⚓️ У НАПРЯМКУ ПОРТУ: Big Odesa and Danube role if sourced.",
+        "Частина II. Зернові",
+        "📈 SPIKE Spot Commodity Index Ukraine: short SSI index link to physical/futures market.",
+        "🌽 КУКУРУДЗА: CBOT/MATIF/SSI/export/new-crop only where sourced.",
+        "🌾 ПШЕНИЦЯ: CBOT/Euronext/SSI/export/demand only where sourced.",
+        "Частина III. Олійні та продукти переробки",
+        "📈 SPIKE Spot Commodity Index Ukraine: sunflower, soybean, rapeseed where sourced.",
+        "🌻 СОНЯШНИК; 🌿 РІПАК; 🌱 СОЯ: vegoils, processing, export chains where sourced.",
+        "Final footer: Spike Spot Index / https://spike.1d3x.com/",
+      ]
+    : [
+        "🇺🇦 SPIKE SPOT INDEX UKRAINE | " + reportLabel + " Commodity & Logistics Market",
+        "Part I. Logistics",
+        "Main export signals for the period: 4 concise analytical theses.",
+        "🚚 ROAD TRANSPORT: road crossings, directions, geography, top commodities if sourced.",
+        "🚝 RAIL TRANSPORT: rail grain/oil/meal flows, port vs land split if sourced.",
+        "🚧 BORDER DIRECTION: wagon transfer and accumulation if sourced.",
+        "⚓️ PORT DIRECTION: Big Odesa and Danube role if sourced.",
+        "Part II. Grains",
+        "📈 SPIKE Spot Commodity Index Ukraine: short SSI index link to physical/futures market.",
+        "🌽 CORN: CBOT/MATIF/SSI/export/new-crop only where sourced.",
+        "🌾 WHEAT: CBOT/Euronext/SSI/export/demand only where sourced.",
+        "Part III. Oilseeds and processing products",
+        "📈 SPIKE Spot Commodity Index Ukraine: sunflower, soybean, rapeseed where sourced.",
+        "🌻 SUNFLOWER; 🌿 RAPESEED; 🌱 SOYBEANS: vegoils, processing, export chains where sourced.",
+        "Final footer: Spike Spot Index / https://spike.1d3x.com/",
+      ];
+
   return [
-    "You write for Spike Spot Index, not Spike Brokers. Write in Ukrainian unless explicitly asked otherwise.",
+    isUk
+      ? "You write for Spike Spot Index, not Spike Brokers. Write only in Ukrainian."
+      : "You write for Spike Spot Index, not Spike Brokers. Write only in English.",
     `Create a professional ${reportLabel} Commodity & Logistics Market report for the Ukrainian grains and oilseeds market.`,
     "Brand footer must be exactly: Spike Spot Index / https://spike.1d3x.com/",
     "Do not write the old Spike Brokers partner footer.",
@@ -137,24 +176,8 @@ export function buildSsiWeeklyMonthlyPrompt(input: {
       : "Weekly report target: 25-45 summary array items with concrete narrative items under every sourced section.",
     commonJsonRules(input),
     "Required structure inside summary array:",
-    [
-      "🇺🇦 SPIKE SPOT INDEX | " + reportLabel + " Commodity & Logistics Market",
-      "Частина I. Логістика",
-      "Основне з експорту за звітний період: 4 concise analytical theses.",
-      "🚚 АВТОМОБІЛЬНІ ПЕРЕВЕЗЕННЯ: road crossings, directions, geography, top commodities if sourced.",
-      "🚝 ЗАЛІЗНИЧНІ ПЕРЕВЕЗЕННЯ: rail grain/oil/meal flows, port vs land split if sourced.",
-      "🚧 У НАПРЯМКУ КОРДОНУ: wagon transfer and accumulation if sourced.",
-      "⚓️ У НАПРЯМКУ ПОРТУ: Big Odesa and Danube role if sourced.",
-      "Частина II. Зернові",
-      "📈 SPIKE Spot Commodity Index Ukraine: short SSI index link to physical/futures market.",
-      "🌽 КУКУРУДЗА: CBOT/MATIF/SSI/export/new-crop only where sourced.",
-      "🌾 ПШЕНИЦЯ: CBOT/Euronext/SSI/export/demand only where sourced.",
-      "Частина III. Олійні та продукти переробки",
-      "📈 SPIKE Spot Commodity Index Ukraine: sunflower, soybean, rapeseed where sourced.",
-      "🌻 СОНЯШНИК; 🌿 РІПАК; 🌱 СОЯ: vegoils, processing, export chains where sourced.",
-      "Final footer: Spike Spot Index / https://spike.1d3x.com/",
-    ].join("\n"),
-    renderIndexData(input.latestData, true),
+    requiredStructure.join("\n"),
+    renderIndexData(input.latestData, isUk),
     renderManualMaterials(input.manualMaterials ?? [], input.kind),
     renderHistoricalContext(input.historicalSummaries ?? []),
     renderSnapshotEvidence(input.snapshots, input.kind),

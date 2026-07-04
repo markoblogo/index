@@ -34,11 +34,18 @@ export function buildMediaHubEvidenceLedger(input: {
 
   for (const item of input.latestData ?? []) {
     const name = item.commodityNameUk || item.commodityNameEn || item.commodityCode;
+    const aliases = [
+      item.commodityNameUk,
+      item.commodityNameEn,
+      item.commodityCode,
+      item.basis,
+    ].filter(Boolean).join("; ");
     items.push({
-      claim: `${name} index ${formatNumber(item.valueUsdPerMt)} USD/t`,
+      claim: `${name} index ${formatNumber(item.valueUsdPerMt)} USD/t; ${aliases}`,
       confidence: "high",
       excerpt: [
         `${name}: ${formatNumber(item.valueUsdPerMt)} USD/t`,
+        aliases,
         item.changeAbs == null ? null : `d/d ${formatSigned(item.changeAbs)}`,
       ].filter(Boolean).join("; "),
       id: `index:${item.commodityId}:${item.basis}:${input.periodEndDate}`,
@@ -138,6 +145,7 @@ const STOP_WORDS = new Set([
   "the", "and", "for", "with", "from", "that", "this", "are", "was", "were",
   "що", "для", "через", "разом", "ринок", "ціни", "ціна", "звіт", "індекс",
   "очікується", "прогноз", "може", "нижчим", "вищим", "залишається",
+  "відображає", "свідчить", "показали", "рівні", "також",
 ]);
 
 function hasSupportingEvidence(claim: string, evidence: MediaHubEvidenceItem[]) {
@@ -159,7 +167,7 @@ function meaningfulTerms(value: string) {
     .replace(/[^\p{L}\p{N}%.,]+/gu, " ")
     .split(/\s+/)
     .map((term) => term.replace(/^[.,]+|[.,]+$/g, ""))
-    .filter((term) => term.length >= 4 && !STOP_WORDS.has(term))
+    .filter((term) => (term.length >= 4 || /^\d{2,}(?:[.,]\d+)?$/.test(term)) && !STOP_WORDS.has(term))
     .slice(0, 8);
 }
 
