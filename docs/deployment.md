@@ -166,10 +166,7 @@ Before promoting a change for any index tenant:
 1. Confirm CI is green or run the same local gates:
 
 ```bash
-npm run audit:repo
-npm run lint
-npm run test
-npm run build
+npm run audit:release
 ```
 
 2. Run the project-specific environment preflight for the target Vercel project:

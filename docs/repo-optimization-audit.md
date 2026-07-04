@@ -12,6 +12,10 @@ The repository is a single multi-tenant Next.js platform that currently serves:
 
 This is operationally one platform, but it already behaves like a small product portfolio.
 
+For the current requirement-by-requirement evidence ledger, see
+`docs/audit-completion-matrix.md`. The release gate for local/CI verification is
+`npm run audit:release`.
+
 ## High-impact findings
 
 ### 1. Build and deploy coupling is too high
