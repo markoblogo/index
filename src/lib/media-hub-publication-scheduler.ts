@@ -1228,17 +1228,7 @@ function buildSnapshotReportContent(input: {
       snapshots: input.snapshots,
       tenant: input.tenant,
     });
-  let localizedReports = nonDailyFallback?.localized
-    ? {
-        ...input.llm?.localized,
-        uk: input.llm?.localized?.uk?.summary?.length
-          ? input.llm.localized.uk
-          : nonDailyFallback.localized.uk,
-        en: input.llm?.localized?.en?.summary?.length
-          ? input.llm.localized.en
-          : nonDailyFallback.localized.en,
-      }
-    : input.llm?.localized;
+  let localizedReports = mergeNonDailyLocalizedReports(input.llm?.localized, nonDailyFallback?.localized, input.kind);
   const evidenceFallback = input.kind === "daily" && isPlatformSite()
     ? buildPlatformDailyEvidenceFallback({
         manualMaterials: input.manualMaterials ?? [],
@@ -1264,14 +1254,15 @@ function buildSnapshotReportContent(input: {
     periodEndDate: input.periodEndDate,
     snapshots: input.snapshots,
   });
-  let summary = primaryLocalized?.summary?.length
-    ? primaryLocalized.summary
+  const primaryMergedLocalized = getPrimaryLocalizedReport(localizedReports);
+  let summary = primaryMergedLocalized?.summary?.length
+    ? primaryMergedLocalized.summary
     : nonDailyFallback?.summary.length
       ? nonDailyFallback.summary
     : evidenceFallback?.summary.length
       ? evidenceFallback.summary
       : (primary?.summaryBody ?? []);
-  const title = primaryLocalized?.title || evidenceFallback?.title ||
+  const title = primaryMergedLocalized?.title || primaryLocalized?.title || evidenceFallback?.title ||
     (nonDailyFallback?.title || primary?.summaryTitle ||
       `Media Hub ${input.kind} report · ${input.periodStartDate}—${input.periodEndDate}`);
   let validation = validateMediaHubReportClaims({
@@ -1469,6 +1460,37 @@ function getPrimaryLocalizedReport(
   localized: Awaited<ReturnType<typeof generateMediaHubLlmReports>>["localized"] | undefined,
 ) {
   return localized?.en ?? localized?.uk;
+}
+
+function mergeNonDailyLocalizedReports(
+  generated: Awaited<ReturnType<typeof generateMediaHubLlmReports>>["localized"] | undefined,
+  fallback: Partial<Record<Locale, MediaHubLocalizedReport>> | undefined,
+  kind: Exclude<MediaHubPublicationKind, "none">,
+) {
+  if (kind === "daily" || !fallback) {
+    return generated;
+  }
+
+  const limit = kind === "monthly" ? 260 : 170;
+  const merged: Partial<Record<Locale, MediaHubLocalizedReport>> = { ...generated };
+
+  for (const locale of ["uk", "en"] as const) {
+    const fallbackReport = fallback[locale];
+    const generatedReport = generated?.[locale];
+    if (!fallbackReport?.summary?.length) {
+      continue;
+    }
+
+    merged[locale] = {
+      summary: dedupeNonEmpty([
+        ...fallbackReport.summary,
+        ...(generatedReport?.summary ?? []),
+      ]).slice(0, limit),
+      title: generatedReport?.title || fallbackReport.title,
+    };
+  }
+
+  return merged;
 }
 
 function buildPlatformDailyEvidenceFallback(input: {

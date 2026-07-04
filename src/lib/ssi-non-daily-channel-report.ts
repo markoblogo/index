@@ -92,6 +92,8 @@ function bucketFacts(facts: string[], locale: Locale) {
   };
 
   for (const fact of facts) {
+    const hasGrainCommodity = p.corn.test(fact) || p.wheat.test(fact) || p.barley.test(fact);
+    const hasOilseedCommodity = p.sunflower.test(fact) || p.rapeseed.test(fact) || p.soy.test(fact);
     if (p.road.test(fact)) buckets.road.push(fact);
     if (p.rail.test(fact)) buckets.rail.push(fact);
     if (p.border.test(fact)) buckets.border.push(fact);
@@ -99,11 +101,11 @@ function bucketFacts(facts: string[], locale: Locale) {
     if (p.logistics.test(fact)) buckets.logistics.push(fact);
     if (p.corn.test(fact)) buckets.corn.push(fact);
     if (p.wheat.test(fact)) buckets.wheat.push(fact);
-    if (p.grains.test(fact)) buckets.grains.push(fact);
+    if (hasGrainCommodity || p.grains.test(fact) && !p.logistics.test(fact)) buckets.grains.push(fact);
     if (p.sunflower.test(fact)) buckets.sunflower.push(fact);
     if (p.rapeseed.test(fact)) buckets.rapeseed.push(fact);
     if (p.soy.test(fact)) buckets.soy.push(fact);
-    if (p.oilseeds.test(fact)) buckets.oilseeds.push(fact);
+    if (hasOilseedCommodity || p.oilseeds.test(fact) && !p.logistics.test(fact)) buckets.oilseeds.push(fact);
   }
 
   return buckets;
@@ -152,7 +154,7 @@ function buildParts(b: ReturnType<typeof bucketFacts>, locale: Locale): ChannelP
 }
 
 function renderPartSections(part: ChannelPart, kind: "weekly" | "monthly") {
-  const perSection = kind === "monthly" ? 5 : 4;
+  const perSection = kind === "monthly" ? 8 : 6;
   const used = new Set<string>();
   const rendered = part.sections.flatMap((section) => {
     const items = dedupe(section.items)
@@ -175,6 +177,7 @@ function patterns(locale: Locale) {
     return {
       border: /кордон|чоп|прикордон|переход/i,
       corn: /кукуруд/i,
+      barley: /ячмін/i,
       grains: /зерн|кукуруд|пшениц|ячмін|експортн|cpt|fca/i,
       logistics: /логіст|порт|одес|дунай|чоп|кордон|заліз|вагон|авто|фрахт|маршрут|перевез|експорт/i,
       oilseeds: /олій|соя|соняш|ріпак|перероб|завод|олія|шрот|макух/i,
@@ -190,6 +193,7 @@ function patterns(locale: Locale) {
   return {
     border: /border|chop|crossing/i,
     corn: /corn|maize/i,
+    barley: /barley/i,
     grains: /grain|corn|wheat|barley|export|cpt|fca/i,
     logistics: /logistics|port|odesa|odessa|danube|chop|border|rail|wagon|truck|freight|route|shipment|export/i,
     oilseeds: /oilseed|soy|soybean|sunflower|rapeseed|canola|crush|processing|plant|oil|meal/i,
