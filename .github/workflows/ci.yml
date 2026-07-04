@@ -56,28 +56,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Production env preflight for SPIKE
-        env:
-          INDEX_TENANT: spike-ua
-          NEXT_PUBLIC_SITE_URL: https://spike.1d3x.com
-          SSI_WHATSAPP_ENABLED: '1'
-          SSI_WHATSAPP_TARGET_GROUP_ID: 120363410742125046@g.us
-          SSI_WHATSAPP_WEBHOOK_SECRET: whatsapp-secret
-          SSI_WHATSAPP_WEBHOOK_URL: https://worker.example.com/send
-        run: npm run check:production-env -- --project spike-ua-index
-
-      - name: Production env preflight for UGA
-        env:
-          INDEX_TENANT: uga-ua
-          NEXT_PUBLIC_SITE_URL: https://index.uga.ua
-        run: npm run check:production-env -- --project uga-index
-
-      - name: Production env preflight for 1D3X
-        env:
-          ID3X_TELEGRAM_BOT_TOKEN: id3x-token-placeholder
-          INDEX_TENANT: 1d3x
-          NEXT_PUBLIC_SITE_URL: https://1d3x.com
-        run: npm run check:production-env -- --project 1d3x
+      - name: Production env preflight smoke
+        run: npm run audit:production-env:ci
 
       - name: Release audit
         run: npm run audit:release

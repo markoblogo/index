@@ -38,6 +38,13 @@ npm run check:production-env -- --project uga-index
 npm run check:production-env -- --project 1d3x
 ```
 
+The repo also includes a safe dummy-env smoke gate for CI/local validation of
+the checker logic:
+
+```bash
+npm run audit:production-env:ci
+```
+
 ## Completion matrix
 
 | Area | Status | Evidence | Remaining risk |
@@ -53,9 +60,9 @@ npm run check:production-env -- --project 1d3x
 | MediaHub ingestion | Implemented | text/link/file ingestion, PDF extraction isolated behind lazy module, SSRF guardrails | Poppler previews require host-level Poppler installation |
 | SSI Telegram formatting | Implemented | daily/weekly publication code uses rounded public values and `$` formatting in publication-facing paths | generated AI prose can still mention units if prompts allow it; monitor live reports |
 | SSI WhatsApp worker | Implemented/documented | Railway worker docs and webhook delivery timeout path | WhatsApp Web session stability depends on Railway volume and linked device session |
-| Tenant boundary checks | Implemented | project-aware production env checker validates `NEXT_PUBLIC_SITE_URL` host set | custom domains must be added to the checker before cutover |
+| Tenant boundary checks | Implemented | project-aware production env checker validates `NEXT_PUBLIC_SITE_URL` host set; `npm run audit:production-env:ci` checks all project profiles with safe dummy env | custom domains must be added to the checker before cutover |
 | Public/site documentation | Updated | deployment checklist, Telegram connector docs, MediaHub manual-material docs, repo audit notes | rendered production sites still require post-deploy smoke checks |
-| CI coverage | Implemented | GitHub Actions runs repo audit, env smoke preflights, lint, tests and build | CI uses safe dummy env for preflight logic, not real production secrets |
+| CI coverage | Implemented | GitHub Actions runs `npm run audit:production-env:ci` and `npm run audit:release` | CI uses safe dummy env for preflight logic, not real production secrets |
 
 ## Not considered fully proven without production access
 
