@@ -330,12 +330,12 @@ describe("media hub publication scheduler", () => {
     vi.stubEnv("SSI_WHATSAPP_WEBHOOK_URL", "https://worker.example.com/send");
     vi.stubEnv("SSI_WHATSAPP_WEBHOOK_SECRET", "worker-secret");
     vi.stubEnv("SSI_WHATSAPP_TARGET_GROUP_NAME", "SPIKE INDEX");
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(() => Promise.resolve(
       new Response(JSON.stringify({ ok: true }), {
         headers: { "content-type": "application/json" },
         status: 200,
       }),
-    );
+    ));
 
     try {
       await expect(__mediaHubPublicationSchedulerTestHooks.sendMediaHubReportWhatsApp({
@@ -359,7 +359,7 @@ describe("media hub publication scheduler", () => {
         locale: "en",
         periodEndDate: "2026-07-04",
         tenant: "spike",
-      })).resolves.toMatchObject({ status: "sent" });
+      })).resolves.toMatchObject({ messageCount: 3, status: "sent" });
       const init = fetchMock.mock.calls[0]?.[1] as RequestInit | undefined;
       expect(init?.signal).toBeInstanceOf(AbortSignal);
     } finally {

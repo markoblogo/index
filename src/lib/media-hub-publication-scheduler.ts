@@ -29,6 +29,7 @@ import {
   type MediaHubEvidenceItem,
 } from "@/lib/media-hub-evidence";
 import { isPlatformSite } from "@/lib/platform-site";
+import { buildSsiNonDailyStructuredMessages } from "@/lib/ssi-non-daily-channel-report";
 import {
   getPublicLatestData,
   getPublicHistoryData,
@@ -419,34 +420,38 @@ async function sendMediaHubReportWhatsApp(input: {
   }
 
   const latestData = input.kind === "daily" ? await getPublicLatestData() : [];
-  const text = buildMediaHubWhatsAppMessages({
+  const messages = buildMediaHubWhatsAppMessages({
     content: input.content,
     kind: input.kind,
     latestData,
     locale: input.locale,
     periodEndDate: input.periodEndDate,
     tenant: input.tenant,
-  }).map(convertTelegramHtmlToWhatsAppText).join("\n\n").trim();
+  }).map(convertTelegramHtmlToWhatsAppText).map((message) => message.trim()).filter(Boolean);
 
-  if (!text) {
+  if (messages.length === 0) {
     return { skippedReason: "whatsapp_empty_message", status: "skipped" as const };
   }
 
-  const response = await fetchWithTimeout(webhookUrl, {
-    body: JSON.stringify({ groupId, groupName, text }),
-    headers: {
-      "Authorization": `Bearer ${secret}`,
-      "Content-Type": "application/json",
-    },
-    method: "POST",
-  }, WHATSAPP_WEBHOOK_TIMEOUT_MS);
-  const payloadText = await response.text();
+  const responses: unknown[] = [];
+  for (const text of messages) {
+    const response = await fetchWithTimeout(webhookUrl, {
+      body: JSON.stringify({ groupId, groupName, text }),
+      headers: {
+        "Authorization": `Bearer ${secret}`,
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+    }, WHATSAPP_WEBHOOK_TIMEOUT_MS);
+    const payloadText = await response.text();
 
-  if (!response.ok) {
-    return { error: payloadText, status: "failed" as const };
+    if (!response.ok) {
+      return { error: payloadText, sentCount: responses.length, status: "failed" as const };
+    }
+    responses.push(safeJson(payloadText));
   }
 
-  return { response: safeJson(payloadText), status: "sent" as const };
+  return { messageCount: messages.length, responses, status: "sent" as const };
 }
 
 function convertTelegramHtmlToWhatsAppText(value: string) {
@@ -592,124 +597,6 @@ function buildSsiNonDailyWhatsAppMessages(
   });
 }
 
-function buildSsiNonDailyStructuredMessages(input: {
-  content: MediaHubReportContentJson;
-  kind: "weekly" | "monthly";
-  locale: Locale;
-  periodEndDate: string;
-}) {
-  const summary = getSsiNonDailyLocalizedSummary(input.content, input.locale);
-  const buckets = bucketSsiNonDailySummary(summary, input.locale);
-  const meta = getSsiNonDailyMessageMeta(input.kind, input.locale);
-  const parts = [
-    {
-      fallback: input.locale === "uk"
-        ? "Логістичний блок тижня читається через портові, прикордонні та внутрішні маршрути України."
-        : "Ukraine logistics this period should be read through port, border and domestic execution routes.",
-      items: buckets.logistics,
-      title: meta.logistics,
-    },
-    {
-      fallback: input.locale === "uk"
-        ? "Зерновий блок фокусується на експортних цінах, попиті та різниці між базисами CPT Одеса і FCA Чоп."
-        : "The grains block focuses on export prices, demand and the spread between CPT Odesa and FCA Chop bases.",
-      items: buckets.grains,
-      title: meta.grains,
-    },
-    {
-      fallback: input.locale === "uk"
-        ? "Олійний блок фокусується на експорті олійних, переробці, попиті заводів і внутрішньому ринку."
-        : "The oilseeds and processing block focuses on oilseed exports, crush demand and Ukraine domestic processing.",
-      items: buckets.oilseeds,
-      title: meta.oilseeds,
-    },
-  ];
-
-  return parts.map((part, index) => fitSingleTelegramMessage([
-    `🇺🇦 <b>${escapeHtml(meta.heading)}</b>`,
-    escapeHtml(formatShortTelegramDate(input.periodEndDate)),
-    "",
-    `<b>${escapeHtml(part.title)}</b>`,
-    "",
-    ...dedupeNonEmpty(part.items).slice(0, input.kind === "monthly" ? 8 : 6)
-      .map((item) => `• ${escapeHtml(item)}`),
-    ...(part.items.length === 0 ? [`• ${escapeHtml(part.fallback)}`] : []),
-    "",
-    index === parts.length - 1
-      ? meta.footer
-      : meta.partFooter,
-  ].join("\n")));
-}
-
-function getSsiNonDailyLocalizedSummary(content: MediaHubReportContentJson, locale: Locale) {
-  return dedupeNonEmpty([
-    ...(content.localized?.[locale]?.summary ?? []),
-    ...(locale === "uk" ? [] : content.localized?.en?.summary ?? []),
-    ...(locale === "uk" ? content.summary : []),
-  ])
-    .map((item) => locale === "en" ? normalizeSsiWhatsAppMarketSentence(item) : normalizeSsiTelegramMarketSentence(item))
-    .filter((item) => locale === "uk" || isUkraineFocusedWhatsAppMarketSentence(item))
-    .filter((item) => item.length > 0);
-}
-
-function bucketSsiNonDailySummary(summary: string[], locale: Locale) {
-  const logisticsPattern = locale === "uk"
-    ? /логіст|порт|одес|дунай|чоп|кордон|заліз|вагон|авто|фрахт|маршрут|перевез/i
-    : /logistics|port|odesa|odessa|danube|chop|border|rail|wagon|truck|freight|route|shipment/i;
-  const grainsPattern = locale === "uk"
-    ? /зерн|кукуруд|пшениц|ячмін|експортн|cpt|fca/i
-    : /grain|corn|wheat|barley|export|cpt|fca/i;
-  const oilseedsPattern = locale === "uk"
-    ? /олій|соя|соняш|ріпак|перероб|завод|олія|шрот|макух/i
-    : /oilseed|soy|soybean|sunflower|rapeseed|canola|crush|processing|plant|oil|meal/i;
-
-  const buckets = {
-    grains: [] as string[],
-    logistics: [] as string[],
-    oilseeds: [] as string[],
-  };
-
-  for (const item of summary) {
-    const pushed = [
-      { bucket: buckets.logistics, pattern: logisticsPattern },
-      { bucket: buckets.oilseeds, pattern: oilseedsPattern },
-      { bucket: buckets.grains, pattern: grainsPattern },
-    ].some(({ bucket, pattern }) => {
-      if (!pattern.test(item)) return false;
-      bucket.push(item);
-      return true;
-    });
-    if (!pushed && isUkraineFocusedWhatsAppMarketSentence(item)) {
-      buckets.grains.push(item);
-    }
-  }
-
-  return buckets;
-}
-
-function getSsiNonDailyMessageMeta(kind: "weekly" | "monthly", locale: Locale) {
-  if (locale === "en") {
-    const title = kind === "weekly" ? "Weekly Commodity & Logistics Market" : "Monthly Commodity & Logistics Market";
-    return {
-      footer: "<i>AI-assisted SSI Media Hub digest based on index data, monitored sources and editorial filters. Not a trading recommendation.</i>\n\n🔗 <i>Powered by 1D3X Platform</i> · https://spike.1d3x.com/",
-      grains: "Part II. Grains export market",
-      heading: `SPIKE BROKERS | ${title}`,
-      logistics: "Part I. Logistics",
-      oilseeds: "Part III. Oilseeds and processing products",
-      partFooter: "<i>Continuation follows in the next part.</i>",
-    };
-  }
-
-  return {
-    footer: "<i>Spike Brokers – Ваш торговий партнер 🌎</i>",
-    grains: "Частина II. Зернові",
-    heading: `SPIKE BROKERS | ${kind === "weekly" ? "Weekly Commodity & Logistics Market" : "Monthly Commodity & Logistics Market"}`,
-    logistics: "Частина I. Логістика",
-    oilseeds: "Частина III. Олійні та продукти переробки",
-    partFooter: "<i>Spike Brokers – Ваш торговий партнер 🌎\nПродовження нижче ⬇️</i>",
-  };
-}
-
 function renderSsiDailyWhatsAppBasisBlock(
   items: NonNullable<MediaHubDailyReportView["indexSection"]>["groups"][number]["items"],
   mode: "export" | "processing",
@@ -839,18 +726,6 @@ function normalizeSsiWhatsAppMarketSentence(value: string) {
     .replace(/^Main signals\s*:?/i, "")
     .replace(/^Market overview\s*:?/i, "")
     .replace(/^Ukraine market overview\s*:?/i, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function normalizeSsiTelegramMarketSentence(value: string) {
-  return value
-    .replace(/\bUSD\s*\/\s*(?:t|т|mt|тонн(?:а|у|и)?|тон)\b/gi, "$")
-    .replace(/\bEUR\s*\/\s*(?:t|т|mt|тонн(?:а|у|и)?|тон)\b/gi, "€")
-    .replace(/\b(?:UAH|грн\.?|грив(?:ень|ні|ня)?)\s*\/\s*(?:t|т|mt|тонн(?:а|у|и)?|тон)\b/gi, "₴")
-    .replace(/^\s*(?:🔎|🌾|🌻|🏭|🚚|⚖️|🌍|📰)\s*/u, "")
-    .replace(/^Головні сигнали\s*:?/i, "")
-    .replace(/^Ринковий огляд\s*:?/i, "")
     .replace(/\s+/g, " ")
     .trim();
 }
