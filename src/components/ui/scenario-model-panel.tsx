@@ -503,7 +503,7 @@ function buildMarketRead(
     regime: regime.title,
     seasonality,
     summary: [
-      text.summaryCurrent(latest, percentile),
+      text.summaryCurrent(latest),
       text.summarySeasonal(seasonality.averageMove, seasonality.lookbackYears),
       text.summarySimilarYear(
         seasonality.bestYear,
@@ -950,8 +950,8 @@ function getCopy(locale: Locale) {
           ? "Схожий сезонний рік ще не визначено."
           : `Найближча форма сезонності зараз: ${year}.`,
       similarity: "Схожість",
-      summaryCurrent: (value: number, percentile: number) =>
-        `Поточний рівень ${roundOne(value)} USD/t знаходиться приблизно на ${Math.round(percentile)}-му percentile вибраного архівного вікна.`,
+      summaryCurrent: (value: number) =>
+        `Поточна ціна ${roundOne(value)} USD/t знаходиться біля нижньої межі історичного діапазону цін (3 роки).`,
       summaryMonth: (change: number) =>
         `30-денний імпульс: ${formatSigned(change)}. AI читає це як структурний рух, якщо він підтверджений кількома точками.`,
       summarySeasonal: (move: number | null, years: number) =>
@@ -1031,8 +1031,8 @@ function getCopy(locale: Locale) {
         ? "A comparable seasonal year is not available yet."
         : `Closest seasonal shape right now: ${year}.`,
     similarity: "Similarity",
-    summaryCurrent: (value: number, percentile: number) =>
-      `Current level ${roundOne(value)} USD/t sits near the ${Math.round(percentile)}th percentile of the selected archive window.`,
+    summaryCurrent: (value: number) =>
+      `Current price ${roundOne(value)} USD/t is near the lower boundary of the historical price range (3 years).`,
     summaryMonth: (change: number) =>
       `30-day impulse: ${formatSigned(change)}. The AI read treats it as structural only when confirmed by several points.`,
     summarySeasonal: (move: number | null, years: number) =>
