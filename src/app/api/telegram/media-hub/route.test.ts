@@ -127,6 +127,17 @@ describe("media hub telegram route", () => {
     expectSentTelegramText("Матеріал отримано для SSI: weekly.");
     expectSentTelegramText("Все добре, будемо з ним працювати.");
   });
+
+  it("ignores bot-authored messages to prevent acknowledgement loops", async () => {
+    const response = await postTelegramUpdate(buildMessageUpdate("Матеріал отримано для SSI: weekly.", {
+      isBot: true,
+      userId: 777,
+    }));
+    const body = await response.json();
+
+    expect(body).toMatchObject({ ok: true, skippedReason: "bot_authored_message" });
+    expect(fetch).not.toHaveBeenCalled();
+  });
 });
 
 async function postTelegramUpdate(update: unknown, secret = "test-secret") {
@@ -140,12 +151,12 @@ async function postTelegramUpdate(update: unknown, secret = "test-secret") {
 
 function buildMessageUpdate(
   text: string,
-  ids: { chatId?: number; userId?: number } = {},
+  ids: { chatId?: number; isBot?: boolean; userId?: number } = {},
 ) {
   return {
     message: {
       chat: { id: ids.chatId ?? 111 },
-      from: { id: ids.userId ?? 222, username: "tester" },
+      from: { id: ids.userId ?? 222, is_bot: ids.isBot ?? false, username: "tester" },
       message_id: 10,
       text,
     },

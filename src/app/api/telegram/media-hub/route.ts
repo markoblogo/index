@@ -163,6 +163,10 @@ export async function POST(request: Request) {
   }
   const idempotencyKey = normalizedMessage.idempotencyKey;
 
+  if (normalizedMessage.author.isBot) {
+    return NextResponse.json({ idempotencyKey, ok: true, skippedReason: "bot_authored_message" });
+  }
+
   if (!isAllowedMediaHubTelegramSender(message, normalizedMessage)) {
     await sendTelegramText(
       botToken.value,
