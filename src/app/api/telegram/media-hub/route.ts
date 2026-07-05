@@ -181,6 +181,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ idempotencyKey, ok: true, skippedReason: "ack_echo_message" });
   }
 
+  const claimed = await claimTelegramWebhookUpdate(normalizedMessage, message);
+  if (!claimed) {
+    return NextResponse.json({ idempotencyKey, ok: true, skippedReason: "duplicate_update" });
+  }
+
   const isCorporateGroupMessage = isCorporateTelegramChat(message.chat.id);
   const command = parseMediaHubMaterialBotCommand(message.text);
   if (command) {
@@ -379,10 +384,51 @@ export async function POST(request: Request) {
 function isMediaHubBotAckText(value: string) {
   const normalized = value.replace(/\s+/g, " ").trim();
   return /^Матеріал отримано для .+?: (daily|weekly|monthly)\./i.test(normalized) ||
+    /^Материал получен для .+?: (daily|weekly|monthly)\./i.test(normalized) ||
+    normalized.includes("Файл прийнято для") ||
+    normalized.includes("Файл принят для") ||
+    normalized.includes("Матеріал оброблено для") ||
+    normalized.includes("Материал обработан для") ||
+    normalized.includes("Статус: обробка") ||
+    normalized.includes("Статус: обработка") ||
     normalized.includes("Все добре, будемо з ним працювати.") ||
+    normalized.includes("Все хорошо, будемо с ним работать.") ||
     normalized.includes("Буде враховано у звіті за") ||
+    normalized.includes("Будет учтено в отчете за") ||
     normalized.includes("Матеріал збережено як corporate Telegram unrouted") ||
     normalized.includes("Матеріал отримано. Надішліть наступним повідомленням теги");
+}
+
+async function claimTelegramWebhookUpdate(
+  normalizedMessage: Pick<TelegramConnectorMessage, "chatId" | "idempotencyKey" | "messageId" | "updateId">,
+  message: TelegramMessage,
+) {
+  if (!hasDatabaseUrl()) {
+    return true;
+  }
+  await ensureTelegramWebhookUpdateStorage();
+  const inserted = await db.$queryRawUnsafe<Array<{ idempotencyKey: string }>>(
+    `
+      INSERT INTO "MediaHubTelegramWebhookUpdate" (
+        "idempotencyKey", "chatId", "messageId", "updateId", "createdAt"
+      )
+      VALUES ($1, $2, $3, $4, NOW())
+      ON CONFLICT ("idempotencyKey") DO NOTHING
+      RETURNING "idempotencyKey"
+    `,
+    normalizedMessage.idempotencyKey,
+    normalizedMessage.chatId,
+    normalizedMessage.messageId,
+    normalizedMessage.updateId ?? null,
+  );
+  if (inserted[0]) {
+    return true;
+  }
+  safeWarn("media_hub_telegram_duplicate_update_skipped", {
+    chatId: String(message.chat.id),
+    messageId: String(message.message_id),
+  });
+  return false;
 }
 
 function buildMaterialReceivedAck(
@@ -616,6 +662,27 @@ async function ensurePendingTelegramMaterialStorage() {
   await db.$executeRawUnsafe(`
     CREATE INDEX IF NOT EXISTS "MediaHubTelegramPendingMaterial_chat_idx"
     ON "MediaHubTelegramPendingMaterial"("chatId", "fromId", "createdAt" DESC)
+  `);
+}
+
+async function ensureTelegramWebhookUpdateStorage() {
+  await db.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "MediaHubTelegramWebhookUpdate" (
+      "idempotencyKey" TEXT NOT NULL,
+      "chatId" TEXT NOT NULL,
+      "messageId" TEXT NOT NULL,
+      "updateId" INTEGER,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "MediaHubTelegramWebhookUpdate_pkey" PRIMARY KEY ("idempotencyKey")
+    )
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE INDEX IF NOT EXISTS "MediaHubTelegramWebhookUpdate_created_idx"
+    ON "MediaHubTelegramWebhookUpdate"("createdAt" DESC)
+  `);
+  await db.$executeRawUnsafe(`
+    DELETE FROM "MediaHubTelegramWebhookUpdate"
+    WHERE "createdAt" < NOW() - INTERVAL '14 days'
   `);
 }
 

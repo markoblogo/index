@@ -150,6 +150,17 @@ describe("media hub telegram route", () => {
     expect(body).toMatchObject({ ok: true, skippedReason: "ack_echo_message" });
     expect(fetch).not.toHaveBeenCalled();
   });
+
+  it("ignores processed file acknowledgement echo text", async () => {
+    const response = await postTelegramUpdate(buildMessageUpdate([
+      "Файл прийнято для SSI: weekly. Тип: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet. Статус: обробка.",
+      "Матеріал оброблено для SSI: weekly. Буде враховано у звіті за weekly.",
+    ].join("\n")));
+    const body = await response.json();
+
+    expect(body).toMatchObject({ ok: true, skippedReason: "ack_echo_message" });
+    expect(fetch).not.toHaveBeenCalled();
+  });
 });
 
 async function postTelegramUpdate(update: unknown, secret = "test-secret") {
