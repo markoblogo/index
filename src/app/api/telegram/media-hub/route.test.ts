@@ -138,6 +138,18 @@ describe("media hub telegram route", () => {
     expect(body).toMatchObject({ ok: true, skippedReason: "bot_authored_message" });
     expect(fetch).not.toHaveBeenCalled();
   });
+
+  it("ignores acknowledgement echo text even when Telegram omits bot author metadata", async () => {
+    const response = await postTelegramUpdate(buildMessageUpdate([
+      "Матеріал отримано для SSI: weekly.",
+      "Все добре, будемо з ним працювати.",
+      "Буде враховано у звіті за weekly.",
+    ].join("\n")));
+    const body = await response.json();
+
+    expect(body).toMatchObject({ ok: true, skippedReason: "ack_echo_message" });
+    expect(fetch).not.toHaveBeenCalled();
+  });
 });
 
 async function postTelegramUpdate(update: unknown, secret = "test-secret") {

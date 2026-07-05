@@ -177,6 +177,10 @@ export async function POST(request: Request) {
   }
 
   const text = getTelegramTextWithReply(message);
+  if (isMediaHubBotAckText(text)) {
+    return NextResponse.json({ idempotencyKey, ok: true, skippedReason: "ack_echo_message" });
+  }
+
   const isCorporateGroupMessage = isCorporateTelegramChat(message.chat.id);
   const command = parseMediaHubMaterialBotCommand(message.text);
   if (command) {
@@ -231,14 +235,6 @@ export async function POST(request: Request) {
   }
 
   const results = [];
-
-  if (hasIncomingMaterial && tenantIds.length > 0) {
-    await sendTelegramText(
-      botToken.value,
-      String(message.chat.id),
-      buildMaterialReceivedAck(routed.kind, tenantIds),
-    );
-  }
 
   if (!hasIncomingMaterial) {
     const pending = await consumePendingTelegramMaterial(message);
@@ -369,7 +365,24 @@ export async function POST(request: Request) {
     await sendTelegramText(botToken.value, String(message.chat.id), "Матеріал не знайдено. Надішліть текст, цитату, посилання або PDF/XLSX/CSV/TXT файл з #ssi або #1d3x.");
   }
 
+  if (hasIncomingMaterial && tenantIds.length > 0 && results.length > 0) {
+    await sendTelegramText(
+      botToken.value,
+      String(message.chat.id),
+      buildMaterialReceivedAck(routed.kind, tenantIds),
+    );
+  }
+
   return NextResponse.json({ idempotencyKey, ok: true, results });
+}
+
+function isMediaHubBotAckText(value: string) {
+  const normalized = value.replace(/\s+/g, " ").trim();
+  return /^Матеріал отримано для .+?: (daily|weekly|monthly)\./i.test(normalized) ||
+    normalized.includes("Все добре, будемо з ним працювати.") ||
+    normalized.includes("Буде враховано у звіті за") ||
+    normalized.includes("Матеріал збережено як corporate Telegram unrouted") ||
+    normalized.includes("Матеріал отримано. Надішліть наступним повідомленням теги");
 }
 
 function buildMaterialReceivedAck(
