@@ -116,6 +116,10 @@ when present, or pass explicit `--root=owner:rootId:/path:visibility` values.
 `npm run cortex:source-ingest` turns that snapshot into a source ledger by
 comparing the previous and current manifests, recording added, changed, removed
 and unchanged sources, and creating a chunking queue for the next RAG stage.
+`npm run cortex:source-chunk` converts queued text/code/docs into a local chunk
+manifest. Use `-- --all` for the first full seed. Unsupported binaries such as
+PDFs/images stay represented as skipped source results until dedicated
+extractors are added.
 
 ## Scope
 
@@ -368,6 +372,8 @@ Acceptance:
   into one manifest;
 - `npm run cortex:source-ingest` writes a source ledger with added, changed,
   removed and unchanged counts plus a chunking queue;
+- `npm run cortex:source-chunk` writes a local chunk manifest from the queue,
+  and `-- --all` can seed chunks across all supported text/code/doc sources;
 - each manifest entry links to a source path, source kind, SHA-256 hash and
   evidence ID;
 - repo-local secrets and generated folders are excluded from the manifest;

@@ -449,6 +449,9 @@ Run `npm run cortex:source-ingest` to write both
 `.cortex/ecosystem-source-manifest.json` and `.cortex/source-ledger.json`; the
 ledger compares the previous manifest with the new scan and queues added or
 changed sources for the next chunking/RAG stage.
+Run `npm run cortex:source-chunk -- --all` for the first full local chunk
+manifest, or `npm run cortex:source-chunk` after ingest to process only queued
+changes into `.cortex/chunk-manifest.json`.
 Corporate Media Hub sources are also documented there, including MN7R Blog,
 Spike Spot Index Blog, 1D3X Blog, MN7R Bluesky and the corporate Telegram group
 peer/chat-id handling.
