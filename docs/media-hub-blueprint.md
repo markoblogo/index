@@ -18,6 +18,11 @@ Each window must combine:
 - editor controls
 - publish workflows
 
+Browser extraction note: MediaHub browser tasks should prefer Obscura for
+JavaScript-rendered DOM/text/assets extraction and keep Playwright/Chromium for
+e2e, screenshots, visual/layout work and fallback. See
+`docs/media-hub-browser-runtime.md`.
+
 ## Tenant And Locale Rules
 
 ### Spike

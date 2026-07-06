@@ -2,6 +2,11 @@
 
 Manual materials let the team push links and files into the next Media Hub report without editing code or waiting for a crawler.
 
+For future automated link extraction, MediaHub should prefer the lightweight
+Obscura runtime for DOM/text/assets extraction and fall back to
+Playwright/Chromium only when visual, authenticated or unsupported browser
+behavior is required. See `docs/media-hub-browser-runtime.md`.
+
 ## Telegram intake
 
 Use the 1D3X Media Hub bot (`@idex_grains_bot`) for links and files. The respondent bot is not used for this flow.

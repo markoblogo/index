@@ -54,6 +54,8 @@ Shared capabilities:
   scenario views;
 - MediaHub pages for daily, weekly and monthly market-news context on 1D3X and
   SPIKE;
+- MediaHub browser extraction policy that prefers Obscura for DOM/text/assets
+  extraction and keeps Playwright/Chromium for e2e, screenshots and fallback;
 - Vercel cron endpoints for scheduled imports, notifications and publication.
 
 UGA-specific features:
@@ -408,6 +410,8 @@ SPIKE_AI_OUTPUT_USD_PER_1M="1.6"
 
 Media Hub manual material intake is documented in
 [`docs/media-hub-manual-materials.md`](docs/media-hub-manual-materials.md).
+Browser-runtime policy for future MediaHub source extraction lives in
+[`docs/media-hub-browser-runtime.md`](docs/media-hub-browser-runtime.md).
 Use `@idex_grains_bot` for links/files that should be added to SSI or 1D3X
 reports; the respondent bot is not used for this workflow.
 Corporate Media Hub sources are also documented there, including MN7R Blog,
