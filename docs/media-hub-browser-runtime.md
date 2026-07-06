@@ -75,6 +75,89 @@ Suggested metadata fields:
 }
 ```
 
+## Source snapshot mode
+
+MediaHub may also use a `source snapshot mode` for reproducible evidence. This
+mode is not the primary parser, scraper or source monitor. It creates an
+offline evidence bundle so editors, QA and report reviewers can inspect what a
+public source looked like at collection time.
+
+Use source snapshots for:
+
+- public or permissioned source pages that may change after collection;
+- evidence bundles for report QA, claim support and citation review;
+- small pages or narrow site sections where offline viewing is useful;
+- source debugging when extracted text and stored metadata are not enough.
+
+Do not use source snapshots for:
+
+- authentication bypass;
+- paywall bypass;
+- CAPTCHA/rate-limit/block circumvention;
+- stealth access to sources that reject collection;
+- broad site cloning unrelated to a specific MediaHub source item.
+
+### Tool roles
+
+- `wget`/static snapshot: preferred for simple public HTML pages and small page
+  sections. The expected pattern is wget-style saving of HTML, CSS, JS, images
+  and fonts, link conversion for local viewing, and archive packaging.
+- Obscura: preferred for lightweight JavaScript-rendered DOM/text/assets
+  extraction when a static snapshot is too thin.
+- Playwright/Chromium: fallback for screenshots, e2e, complex JS behavior,
+  authenticated permissioned sessions and visual verification.
+- MediaHub parser/extractor: remains the source of structured data used by
+  reports. A snapshot is only an evidence/reproducibility artifact.
+
+### Snapshot contract
+
+Source snapshot mode must be explicit and bounded:
+
+```ts
+type MediaHubSourceSnapshotRequest = {
+  url: string;
+  sourceId?: string;
+  materialId?: string;
+  mode: "static" | "obscura" | "playwright";
+  maxBytes?: number;
+  maxDepth?: number;
+  includeAssets?: boolean;
+  reason: "evidence" | "qa" | "citation_review" | "source_debug";
+};
+
+type MediaHubSourceSnapshotResult = {
+  archivePath: string;
+  sourceUrl: string;
+  fetchedAt: string;
+  tool: "wget" | "obscura" | "playwright";
+  sizeBytes: number;
+  sha256: string;
+  rightsRobotsNote: string;
+  entrypointPath?: string;
+  warnings?: string[];
+};
+```
+
+Required metadata:
+
+- source URL;
+- `fetched_at`;
+- tool/runtime;
+- archive size;
+- content hash;
+- rights/robots/ToS note;
+- source/material identifiers when available.
+
+Safety rules:
+
+- Use only public or explicitly permissioned sources.
+- Respect robots.txt and source ToS where applicable.
+- Keep recursion shallow and bounded.
+- Do not preserve or expose secrets, cookies, credentials or private headers in
+  archives.
+- Store snapshots as evidence artifacts; do not treat them as canonical report
+  data.
+
 ## Environment variables
 
 Use these names when implementing the adapter:
