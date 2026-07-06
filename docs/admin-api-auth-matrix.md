@@ -13,6 +13,7 @@ is missing. Secrets are never logged or returned.
 | `/api/admin/media-hub/whatsapp-catchup` | `POST` | Bearer `SPIKE_DAILY_CATCHUP_SECRET` or `CRON_SECRET` |
 | `/api/admin/spike-daily-catchup` | `POST` | Admin session or Bearer `SPIKE_DAILY_CATCHUP_SECRET` |
 | `/api/admin/telegram-target-smoke` | `POST` | Bearer `TELEGRAM_TARGET_SMOKE_SECRET` or `MEDIA_HUB_SMOKE_TEST_SECRET` |
+| `/api/internal/cortex/context-pack` | `POST` | Bearer `CORTEX_INTERNAL_API_SECRET` or `CRON_SECRET` |
 | `/api/internal/cortex/context-packs` | `GET` | Bearer `CORTEX_INTERNAL_API_SECRET` or `CRON_SECRET` |
 | `/api/internal/spike-setup` | `POST` | Bearer `RESPONDENT_TELEGRAM_CRON_SECRET` or `CRON_SECRET` |
 

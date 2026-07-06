@@ -130,8 +130,10 @@ evidence, known gaps and model-ready text. Protected chunks require
 The same builder is exposed to ecosystem products through
 `POST /api/internal/cortex/context-pack`, authorized by
 `CORTEX_INTERNAL_API_SECRET` or `CRON_SECRET`. The endpoint reads the
-server-side `.cortex/chunk-manifest.json` artifact and does not accept
-client-controlled filesystem paths.
+server-side chunk artifact from `CORTEX_CHUNK_MANIFEST_URL`,
+`CORTEX_CHUNK_MANIFEST_PATH`, or the default `.cortex/chunk-manifest.json`.
+Remote artifacts can use `CORTEX_CHUNK_MANIFEST_BEARER_TOKEN`. The endpoint
+does not accept client-controlled filesystem paths or artifact URLs.
 
 ## Scope
 

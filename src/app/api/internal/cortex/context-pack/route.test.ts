@@ -9,6 +9,7 @@ describe("internal Cortex context-pack build route", () => {
   afterEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
+    vi.unstubAllGlobals();
     vi.unstubAllEnvs();
   });
 
@@ -41,6 +42,44 @@ describe("internal Cortex context-pack build route", () => {
     expect(body.pack.purpose).toBe("market-report");
     expect(body.pack.evidence[0].title).toContain("index:docs/report.md");
     expect(body.search.searchedChunks).toBe(1);
+  });
+
+  it("can read the chunk manifest from an explicit server path", async () => {
+    vi.stubEnv("CORTEX_INTERNAL_API_SECRET", "cortex-secret");
+    vi.stubEnv("CORTEX_CHUNK_MANIFEST_PATH", "runtime/cortex/chunks.json");
+    vi.mocked(readFile).mockResolvedValueOnce(JSON.stringify(fixtureChunkManifest()));
+    const { POST } = await import("./route");
+
+    const response = await POST(buildRequest({
+      purpose: "market-report",
+      query: "SSI report context",
+    }, "cortex-secret"));
+
+    expect(response.status).toBe(200);
+    expect(vi.mocked(readFile).mock.calls[0]?.[0]).toMatch(/runtime\/cortex\/chunks\.json$/);
+  });
+
+  it("can read the chunk manifest from a remote artifact URL", async () => {
+    vi.stubEnv("CORTEX_INTERNAL_API_SECRET", "cortex-secret");
+    vi.stubEnv("CORTEX_CHUNK_MANIFEST_URL", "https://artifacts.example.com/cortex/chunks.json");
+    vi.stubEnv("CORTEX_CHUNK_MANIFEST_BEARER_TOKEN", "artifact-token");
+    const fetchMock = vi.fn().mockResolvedValueOnce(Response.json(fixtureChunkManifest()));
+    vi.stubGlobal("fetch", fetchMock);
+    const { POST } = await import("./route");
+
+    const response = await POST(buildRequest({
+      purpose: "market-report",
+      query: "SSI report context",
+    }, "cortex-secret"));
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(readFile).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledWith("https://artifacts.example.com/cortex/chunks.json", {
+      cache: "no-store",
+      headers: { authorization: "Bearer artifact-token" },
+    });
+    expect(body.pack.evidence[0].id).toBe("c1");
   });
 
   it("returns a service error when the server has no chunk manifest", async () => {
