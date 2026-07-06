@@ -5,6 +5,7 @@ export type CortexVisibility = "public" | "internal" | "protected" | "secret";
 export type CortexResourceKind =
   | "action-log"
   | "book-library"
+  | "calculation-ledger"
   | "codebase"
   | "content-archive"
   | "development-plan"
@@ -18,12 +19,14 @@ export type CortexResourceKind =
   | "market-media"
   | "monitor"
   | "public-site"
+  | "raw-market-data"
   | "repository";
 
 export type CortexAccessMode =
   | "api-snapshot"
   | "archive-snapshot"
   | "book-ingestion"
+  | "calculation-ledger"
   | "codebase-snapshot"
   | "database-snapshot"
   | "development-plan"
@@ -31,6 +34,8 @@ export type CortexAccessMode =
   | "mediahub-source"
   | "manual-upload"
   | "public-web"
+  | "raw-monitoring-snapshot"
+  | "respondent-input-snapshot"
   | "repo-docs"
   | "site-snapshot";
 
@@ -149,8 +154,27 @@ export type CortexMarketReportInput = {
     summary: string;
     tenantId: string;
   }>;
+  calculationEvidence?: Array<{
+    basis: string;
+    calculatedAt: Date;
+    commodityCode: string;
+    id: string;
+    summary: string;
+    tenantId: string;
+    valueUsdPerMt: number | null;
+  }>;
   periodEndDate: string;
   periodStartDate: string;
+  respondentInputs?: Array<{
+    basis: string;
+    commodityCode: string;
+    id: string;
+    respondentType?: string;
+    submittedAt: Date;
+    summary: string;
+    tenantId: string;
+    valueUsdPerMt: number | null;
+  }>;
   reportKind: CortexMarketReportKind;
   snapshots?: Array<{
     feed: Array<{
@@ -207,6 +231,22 @@ export const CORTEX_PROJECT_RESOURCES: CortexProjectResource[] = [
     name: "MediaHub",
     ownerProject: "index",
     visibility: "internal",
+  },
+  {
+    description: "Raw respondent submissions, imported monitor values, calculation inputs and intermediate SSI calculation traces.",
+    id: "index-raw-data",
+    kind: "raw-market-data",
+    name: "Index raw market and respondent data",
+    ownerProject: "index",
+    visibility: "protected",
+  },
+  {
+    description: "Index calculation runs, basket inclusion decisions, exclusions, revisions and publication locks.",
+    id: "index-calculation-ledger",
+    kind: "calculation-ledger",
+    name: "Index calculation ledger",
+    ownerProject: "index",
+    visibility: "protected",
   },
   {
     description: "Public and dynamic web surfaces across Index, MN7R, Cr0pto and related ecosystem products.",
@@ -274,6 +314,17 @@ export const CORTEX_INITIAL_SOURCES: CortexSource[] = [
     visibility: "public",
   },
   {
+    accessMode: "raw-monitoring-snapshot",
+    allowedActionModes: ["context-pack", "analysis"],
+    cadence: "hourly",
+    description: "Raw monitored MediaHub items before report digesting: fetched RSS/API/search/Telegram candidates, source metadata, scores, tags and rejection reasons.",
+    id: "mediahub-raw-monitoring-items",
+    resourceId: "mediahub",
+    rightsNote: "Keep original source metadata, fetch time, URL and processing status; external model calls receive only approved excerpts after dedupe, relevance and rights checks.",
+    title: "MediaHub raw monitored items",
+    visibility: "protected",
+  },
+  {
     accessMode: "manual-upload",
     allowedActionModes: ["context-pack", "analysis", "draft"],
     cadence: "manual",
@@ -296,6 +347,28 @@ export const CORTEX_INITIAL_SOURCES: CortexSource[] = [
     visibility: "public",
   },
   {
+    accessMode: "respondent-input-snapshot",
+    allowedActionModes: ["context-pack", "analysis"],
+    cadence: "on-event",
+    description: "Raw SSI respondent submissions, admin-entered prices and automatic MN7R respondent imports before aggregation and publication.",
+    id: "ssi-respondent-inputs",
+    resourceId: "index-raw-data",
+    rightsNote: "Protected source: redact respondent identity, contact, IP/session and counterparty-sensitive notes before any external model context.",
+    title: "SSI raw respondent and imported inputs",
+    visibility: "protected",
+  },
+  {
+    accessMode: "calculation-ledger",
+    allowedActionModes: ["context-pack", "analysis"],
+    cadence: "on-event",
+    description: "SSI calculation runs, inclusion/exclusion decisions, baskets, minimum respondent gates, rounding, revisions and publication locks.",
+    id: "ssi-calculation-ledger",
+    resourceId: "index-calculation-ledger",
+    rightsNote: "Protected source: expose formulas, aggregate diagnostics and run IDs; keep private respondent-level records behind redaction gates.",
+    title: "SSI calculation and publication ledger",
+    visibility: "protected",
+  },
+  {
     accessMode: "repo-docs",
     allowedActionModes: ["context-pack", "analysis", "draft"],
     cadence: "on-change",
@@ -315,6 +388,28 @@ export const CORTEX_INITIAL_SOURCES: CortexSource[] = [
     resourceId: "mn7r-monitor",
     rightsNote: "Assistant/tool use must go through MN7R auth, redaction, audit and approval gates.",
     title: "MN7R governed monitor context",
+    visibility: "protected",
+  },
+  {
+    accessMode: "event-log",
+    allowedActionModes: ["context-pack", "analysis", "approval-gated-tool"],
+    cadence: "on-event",
+    description: "MN7R broker/operator/user-entered quotes, bids, offers, deal notes, corrections and workflow events used for monitor analysis.",
+    id: "mn7r-broker-user-inputs",
+    resourceId: "mn7r-monitor",
+    rightsNote: "Protected source: use MN7R-local auth, role scoping, redaction and audit IDs; do not export raw counterparties or sensitive commercial notes to external models.",
+    title: "MN7R broker and user input events",
+    visibility: "protected",
+  },
+  {
+    accessMode: "api-snapshot",
+    allowedActionModes: ["context-pack", "analysis"],
+    cadence: "daily",
+    description: "Derived correlations between MN7R monitor inputs, SSI respondent inputs, published index movements and MediaHub events.",
+    id: "mn7r-index-correlation-signals",
+    resourceId: "mn7r-monitor",
+    rightsNote: "Use aggregate and redacted correlation features by default; raw event drill-down remains approval-gated.",
+    title: "MN7R/SSI/MediaHub correlation signals",
     visibility: "protected",
   },
   {
@@ -460,6 +555,8 @@ export function buildCortexMarketReportContextPack(
 ): CortexContextPack {
   const evidence: CortexEvidenceItem[] = [
     ...buildIndexEvidence(input),
+    ...buildRespondentInputEvidence(input),
+    ...buildCalculationEvidence(input),
     ...buildManualMaterialEvidence(input),
     ...buildMonitoringEvidence(input),
   ];
@@ -471,6 +568,37 @@ export function buildCortexMarketReportContextPack(
     purpose: "market-report",
     query: `${input.tenant}:${input.reportKind}:${input.periodStartDate}:${input.periodEndDate}`,
   });
+}
+
+export function mergeCortexContextPacks(input: {
+  createdAt?: string;
+  primary: CortexContextPack;
+  secondary?: CortexContextPack;
+}): CortexContextPack {
+  if (!input.secondary) return input.primary;
+
+  return {
+    createdAt: input.createdAt ?? input.primary.createdAt,
+    evidence: dedupeCortexEvidence([
+      ...input.primary.evidence,
+      ...input.secondary.evidence,
+    ]),
+    excluded: [
+      ...input.primary.excluded,
+      ...input.secondary.excluded,
+    ],
+    knownGaps: Array.from(new Set([
+      ...input.primary.knownGaps,
+      ...input.secondary.knownGaps,
+    ])),
+    product: COMMODITY_INTELLIGENCE_PRODUCT_NAME,
+    purpose: input.primary.purpose,
+    query: `${input.primary.query} + ${input.secondary.query}`,
+    sourceIds: Array.from(new Set([
+      ...input.primary.sourceIds,
+      ...input.secondary.sourceIds,
+    ])).sort(),
+  };
 }
 
 function buildIndexEvidence(input: CortexMarketReportInput): CortexEvidenceItem[] {
@@ -490,6 +618,49 @@ function buildIndexEvidence(input: CortexMarketReportInput): CortexEvidenceItem[
       urlOrPath: input.tenant === "spike" ? "https://spike.1d3x.com/" : "https://1d3x.com/",
       visibility: "public" as const,
     }));
+}
+
+function buildRespondentInputEvidence(input: CortexMarketReportInput): CortexEvidenceItem[] {
+  return (input.respondentInputs ?? [])
+    .filter((item) => item.tenantId === tenantToMaterialTenant(input.tenant))
+    .map((item) => ({
+      extractedAt: item.submittedAt.toISOString(),
+      id: `cortex:respondent-input:${item.id}`,
+      sourceId: "ssi-respondent-inputs",
+      summary: compactCortexText([
+        item.commodityCode,
+        item.basis,
+        item.valueUsdPerMt == null ? "value unavailable" : `${item.valueUsdPerMt} USD/t`,
+        item.respondentType ? `respondent type ${item.respondentType}` : null,
+        item.summary,
+      ].filter(Boolean).join("; ")),
+      title: `SSI raw input ${item.commodityCode}`,
+      urlOrPath: `ssi-respondent-input:${item.id}`,
+      visibility: "protected" as const,
+    }))
+    .filter((item) => item.summary.length > 0)
+    .slice(0, input.reportKind === "daily" ? 40 : input.reportKind === "weekly" ? 100 : 160);
+}
+
+function buildCalculationEvidence(input: CortexMarketReportInput): CortexEvidenceItem[] {
+  return (input.calculationEvidence ?? [])
+    .filter((item) => item.tenantId === tenantToMaterialTenant(input.tenant))
+    .map((item) => ({
+      extractedAt: item.calculatedAt.toISOString(),
+      id: `cortex:calculation:${item.id}`,
+      sourceId: "ssi-calculation-ledger",
+      summary: compactCortexText([
+        item.commodityCode,
+        item.basis,
+        item.valueUsdPerMt == null ? "published value unavailable" : `${item.valueUsdPerMt} USD/t`,
+        item.summary,
+      ].filter(Boolean).join("; ")),
+      title: `SSI calculation ${item.commodityCode}`,
+      urlOrPath: `ssi-calculation:${item.id}`,
+      visibility: "protected" as const,
+    }))
+    .filter((item) => item.summary.length > 0)
+    .slice(0, input.reportKind === "daily" ? 30 : input.reportKind === "weekly" ? 80 : 120);
 }
 
 function buildManualMaterialEvidence(input: CortexMarketReportInput): CortexEvidenceItem[] {

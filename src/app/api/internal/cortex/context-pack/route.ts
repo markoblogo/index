@@ -1,9 +1,7 @@
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 import { NextResponse } from "next/server";
 import { buildCortexMemoryContextPack } from "@/lib/cortex-memory-context-pack";
 import type { CortexMemorySearchFilters } from "@/lib/cortex-memory-search";
-import type { CortexChunkManifest } from "@/lib/cortex-source-chunker";
+import { loadCortexRuntimeChunkManifest } from "@/lib/cortex-runtime-chunk-manifest";
 import type { CortexContextPack, CortexVisibility } from "@/lib/commodity-intelligence-layer";
 import { isBearerTokenAuthorized } from "@/lib/cron-auth";
 import type { CortexScanRoot, CortexScannedSourceKind } from "@/lib/cortex-source-scanner";
@@ -43,7 +41,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
 
-  const chunkManifest = await readChunkManifest();
+  const chunkManifest = await loadCortexRuntimeChunkManifest();
   if (!chunkManifest.ok) {
     return NextResponse.json({ error: chunkManifest.error }, { status: 503 });
   }
@@ -102,61 +100,6 @@ function parseRequestBody(body: ContextPackRequestBody):
       query: body.query.trim(),
     },
   };
-}
-
-async function readChunkManifest():
-  Promise<{ ok: true; value: CortexChunkManifest } | { error: string; ok: false }> {
-  const manifestUrl = normalizeEnvString(process.env.CORTEX_CHUNK_MANIFEST_URL);
-  if (manifestUrl) {
-    return readRemoteChunkManifest(manifestUrl);
-  }
-
-  try {
-    return {
-      ok: true,
-      value: JSON.parse(await readFile(/*turbopackIgnore: true*/ cortexChunkManifestPath(), "utf8")) as CortexChunkManifest,
-    };
-  } catch (error) {
-    const code = typeof error === "object" && error && "code" in error ? error.code : undefined;
-    return {
-      error: code === "ENOENT"
-        ? "Cortex chunk manifest is not available on this server"
-        : "Failed to read Cortex chunk manifest",
-      ok: false,
-    };
-  }
-}
-
-async function readRemoteChunkManifest(manifestUrl: string):
-  Promise<{ ok: true; value: CortexChunkManifest } | { error: string; ok: false }> {
-  try {
-    const bearerToken = normalizeEnvString(process.env.CORTEX_CHUNK_MANIFEST_BEARER_TOKEN);
-    const response = await fetch(manifestUrl, {
-      cache: "no-store",
-      headers: bearerToken ? { authorization: `Bearer ${bearerToken}` } : undefined,
-    });
-    if (!response.ok) {
-      return { error: "Cortex chunk manifest URL is not available", ok: false };
-    }
-    return { ok: true, value: await response.json() as CortexChunkManifest };
-  } catch {
-    return { error: "Failed to fetch Cortex chunk manifest", ok: false };
-  }
-}
-
-function cortexChunkManifestPath() {
-  const configuredPath = normalizeEnvString(process.env.CORTEX_CHUNK_MANIFEST_PATH);
-  if (configuredPath) {
-    return path.isAbsolute(configuredPath)
-      ? configuredPath
-      : path.join(/*turbopackIgnore: true*/ process.cwd(), configuredPath);
-  }
-  return path.join(process.cwd(), ".cortex", "chunk-manifest.json");
-}
-
-function normalizeEnvString(value: string | undefined) {
-  const trimmed = value?.trim();
-  return trimmed && trimmed !== "undefined" && trimmed !== "null" ? trimmed : "";
 }
 
 function parseFilters(value: ContextPackRequestBody["filters"]):

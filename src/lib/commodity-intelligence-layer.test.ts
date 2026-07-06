@@ -6,6 +6,7 @@ import {
   canUseVisibilityInExternalModel,
   CORTEX_INITIAL_SOURCES,
   CORTEX_PROJECT_RESOURCES,
+  mergeCortexContextPacks,
 } from "@/lib/commodity-intelligence-layer";
 
 describe("1D3X Cortex contracts", () => {
@@ -14,6 +15,8 @@ describe("1D3X Cortex contracts", () => {
     const sourceIds = CORTEX_INITIAL_SOURCES.map((source) => source.id);
 
     expect(resourceIds).toContain("index-platform");
+    expect(resourceIds).toContain("index-raw-data");
+    expect(resourceIds).toContain("index-calculation-ledger");
     expect(resourceIds).toContain("mn7r-monitor");
     expect(resourceIds).toContain("cropto-infra");
     expect(resourceIds).toContain("ecosystem-sites");
@@ -22,8 +25,13 @@ describe("1D3X Cortex contracts", () => {
     expect(resourceIds).toContain("ecosystem-action-memory");
     expect(resourceIds).toContain("ecosystem-archives");
     expect(sourceIds).toContain("mediahub-global-sources");
+    expect(sourceIds).toContain("mediahub-raw-monitoring-items");
     expect(sourceIds).toContain("mediahub-telegram-materials");
+    expect(sourceIds).toContain("ssi-respondent-inputs");
+    expect(sourceIds).toContain("ssi-calculation-ledger");
     expect(sourceIds).toContain("mn7r-monitor-readonly");
+    expect(sourceIds).toContain("mn7r-broker-user-inputs");
+    expect(sourceIds).toContain("mn7r-index-correlation-signals");
     expect(sourceIds).toContain("ecosystem-site-content");
     expect(sourceIds).toContain("ecosystem-manuals-books");
     expect(sourceIds).toContain("ecosystem-code-snapshots");
@@ -40,6 +48,10 @@ describe("1D3X Cortex contracts", () => {
     ).toBe("on-event");
     expect(
       CORTEX_INITIAL_SOURCES.find((source) => source.id === "ecosystem-code-snapshots")
+        ?.visibility,
+    ).toBe("protected");
+    expect(
+      CORTEX_INITIAL_SOURCES.find((source) => source.id === "ssi-respondent-inputs")
         ?.visibility,
     ).toBe("protected");
   });
@@ -130,6 +142,48 @@ describe("1D3X Cortex contracts", () => {
     expect(pack.excluded).toEqual([]);
   });
 
+  it("merges deterministic report context with local memory context", () => {
+    const primary = buildCortexContextPack({
+      createdAt: "2026-07-06T00:00:00.000Z",
+      evidence: [
+        {
+          extractedAt: "2026-07-06T00:00:00.000Z",
+          id: "ev-index",
+          sourceId: "published-index-values",
+          summary: "Corn published at 201 USD/t.",
+          title: "Published corn",
+          urlOrPath: "https://spike.1d3x.com/",
+          visibility: "public",
+        },
+      ],
+      knownGaps: ["No monitored MediaHub feed evidence was included."],
+      purpose: "market-report",
+      query: "spike:weekly",
+    });
+    const secondary = buildCortexContextPack({
+      evidence: [
+        {
+          extractedAt: "2026-07-06T00:00:00.000Z",
+          id: "ev-memory",
+          sourceId: "ecosystem-site-content",
+          summary: "A prior 1D3X note links corn export demand to freight spreads.",
+          title: "1D3X memory",
+          urlOrPath: "index:docs/note.md",
+          visibility: "internal",
+        },
+      ],
+      purpose: "market-report",
+      query: "corn freight context",
+    });
+
+    const merged = mergeCortexContextPacks({ primary, secondary });
+
+    expect(merged.evidence.map((item) => item.id)).toEqual(["ev-index", "ev-memory"]);
+    expect(merged.sourceIds).toEqual(["ecosystem-site-content", "published-index-values"]);
+    expect(merged.knownGaps).toEqual(["No monitored MediaHub feed evidence was included."]);
+    expect(merged.query).toBe("spike:weekly + corn freight context");
+  });
+
   it("builds report context from index values, Telegram materials and monitored sources", () => {
     const pack = buildCortexMarketReportContextPack({
       latestData: [
@@ -141,6 +195,17 @@ describe("1D3X Cortex contracts", () => {
           commodityNameEn: "Corn",
           commodityNameUk: "Кукурудза",
           date: "2026-07-06",
+          valueUsdPerMt: 201.5,
+        },
+      ],
+      calculationEvidence: [
+        {
+          basis: "CPT Port",
+          calculatedAt: new Date("2026-07-06T12:00:00.000Z"),
+          commodityCode: "CORN",
+          id: "calc-1",
+          summary: "Calculation included enough respondent inputs and locked the published value.",
+          tenantId: "spike-ua",
           valueUsdPerMt: 201.5,
         },
       ],
@@ -172,6 +237,18 @@ describe("1D3X Cortex contracts", () => {
       ],
       periodEndDate: "2026-07-06",
       periodStartDate: "2026-06-30",
+      respondentInputs: [
+        {
+          basis: "CPT Port",
+          commodityCode: "CORN",
+          id: "input-1",
+          respondentType: "manual",
+          submittedAt: new Date("2026-07-06T11:00:00.000Z"),
+          summary: "Raw respondent input before aggregation.",
+          tenantId: "spike-ua",
+          valueUsdPerMt: 200,
+        },
+      ],
       reportKind: "weekly",
       snapshots: [
         {
@@ -199,6 +276,10 @@ describe("1D3X Cortex contracts", () => {
     ]);
     expect(pack.evidence.map((item) => item.id)).toContain("cortex:material:material-1");
     expect(pack.evidence.map((item) => item.id)).not.toContain("cortex:material:material-daily");
+    expect(pack.excluded.map((item) => item.evidenceId)).toEqual([
+      "cortex:respondent-input:input-1",
+      "cortex:calculation:calc-1",
+    ]);
     expect(pack.knownGaps).toEqual([]);
   });
 

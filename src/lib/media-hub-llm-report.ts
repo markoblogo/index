@@ -4,8 +4,11 @@ import type { Locale } from "@/lib/i18n";
 import { fetchWithTimeout } from "@/lib/fetch-timeout";
 import {
   buildCortexMarketReportContextPack,
+  mergeCortexContextPacks,
   type CortexContextPack,
 } from "@/lib/commodity-intelligence-layer";
+import { buildCortexMemoryContextPack } from "@/lib/cortex-memory-context-pack";
+import { loadCortexRuntimeChunkManifest } from "@/lib/cortex-runtime-chunk-manifest";
 import type { MediaHubWindowSnapshot } from "@/lib/media-hub";
 import type { MediaHubManualMaterialDigest } from "@/lib/media-hub-manual-materials";
 import { buildMediaHubReportPrompt } from "@/lib/media-hub-report-prompts";
@@ -48,7 +51,7 @@ export async function generateMediaHubLlmReports(input: {
   provider?: "openai";
   skippedReason?: string;
 }> {
-  const cortexContextPack = buildCortexMarketReportContextPack({
+  const deterministicContextPack = buildCortexMarketReportContextPack({
     latestData: input.latestData,
     manualMaterials: input.manualMaterials,
     periodEndDate: input.periodEndDate,
@@ -57,6 +60,7 @@ export async function generateMediaHubLlmReports(input: {
     snapshots: input.snapshots,
     tenant: input.tenant,
   });
+  const cortexContextPack = await augmentReportContextWithCortexMemory(input, deterministicContextPack);
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     return { cortexContextPack, localized: {}, skippedReason: "openai_api_key_missing" };
@@ -235,6 +239,83 @@ function buildPrompt(input: {
   tenant: MediaHubTenant;
 }) {
   return buildMediaHubReportPrompt(input);
+}
+
+async function augmentReportContextWithCortexMemory(
+  input: {
+    kind: MediaHubReportKind;
+    latestData: PublicLatestItem[];
+    manualMaterials?: MediaHubManualMaterialDigest[];
+    periodEndDate: string;
+    periodStartDate: string;
+    snapshots: MediaHubWindowSnapshot[];
+    tenant: MediaHubTenant;
+  },
+  deterministicContextPack: CortexContextPack,
+) {
+  if (process.env.MEDIA_HUB_CORTEX_MEMORY_CONTEXT_ENABLED === "0") {
+    return deterministicContextPack;
+  }
+
+  const chunkManifest = await loadCortexRuntimeChunkManifest();
+  if (!chunkManifest.ok) {
+    return deterministicContextPack;
+  }
+
+  const memoryContext = buildCortexMemoryContextPack({
+    allowProtected: false,
+    chunkManifest: chunkManifest.value,
+    maxEvidence: normalizeInteger(process.env.MEDIA_HUB_CORTEX_MEMORY_MAX_EVIDENCE, 8, 1, 20),
+    maxTokens: normalizeInteger(process.env.MEDIA_HUB_CORTEX_MEMORY_MAX_TOKENS, 2_400, 200, 8_000),
+    purpose: "market-report",
+    query: buildReportMemoryQuery(input),
+  });
+
+  return mergeCortexContextPacks({
+    primary: deterministicContextPack,
+    secondary: memoryContext.pack,
+  });
+}
+
+function buildReportMemoryQuery(input: {
+  kind: MediaHubReportKind;
+  latestData: PublicLatestItem[];
+  manualMaterials?: MediaHubManualMaterialDigest[];
+  periodEndDate: string;
+  periodStartDate: string;
+  snapshots: MediaHubWindowSnapshot[];
+  tenant: MediaHubTenant;
+}) {
+  const indexTerms = input.latestData
+    .slice(0, 12)
+    .map((item) => `${item.commodityCode} ${item.commodityNameEn} ${item.basis}`)
+    .join(" ");
+  const manualTerms = (input.manualMaterials ?? [])
+    .slice(0, 8)
+    .map((item) => item.summary || item.extractedText || item.originalUrl || item.sourceDomain || "")
+    .join(" ");
+  const feedTerms = input.snapshots
+    .flatMap((snapshot) => snapshot.feed.slice(0, 12))
+    .map((item) => `${item.title} ${item.summary} ${item.tags.join(" ")}`)
+    .join(" ");
+  const tenantLabel = input.tenant === "spike"
+    ? "SPIKE Spot Index Ukraine SSI"
+    : "1D3X global commodity market";
+
+  return [
+    tenantLabel,
+    `${input.kind} report`,
+    `${input.periodStartDate} ${input.periodEndDate}`,
+    indexTerms,
+    manualTerms,
+    feedTerms,
+  ].join(" ").replace(/\s+/g, " ").trim().slice(0, 2_400);
+}
+
+function normalizeInteger(value: string | undefined, fallback: number, min: number, max: number) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return fallback;
+  return Math.max(min, Math.min(max, Math.trunc(numeric)));
 }
 
 function extractResponseText(payload: unknown): string {

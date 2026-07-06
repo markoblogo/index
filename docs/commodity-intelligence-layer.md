@@ -41,6 +41,12 @@ not only MediaHub feeds or report inputs. The target memory surface includes:
   ecosystem sites;
 - dynamic public and protected product data where a product-specific workflow
   explicitly allows ingestion;
+- raw MediaHub monitoring outputs before digesting: fetched items, source
+  metadata, scores, tags, rejection reasons and processing state;
+- SSI raw respondent/admin/imported inputs, calculation runs, basket inclusion
+  decisions, revisions and publication locks, alongside published index values;
+- MN7R broker/operator/user inputs, quote/deal events and correlation features
+  between Monitor, SSI and MediaHub;
 - report archives, index archives, source snapshots, generated artifacts and
   historical bundles;
 - manuals, public guides, books, playbooks, uploaded PDFs and product teaching
@@ -140,9 +146,11 @@ does not accept client-controlled filesystem paths or artifact URLs.
 1D3X Cortex should cover these resource families:
 
 - Index Platform: UGA Index, SPIKE SPOT INDEX, 1d3x landing, MediaHub,
-  analytics, respondent/publication workflows and docs.
+  analytics, raw respondent inputs, index calculations, publication locks,
+  respondent/publication workflows and docs.
 - MN7R Monitor: market monitoring, execution context, quote/deal events,
-  counterparties, internal operating notes and reporting workflows.
+  broker/operator/user inputs, counterparties, internal operating notes,
+  correlation signals and reporting workflows.
 - Cr0pto: commodity-adjacent trade, finance or workflow context that belongs to
   the same ecosystem.
 - Smaller ecosystem resources: landing pages, manuals, source lists, partner
@@ -215,9 +223,10 @@ versions.
 Initial ingestion modes:
 
 - repo/docs sync for Index, MN7R, Cr0pto and smaller ecosystem repositories;
-- database/API snapshots for published values, monitor values and safe internal
-  facts;
-- MediaHub source ingestion and evidence snapshots;
+- database/API snapshots for published values, raw respondent/admin/imported
+  inputs, calculation ledgers, monitor values and safe internal facts;
+- MediaHub source ingestion, raw monitoring item snapshots and evidence
+  snapshots;
 - 1D3X MediaHub Telegram bot intake through `@idex_grains_bot`, including
   `#ssi`, `#1d3x`, `#daily`, `#weekly` and `#monthly` routing for SSI and 1D3X
   reports;
@@ -301,8 +310,10 @@ bounded context source, not as a public API.
 - Treat 1D3X/SSI Telegram bot materials as first-class report evidence: Cortex
   assembles the context pack from bot materials, monitored sources, index values
   and known gaps before OpenAI API is used for SSI/1D3X report drafting.
-- Compare MediaHub events against published index movements without changing
-  official methodology.
+- Analyze raw MediaHub monitoring items as well as report-ready summaries, so
+  relevance scoring, rejection reasons and source drift are visible to Cortex.
+- Compare MediaHub events against published index movements, raw respondent
+  inputs and calculation ledgers without changing official methodology.
 - Reuse the existing MediaHub browser runtime policy: Obscura for DOM/text/assets
   extraction, Playwright for visual/auth/complex fallback.
 - Keep AI analytics as a preview layer unless explicitly promoted through
@@ -313,7 +324,11 @@ bounded context source, not as a public API.
 - Work inside EXE assistant, Monitor AI chat and related protected assistant
   surfaces as the shared context/tool layer.
 - Assemble execution context from monitor values, recent source evidence,
-  similar historical events and Index/MediaHub signals.
+  broker/operator/user inputs, similar historical events, Index raw/calculated
+  data and MediaHub signals.
+- Build protected correlation features across MN7R inputs, SSI respondent
+  inputs, published index moves and MediaHub events before exposing only
+  redacted/approved context to external models.
 - Produce checklists, deal-review briefs, risk notes and internal draft text
   through OpenAI only after Cortex returns a bounded, redacted context pack.
 - Allow internal tool proposals only through MN7R auth, scope, audit,

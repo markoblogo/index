@@ -434,6 +434,11 @@ part of the 1D3X Cortex evidence layer: Cortex assembles the bounded report
 context pack first, OpenAI API drafts the SSI/1D3X report from that approved
 context, and Index stores the Cortex snapshot for audit in the report artifact
 and `CortexContextPackLedger`.
+Cortex is also scoped to raw and calculated ecosystem data, not only finished
+reports: MediaHub raw monitored items, SSI respondent/admin/imported inputs,
+SSI calculation ledgers, MN7R broker/operator inputs and cross-product
+correlation signals are protected Cortex sources. They can be analyzed inside
+Cortex, but external model prompts receive only redacted, approved context.
 Internal agents and related ecosystem products can read saved Cortex context
 packs through `GET /api/internal/cortex/context-packs` with
 `CORTEX_INTERNAL_API_SECRET` or `CRON_SECRET`; use `includePack=1` only for
