@@ -2,6 +2,10 @@ import "server-only";
 
 import type { Locale } from "@/lib/i18n";
 import { fetchWithTimeout } from "@/lib/fetch-timeout";
+import {
+  buildCortexMarketReportContextPack,
+  type CortexContextPack,
+} from "@/lib/commodity-intelligence-layer";
 import type { MediaHubWindowSnapshot } from "@/lib/media-hub";
 import type { MediaHubManualMaterialDigest } from "@/lib/media-hub-manual-materials";
 import { buildMediaHubReportPrompt } from "@/lib/media-hub-report-prompts";
@@ -38,14 +42,24 @@ export async function generateMediaHubLlmReports(input: {
   snapshots: MediaHubWindowSnapshot[];
   tenant: MediaHubTenant;
 }): Promise<{
+  cortexContextPack: CortexContextPack;
   localized: Partial<Record<Locale, MediaHubLocalizedReport>>;
   model?: string;
   provider?: "openai";
   skippedReason?: string;
 }> {
+  const cortexContextPack = buildCortexMarketReportContextPack({
+    latestData: input.latestData,
+    manualMaterials: input.manualMaterials,
+    periodEndDate: input.periodEndDate,
+    periodStartDate: input.periodStartDate,
+    reportKind: input.kind,
+    snapshots: input.snapshots,
+    tenant: input.tenant,
+  });
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    return { localized: {}, skippedReason: "openai_api_key_missing" };
+    return { cortexContextPack, localized: {}, skippedReason: "openai_api_key_missing" };
   }
 
   const locales: Locale[] = input.tenant === "spike" ? ["uk", "en"] : ["en"];
@@ -54,7 +68,13 @@ export async function generateMediaHubLlmReports(input: {
   const errors: string[] = [];
 
   for (const locale of locales) {
-    const generated = await generateOneLocale({ ...input, apiKey, locale, model });
+    const generated = await generateOneLocale({
+      ...input,
+      apiKey,
+      cortexContextPack,
+      locale,
+      model,
+    });
     if (generated.report) {
       localized[locale] = generated.report;
     }
@@ -64,6 +84,7 @@ export async function generateMediaHubLlmReports(input: {
   }
 
   return {
+    cortexContextPack,
     localized,
     model,
     provider: "openai",
@@ -75,6 +96,7 @@ export async function generateMediaHubLlmReports(input: {
 
 async function generateOneLocale(input: {
   apiKey: string;
+  cortexContextPack: CortexContextPack;
   kind: MediaHubReportKind;
   latestData: PublicLatestItem[];
   manualMaterials?: MediaHubManualMaterialDigest[];
@@ -201,6 +223,7 @@ function openAiHeaders(apiKey: string) {
 
 function buildPrompt(input: {
   avoidPhrases?: string[];
+  cortexContextPack: CortexContextPack;
   kind: MediaHubReportKind;
   latestData: PublicLatestItem[];
   locale: Locale;

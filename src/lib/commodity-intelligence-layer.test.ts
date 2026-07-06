@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildCortexContextPack,
+  buildCortexMarketReportContextPack,
   CORTEX_LIFECYCLE,
   canUseVisibilityInExternalModel,
   CORTEX_INITIAL_SOURCES,
@@ -108,5 +109,93 @@ describe("1D3X Cortex contracts", () => {
 
     expect(pack.evidence).toHaveLength(1);
     expect(pack.excluded).toEqual([]);
+  });
+
+  it("builds report context from index values, Telegram materials and monitored sources", () => {
+    const pack = buildCortexMarketReportContextPack({
+      latestData: [
+        {
+          basis: "CPT Port",
+          changeAbs: 1.2,
+          commodityCode: "CORN",
+          commodityId: "corn",
+          commodityNameEn: "Corn",
+          commodityNameUk: "Кукурудза",
+          date: "2026-07-06",
+          valueUsdPerMt: 201.5,
+        },
+      ],
+      manualMaterials: [
+        {
+          extractedText: "Fresh export demand note from Telegram.",
+          id: "material-1",
+          kind: "weekly_material",
+          originalFilename: null,
+          originalUrl: "https://example.com/grain-note",
+          receivedAt: new Date("2026-07-06T10:00:00.000Z"),
+          sourceDomain: "example.com",
+          sourceType: "telegram_link",
+          summary: "Telegram source says export demand improved for corn.",
+          tenantId: "spike-ua",
+        },
+        {
+          extractedText: "Should not enter weekly pack.",
+          id: "material-daily",
+          kind: "daily_material",
+          originalFilename: null,
+          originalUrl: null,
+          receivedAt: new Date("2026-07-06T10:00:00.000Z"),
+          sourceDomain: null,
+          sourceType: "telegram_text",
+          summary: "Daily-only note.",
+          tenantId: "spike-ua",
+        },
+      ],
+      periodEndDate: "2026-07-06",
+      periodStartDate: "2026-06-30",
+      reportKind: "weekly",
+      snapshots: [
+        {
+          feed: [
+            {
+              id: "feed-1",
+              source: "World Grain",
+              sourceType: "rss",
+              summary: "Global grain logistics update.",
+              tags: ["grains", "logistics"],
+              time: "2026-07-06",
+              title: "Freight shapes grain flow",
+            },
+          ],
+          window: "week",
+        },
+      ],
+      tenant: "spike",
+    });
+
+    expect(pack.sourceIds).toEqual([
+      "mediahub-global-sources",
+      "mediahub-telegram-materials",
+      "published-index-values",
+    ]);
+    expect(pack.evidence.map((item) => item.id)).toContain("cortex:material:material-1");
+    expect(pack.evidence.map((item) => item.id)).not.toContain("cortex:material:material-daily");
+    expect(pack.knownGaps).toEqual([]);
+  });
+
+  it("reports known gaps when report context lacks Telegram and feed evidence", () => {
+    const pack = buildCortexMarketReportContextPack({
+      manualMaterials: [],
+      periodEndDate: "2026-07-06",
+      periodStartDate: "2026-07-06",
+      reportKind: "daily",
+      snapshots: [],
+      tenant: "platform",
+    });
+
+    expect(pack.knownGaps).toContain(
+      "No Telegram bot materials were included for this report context.",
+    );
+    expect(pack.knownGaps).toContain("No monitored MediaHub feed evidence was included.");
   });
 });

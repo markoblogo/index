@@ -1,4 +1,5 @@
 import type { Locale } from "@/lib/i18n";
+import type { CortexContextPack } from "@/lib/commodity-intelligence-layer";
 import type { MediaHubWindowSnapshot } from "@/lib/media-hub";
 import type { MediaHubManualMaterialDigest } from "@/lib/media-hub-manual-materials";
 import type { PublicLatestItem } from "@/lib/public-api-data";
@@ -8,6 +9,7 @@ type Tenant = "spike" | "platform";
 
 export function buildMediaHubReportPrompt(input: {
   avoidPhrases?: string[];
+  cortexContextPack?: CortexContextPack;
   kind: ReportKind;
   latestData: PublicLatestItem[];
   locale: Locale;
@@ -31,6 +33,7 @@ export function buildMediaHubReportPrompt(input: {
 
 export function buildSsiDailyReportPrompt(input: {
   kind: ReportKind;
+  cortexContextPack?: CortexContextPack;
   latestData: PublicLatestItem[];
   locale: Locale;
   manualMaterials?: MediaHubManualMaterialDigest[];
@@ -70,6 +73,7 @@ export function buildSsiDailyReportPrompt(input: {
     "For Ukraine daily reports, every market overview item must explain a current Ukraine price/export/harvest/logistics demand signal. Do not include old background facts just because they are true.",
     noHallucinationRules(),
     commonJsonRules(input),
+    renderCortexContextPack(input.cortexContextPack),
     renderIndexData(input.latestData, isUk),
     renderManualMaterials(input.manualMaterials ?? [], input.kind),
     renderSnapshotEvidence(input.snapshots, input.kind),
@@ -78,6 +82,7 @@ export function buildSsiDailyReportPrompt(input: {
 
 export function build1d3xDailyReportPrompt(input: {
   kind: ReportKind;
+  cortexContextPack?: CortexContextPack;
   latestData: PublicLatestItem[];
   locale: Locale;
   manualMaterials?: MediaHubManualMaterialDigest[];
@@ -106,6 +111,7 @@ export function build1d3xDailyReportPrompt(input: {
     "Omit thematic sections that have no concrete source-backed facts. Do not become Ukraine-only unless Ukraine/Black Sea materially drives the global market.",
     noHallucinationRules(),
     commonJsonRules(input),
+    renderCortexContextPack(input.cortexContextPack),
     renderManualMaterials(input.manualMaterials ?? [], input.kind),
     renderSnapshotEvidence(input.snapshots, input.kind),
   ].join("\n\n");
@@ -113,6 +119,7 @@ export function build1d3xDailyReportPrompt(input: {
 
 export function buildSsiWeeklyMonthlyPrompt(input: {
   avoidPhrases?: string[];
+  cortexContextPack?: CortexContextPack;
   kind: ReportKind;
   latestData: PublicLatestItem[];
   locale: Locale;
@@ -179,6 +186,7 @@ export function buildSsiWeeklyMonthlyPrompt(input: {
     commonJsonRules(input),
     "Required structure inside summary array:",
     requiredStructure.join("\n"),
+    renderCortexContextPack(input.cortexContextPack),
     renderIndexData(input.latestData, isUk),
     renderManualMaterials(input.manualMaterials ?? [], input.kind),
     renderHistoricalContext(input.historicalSummaries ?? []),
@@ -200,6 +208,7 @@ function noHallucinationRules() {
 
 export function build1d3xWeeklyMonthlyPrompt(input: {
   avoidPhrases?: string[];
+  cortexContextPack?: CortexContextPack;
   kind: ReportKind;
   latestData: PublicLatestItem[];
   locale: Locale;
@@ -234,6 +243,7 @@ export function build1d3xWeeklyMonthlyPrompt(input: {
       "Part IV. Regional focus: only relevant regions from source evidence.",
       "Final footer: 1D3X / https://1d3x.com/",
     ].join("\n"),
+    renderCortexContextPack(input.cortexContextPack),
     renderManualMaterials(input.manualMaterials ?? [], input.kind),
     renderHistoricalContext(input.historicalSummaries ?? []),
     renderSnapshotEvidence(input.snapshots, input.kind),
@@ -267,6 +277,34 @@ function renderIndexData(latestData: PublicLatestItem[], isUk: boolean) {
       return `${name} (${item.commodityCode}, ${item.basis}): ${item.valueUsdPerMt} USD/t, change ${item.changeAbs ?? "n/a"}`;
     });
   return ["Index data:", lines.length > 0 ? lines.join("\n") : "No index data provided."].join("\n");
+}
+
+function renderCortexContextPack(pack?: CortexContextPack) {
+  if (!pack) {
+    return "1D3X Cortex context pack: not built.";
+  }
+
+  const evidenceLines = pack.evidence
+    .slice(0, 80)
+    .map((item, index) =>
+      `${index + 1}. ${item.id} | ${item.sourceId} | ${item.title} | ${item.summary}`,
+    );
+  const excludedLines = pack.excluded
+    .slice(0, 20)
+    .map((item) => `${item.evidenceId}: ${item.visibility} (${item.reason})`);
+
+  return [
+    "1D3X Cortex approved context pack:",
+    `pack query: ${pack.query}`,
+    `sources: ${pack.sourceIds.join(", ") || "none"}`,
+    "Approved evidence:",
+    evidenceLines.length > 0 ? evidenceLines.join("\n") : "No approved Cortex evidence.",
+    "Known gaps:",
+    pack.knownGaps.length > 0 ? pack.knownGaps.join("\n") : "No known gaps.",
+    "Excluded evidence:",
+    excludedLines.length > 0 ? excludedLines.join("\n") : "No excluded evidence.",
+    "Use the approved Cortex evidence above as the primary context. Do not infer facts from excluded evidence.",
+  ].join("\n");
 }
 
 function renderSnapshotEvidence(snapshots: MediaHubWindowSnapshot[], kind: ReportKind) {

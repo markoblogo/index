@@ -101,6 +101,51 @@ export type CortexContextPack = {
   sourceIds: string[];
 };
 
+export type CortexMarketReportKind = "daily" | "weekly" | "monthly";
+
+export type CortexMarketReportTenant = "spike" | "platform";
+
+export type CortexMarketReportInput = {
+  latestData?: Array<{
+    basis: string;
+    changeAbs: number | null;
+    commodityCode: string;
+    commodityId: string;
+    commodityNameEn: string;
+    commodityNameUk: string;
+    date: string;
+    valueUsdPerMt: number | null;
+  }>;
+  manualMaterials?: Array<{
+    extractedText: string;
+    id: string;
+    kind: string;
+    originalFilename: string | null;
+    originalUrl: string | null;
+    receivedAt: Date;
+    sourceDomain: string | null;
+    sourceType: string;
+    summary: string;
+    tenantId: string;
+  }>;
+  periodEndDate: string;
+  periodStartDate: string;
+  reportKind: CortexMarketReportKind;
+  snapshots?: Array<{
+    feed: Array<{
+      id: string;
+      source: string;
+      sourceType: string;
+      summary: string;
+      tags: string[];
+      time: string;
+      title: string;
+    }>;
+    window: string;
+  }>;
+  tenant: CortexMarketReportTenant;
+};
+
 export const CORTEX_PROJECT_RESOURCES: CortexProjectResource[] = [
   {
     description: "Shared benchmark, MediaHub, analytics and public reporting platform.",
@@ -281,6 +326,114 @@ export function buildCortexContextPack(input: {
     query: input.query,
     sourceIds: Array.from(new Set(allowedEvidence.map((item) => item.sourceId))).sort(),
   };
+}
+
+export function buildCortexMarketReportContextPack(
+  input: CortexMarketReportInput,
+): CortexContextPack {
+  const evidence: CortexEvidenceItem[] = [
+    ...buildIndexEvidence(input),
+    ...buildManualMaterialEvidence(input),
+    ...buildMonitoringEvidence(input),
+  ];
+
+  return buildCortexContextPack({
+    createdAt: `${input.periodEndDate}T23:59:59.000Z`,
+    evidence,
+    knownGaps: buildMarketReportKnownGaps(input, evidence),
+    purpose: "market-report",
+    query: `${input.tenant}:${input.reportKind}:${input.periodStartDate}:${input.periodEndDate}`,
+  });
+}
+
+function buildIndexEvidence(input: CortexMarketReportInput): CortexEvidenceItem[] {
+  return (input.latestData ?? [])
+    .filter((item) => item.valueUsdPerMt !== null)
+    .slice(0, 40)
+    .map((item) => ({
+      extractedAt: `${input.periodEndDate}T23:59:59.000Z`,
+      id: `cortex:index:${item.commodityId}:${item.basis}:${item.date || input.periodEndDate}`,
+      sourceId: "published-index-values",
+      summary: [
+        `${item.commodityNameEn || item.commodityCode}: ${item.valueUsdPerMt} USD/t`,
+        `basis ${item.basis}`,
+        item.changeAbs == null ? null : `change ${item.changeAbs}`,
+      ].filter(Boolean).join("; "),
+      title: `Published index ${item.commodityCode}`,
+      urlOrPath: input.tenant === "spike" ? "https://spike.1d3x.com/" : "https://1d3x.com/",
+      visibility: "public" as const,
+    }));
+}
+
+function buildManualMaterialEvidence(input: CortexMarketReportInput): CortexEvidenceItem[] {
+  return (input.manualMaterials ?? [])
+    .filter((material) => isManualMaterialRelevantToReport(material.kind, input.reportKind))
+    .filter((material) => material.tenantId === tenantToMaterialTenant(input.tenant))
+    .map((material) => {
+      const label = material.sourceDomain || material.originalFilename || material.originalUrl || material.id;
+      return {
+        extractedAt: material.receivedAt.toISOString(),
+        id: `cortex:material:${material.id}`,
+        sourceId: material.sourceType.startsWith("telegram")
+          ? "mediahub-telegram-materials"
+          : "index-docs",
+        summary: compactCortexText(material.summary || material.extractedText),
+        title: `MediaHub material: ${label}`,
+        urlOrPath: material.originalUrl || `mediahub-material:${material.id}`,
+        visibility: "internal" as const,
+      };
+    })
+    .filter((item) => item.summary.length > 0)
+    .slice(0, input.reportKind === "daily" ? 30 : input.reportKind === "weekly" ? 60 : 90);
+}
+
+function buildMonitoringEvidence(input: CortexMarketReportInput): CortexEvidenceItem[] {
+  return (input.snapshots ?? [])
+    .flatMap((snapshot) =>
+      snapshot.feed.map((item) => ({
+        extractedAt: `${input.periodEndDate}T23:59:59.000Z`,
+        id: `cortex:feed:${item.id}`,
+        sourceId: "mediahub-global-sources",
+        summary: compactCortexText(`${item.summary} Tags: ${item.tags.join(", ")}`),
+        title: item.title,
+        urlOrPath: `mediahub-feed:${snapshot.window}:${item.id}`,
+        visibility: "public" as const,
+      })),
+    )
+    .filter((item) => item.summary.length > 0)
+    .slice(0, input.reportKind === "daily" ? 40 : input.reportKind === "weekly" ? 100 : 150);
+}
+
+function buildMarketReportKnownGaps(
+  input: CortexMarketReportInput,
+  evidence: CortexEvidenceItem[],
+) {
+  const gaps: string[] = [];
+  if (!input.manualMaterials?.some((material) => material.sourceType.startsWith("telegram"))) {
+    gaps.push("No Telegram bot materials were included for this report context.");
+  }
+  if (!input.latestData?.some((item) => item.valueUsdPerMt !== null) && input.tenant === "spike") {
+    gaps.push("No published SSI index values were included in this report context.");
+  }
+  if (!evidence.some((item) => item.sourceId === "mediahub-global-sources")) {
+    gaps.push("No monitored MediaHub feed evidence was included.");
+  }
+  return gaps;
+}
+
+function tenantToMaterialTenant(tenant: CortexMarketReportTenant) {
+  return tenant === "spike" ? "spike-ua" : "1d3x";
+}
+
+function isManualMaterialRelevantToReport(kind: string, reportKind: CortexMarketReportKind) {
+  if (kind === "source_candidate") {
+    return reportKind !== "daily";
+  }
+  return kind === `${reportKind}_material`;
+}
+
+function compactCortexText(value: string) {
+  return value.replace(/\s+/g, " ").trim().slice(0, 900);
 }
 
 function dedupeCortexEvidence(items: CortexEvidenceItem[]) {

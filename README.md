@@ -255,6 +255,7 @@ Important modules:
 src/lib/index-platform.ts          tenant configuration
 src/lib/constants.ts               active site config
 src/lib/commodity-intelligence-layer.ts  1D3X Cortex registry/context contract
+src/lib/media-hub-llm-report.ts  OpenAI report path with Cortex context pack
 src/lib/public-index-data.ts       public homepage and analytics data
 src/lib/admin-daily-inputs.ts      admin daily matrix data/actions
 src/lib/admin-calculate.ts         calculation and publication workflow

@@ -55,12 +55,20 @@ The first code contract lives in:
 ```txt
 src/lib/commodity-intelligence-layer.ts
 src/lib/commodity-intelligence-layer.test.ts
+src/lib/media-hub-report-prompts.ts
+src/lib/media-hub-llm-report.ts
 ```
 
 It defines the initial resource registry, source registry, lifecycle/action-mode
 contract, visibility model and context-pack builder. This is intentionally
 small: it gives Index, MN7R and Cr0pto one shared contract before ingestion
 jobs, vector storage, API routes or operator UI are added.
+
+The first runtime slice is active in MediaHub report generation: before OpenAI
+drafting, `generateMediaHubLlmReports` builds a 1D3X Cortex report context pack
+from published index values, `@idex_grains_bot` / manual materials and monitored
+MediaHub feeds. The prompt includes that approved context pack with evidence IDs,
+source IDs, exclusions and known gaps.
 
 ## Scope
 
@@ -299,6 +307,14 @@ Acceptance:
   and report kind;
 - context pack output is deterministic JSON;
 - OpenAI prompt rendering uses only approved fields from the pack.
+
+Current implementation:
+
+- `buildCortexMarketReportContextPack` assembles the report pack;
+- `buildMediaHubReportPrompt` renders the approved Cortex pack into the report
+  prompt;
+- `generateMediaHubLlmReports` returns the pack together with OpenAI generation
+  metadata.
 
 Blockers:
 
