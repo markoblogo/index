@@ -59,7 +59,9 @@ Shared capabilities:
 - 1D3X Cortex layer for evidence-backed internal AI context, assistant tools
   and governed OpenAI API handoff across Index, MN7R Monitor, Cr0pto and related
   agro-commodity resources, starting in observe/learn mode with MediaHub report
-  context packs persisted into both report artifacts and the Cortex ledger;
+  context packs persisted into both report artifacts and the Cortex ledger. The
+  Cortex source contract covers site content, dynamic product data, archives,
+  manuals/books, codebases, development plans and approved action/event logs;
 - Vercel cron endpoints for scheduled imports, notifications and publication.
 
 UGA-specific features:

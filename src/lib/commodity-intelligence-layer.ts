@@ -3,22 +3,36 @@ export const COMMODITY_INTELLIGENCE_PRODUCT_NAME = "1D3X Cortex";
 export type CortexVisibility = "public" | "internal" | "protected" | "secret";
 
 export type CortexResourceKind =
+  | "action-log"
+  | "book-library"
+  | "codebase"
+  | "content-archive"
+  | "development-plan"
   | "index-platform"
-  | "monitor"
-  | "execution-workspace"
-  | "market-media"
   | "commodity-infra"
+  | "dynamic-site"
+  | "execution-workspace"
   | "landing"
   | "manual"
+  | "manual-library"
+  | "market-media"
+  | "monitor"
+  | "public-site"
   | "repository";
 
 export type CortexAccessMode =
-  | "repo-docs"
-  | "database-snapshot"
   | "api-snapshot"
+  | "archive-snapshot"
+  | "book-ingestion"
+  | "codebase-snapshot"
+  | "database-snapshot"
+  | "development-plan"
+  | "event-log"
   | "mediahub-source"
   | "manual-upload"
-  | "public-web";
+  | "public-web"
+  | "repo-docs"
+  | "site-snapshot";
 
 export type CortexActionMode =
   | "context-pack"
@@ -66,7 +80,7 @@ export type CortexProjectResource = {
 export type CortexSource = {
   accessMode: CortexAccessMode;
   allowedActionModes: CortexActionMode[];
-  cadence: "on-change" | "hourly" | "daily" | "weekly" | "manual";
+  cadence: "on-event" | "on-change" | "hourly" | "daily" | "weekly" | "manual";
   description: string;
   id: string;
   resourceId: string;
@@ -96,7 +110,14 @@ export type CortexContextPack = {
   }>;
   knownGaps: string[];
   product: typeof COMMODITY_INTELLIGENCE_PRODUCT_NAME;
-  purpose: "market-report" | "monitor-index-comparison" | "execution-context" | "source-review";
+  purpose:
+    | "action-analysis"
+    | "codebase-review"
+    | "execution-context"
+    | "market-report"
+    | "monitor-index-comparison"
+    | "project-recommendation"
+    | "source-review";
   query: string;
   sourceIds: string[];
 };
@@ -187,6 +208,46 @@ export const CORTEX_PROJECT_RESOURCES: CortexProjectResource[] = [
     ownerProject: "index",
     visibility: "internal",
   },
+  {
+    description: "Public and dynamic web surfaces across Index, MN7R, Cr0pto and related ecosystem products.",
+    id: "ecosystem-sites",
+    kind: "dynamic-site",
+    name: "Ecosystem public and dynamic sites",
+    ownerProject: "ecosystem",
+    visibility: "public",
+  },
+  {
+    description: "Manuals, public guides, books, playbooks and training materials attached to ecosystem products.",
+    id: "ecosystem-knowledge-library",
+    kind: "manual-library",
+    name: "Ecosystem manuals and books",
+    ownerProject: "ecosystem",
+    visibility: "internal",
+  },
+  {
+    description: "Repository code, tests, architecture notes, plans and development history for all ecosystem products.",
+    id: "ecosystem-codebases",
+    kind: "codebase",
+    name: "Ecosystem codebases and plans",
+    ownerProject: "ecosystem",
+    visibility: "protected",
+  },
+  {
+    description: "Product, user, operator and agent actions that Cortex may analyze after redaction and workflow allowlisting.",
+    id: "ecosystem-action-memory",
+    kind: "action-log",
+    name: "Ecosystem action and event memory",
+    ownerProject: "ecosystem",
+    visibility: "protected",
+  },
+  {
+    description: "Historical reports, source snapshots, generated artifacts and structured archives retained for trend and change analysis.",
+    id: "ecosystem-archives",
+    kind: "content-archive",
+    name: "Ecosystem archives",
+    ownerProject: "ecosystem",
+    visibility: "internal",
+  },
 ];
 
 export const CORTEX_INITIAL_SOURCES: CortexSource[] = [
@@ -266,6 +327,72 @@ export const CORTEX_INITIAL_SOURCES: CortexSource[] = [
     rightsNote: "Public pages only until a repo-local ingestion contract is added.",
     title: "Cr0pto public surfaces",
     visibility: "public",
+  },
+  {
+    accessMode: "site-snapshot",
+    allowedActionModes: ["context-pack", "analysis", "draft"],
+    cadence: "daily",
+    description: "Static and dynamic product-site content across Index, 1D3X, SSI, MN7R, Cr0pto and smaller ecosystem sites.",
+    id: "ecosystem-site-content",
+    resourceId: "ecosystem-sites",
+    rightsNote: "Capture public route content, sitemap-visible pages, dynamic report pages and dated snapshots with canonical URLs and hashes.",
+    title: "Ecosystem site content snapshots",
+    visibility: "public",
+  },
+  {
+    accessMode: "book-ingestion",
+    allowedActionModes: ["context-pack", "analysis", "draft"],
+    cadence: "on-change",
+    description: "Manuals, product guides, public books, uploaded PDFs, playbooks and teaching materials attached to ecosystem products.",
+    id: "ecosystem-manuals-books",
+    resourceId: "ecosystem-knowledge-library",
+    rightsNote: "Preserve source paths, edition/version metadata, language and rights notes; do not treat stale manuals as current behavior without freshness checks.",
+    title: "Ecosystem manuals, books and playbooks",
+    visibility: "internal",
+  },
+  {
+    accessMode: "codebase-snapshot",
+    allowedActionModes: ["context-pack", "analysis", "draft"],
+    cadence: "on-change",
+    description: "Code, tests, schemas, route contracts, agent docs and implementation structure across active and paused ecosystem repositories.",
+    id: "ecosystem-code-snapshots",
+    resourceId: "ecosystem-codebases",
+    rightsNote: "Use repo permissions; include commit SHA, file path, owner project and test/build evidence; secrets and private env files are excluded.",
+    title: "Ecosystem codebase snapshots",
+    visibility: "protected",
+  },
+  {
+    accessMode: "development-plan",
+    allowedActionModes: ["context-pack", "analysis", "draft"],
+    cadence: "on-change",
+    description: "Roadmaps, TODOs, implementation plans, release notes, ADRs and product recommendations across ecosystem repositories.",
+    id: "ecosystem-development-plans",
+    resourceId: "ecosystem-codebases",
+    rightsNote: "Keep plan status, date, owner project and evidence strength; distinguish intended work from implemented behavior.",
+    title: "Ecosystem development plans and recommendations",
+    visibility: "internal",
+  },
+  {
+    accessMode: "event-log",
+    allowedActionModes: ["context-pack", "analysis", "approval-gated-tool"],
+    cadence: "on-event",
+    description: "Approved product actions, operator actions, assistant/tool proposals, outcomes and correction events across ecosystem products.",
+    id: "ecosystem-action-events",
+    resourceId: "ecosystem-action-memory",
+    rightsNote: "Only ingest events from explicit workflow allowlists with redaction, actor scoping, audit IDs and product-local permission checks.",
+    title: "Ecosystem action and update events",
+    visibility: "protected",
+  },
+  {
+    accessMode: "archive-snapshot",
+    allowedActionModes: ["context-pack", "analysis", "draft"],
+    cadence: "daily",
+    description: "Historical reports, MediaHub publications, index archives, source bundles, generated artifacts and retained snapshots.",
+    id: "ecosystem-content-archives",
+    resourceId: "ecosystem-archives",
+    rightsNote: "Keep immutable archive IDs, period coverage, source hashes and retention policy; never overwrite historical evidence in place.",
+    title: "Ecosystem content and data archives",
+    visibility: "internal",
   },
 ];
 

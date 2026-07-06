@@ -32,6 +32,31 @@ This means:
 - every important answer must be traceable to evidence IDs, source snapshots or
   structured records.
 
+## Coverage Requirement
+
+Cortex should study and continuously track the whole agro-commodity ecosystem,
+not only MediaHub feeds or report inputs. The target memory surface includes:
+
+- static public site content across 1D3X/SSI, MN7R, Cr0pto and smaller related
+  ecosystem sites;
+- dynamic public and protected product data where a product-specific workflow
+  explicitly allows ingestion;
+- report archives, index archives, source snapshots, generated artifacts and
+  historical bundles;
+- manuals, public guides, books, playbooks, uploaded PDFs and product teaching
+  materials, with edition/version and freshness metadata;
+- repository code, tests, schemas, route contracts, agent docs and architecture
+  notes for active and paused products;
+- development plans, ADRs, TODOs, release notes and recommendations, separated
+  from implemented behavior;
+- product actions, operator actions, assistant/tool proposals, outcomes and
+  correction events after redaction and allowlisting.
+
+The point is not to push all raw material into an LLM. Cortex should build a
+versioned, searchable, permission-aware memory layer from these sources, then
+assemble bounded context packs for OpenAI/API model calls, internal assistants,
+reports, product analysis and future recommendation workflows.
+
 ## Lifecycle
 
 1D3X Cortex should cover all actions inside the agro-commodity products over
@@ -117,6 +142,10 @@ The first shared vocabulary should be small and explicit:
   access mode.
 - `EvidenceItem`: source-backed record with URL/path, timestamp, hash, extractor
   metadata and visibility class.
+- `ActionEvent`: approved product/operator/assistant action with actor scope,
+  redaction status, outcome, correction metadata and audit ID.
+- `DevelopmentSignal`: roadmap, TODO, ADR, release note, issue, code-review
+  finding or recommendation, clearly marked as planned/proposed/implemented.
 - `Commodity`: grain, oilseed, input, freight or adjacent market object.
 - `MarketLocation`: origin, destination, port, route, country or region.
 - `Basis`: delivery or pricing basis such as CPT Port, FCA Chop or Black Sea.
@@ -238,6 +267,8 @@ bounded context source, not as a public API.
 - Present Cortex publicly inside Index/MediaHub as the evidence and context
   memory behind reports, while keeping raw context packs and ledger reads
   internal.
+- Register public/dynamic site snapshots, manuals/books, archives, codebase
+  snapshots, development plans and action events as first-class Cortex sources.
 - Treat 1D3X/SSI Telegram bot materials as first-class report evidence: Cortex
   assembles the context pack from bot materials, monitored sources, index values
   and known gaps before OpenAI API is used for SSI/1D3X report drafting.
@@ -303,6 +334,8 @@ Acceptance:
 - Index, MN7R, Cr0pto and smaller resources can be registered without code
   changes.
 - Each source has owner, visibility, cadence, access mode and rights notes.
+- Source kinds cover public/dynamic site snapshots, archives, manuals/books,
+  codebase snapshots, development plans and action/event logs.
 - Protected and secret sources cannot be used by default model calls.
 
 Blockers:

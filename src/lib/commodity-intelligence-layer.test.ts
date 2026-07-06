@@ -16,13 +16,32 @@ describe("1D3X Cortex contracts", () => {
     expect(resourceIds).toContain("index-platform");
     expect(resourceIds).toContain("mn7r-monitor");
     expect(resourceIds).toContain("cropto-infra");
+    expect(resourceIds).toContain("ecosystem-sites");
+    expect(resourceIds).toContain("ecosystem-knowledge-library");
+    expect(resourceIds).toContain("ecosystem-codebases");
+    expect(resourceIds).toContain("ecosystem-action-memory");
+    expect(resourceIds).toContain("ecosystem-archives");
     expect(sourceIds).toContain("mediahub-global-sources");
     expect(sourceIds).toContain("mediahub-telegram-materials");
     expect(sourceIds).toContain("mn7r-monitor-readonly");
+    expect(sourceIds).toContain("ecosystem-site-content");
+    expect(sourceIds).toContain("ecosystem-manuals-books");
+    expect(sourceIds).toContain("ecosystem-code-snapshots");
+    expect(sourceIds).toContain("ecosystem-development-plans");
+    expect(sourceIds).toContain("ecosystem-action-events");
+    expect(sourceIds).toContain("ecosystem-content-archives");
     expect(
       CORTEX_INITIAL_SOURCES.find((source) => source.id === "mn7r-monitor-readonly")
         ?.allowedActionModes,
     ).toContain("approval-gated-tool");
+    expect(
+      CORTEX_INITIAL_SOURCES.find((source) => source.id === "ecosystem-action-events")
+        ?.cadence,
+    ).toBe("on-event");
+    expect(
+      CORTEX_INITIAL_SOURCES.find((source) => source.id === "ecosystem-code-snapshots")
+        ?.visibility,
+    ).toBe("protected");
   });
 
   it("defines the intended learning-to-autonomy lifecycle", () => {
