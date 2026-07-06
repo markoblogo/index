@@ -54,6 +54,7 @@ vi.mock("@/lib/platform-site", () => ({
 
 import {
   __mediaHubPublicationSchedulerTestHooks,
+  buildMediaHubTelegramMessages,
   getMediaHubMonitoringPlan,
   getMediaHubPublicationPlan,
   isMediaHubPublicationDue,
@@ -289,6 +290,119 @@ describe("media hub publication scheduler", () => {
     expect(text).not.toContain("daily report");
     expect(text).not.toContain("*📊 Spot Index Ukraine*");
     expect(text).not.toContain("д/д");
+  });
+
+  it("refreshes saved SSI daily Telegram index values from the latest published snapshot", () => {
+    const [html] = buildMediaHubTelegramMessages({
+      content: {
+        dailyReports: {
+          uk: {
+            indexSection: {
+              date: "2026-07-06",
+              groups: [
+                {
+                  id: "all_season",
+                  items: [
+                    {
+                      basis: "FCA Chop, Ukraine (export)",
+                      comment: "",
+                      commodityCode: "CORN_FCA_CHOP",
+                      dayChange: -161,
+                      groupId: "all_season",
+                      name: "Кукурудза FCA Чоп",
+                      previousFridayChange: null,
+                      previousFridayDate: null,
+                      sortOrder: 4,
+                      unit: "USD/t",
+                      value: 200,
+                      vatIncluded: false,
+                    },
+                  ],
+                  subtitle: "основні індекси",
+                  title: "GRAINS EXPORT",
+                },
+              ],
+              notes: [],
+              title: "Spot Index Ukraine",
+            },
+            newsSection: { themes: [], title: "Daily" },
+          },
+        },
+        generatedAt: "2026-07-06T16:10:00.000Z",
+        kind: "daily",
+        localized: {},
+        periodEndDate: "2026-07-06",
+        periodStartDate: "2026-07-06",
+        summary: [],
+        title: "Daily",
+        totals: { items: 0, sources: 0, windows: 0 },
+        windows: [],
+      },
+      kind: "daily",
+      latestData: [
+        {
+          basis: "FCA Chop, Ukraine (export)",
+          changeAbs: 3,
+          changePct: 1.35,
+          commodityCode: "CORN_FCA_CHOP",
+          commodityId: "corn-fca-chop",
+          commodityNameEn: "Corn FCA Chop",
+          commodityNameUk: "Кукурудза FCA Чоп",
+          date: "2026-07-06",
+          respondents: 19,
+          valueUsdPerMt: 225,
+        },
+      ],
+      locale: "uk",
+      periodEndDate: "2026-07-06",
+      tenant: "spike",
+    });
+
+    expect(html).toContain("• Кукурудза - 225$ (+3$)");
+    expect(html).not.toContain("-161$");
+    expect(html).not.toContain("200$");
+  });
+
+  it("filters stale month facts from SSI daily Telegram overview", () => {
+    const [html] = buildMediaHubTelegramMessages({
+      content: {
+        dailyReports: {
+          uk: {
+            indexSection: undefined,
+            newsSection: {
+              themes: [
+                {
+                  id: "key_signals",
+                  items: [
+                    "Експорт за квітень склав 1 млн тонн і не є поточною новиною.",
+                    "Стан посівів кукурудзи у Франції найгірший за 13 років, що підтримує попит на українську кукурудзу.",
+                  ],
+                  title: "🔎 Головні сигнали",
+                },
+              ],
+              title: "Daily",
+            },
+          },
+        },
+        generatedAt: "2026-07-06T16:10:00.000Z",
+        kind: "daily",
+        localized: {},
+        periodEndDate: "2026-07-06",
+        periodStartDate: "2026-07-06",
+        summary: [],
+        title: "Daily",
+        totals: { items: 0, sources: 0, windows: 0 },
+        windows: [],
+      },
+      kind: "daily",
+      latestData: [],
+      locale: "uk",
+      periodEndDate: "2026-07-06",
+      tenant: "spike",
+    });
+
+    expect(html).toContain("Франції");
+    expect(html).not.toContain("квітень");
   });
 
   it("filters SSI weekly WhatsApp overview to Ukraine-focused market context", () => {

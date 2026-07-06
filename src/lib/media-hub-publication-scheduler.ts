@@ -33,6 +33,7 @@ import { buildSsiNonDailyStructuredMessages } from "@/lib/ssi-non-daily-channel-
 import {
   getPublicLatestData,
   getPublicHistoryData,
+  type PublicHistoryItem,
   type PublicLatestItem,
 } from "@/lib/public-api-data";
 import {
@@ -420,8 +421,10 @@ async function sendMediaHubReportWhatsApp(input: {
   }
 
   const latestData = input.kind === "daily" ? await getPublicLatestData() : [];
+  const historyData = input.kind === "daily" ? await getPublicHistoryData() : [];
   const messages = buildMediaHubWhatsAppMessages({
     content: input.content,
+    historyData,
     kind: input.kind,
     latestData,
     locale: input.locale,
@@ -477,6 +480,7 @@ function decodeBasicHtmlEntities(value: string) {
 
 function buildMediaHubWhatsAppMessages(input: {
   content: MediaHubReportContentJson;
+  historyData?: PublicHistoryItem[];
   kind: Exclude<MediaHubPublicationKind, "none">;
   latestData: PublicLatestItem[];
   locale: Locale;
@@ -484,10 +488,17 @@ function buildMediaHubWhatsAppMessages(input: {
   tenant: "spike" | "platform";
 }) {
   if (input.tenant === "spike" && input.kind === "daily") {
-    const dailyReport =
+    const savedDailyReport =
       input.content.dailyReports?.en ??
       input.content.dailyReports?.uk ??
       buildSsiDailyWhatsAppFallbackReport(input.content, input.latestData, input.periodEndDate);
+    const dailyReport = withFreshSsiDailyIndexSection({
+      dailyReport: savedDailyReport,
+      historyData: input.historyData ?? [],
+      latestData: input.latestData,
+      locale: "en",
+      periodEndDate: input.periodEndDate,
+    });
     return [buildSsiDailyWhatsAppText(
       input.periodEndDate,
       dailyReport,
@@ -565,7 +576,7 @@ function buildSsiDailyWhatsAppText(
     }
   }
 
-  const newsItems = buildSsiDailyWhatsAppMarketOverview(dailyReport.newsSection, englishSummary);
+  const newsItems = buildSsiDailyWhatsAppMarketOverview(dailyReport.newsSection, englishSummary, periodEndDate);
   if (newsItems.length > 0) {
     lines.push(
       "",
@@ -691,6 +702,7 @@ function formatSsiDailyWhatsAppCommodityName(
 function buildSsiDailyWhatsAppMarketOverview(
   newsSection: MediaHubDailyReportView["newsSection"],
   englishSummary: string[],
+  periodEndDate: string,
 ) {
   const fieldworkPattern = /\b(harvest|harvesting|sowing|planting|fieldwork|field work|crop progress|winter crop|spring crop)\b/i;
   const preferredThemeIds = ["key_signals", "grains", "oilseeds", "processing", "logistics"];
@@ -708,12 +720,48 @@ function buildSsiDailyWhatsAppMarketOverview(
   const enriched = fieldwork && !base.includes(fieldwork) ? [fieldwork, ...base] : base;
   return enriched
     .filter((item) => !/\b(USDA|CBOT|Euronext|MATIF)\b/i.test(item) || /\bUkraine|Ukrainian\b/i.test(item))
+    .filter((item) => isCurrentPeriodDailyMarketItem(item, periodEndDate))
     .slice(0, 4);
 }
 
 function isUkraineFocusedWhatsAppMarketSentence(value: string) {
   return /\b(Ukraine|Ukrainian|Odesa|Odessa|Black Sea|Danube|CPT|FCA|Chop|harvest|harvesting|sowing|planting|fieldwork|field work|crop|export|port|processing|domestic|farm|plant|crush|logistics)\b/i.test(value);
 }
+
+function isCurrentPeriodDailyMarketItem(value: string, periodEndDate: string) {
+  const reportMonth = Number(periodEndDate.slice(5, 7));
+  if (!Number.isFinite(reportMonth) || reportMonth < 1 || reportMonth > 12) {
+    return true;
+  }
+
+  const normalized = value.toLowerCase();
+  const currentPeriodAnchor =
+    /\b(today|this week|current week|current period|updated|fresh|now)\b/i.test(value) ||
+    /\b(сьогодні|цього тижня|поточного тижня|поточн(?:ий|ого|ому)? період|оновлен|свіж)\b/i.test(value);
+  if (currentPeriodAnchor) {
+    return true;
+  }
+
+  const oldMonthMentioned = MONTH_PATTERNS.some(({ index, pattern }) =>
+    index < reportMonth && pattern.test(normalized),
+  );
+  return !oldMonthMentioned;
+}
+
+const MONTH_PATTERNS = [
+  { index: 1, pattern: /(січн|\bjanuary\b|\bjan\.?\b)/i },
+  { index: 2, pattern: /(лют|\bfebruary\b|\bfeb\.?\b)/i },
+  { index: 3, pattern: /(берез|\bmarch\b|\bmar\.?\b)/i },
+  { index: 4, pattern: /(квіт|\bapril\b|\bapr\.?\b)/i },
+  { index: 5, pattern: /(трав|\bmay\b)/i },
+  { index: 6, pattern: /(черв|\bjune\b|\bjun\.?\b)/i },
+  { index: 7, pattern: /(лип|\bjuly\b|\bjul\.?\b)/i },
+  { index: 8, pattern: /(серп|\baugust\b|\baug\.?\b)/i },
+  { index: 9, pattern: /(верес|\bseptember\b|\bsep\.?\b)/i },
+  { index: 10, pattern: /(жовт|\boctober\b|\boct\.?\b)/i },
+  { index: 11, pattern: /(листоп|\bnovember\b|\bnov\.?\b)/i },
+  { index: 12, pattern: /(груд|\bdecember\b|\bdec\.?\b)/i },
+];
 
 function normalizeSsiWhatsAppMarketSentence(value: string) {
   return value
@@ -937,8 +985,13 @@ export async function sendMediaHubReportTelegram(
     options.audience === "spike" && kind === "daily"
       ? await getPublicLatestData()
       : [];
+  const historyData =
+    options.audience === "spike" && kind === "daily"
+      ? await getPublicHistoryData()
+      : [];
   const messages = buildMediaHubTelegramMessages({
     content,
+    historyData,
     kind,
     latestData,
     locale: options.locale,
@@ -1662,8 +1715,34 @@ function buildDailyReportViews(input: {
   };
 }
 
+function withFreshSsiDailyIndexSection(input: {
+  dailyReport: MediaHubDailyReportView;
+  historyData: PublicHistoryItem[];
+  latestData: PublicLatestItem[];
+  locale: Locale;
+  periodEndDate: string;
+}): MediaHubDailyReportView {
+  if (input.latestData.length === 0) {
+    return input.dailyReport;
+  }
+
+  const freshIndexSection = buildSsiDailyReportView({
+    historyData: input.historyData,
+    latestData: input.latestData,
+    locale: input.locale,
+    localizedSummary: [],
+    periodEndDate: input.periodEndDate,
+  }).indexSection;
+
+  return {
+    ...input.dailyReport,
+    indexSection: freshIndexSection ?? input.dailyReport.indexSection,
+  };
+}
+
 function buildMediaHubTelegramText(input: {
   content: MediaHubReportContentJson;
+  historyData?: PublicHistoryItem[];
   kind: Exclude<MediaHubPublicationKind, "none">;
   latestData: PublicLatestItem[];
   locale: Locale;
@@ -1676,7 +1755,17 @@ function buildMediaHubTelegramText(input: {
   );
   const primaryWindow = windows[0] ?? input.content.windows[0];
   const localized = input.content.localized?.[input.locale];
-  const dailyReport = input.kind === "daily" ? input.content.dailyReports?.[input.locale] : undefined;
+  const savedDailyReport = input.kind === "daily" ? input.content.dailyReports?.[input.locale] : undefined;
+  const dailyReport =
+    input.tenant === "spike" && input.kind === "daily" && savedDailyReport
+      ? withFreshSsiDailyIndexSection({
+          dailyReport: savedDailyReport,
+          historyData: input.historyData ?? [],
+          latestData: input.latestData,
+          locale: input.locale,
+          periodEndDate: input.periodEndDate,
+        })
+      : savedDailyReport;
   if (input.tenant === "spike" && input.kind === "daily" && input.locale === "uk" && dailyReport) {
     return buildSsiDailyTelegramText(input.periodEndDate, dailyReport);
   }
@@ -1777,7 +1866,7 @@ function buildSsiDailyTelegramText(periodEndDate: string, dailyReport: MediaHubD
     }
   }
 
-  const newsItems = buildSsiDailyTelegramMarketReview(dailyReport.newsSection);
+  const newsItems = buildSsiDailyTelegramMarketReview(dailyReport.newsSection, periodEndDate);
   if (newsItems.length > 0) {
     lines.push(
       "",
@@ -1817,12 +1906,13 @@ function renderSsiDailyTelegramBasisBlock(
   ]);
 }
 
-function buildSsiDailyTelegramMarketReview(newsSection: MediaHubDailyReportView["newsSection"]) {
+function buildSsiDailyTelegramMarketReview(newsSection: MediaHubDailyReportView["newsSection"], periodEndDate: string) {
   const preferredThemeIds = ["grains", "oilseeds", "processing", "key_signals"];
   return newsSection.themes
     .filter((theme) => preferredThemeIds.includes(theme.id))
     .flatMap((theme) => theme.items)
     .filter((item) => item.trim().length > 0)
+    .filter((item) => isCurrentPeriodDailyMarketItem(item, periodEndDate))
     .slice(0, 4);
 }
 
@@ -1884,6 +1974,7 @@ export const __mediaHubPublicationSchedulerTestHooks = {
 
 export function buildMediaHubTelegramMessages(input: {
   content: MediaHubReportContentJson;
+  historyData?: PublicHistoryItem[];
   kind: Exclude<MediaHubPublicationKind, "none">;
   latestData: PublicLatestItem[];
   locale: Locale;

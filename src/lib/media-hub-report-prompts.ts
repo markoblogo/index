@@ -66,6 +66,8 @@ export function buildSsiDailyReportPrompt(input: {
         ].join("\n"),
     "Omit thematic sections that have no concrete source-backed facts. Keep daily shorter than weekly and prioritize price movement + drivers.",
     "For this daily report include only sections that have market-relevant facts and avoid logistics/policy/global digressions unless directly impacting Ukraine prices.",
+    "Daily freshness gate: use only current-period flash news from the report window, or facts explicitly updated during the current week. Exclude stale monthly/April/older statistics unless the source states they changed or became market-moving in this report period.",
+    "For Ukraine daily reports, every market overview item must explain a current Ukraine price/export/harvest/logistics demand signal. Do not include old background facts just because they are true.",
     noHallucinationRules(),
     commonJsonRules(input),
     renderIndexData(input.latestData, isUk),
