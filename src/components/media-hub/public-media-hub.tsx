@@ -163,6 +163,36 @@ export function PublicMediaHub({
         </article>
       </section>
 
+      <section className="mx-auto max-w-[1900px] px-5 pb-8 sm:px-8 lg:px-10">
+        <article className="rounded-[1.6rem] border border-white/10 bg-[var(--media-hub-panel)] p-5">
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:items-start">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-[var(--media-hub-accent)]">
+                {copy.cortexEyebrow}
+              </p>
+              <h2 className="mt-2 text-2xl font-black">{copy.cortexTitle}</h2>
+              <p className="mt-2 max-w-4xl text-sm leading-6 text-white/62">
+                {copy.cortexBody}
+              </p>
+            </div>
+            <div className="grid gap-2 md:grid-cols-3">
+              {copy.cortexSteps.map((step) => (
+                <div
+                  className="rounded-[1rem] border border-white/10 bg-[var(--media-hub-card)] p-3"
+                  key={step.label}
+                >
+                  <p className="text-[10px] font-black uppercase tracking-[0.14em] text-white/38">
+                    {step.label}
+                  </p>
+                  <p className="mt-1 text-sm font-black text-white/84">{step.title}</p>
+                  <p className="mt-1 text-xs leading-5 text-white/52">{step.text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </article>
+      </section>
+
       {profile.id === "spike" ? (
         <section className="mx-auto max-w-[1900px] px-5 pb-8 sm:px-8 lg:px-10">
           <ManualHelpCard dark help={getSsiHelpBlock("mediaHub", locale)} />
@@ -541,6 +571,27 @@ function getMediaHubCopy(locale: Locale) {
       archiveSearchPlaceholder: "Тема, ринок, культура...",
       clusters: "кластерів",
       closeArchive: "Згорнути",
+      cortexBody:
+        "Cortex зберігає обмежені context packs з джерелами, видимістю та аудитом. Зовнішні LLM отримують тільки цей підготовлений контекст, а не сирі операційні дані.",
+      cortexEyebrow: "1D3X Cortex",
+      cortexSteps: [
+        {
+          label: "01",
+          text: "Telegram, API, RSS, ручні матеріали та індексні дані проходять через дозволені джерела.",
+          title: "Evidence",
+        },
+        {
+          label: "02",
+          text: "Контекст зберігається як пакети для звітів, асистентів і майбутніх продуктів екосистеми.",
+          title: "Memory",
+        },
+        {
+          label: "03",
+          text: "Дії залишаються gated: спочатку читання й навчання, потім пропозиції, підтвердження та вузька автономність.",
+          title: "Gates",
+        },
+      ],
+      cortexTitle: "Памʼять ринкового контексту",
       daily: "День",
       deskSnapshot: "Стан моніторингу",
       distribution: "Розподіл",
@@ -572,6 +623,27 @@ function getMediaHubCopy(locale: Locale) {
     archiveSearchPlaceholder: "Topic, market, commodity...",
     clusters: "clusters",
     closeArchive: "Collapse",
+    cortexBody:
+      "Cortex stores bounded context packs with sources, visibility and audit. External LLM calls receive this prepared context, not raw operational data.",
+    cortexEyebrow: "1D3X Cortex",
+    cortexSteps: [
+      {
+        label: "01",
+        text: "Telegram, API, RSS, manual materials and index data enter through approved sources.",
+        title: "Evidence",
+      },
+      {
+        label: "02",
+        text: "Context is stored as report, assistant and future ecosystem-product memory.",
+        title: "Memory",
+      },
+      {
+        label: "03",
+        text: "Actions stay gated: read and learn first, then proposals, confirmations and narrow autonomy.",
+        title: "Gates",
+      },
+    ],
+    cortexTitle: "Market-context memory",
     daily: "Daily",
     deskSnapshot: "Desk Snapshot",
     distribution: "Distribution",

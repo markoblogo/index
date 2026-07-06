@@ -45,7 +45,7 @@ function HomeMediaHubBlock({ locale }: { locale: Locale }) {
     locale === "uk"
       ? {
           body:
-            "MediaHub щоденно збирає ринкові новини, Telegram-джерела, API-моніторинг і редакційні матеріали, а потім формує daily / weekly / monthly контекст до руху SPIKE Spot Index.",
+            "MediaHub щоденно збирає ринкові новини, Telegram-джерела, API-моніторинг і редакційні матеріали. 1D3X Cortex перетворює це на evidence-backed daily / weekly / monthly контекст до руху SPIKE Spot Index.",
           cta: "Відкрити MediaHub",
           disclaimer:
             "Індекси залишаються методологічними. MediaHub пояснює новинний та логістичний контекст навколо ринку.",
@@ -54,7 +54,7 @@ function HomeMediaHubBlock({ locale }: { locale: Locale }) {
         }
       : {
           body:
-            "MediaHub monitors market news, Telegram sources, API feeds and editorial inputs, then turns them into daily / weekly / monthly context around SPIKE Spot Index moves.",
+            "MediaHub monitors market news, Telegram sources, API feeds and editorial inputs. 1D3X Cortex turns that evidence into daily / weekly / monthly context around SPIKE Spot Index moves.",
           cta: "Open MediaHub",
           disclaimer:
             "Index values remain methodology-driven. MediaHub explains the market, logistics and news context around them.",

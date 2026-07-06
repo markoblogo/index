@@ -76,6 +76,11 @@ snapshot used for the report. This makes each SSI/1D3X report auditable: the
 saved artifact shows which Telegram/API/index evidence reached OpenAI, which
 sources were excluded and which known gaps existed at generation time.
 
+The first public product surface is also active: Index home and MediaHub pages
+now describe 1D3X Cortex as the market-context memory behind evidence-backed
+MediaHub reports. Public copy stays bounded: Cortex is presented as source
+memory, audit and gated assistant context, not as an autonomous public bot.
+
 ## Scope
 
 1D3X Cortex should cover these resource families:
@@ -230,6 +235,9 @@ bounded context source, not as a public API.
 
 - Build evidence-backed market report context for daily, weekly and monthly
   MediaHub outputs.
+- Present Cortex publicly inside Index/MediaHub as the evidence and context
+  memory behind reports, while keeping raw context packs and ledger reads
+  internal.
 - Treat 1D3X/SSI Telegram bot materials as first-class report evidence: Cortex
   assembles the context pack from bot materials, monitored sources, index values
   and known gaps before OpenAI API is used for SSI/1D3X report drafting.
