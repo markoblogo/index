@@ -6,7 +6,7 @@ export function publicDataResponse(data: unknown, cacheSeconds = 300, request?: 
   if (request?.headers.get("if-none-match") === etag) {
     return new Response(null, {
       headers: {
-        "Cache-Control": `public, s-maxage=${cacheSeconds}, stale-while-revalidate=3600`,
+        "Cache-Control": publicCacheControl(cacheSeconds),
         ETag: etag,
       },
       status: 304,
@@ -20,7 +20,7 @@ export function publicDataResponse(data: unknown, cacheSeconds = 300, request?: 
     },
     {
       headers: {
-        "Cache-Control": `public, s-maxage=${cacheSeconds}, stale-while-revalidate=3600`,
+        "Cache-Control": publicCacheControl(cacheSeconds),
         ETag: etag,
       },
     },
@@ -52,6 +52,10 @@ function sanitizeError(error: unknown) {
 
 function buildPublicDataEtag(data: unknown) {
   return `W/"${createHash("sha256").update(stableStringify(data)).digest("base64url").slice(0, 24)}"`;
+}
+
+function publicCacheControl(cacheSeconds: number) {
+  return `public, s-maxage=${cacheSeconds}`;
 }
 
 function stableStringify(value: unknown): string {
