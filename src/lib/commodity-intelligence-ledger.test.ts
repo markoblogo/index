@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildCortexContextPackLedgerRecord,
   getCortexPackDominantVisibility,
+  normalizeCortexLedgerListLimit,
 } from "@/lib/commodity-intelligence-ledger";
 import { buildCortexMarketReportContextPack } from "@/lib/commodity-intelligence-layer";
 
@@ -62,5 +63,12 @@ describe("1D3X Cortex ledger", () => {
     expect(getCortexPackDominantVisibility(["public", "internal"])).toBe("internal");
     expect(getCortexPackDominantVisibility(["public", "protected"])).toBe("protected");
     expect(getCortexPackDominantVisibility(["secret", "internal"])).toBe("secret");
+  });
+
+  it("clamps ledger list limits for internal API reads", () => {
+    expect(normalizeCortexLedgerListLimit(undefined)).toBe(25);
+    expect(normalizeCortexLedgerListLimit(0)).toBe(1);
+    expect(normalizeCortexLedgerListLimit(12.8)).toBe(12);
+    expect(normalizeCortexLedgerListLimit(500)).toBe(100);
   });
 });

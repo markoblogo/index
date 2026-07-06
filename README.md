@@ -258,6 +258,7 @@ src/lib/commodity-intelligence-layer.ts  1D3X Cortex registry/context contract
 src/lib/commodity-intelligence-ledger.ts  1D3X Cortex context-pack audit ledger
 src/lib/media-hub-llm-report.ts  OpenAI report path with Cortex context pack
 src/lib/media-hub-publication-scheduler.ts  MediaHub report persistence with Cortex audit snapshot
+src/app/api/internal/cortex/context-packs/route.ts  internal Cortex ledger read API
 src/lib/public-index-data.ts       public homepage and analytics data
 src/lib/admin-daily-inputs.ts      admin daily matrix data/actions
 src/lib/admin-calculate.ts         calculation and publication workflow
@@ -430,6 +431,10 @@ part of the 1D3X Cortex evidence layer: Cortex assembles the bounded report
 context pack first, OpenAI API drafts the SSI/1D3X report from that approved
 context, and Index stores the Cortex snapshot for audit in the report artifact
 and `CortexContextPackLedger`.
+Internal agents and related ecosystem products can read saved Cortex context
+packs through `GET /api/internal/cortex/context-packs` with
+`CORTEX_INTERNAL_API_SECRET` or `CRON_SECRET`; use `includePack=1` only for
+authorized internal context assembly.
 Corporate Media Hub sources are also documented there, including MN7R Blog,
 Spike Spot Index Blog, 1D3X Blog, MN7R Bluesky and the corporate Telegram group
 peer/chat-id handling.

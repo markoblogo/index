@@ -29,6 +29,14 @@ export type CortexContextPackLedgerRecord = {
   visibility: CortexVisibility;
 };
 
+export type CortexLedgerListFilters = {
+  entityType?: CortexLedgerTarget["entityType"] | null;
+  limit?: number | null;
+  purpose?: CortexContextPack["purpose"] | null;
+  reportKind?: string | null;
+  tenantId?: string | null;
+};
+
 let storageReady: Promise<void> | null = null;
 
 export function buildCortexContextPackLedgerRecord(input: {
@@ -225,6 +233,27 @@ export async function getCortexContextPackRecord(id: string) {
   } satisfies CortexContextPackLedgerRecord;
 }
 
+export async function listCortexContextPackRecords(
+  filters: CortexLedgerListFilters = {},
+) {
+  if (!hasDatabaseUrl()) {
+    return [] as CortexContextPackLedgerRecord[];
+  }
+
+  await ensureCortexContextPackLedgerStorage();
+  const query = buildCortexLedgerListQuery(filters);
+  const rows = await db.$queryRawUnsafe<CortexLedgerRow[]>(query.sql, ...query.params);
+  return rows.map(mapCortexLedgerRow);
+}
+
+export function normalizeCortexLedgerListLimit(value: number | null | undefined) {
+  if (!Number.isFinite(value ?? NaN)) {
+    return 25;
+  }
+
+  return Math.max(1, Math.min(100, Math.trunc(value as number)));
+}
+
 async function ensureCortexContextPackLedgerStorage() {
   if (!hasDatabaseUrl()) {
     return;
@@ -268,6 +297,84 @@ async function ensureCortexContextPackLedgerStorage() {
   })();
 
   await storageReady;
+}
+
+type CortexLedgerRow = {
+  createdAt: Date;
+  entityId: string | null;
+  entityType: CortexLedgerTarget["entityType"];
+  id: string;
+  metricsJson: unknown;
+  packHash: string;
+  packJson: CortexContextPack;
+  periodEnd: Date | null;
+  periodStart: Date | null;
+  product: CortexContextPack["product"];
+  purpose: CortexContextPack["purpose"];
+  query: string;
+  reportKind: string | null;
+  sourceIds: unknown;
+  tenantId: string;
+  visibility: CortexVisibility;
+};
+
+function buildCortexLedgerListQuery(filters: CortexLedgerListFilters) {
+  const conditions: string[] = [];
+  const params: unknown[] = [];
+
+  if (filters.tenantId) {
+    params.push(filters.tenantId);
+    conditions.push(`"tenantId" = $${params.length}`);
+  }
+  if (filters.entityType) {
+    params.push(filters.entityType);
+    conditions.push(`"entityType" = $${params.length}`);
+  }
+  if (filters.purpose) {
+    params.push(filters.purpose);
+    conditions.push(`"purpose" = $${params.length}`);
+  }
+  if (filters.reportKind) {
+    params.push(filters.reportKind);
+    conditions.push(`"reportKind" = $${params.length}`);
+  }
+
+  params.push(normalizeCortexLedgerListLimit(filters.limit));
+  return {
+    params,
+    sql: `
+      SELECT "id", "tenantId", "entityType", "entityId", "purpose", "query",
+        "product", "visibility", "sourceIds", "metricsJson", "packHash",
+        "packJson", "periodStart", "periodEnd", "reportKind", "createdAt"
+      FROM "CortexContextPackLedger"
+      ${conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : ""}
+      ORDER BY "createdAt" DESC
+      LIMIT $${params.length}
+    `,
+  };
+}
+
+function mapCortexLedgerRow(row: CortexLedgerRow): CortexContextPackLedgerRecord {
+  return {
+    createdAt: row.createdAt.toISOString(),
+    id: row.id,
+    metrics: parseCortexLedgerMetrics(row.metricsJson),
+    pack: row.packJson,
+    packHash: row.packHash,
+    product: row.product,
+    purpose: row.purpose,
+    query: row.query,
+    sourceIds: parseSourceIds(row.sourceIds),
+    target: {
+      entityId: row.entityId,
+      entityType: row.entityType,
+      periodEndDate: row.periodEnd ? toIsoDate(row.periodEnd) : null,
+      periodStartDate: row.periodStart ? toIsoDate(row.periodStart) : null,
+      reportKind: row.reportKind,
+      tenantId: row.tenantId,
+    },
+    visibility: row.visibility,
+  };
 }
 
 function buildCortexLedgerRecordId(target: CortexLedgerTarget) {

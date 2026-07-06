@@ -211,6 +211,19 @@ The layer should expose a small internal API that agents and products can use:
 
 These APIs should return structured context packs, not raw prompt text only.
 
+Current read surface:
+
+- `GET /api/internal/cortex/context-packs`
+- auth: Bearer `CORTEX_INTERNAL_API_SECRET` or `CRON_SECRET`
+- filters: `tenantId`, `entityType`, `purpose`, `reportKind`, `limit`
+- default response: ledger metadata, source IDs, metrics, target and pack hash
+- `includePack=1`: includes full context-pack JSON for authorized internal
+  agent/product reads
+
+This endpoint is the first stable read surface for 1D3X Cortex memory. It is
+internal-only and should be used by MN7R/Cr0pto/assistant integrations as a
+bounded context source, not as a public API.
+
 ## Product Integrations
 
 ### Index And MediaHub
@@ -332,6 +345,9 @@ Current implementation:
   `contentJson.llm.cortexContextPack` for the generated MediaHub report.
 - `persistCortexContextPack` writes the same pack to
   `CortexContextPackLedger` as the first cross-product Cortex memory ledger.
+- `listCortexContextPackRecords` and
+  `/api/internal/cortex/context-packs` expose the first internal read surface
+  for that ledger.
 
 Blockers:
 
