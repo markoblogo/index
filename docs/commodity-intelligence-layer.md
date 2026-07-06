@@ -136,10 +136,12 @@ Use separate stores for separate responsibilities:
 - Event log for ingestion runs, corrections, model calls, context-pack creation
   and approval-sensitive actions.
 
-Current implementation note: MediaHub report context packs are persisted inside
-the existing `MediaHubReport.contentJson` artifact. A separate Cortex ledger can
-be added when cross-product retrieval, corrections or non-report actions need a
-stable API beyond report auditability.
+Current implementation note: MediaHub report context packs are persisted twice:
+inside the generated `MediaHubReport.contentJson` artifact and in
+`CortexContextPackLedger`, a separate DB-backed audit ledger keyed by tenant,
+entity, purpose, source IDs, visibility and pack hash. A broader retrieval and
+corrections API can build on that ledger when non-report actions need stable
+cross-product memory.
 
 Fine-tuning can be considered later only after there are stable examples,
 evaluations and repeated task formats. It is not required for the first useful
@@ -328,6 +330,8 @@ Current implementation:
   metadata.
 - `buildSnapshotReportContent` persists the pack in
   `contentJson.llm.cortexContextPack` for the generated MediaHub report.
+- `persistCortexContextPack` writes the same pack to
+  `CortexContextPackLedger` as the first cross-product Cortex memory ledger.
 
 Blockers:
 

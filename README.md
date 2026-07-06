@@ -59,7 +59,7 @@ Shared capabilities:
 - 1D3X Cortex layer for evidence-backed internal AI context, assistant tools
   and governed OpenAI API handoff across Index, MN7R Monitor, Cr0pto and related
   agro-commodity resources, starting in observe/learn mode with MediaHub report
-  context packs now persisted for audit;
+  context packs persisted into both report artifacts and the Cortex ledger;
 - Vercel cron endpoints for scheduled imports, notifications and publication.
 
 UGA-specific features:
@@ -255,6 +255,7 @@ Important modules:
 src/lib/index-platform.ts          tenant configuration
 src/lib/constants.ts               active site config
 src/lib/commodity-intelligence-layer.ts  1D3X Cortex registry/context contract
+src/lib/commodity-intelligence-ledger.ts  1D3X Cortex context-pack audit ledger
 src/lib/media-hub-llm-report.ts  OpenAI report path with Cortex context pack
 src/lib/media-hub-publication-scheduler.ts  MediaHub report persistence with Cortex audit snapshot
 src/lib/public-index-data.ts       public homepage and analytics data
@@ -427,7 +428,8 @@ Use `@idex_grains_bot` for links/files that should be added to SSI or 1D3X
 reports; the respondent bot is not used for this workflow. These materials are
 part of the 1D3X Cortex evidence layer: Cortex assembles the bounded report
 context pack first, OpenAI API drafts the SSI/1D3X report from that approved
-context, and the report stores the Cortex snapshot for audit.
+context, and Index stores the Cortex snapshot for audit in the report artifact
+and `CortexContextPackLedger`.
 Corporate Media Hub sources are also documented there, including MN7R Blog,
 Spike Spot Index Blog, 1D3X Blog, MN7R Bluesky and the corporate Telegram group
 peer/chat-id handling.

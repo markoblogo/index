@@ -44,6 +44,9 @@ Set `UGA_INDEX_RUNTIME_MODE=production` in production. In that mode, database-ba
 - `IndexCalculation` and `IndexCalculationItem`: median, included/excluded items, counts, raw value, public rounded value and version.
 - `PublishedIndex`: locked published index values, including optional benchmark blend metadata.
 - `AuditLog`: append-only audit trail with `beforeJson` and `afterJson`.
+- `CortexContextPackLedger`: DB-backed 1D3X Cortex audit ledger for generated
+  context packs, keyed by tenant/entity/purpose with source IDs, visibility,
+  metrics, hash and full pack JSON.
 
 ## Dates And Values
 
