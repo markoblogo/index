@@ -56,6 +56,8 @@ Shared capabilities:
   SPIKE;
 - MediaHub browser extraction policy that prefers Obscura for DOM/text/assets
   extraction and keeps Playwright/Chromium for e2e, screenshots and fallback;
+- planned Commodity Intelligence Layer for evidence-backed internal AI context
+  across Index, MN7R Monitor, Cr0pto and related agro-commodity resources;
 - Vercel cron endpoints for scheduled imports, notifications and publication.
 
 UGA-specific features:
