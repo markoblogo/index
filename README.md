@@ -56,8 +56,10 @@ Shared capabilities:
   SPIKE;
 - MediaHub browser extraction policy that prefers Obscura for DOM/text/assets
   extraction and keeps Playwright/Chromium for e2e, screenshots and fallback;
-- planned Commodity Intelligence Layer for evidence-backed internal AI context
-  across Index, MN7R Monitor, Cr0pto and related agro-commodity resources;
+- planned 1D3X Cortex layer for evidence-backed internal AI context, assistant
+  tools and governed OpenAI API handoff across Index, MN7R Monitor, Cr0pto and
+  related agro-commodity resources, starting in observe/learn mode and moving
+  later toward approval-gated actions and bounded autonomy per capability;
 - Vercel cron endpoints for scheduled imports, notifications and publication.
 
 UGA-specific features:
@@ -252,6 +254,7 @@ Important modules:
 ```txt
 src/lib/index-platform.ts          tenant configuration
 src/lib/constants.ts               active site config
+src/lib/commodity-intelligence-layer.ts  1D3X Cortex registry/context contract
 src/lib/public-index-data.ts       public homepage and analytics data
 src/lib/admin-daily-inputs.ts      admin daily matrix data/actions
 src/lib/admin-calculate.ts         calculation and publication workflow
@@ -419,7 +422,10 @@ Shared Index/MediaHub terminology lives in
 risk-sensitive workflow changes should be checked against
 [`docs/media-hub-review-checklist.md`](docs/media-hub-review-checklist.md).
 Use `@idex_grains_bot` for links/files that should be added to SSI or 1D3X
-reports; the respondent bot is not used for this workflow.
+reports; the respondent bot is not used for this workflow. These materials are
+part of the planned 1D3X Cortex evidence layer: Cortex should assemble the
+bounded report context pack first, then OpenAI API can draft the SSI/1D3X report
+from that approved context.
 Corporate Media Hub sources are also documented there, including MN7R Blog,
 Spike Spot Index Blog, 1D3X Blog, MN7R Bluesky and the corporate Telegram group
 peer/chat-id handling.

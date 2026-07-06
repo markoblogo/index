@@ -1,13 +1,12 @@
-# Commodity Intelligence Layer Plan
+# 1D3X Cortex Plan
 
 Status: planning
 Updated: 2026-07-06
 
 ## Purpose
 
-Commodity Intelligence Layer is the internal AI knowledge layer for the
-agro-commodity ecosystem: Index Platform, MN7R Monitor, Cr0pto and smaller
-related products.
+1D3X Cortex is the internal AI knowledge layer for the agro-commodity
+ecosystem: Index Platform, MN7R Monitor, Cr0pto and smaller related products.
 
 It should not be treated as a standalone chatbot or a custom LLM project first.
 The first useful version is a governed knowledge, retrieval, evidence and tool
@@ -16,7 +15,7 @@ ecosystem context without receiving the whole private project state.
 
 ## Product Principle
 
-The internal layer owns ecosystem memory, source access, evidence, permissions
+1D3X Cortex owns ecosystem memory, source access, evidence, permissions
 and project-specific facts. External models are used for reasoning, drafting,
 summarization and transformations only when the internal layer has assembled a
 bounded context pack.
@@ -28,13 +27,44 @@ This means:
 - OpenAI API as a reasoning/rendering layer for tasks the internal layer cannot
   complete deterministically;
 - no autonomous trading, publication, respondent messaging or operational
-  execution without an explicit product workflow and approval gate;
+  execution outside explicit product workflows, tool contracts and approval
+  gates;
 - every important answer must be traceable to evidence IDs, source snapshots or
   structured records.
 
+## Lifecycle
+
+1D3X Cortex should cover all actions inside the agro-commodity products over
+time, but autonomy is a staged capability, not the default starting mode.
+
+1. `observe-learn`: read ecosystem data, build evidence memory, learn workflows,
+   assemble bounded context packs and expose known gaps.
+2. `assist-propose`: work inside EXE assistant, Monitor AI chat, MediaHub report
+   flows and future Cr0pto assistants together with external LLMs such as OpenAI
+   API for answers, analysis, drafts and recommendations.
+3. `approval-gated-act`: prepare tool proposals that execute only through each
+   product's auth, exact confirmation, idempotency, audit and rollback paths.
+4. `bounded-autonomy`: enable autonomous behavior per narrow capability only
+   after evals, monitoring, permissions and product-specific safety gates prove
+   readiness.
+
+## Current Implementation Surface
+
+The first code contract lives in:
+
+```txt
+src/lib/commodity-intelligence-layer.ts
+src/lib/commodity-intelligence-layer.test.ts
+```
+
+It defines the initial resource registry, source registry, lifecycle/action-mode
+contract, visibility model and context-pack builder. This is intentionally
+small: it gives Index, MN7R and Cr0pto one shared contract before ingestion
+jobs, vector storage, API routes or operator UI are added.
+
 ## Scope
 
-The layer should cover these resource families:
+1D3X Cortex should cover these resource families:
 
 - Index Platform: UGA Index, SPIKE SPOT INDEX, 1d3x landing, MediaHub,
   analytics, respondent/publication workflows and docs.
@@ -104,6 +134,9 @@ Initial ingestion modes:
 - database/API snapshots for published values, monitor values and safe internal
   facts;
 - MediaHub source ingestion and evidence snapshots;
+- 1D3X MediaHub Telegram bot intake through `@idex_grains_bot`, including
+  `#ssi`, `#1d3x`, `#daily`, `#weekly` and `#monthly` routing for SSI and 1D3X
+  reports;
 - manual uploads for PDFs, partner notes, reports and historical references;
 - scheduled jobs for recurring updates;
 - webhook or CI-triggered sync after meaningful repo changes.
@@ -163,6 +196,9 @@ These APIs should return structured context packs, not raw prompt text only.
 
 - Build evidence-backed market report context for daily, weekly and monthly
   MediaHub outputs.
+- Treat 1D3X/SSI Telegram bot materials as first-class report evidence: Cortex
+  assembles the context pack from bot materials, monitored sources, index values
+  and known gaps before OpenAI API is used for SSI/1D3X report drafting.
 - Compare MediaHub events against published index movements without changing
   official methodology.
 - Reuse the existing MediaHub browser runtime policy: Obscura for DOM/text/assets
@@ -172,18 +208,27 @@ These APIs should return structured context packs, not raw prompt text only.
 
 ### MN7R Monitor
 
+- Work inside EXE assistant, Monitor AI chat and related protected assistant
+  surfaces as the shared context/tool layer.
 - Assemble execution context from monitor values, recent source evidence,
   similar historical events and Index/MediaHub signals.
-- Produce checklists, deal-review briefs and risk notes through OpenAI only
-  after the internal layer returns a bounded context pack.
-- Keep all write/execution actions behind MN7R workflow approvals.
+- Produce checklists, deal-review briefs, risk notes and internal draft text
+  through OpenAI only after Cortex returns a bounded, redacted context pack.
+- Allow internal tool proposals only through MN7R auth, scope, audit,
+  idempotency and approval gates.
 
 ### Cr0pto
 
 - Use the same source registry and entity model for commodity-adjacent market,
   trade and finance context.
-- Keep any trading, transfer or external account operation out of scope until
-  read-only intelligence is stable.
+- Treat Cr0pto as the indexed trading, document verification and settlement
+  consumer of Cortex context, not as the first place where the knowledge layer
+  lives.
+- Work inside future Cr0pto assistant surfaces as context, analysis and draft
+  infrastructure.
+- Keep trading, transfer, token, wallet and clearing operations outside Cortex
+  automation unless a future regulated workflow adds explicit tool contracts,
+  approvals and audit gates.
 
 ## Platform Options
 
@@ -250,6 +295,8 @@ Acceptance:
 
 - `build_market_report_context` returns facts, citations, known gaps and
   freshness metadata;
+- Telegram materials from `@idex_grains_bot` can be included by SSI/1D3X tag
+  and report kind;
 - context pack output is deterministic JSON;
 - OpenAI prompt rendering uses only approved fields from the pack.
 
@@ -261,12 +308,12 @@ Blockers:
 
 Type: integration
 
-Add MN7R as a read-only resource family with snapshots for monitor values,
-execution notes and safe related docs.
+Add MN7R as a governed resource family with protected assistant context for
+monitor values, execution notes and safe related docs.
 
 Acceptance:
 
-- no write operations;
+- no direct write operations from Cortex;
 - snapshots have source timestamp and visibility class;
 - at least one commodity/basis can be compared with Index signals.
 
@@ -303,7 +350,9 @@ Acceptance:
 - returns relevant market signals, source evidence, similar events, risks and
   checklist items;
 - generated output is clearly marked as internal decision support;
-- no autonomous deal/trading/payment action is exposed.
+- no autonomous deal/trading/payment action is exposed in the first version;
+  tool proposals are reviewable and approval-gated, with bounded autonomy
+  handled later per capability.
 
 Blockers:
 
@@ -365,7 +414,8 @@ The first MVP is complete when:
   vectors and audit logs.
 - Choose vector storage for MVP: Postgres/pgvector, a managed vector database or
   local prototype storage.
-- Decide which MN7R and Cr0pto resources are safe for the first read-only sync.
+- Decide which MN7R and Cr0pto resources are safe for the first observe/learn
+  sync.
 - Decide whether AnythingLLM is useful as an operator UI during discovery.
 - Define the first three high-value use cases:
   market report context, monitor-vs-index comparison and execution context are

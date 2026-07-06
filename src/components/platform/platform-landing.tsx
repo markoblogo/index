@@ -70,6 +70,11 @@ const faqs = [
       "Yes. Each local index project can expose controlled embeddable views for partner websites, media, institutional pages and market information products.",
   },
   {
+    question: "What is 1D3X Cortex?",
+    answer:
+      "1D3X Cortex is the planned internal intelligence layer that connects Index, MediaHub, MN7R and Cr0pto through evidence-backed context packs, governed assistant tools and later bounded autonomy per capability.",
+  },
+  {
     question: "Are the indices trading advice?",
     answer:
       "No. Published index values are informational market benchmarks and analytics only. They are not trading, investment or commercial recommendations.",
@@ -151,6 +156,21 @@ const mediaHubSignals = [
   "Weekly and monthly reports",
   "Source monitoring",
   "Telegram material intake",
+] as const;
+
+const cortexCapabilities = [
+  {
+    title: "Evidence packs",
+    text: "Index values, MediaHub sources, Telegram bot materials and approved project records are assembled with source IDs, timestamps and known gaps.",
+  },
+  {
+    title: "Ecosystem context",
+    text: "MN7R and Cr0pto assistants can use bounded market context without exposing raw private workspace state to external models.",
+  },
+  {
+    title: "Permission gates",
+    text: "Public, internal, protected and secret visibility classes decide what can enter OpenAI or any other model call; autonomy is enabled only per approved capability.",
+  },
 ] as const;
 
 export function PlatformLanding() {
@@ -416,6 +436,46 @@ export function PlatformLanding() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-y border-black/10 bg-[#f3f0e8] text-black">
+        <div className="mx-auto grid max-w-7xl gap-10 px-5 py-16 sm:px-8 lg:grid-cols-[0.78fr_1.22fr] lg:py-24">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.28em] text-black/45">
+              1D3X Cortex
+            </p>
+            <h2 className="mt-5 text-5xl font-black leading-[0.95] tracking-[-0.04em] sm:text-6xl">
+              The internal context layer for the commodity stack.
+            </h2>
+            <p className="mt-6 text-lg leading-8 text-black/62">
+              Cortex is planned as the evidence-backed intelligence and tool
+              layer that connects Index, MediaHub, MN7R Monitor, Cr0pto and
+              smaller agro-commodity resources. For SSI and 1D3X reports it can
+              ingest Telegram bot materials, build a bounded evidence pack, and
+              then hand the approved context to OpenAI API for drafting. Over
+              time, the same layer can support approval-gated actions and
+              bounded autonomy inside ecosystem products.
+            </p>
+          </div>
+          <div className="grid gap-4">
+            {cortexCapabilities.map((item, index) => (
+              <article
+                className="rounded-[1.25rem] border border-black/10 bg-white p-5 shadow-sm shadow-black/5"
+                key={item.title}
+              >
+                <p className="text-xl font-black text-[#5f6f00]">
+                  {String(index + 1).padStart(2, "0")}
+                </p>
+                <h3 className="mt-3 text-2xl font-black tracking-[-0.03em]">
+                  {item.title}
+                </h3>
+                <p className="mt-3 text-sm leading-6 text-black/62">
+                  {item.text}
+                </p>
+              </article>
+            ))}
           </div>
         </div>
       </section>
