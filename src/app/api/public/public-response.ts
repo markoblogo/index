@@ -55,6 +55,10 @@ function buildPublicDataEtag(data: unknown) {
 }
 
 function publicCacheControl(cacheSeconds: number) {
+  if (cacheSeconds <= 0) {
+    return "no-store";
+  }
+
   return `public, s-maxage=${cacheSeconds}`;
 }
 
