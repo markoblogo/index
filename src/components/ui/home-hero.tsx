@@ -177,8 +177,8 @@ function SpikeHomeHero({
       label: "Chop Export",
       description:
         locale === "uk"
-          ? "Прикордонні експортні індекси на базисі FCA Чоп."
-          : "Border export indices on FCA Chop basis.",
+          ? "Прикордонні експортні індекси на базисі FCA Чоп, завантажено в європотяг."
+          : "Border export indices on FCA Chop basis, loaded into a European train.",
     },
   ];
   const facts = [
