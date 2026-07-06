@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  buildCortexSourceLedger,
   buildCortexSourceManifest,
   buildLocalEcosystemScanRoots,
   classifySource,
@@ -74,6 +75,44 @@ describe("cortex source scanner", () => {
 
     expect(roots.map((root) => root.rootId)).toEqual(["index-platform", "mn7r-monitor"]);
     expect(roots.find((root) => root.rootId === "mn7r-monitor")?.visibility).toBe("protected");
+  });
+
+  it("builds an ingestion ledger and queue from manifest changes", async () => {
+    const rootPath = await createFixtureRoot();
+    const roots: CortexScanRoot[] = [
+      {
+        ownerProject: "index",
+        rootId: "fixture-index",
+        rootPath,
+        visibility: "internal",
+      },
+    ];
+    const previousManifest = await buildCortexSourceManifest({
+      generatedAt: "2026-07-06T00:00:00.000Z",
+      roots,
+    });
+
+    await writeFile(path.join(rootPath, "README.md"), "# Fixture changed\n");
+    await writeFile(path.join(rootPath, "docs/new-guide.md"), "# New guide\n");
+    await rm(path.join(rootPath, "docs/action-events.md"));
+
+    const manifest = await buildCortexSourceManifest({
+      generatedAt: "2026-07-06T01:00:00.000Z",
+      roots,
+    });
+    const ledger = buildCortexSourceLedger({ manifest, previousManifest });
+
+    expect(ledger.previousGeneratedAt).toBe(previousManifest.generatedAt);
+    expect(ledger.changeTotals).toEqual({
+      added: 1,
+      changed: 1,
+      removed: 1,
+      unchanged: 4,
+    });
+    expect(ledger.chunkingQueue.map((source) => source.relativePath).sort()).toEqual([
+      "README.md",
+      "docs/new-guide.md",
+    ]);
   });
 });
 

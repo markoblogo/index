@@ -445,6 +445,10 @@ other local ecosystem roots with arguments such as
 For the local agro-commodity workspace, `npm run cortex:source-scan -- --preset=ecosystem-local --out=.cortex/ecosystem-source-manifest.json`
 scans Index, MN7R and Cr0pto when those roots exist. Override paths with
 `CORTEX_INDEX_ROOT`, `CORTEX_MN7R_ROOT` and `CORTEX_CROPTO_ROOT`.
+Run `npm run cortex:source-ingest` to write both
+`.cortex/ecosystem-source-manifest.json` and `.cortex/source-ledger.json`; the
+ledger compares the previous manifest with the new scan and queues added or
+changed sources for the next chunking/RAG stage.
 Corporate Media Hub sources are also documented there, including MN7R Blog,
 Spike Spot Index Blog, 1D3X Blog, MN7R Bluesky and the corporate Telegram group
 peer/chat-id handling.

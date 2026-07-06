@@ -54,6 +54,25 @@ export type CortexSourceManifest = {
   };
 };
 
+export type CortexSourceLedgerChangeType = "added" | "changed" | "removed" | "unchanged";
+
+export type CortexSourceLedgerChange = {
+  current?: CortexSourceManifestEntry;
+  previous?: CortexSourceManifestEntry;
+  type: CortexSourceLedgerChangeType;
+};
+
+export type CortexSourceLedger = {
+  changeTotals: Record<CortexSourceLedgerChangeType, number>;
+  changes: CortexSourceLedgerChange[];
+  chunkingQueue: CortexSourceManifestEntry[];
+  generatedAt: string;
+  manifest: CortexSourceManifest;
+  previousGeneratedAt?: string;
+  product: typeof COMMODITY_INTELLIGENCE_PRODUCT_NAME;
+  schemaVersion: 1;
+};
+
 const IGNORED_DIRS = new Set([
   ".cortex",
   ".git",
@@ -125,6 +144,54 @@ export async function buildCortexSourceManifest(input: {
     schemaVersion: 1,
     sources,
     totals: summarizeSources(sources),
+  };
+}
+
+export function buildCortexSourceLedger(input: {
+  manifest: CortexSourceManifest;
+  previousManifest?: CortexSourceManifest | null;
+}): CortexSourceLedger {
+  const previousByKey = new Map(
+    (input.previousManifest?.sources ?? []).map((source) => [sourceKey(source), source]),
+  );
+  const currentByKey = new Map(input.manifest.sources.map((source) => [sourceKey(source), source]));
+  const changes: CortexSourceLedgerChange[] = [];
+  const chunkingQueue: CortexSourceManifestEntry[] = [];
+
+  for (const current of input.manifest.sources) {
+    const previous = previousByKey.get(sourceKey(current));
+    if (!previous) {
+      changes.push({ current, type: "added" });
+      chunkingQueue.push(current);
+      continue;
+    }
+
+    if (previous.hash !== current.hash || previous.sourceKind !== current.sourceKind || previous.visibility !== current.visibility) {
+      changes.push({ current, previous, type: "changed" });
+      chunkingQueue.push(current);
+      continue;
+    }
+
+    changes.push({ current, previous, type: "unchanged" });
+  }
+
+  for (const previous of previousByKey.values()) {
+    if (!currentByKey.has(sourceKey(previous))) {
+      changes.push({ previous, type: "removed" });
+    }
+  }
+
+  changes.sort((left, right) => changeSortKey(left).localeCompare(changeSortKey(right)));
+
+  return {
+    changeTotals: summarizeChanges(changes),
+    changes,
+    chunkingQueue,
+    generatedAt: input.manifest.generatedAt,
+    manifest: input.manifest,
+    previousGeneratedAt: input.previousManifest?.generatedAt,
+    product: COMMODITY_INTELLIGENCE_PRODUCT_NAME,
+    schemaVersion: 1,
   };
 }
 
@@ -333,6 +400,28 @@ function emptyKindTotals(): Record<CortexScannedSourceKind, number> {
     "repo-doc": 0,
     "site-content": 0,
   };
+}
+
+function summarizeChanges(changes: CortexSourceLedgerChange[]) {
+  const totals: Record<CortexSourceLedgerChangeType, number> = {
+    added: 0,
+    changed: 0,
+    removed: 0,
+    unchanged: 0,
+  };
+  for (const change of changes) {
+    totals[change.type] += 1;
+  }
+  return totals;
+}
+
+function changeSortKey(change: CortexSourceLedgerChange) {
+  const source = change.current ?? change.previous;
+  return `${change.type}:${source?.ownerProject ?? ""}:${source?.rootId ?? ""}:${source?.relativePath ?? ""}`;
+}
+
+function sourceKey(source: Pick<CortexSourceManifestEntry, "relativePath" | "rootId">) {
+  return `${source.rootId}:${source.relativePath}`;
 }
 
 function toPosixPath(value: string) {

@@ -113,6 +113,9 @@ evidence IDs. This is intentionally a manifest stage: it proves coverage and
 freshness without pushing raw content into a model or database.
 Use `--preset=ecosystem-local` to scan the local Index + MN7R + Cr0pto roots
 when present, or pass explicit `--root=owner:rootId:/path:visibility` values.
+`npm run cortex:source-ingest` turns that snapshot into a source ledger by
+comparing the previous and current manifests, recording added, changed, removed
+and unchanged sources, and creating a chunking queue for the next RAG stage.
 
 ## Scope
 
@@ -363,6 +366,8 @@ Acceptance:
 - `npm run cortex:source-scan` writes a local source manifest under `.cortex/`;
 - `--preset=ecosystem-local` can inventory Index, MN7R and Cr0pto local roots
   into one manifest;
+- `npm run cortex:source-ingest` writes a source ledger with added, changed,
+  removed and unchanged counts plus a chunking queue;
 - each manifest entry links to a source path, source kind, SHA-256 hash and
   evidence ID;
 - repo-local secrets and generated folders are excluded from the manifest;
