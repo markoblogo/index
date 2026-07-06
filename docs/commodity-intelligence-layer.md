@@ -127,6 +127,11 @@ filters and excludes `secret` chunks by default.
 results into a bounded context-pack artifact with approved evidence, excluded
 evidence, known gaps and model-ready text. Protected chunks require
 `--allow-protected`; secret chunks remain outside the default retrieval scope.
+The same builder is exposed to ecosystem products through
+`POST /api/internal/cortex/context-pack`, authorized by
+`CORTEX_INTERNAL_API_SECRET` or `CRON_SECRET`. The endpoint reads the
+server-side `.cortex/chunk-manifest.json` artifact and does not accept
+client-controlled filesystem paths.
 
 ## Scope
 
@@ -386,6 +391,8 @@ Acceptance:
 - `npm run cortex:context-pack` can assemble bounded evidence from local memory
   for internal assistants or external model calls with explicit protected-data
   gating;
+- `POST /api/internal/cortex/context-pack` can return the same bounded pack to
+  authorized ecosystem products over HTTP;
 - each manifest entry links to a source path, source kind, SHA-256 hash and
   evidence ID;
 - repo-local secrets and generated folders are excluded from the manifest;
