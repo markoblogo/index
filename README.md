@@ -452,6 +452,9 @@ changed sources for the next chunking/RAG stage.
 Run `npm run cortex:source-chunk -- --all` for the first full local chunk
 manifest, or `npm run cortex:source-chunk` after ingest to process only queued
 changes into `.cortex/chunk-manifest.json`.
+Run `npm run cortex:memory-search -- --query="SSI report context"` to search
+local Cortex chunks with owner, kind and visibility filters before a vector
+store is introduced.
 Corporate Media Hub sources are also documented there, including MN7R Blog,
 Spike Spot Index Blog, 1D3X Blog, MN7R Bluesky and the corporate Telegram group
 peer/chat-id handling.

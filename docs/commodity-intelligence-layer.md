@@ -120,6 +120,9 @@ and unchanged sources, and creating a chunking queue for the next RAG stage.
 manifest. Use `-- --all` for the first full seed. Unsupported binaries such as
 PDFs/images stay represented as skipped source results until dedicated
 extractors are added.
+`npm run cortex:memory-search -- --query="..."` is the first local retrieval
+surface over those chunks. It supports owner, source-kind and visibility
+filters and excludes `secret` chunks by default.
 
 ## Scope
 
@@ -374,6 +377,8 @@ Acceptance:
   removed and unchanged counts plus a chunking queue;
 - `npm run cortex:source-chunk` writes a local chunk manifest from the queue,
   and `-- --all` can seed chunks across all supported text/code/doc sources;
+- `npm run cortex:memory-search` can retrieve matching chunks with snippets and
+  metadata filters before a vector database is added;
 - each manifest entry links to a source path, source kind, SHA-256 hash and
   evidence ID;
 - repo-local secrets and generated folders are excluded from the manifest;
