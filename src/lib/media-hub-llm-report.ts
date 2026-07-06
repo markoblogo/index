@@ -9,6 +9,8 @@ import {
 } from "@/lib/commodity-intelligence-layer";
 import { buildCortexMemoryContextPack } from "@/lib/cortex-memory-context-pack";
 import { loadCortexRuntimeChunkManifest } from "@/lib/cortex-runtime-chunk-manifest";
+import { buildCortexIndexDbEvidence } from "@/lib/cortex-index-db-evidence";
+import { hasDatabaseUrl } from "@/lib/db";
 import type { MediaHubWindowSnapshot } from "@/lib/media-hub";
 import type { MediaHubManualMaterialDigest } from "@/lib/media-hub-manual-materials";
 import { buildMediaHubReportPrompt } from "@/lib/media-hub-report-prompts";
@@ -51,11 +53,14 @@ export async function generateMediaHubLlmReports(input: {
   provider?: "openai";
   skippedReason?: string;
 }> {
+  const indexDbEvidence = await loadIndexDbEvidenceForReport(input);
   const deterministicContextPack = buildCortexMarketReportContextPack({
+    calculationEvidence: indexDbEvidence.calculationEvidence,
     latestData: input.latestData,
     manualMaterials: input.manualMaterials,
     periodEndDate: input.periodEndDate,
     periodStartDate: input.periodStartDate,
+    respondentInputs: indexDbEvidence.respondentInputs,
     reportKind: input.kind,
     snapshots: input.snapshots,
     tenant: input.tenant,
@@ -239,6 +244,29 @@ function buildPrompt(input: {
   tenant: MediaHubTenant;
 }) {
   return buildMediaHubReportPrompt(input);
+}
+
+async function loadIndexDbEvidenceForReport(input: {
+  kind: MediaHubReportKind;
+  periodEndDate: string;
+  periodStartDate: string;
+  tenant: MediaHubTenant;
+}) {
+  if (input.tenant !== "spike" || !hasDatabaseUrl()) {
+    return { calculationEvidence: [], respondentInputs: [] };
+  }
+
+  try {
+    return await buildCortexIndexDbEvidence({
+      limit: input.kind === "daily" ? 120 : input.kind === "weekly" ? 300 : 600,
+      periodEndDate: input.periodEndDate,
+      periodStartDate: input.periodStartDate,
+      tenantId: "spike-ua",
+    });
+  } catch (error) {
+    console.error("Failed to load Cortex Index DB evidence.", error);
+    return { calculationEvidence: [], respondentInputs: [] };
+  }
 }
 
 async function augmentReportContextWithCortexMemory(

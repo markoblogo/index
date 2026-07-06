@@ -439,6 +439,9 @@ reports: MediaHub raw monitored items, SSI respondent/admin/imported inputs,
 SSI calculation ledgers, MN7R broker/operator inputs and cross-product
 correlation signals are protected Cortex sources. They can be analyzed inside
 Cortex, but external model prompts receive only redacted, approved context.
+The first SSI DB slice is active through `src/lib/cortex-index-db-evidence.ts`,
+which exports redacted `PriceSubmission` and calculation-ledger evidence into
+MediaHub report context assembly.
 Internal agents and related ecosystem products can read saved Cortex context
 packs through `GET /api/internal/cortex/context-packs` with
 `CORTEX_INTERNAL_API_SECRET` or `CRON_SECRET`; use `includePack=1` only for

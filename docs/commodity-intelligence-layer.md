@@ -97,15 +97,27 @@ jobs, vector storage, API routes or operator UI are added.
 
 The first runtime slice is active in MediaHub report generation: before OpenAI
 drafting, `generateMediaHubLlmReports` builds a 1D3X Cortex report context pack
-from published index values, `@idex_grains_bot` / manual materials and monitored
-MediaHub feeds. The prompt includes that approved context pack with evidence IDs,
-source IDs, exclusions and known gaps.
+from published index values, protected SSI DB evidence, `@idex_grains_bot` /
+manual materials and monitored MediaHub feeds. The prompt includes the approved
+portion of that context pack with evidence IDs, source IDs, exclusions and known
+gaps.
+
+The first DB-backed raw-data slice is active for SSI report context assembly:
+`buildCortexIndexDbEvidence` reads `PriceSubmission`, `IndexCalculation`,
+`IndexCalculationItem` and `PublishedIndex` rows for the report period. It emits
+protected Cortex evidence for raw respondent/admin/MN7R imported inputs and the
+calculation ledger. Respondent references are redacted before they enter Cortex
+evidence, while `MN7R_MONITOR` remains visible as a system source. These
+protected records are available for Cortex analysis and audit, but remain
+excluded from external OpenAI prompt context unless a future workflow explicitly
+enables protected evidence after redaction/approval.
 
 The first persistence slice is also active for MediaHub reports:
 `MediaHubReport.contentJson.llm.cortexContextPack` stores the exact Cortex
 snapshot used for the report. This makes each SSI/1D3X report auditable: the
 saved artifact shows which Telegram/API/index evidence reached OpenAI, which
-sources were excluded and which known gaps existed at generation time.
+raw/protected sources were excluded and which known gaps existed at generation
+time.
 
 The first public product surface is also active: Index home and MediaHub pages
 now describe 1D3X Cortex as the market-context memory behind evidence-backed
