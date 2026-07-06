@@ -1,6 +1,6 @@
 # 1D3X Cortex Plan
 
-Status: planning
+Status: planning + first runtime slices
 Updated: 2026-07-06
 
 ## Purpose
@@ -70,6 +70,12 @@ from published index values, `@idex_grains_bot` / manual materials and monitored
 MediaHub feeds. The prompt includes that approved context pack with evidence IDs,
 source IDs, exclusions and known gaps.
 
+The first persistence slice is also active for MediaHub reports:
+`MediaHubReport.contentJson.llm.cortexContextPack` stores the exact Cortex
+snapshot used for the report. This makes each SSI/1D3X report auditable: the
+saved artifact shows which Telegram/API/index evidence reached OpenAI, which
+sources were excluded and which known gaps existed at generation time.
+
 ## Scope
 
 1D3X Cortex should cover these resource families:
@@ -129,6 +135,11 @@ Use separate stores for separate responsibilities:
   summaries.
 - Event log for ingestion runs, corrections, model calls, context-pack creation
   and approval-sensitive actions.
+
+Current implementation note: MediaHub report context packs are persisted inside
+the existing `MediaHubReport.contentJson` artifact. A separate Cortex ledger can
+be added when cross-product retrieval, corrections or non-report actions need a
+stable API beyond report auditability.
 
 Fine-tuning can be considered later only after there are stable examples,
 evaluations and repeated task formats. It is not required for the first useful
@@ -315,6 +326,8 @@ Current implementation:
   prompt;
 - `generateMediaHubLlmReports` returns the pack together with OpenAI generation
   metadata.
+- `buildSnapshotReportContent` persists the pack in
+  `contentJson.llm.cortexContextPack` for the generated MediaHub report.
 
 Blockers:
 

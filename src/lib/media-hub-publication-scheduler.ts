@@ -11,6 +11,7 @@ import {
   generateMediaHubLlmReports,
   type MediaHubLocalizedReport,
 } from "@/lib/media-hub-llm-report";
+import type { CortexContextPack } from "@/lib/commodity-intelligence-layer";
 import { get1d3xRssWindows } from "@/lib/media-hub-rss";
 import {
   getMonthlyMediaHubDigest,
@@ -75,6 +76,7 @@ type MediaHubReportContentJson = {
   generatedAt: string;
   kind: Exclude<MediaHubPublicationKind, "none">;
   llm?: {
+    cortexContextPack?: CortexContextPack;
     model?: string;
     provider?: string;
     skippedReason?: string;
@@ -1352,6 +1354,7 @@ function buildSnapshotReportContent(input: {
     kind: input.kind,
     llm: input.llm
       ? {
+          cortexContextPack: input.llm.cortexContextPack,
           model: input.llm.model,
           provider: input.llm.provider,
           skippedReason: input.llm.skippedReason,
@@ -1965,6 +1968,7 @@ function formatShortTelegramDate(date: string) {
 }
 
 export const __mediaHubPublicationSchedulerTestHooks = {
+  buildSnapshotReportContent,
   buildMediaHubWhatsAppMessages,
   buildSsiDailyWhatsAppText,
   buildSsiNonDailyWhatsAppMessages,
@@ -2163,6 +2167,9 @@ function parseMediaHubReportContent(value: unknown): MediaHubReportContentJson |
     kind: normalizeMediaHubKind(candidate.kind),
     llm: typeof candidate.llm === "object" && candidate.llm
       ? {
+          cortexContextPack: parseCortexContextPack(
+            (candidate.llm as { cortexContextPack?: unknown }).cortexContextPack,
+          ),
           model: String((candidate.llm as { model?: unknown }).model ?? ""),
           provider: String((candidate.llm as { provider?: unknown }).provider ?? ""),
           skippedReason: String((candidate.llm as { skippedReason?: unknown }).skippedReason ?? ""),
@@ -2215,6 +2222,34 @@ function isValidation(value: unknown): value is MediaHubClaimValidation {
     ((value as { status?: unknown }).status === "passed" ||
       (value as { status?: unknown }).status === "needs_review"),
   );
+}
+
+function parseCortexContextPack(value: unknown): CortexContextPack | undefined {
+  if (!value || typeof value !== "object") {
+    return undefined;
+  }
+
+  const candidate = value as Partial<CortexContextPack>;
+  if (
+    candidate.product !== "1D3X Cortex" ||
+    typeof candidate.createdAt !== "string" ||
+    typeof candidate.query !== "string" ||
+    !Array.isArray(candidate.evidence) ||
+    !Array.isArray(candidate.sourceIds)
+  ) {
+    return undefined;
+  }
+
+  return {
+    createdAt: candidate.createdAt,
+    evidence: candidate.evidence,
+    excluded: Array.isArray(candidate.excluded) ? candidate.excluded : [],
+    knownGaps: Array.isArray(candidate.knownGaps) ? candidate.knownGaps : [],
+    product: "1D3X Cortex",
+    purpose: candidate.purpose ?? "market-report",
+    query: candidate.query,
+    sourceIds: candidate.sourceIds.map(String),
+  } as CortexContextPack;
 }
 
 function parseDailyReports(value: unknown): Partial<Record<Locale, MediaHubDailyReportView>> | undefined {

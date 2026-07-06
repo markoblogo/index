@@ -60,6 +60,7 @@ import {
   isMediaHubPublicationDue,
   normalizeMediaHubTelegramChatId,
 } from "./media-hub-publication-scheduler";
+import { buildCortexMarketReportContextPack } from "@/lib/commodity-intelligence-layer";
 
 describe("media hub publication scheduler", () => {
   beforeEach(() => {
@@ -126,6 +127,73 @@ describe("media hub publication scheduler", () => {
     expect(normalizeMediaHubTelegramChatId("4847957467")).toBe("-1004847957467");
     expect(normalizeMediaHubTelegramChatId("-1004847957467")).toBe("-1004847957467");
     expect(normalizeMediaHubTelegramChatId("353706900")).toBe("353706900");
+  });
+
+  it("stores the 1D3X Cortex context pack inside generated MediaHub report content", () => {
+    const cortexContextPack = buildCortexMarketReportContextPack({
+      manualMaterials: [
+        {
+          extractedText: "Telegram note about corn export demand.",
+          id: "material-1",
+          kind: "weekly_material",
+          originalFilename: null,
+          originalUrl: "https://example.com/corn",
+          receivedAt: new Date("2026-07-06T10:00:00.000Z"),
+          sourceDomain: "example.com",
+          sourceType: "telegram_link",
+          summary: "Telegram material says corn export demand improved.",
+          tenantId: "spike-ua",
+        },
+      ],
+      periodEndDate: "2026-07-06",
+      periodStartDate: "2026-06-30",
+      reportKind: "weekly",
+      snapshots: [],
+      tenant: "spike",
+    });
+
+    const content = __mediaHubPublicationSchedulerTestHooks.buildSnapshotReportContent({
+      kind: "weekly",
+      llm: {
+        cortexContextPack,
+        localized: {
+          en: {
+            summary: ["Corn export demand improved in the provided Telegram material."],
+            title: "Weekly grain context",
+          },
+        },
+        model: "gpt-4.1-mini",
+        provider: "openai",
+      },
+      manualMaterials: [],
+      periodEndDate: "2026-07-06",
+      periodStartDate: "2026-06-30",
+      snapshots: [
+        {
+          distribution: [],
+          feed: [],
+          itemCount: 0,
+          label: "Week",
+          progressLabel: "7/7",
+          pulseCards: [],
+          snapshotCards: [],
+          sourceCount: 0,
+          summaryBody: [],
+          summaryTitle: "Weekly grain context",
+          topSources: [],
+          topTopics: [],
+          topicCount: 0,
+          window: "week",
+        },
+      ],
+      tenant: "spike",
+    });
+
+    expect(content.llm?.cortexContextPack?.product).toBe("1D3X Cortex");
+    expect(content.llm?.cortexContextPack?.sourceIds).toContain("mediahub-telegram-materials");
+    expect(content.llm?.cortexContextPack?.evidence.map((item) => item.id)).toContain(
+      "cortex:material:material-1",
+    );
   });
 
   it("renders SSI daily WhatsApp as a short English Ukraine-focused market update", () => {

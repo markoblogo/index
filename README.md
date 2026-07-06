@@ -56,10 +56,10 @@ Shared capabilities:
   SPIKE;
 - MediaHub browser extraction policy that prefers Obscura for DOM/text/assets
   extraction and keeps Playwright/Chromium for e2e, screenshots and fallback;
-- planned 1D3X Cortex layer for evidence-backed internal AI context, assistant
-  tools and governed OpenAI API handoff across Index, MN7R Monitor, Cr0pto and
-  related agro-commodity resources, starting in observe/learn mode and moving
-  later toward approval-gated actions and bounded autonomy per capability;
+- 1D3X Cortex layer for evidence-backed internal AI context, assistant tools
+  and governed OpenAI API handoff across Index, MN7R Monitor, Cr0pto and related
+  agro-commodity resources, starting in observe/learn mode with MediaHub report
+  context packs now persisted for audit;
 - Vercel cron endpoints for scheduled imports, notifications and publication.
 
 UGA-specific features:
@@ -256,6 +256,7 @@ src/lib/index-platform.ts          tenant configuration
 src/lib/constants.ts               active site config
 src/lib/commodity-intelligence-layer.ts  1D3X Cortex registry/context contract
 src/lib/media-hub-llm-report.ts  OpenAI report path with Cortex context pack
+src/lib/media-hub-publication-scheduler.ts  MediaHub report persistence with Cortex audit snapshot
 src/lib/public-index-data.ts       public homepage and analytics data
 src/lib/admin-daily-inputs.ts      admin daily matrix data/actions
 src/lib/admin-calculate.ts         calculation and publication workflow
@@ -424,9 +425,9 @@ risk-sensitive workflow changes should be checked against
 [`docs/media-hub-review-checklist.md`](docs/media-hub-review-checklist.md).
 Use `@idex_grains_bot` for links/files that should be added to SSI or 1D3X
 reports; the respondent bot is not used for this workflow. These materials are
-part of the planned 1D3X Cortex evidence layer: Cortex should assemble the
-bounded report context pack first, then OpenAI API can draft the SSI/1D3X report
-from that approved context.
+part of the 1D3X Cortex evidence layer: Cortex assembles the bounded report
+context pack first, OpenAI API drafts the SSI/1D3X report from that approved
+context, and the report stores the Cortex snapshot for audit.
 Corporate Media Hub sources are also documented there, including MN7R Blog,
 Spike Spot Index Blog, 1D3X Blog, MN7R Bluesky and the corporate Telegram group
 peer/chat-id handling.
