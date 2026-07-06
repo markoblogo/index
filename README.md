@@ -455,6 +455,10 @@ changes into `.cortex/chunk-manifest.json`.
 Run `npm run cortex:memory-search -- --query="SSI report context"` to search
 local Cortex chunks with owner, kind and visibility filters before a vector
 store is introduced.
+Run `npm run cortex:context-pack -- --query="SSI report context" --purpose=market-report`
+to turn matching memory chunks into a bounded context pack for an internal
+assistant or an external model call. Add `--allow-protected` only for approved
+internal workflows.
 Corporate Media Hub sources are also documented there, including MN7R Blog,
 Spike Spot Index Blog, 1D3X Blog, MN7R Bluesky and the corporate Telegram group
 peer/chat-id handling.

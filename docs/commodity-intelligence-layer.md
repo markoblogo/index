@@ -123,6 +123,10 @@ extractors are added.
 `npm run cortex:memory-search -- --query="..."` is the first local retrieval
 surface over those chunks. It supports owner, source-kind and visibility
 filters and excludes `secret` chunks by default.
+`npm run cortex:context-pack -- --query="..." --purpose=...` turns retrieval
+results into a bounded context-pack artifact with approved evidence, excluded
+evidence, known gaps and model-ready text. Protected chunks require
+`--allow-protected`; secret chunks remain outside the default retrieval scope.
 
 ## Scope
 
@@ -379,6 +383,9 @@ Acceptance:
   and `-- --all` can seed chunks across all supported text/code/doc sources;
 - `npm run cortex:memory-search` can retrieve matching chunks with snippets and
   metadata filters before a vector database is added;
+- `npm run cortex:context-pack` can assemble bounded evidence from local memory
+  for internal assistants or external model calls with explicit protected-data
+  gating;
 - each manifest entry links to a source path, source kind, SHA-256 hash and
   evidence ID;
 - repo-local secrets and generated folders are excluded from the manifest;
