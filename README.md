@@ -412,6 +412,10 @@ Media Hub manual material intake is documented in
 [`docs/media-hub-manual-materials.md`](docs/media-hub-manual-materials.md).
 Browser-runtime policy for future MediaHub source extraction lives in
 [`docs/media-hub-browser-runtime.md`](docs/media-hub-browser-runtime.md).
+Shared Index/MediaHub terminology lives in
+[`docs/media-hub-domain-model.md`](docs/media-hub-domain-model.md), and
+risk-sensitive workflow changes should be checked against
+[`docs/media-hub-review-checklist.md`](docs/media-hub-review-checklist.md).
 Use `@idex_grains_bot` for links/files that should be added to SSI or 1D3X
 reports; the respondent bot is not used for this workflow.
 Corporate Media Hub sources are also documented there, including MN7R Blog,
@@ -461,6 +465,12 @@ Operational pieces:
 
 `AiMarketBrief` remains an internal SPIKE index-data helper for admin/index-card
 context, but the public market-news product is MediaHub.
+
+MediaHub and Index workflow changes should name the affected state explicitly:
+`collect`, `normalize`, `generate`, `validate`, `publish-site` or
+`send-channel`. Site publication and external channel delivery are separate
+approval-sensitive actions; keep them separable in code, docs, endpoints and
+tests.
 
 ## Database
 
