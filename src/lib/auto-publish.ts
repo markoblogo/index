@@ -32,6 +32,9 @@ export type AutoPublishSubmission = {
 const TELEGRAM_DELIVERY_TIMEOUT_MS = 15_000;
 
 export type AutoPublishPlanItem = {
+  excludedSubmissions: Array<AutoPublishSubmission & {
+    exclusionReason: "previous_day_5pct_deviation";
+  }>;
   latestUpdatedAt: Date;
   rawCount: number;
   selectedSubmissions: AutoPublishSubmission[];
@@ -154,6 +157,11 @@ export async function autoPublishSpikeDailyIndices(
       tradeDate,
     },
   });
+  const previousPublishedByCommodityId = await getPreviousPublishedValuesByCommodityId({
+    basketIds,
+    basisIds,
+    tradeDate,
+  });
   const plan = buildAutoPublishPlan({
     basisByCommodityId: new Map(
       [...basisByCommodityId.entries()].map(([commodityId, basis]) => [
@@ -161,6 +169,7 @@ export async function autoPublishSpikeDailyIndices(
         basis.id,
       ]),
     ),
+    previousPublishedByCommodityId,
     submissions: submissions.map((submission) => ({
       id: submission.id,
       commodityId: submission.commodityId,
@@ -265,14 +274,28 @@ export async function autoPublishSpikeDailyIndices(
       where: { calculationId: calculation.id },
     });
     await db.indexCalculationItem.createMany({
-      data: planItem.selectedSubmissions.map((submission) => ({
-        calculationId: calculation.id,
-        deviationPct: new Prisma.Decimal(0),
-        included: true,
-        priceSubmissionId: submission.id,
-        priceUsdPerMt: new Prisma.Decimal(submission.price),
-        respondentId: submission.respondentId,
-      })),
+      data: [
+        ...planItem.selectedSubmissions.map((submission) => ({
+          calculationId: calculation.id,
+          deviationPct: new Prisma.Decimal(0),
+          included: true,
+          priceSubmissionId: submission.id,
+          priceUsdPerMt: new Prisma.Decimal(submission.price),
+          respondentId: submission.respondentId,
+        })),
+        ...planItem.excludedSubmissions.map((submission) => ({
+          calculationId: calculation.id,
+          deviationPct: new Prisma.Decimal(getPreviousDayDeviationPct(
+            submission.price,
+            previousPublishedByCommodityId.get(submission.commodityId) ?? null,
+          )),
+          exclusionReason: submission.exclusionReason,
+          included: false,
+          priceSubmissionId: submission.id,
+          priceUsdPerMt: new Prisma.Decimal(submission.price),
+          respondentId: submission.respondentId,
+        })),
+      ],
     });
 
     const change = computePublishedChange(
@@ -603,9 +626,11 @@ function safeErrorMessage(error: unknown) {
 
 export function buildAutoPublishPlan({
   basisByCommodityId,
+  previousPublishedByCommodityId = new Map(),
   submissions,
 }: {
   basisByCommodityId: Map<string, string>;
+  previousPublishedByCommodityId?: Map<string, number>;
   submissions: AutoPublishSubmission[];
 }) {
   const selectedByCommodityAndRespondent = new Map<string, AutoPublishSubmission>();
@@ -642,9 +667,23 @@ export function buildAutoPublishPlan({
 
   return new Map(
     [...byCommodity.entries()].map(([commodityId, commoditySubmissions]) => {
+      const previousPublished = previousPublishedByCommodityId.get(commodityId) ?? null;
+      const usedSubmissions = commoditySubmissions.filter(
+        (submission) => !isAutoPublishPreviousDayOutlier(submission.price, previousPublished),
+      );
+      const excludedSubmissions = commoditySubmissions
+        .filter((submission) => isAutoPublishPreviousDayOutlier(submission.price, previousPublished))
+        .map((submission) => ({
+          ...submission,
+          exclusionReason: "previous_day_5pct_deviation" as const,
+        }));
+
+      if (usedSubmissions.length === 0) {
+        return null;
+      }
       const value = roundToOneDecimal(
-        commoditySubmissions.reduce((sum, submission) => sum + submission.price, 0) /
-          commoditySubmissions.length,
+        usedSubmissions.reduce((sum, submission) => sum + submission.price, 0) /
+          usedSubmissions.length,
       );
       const latestUpdatedAt = commoditySubmissions
         .map((submission) => submission.updatedAt)
@@ -653,15 +692,57 @@ export function buildAutoPublishPlan({
       return [
         commodityId,
         {
+          excludedSubmissions,
           latestUpdatedAt,
           rawCount: commoditySubmissions.length,
-          selectedSubmissions: commoditySubmissions,
-          usedCount: commoditySubmissions.length,
+          selectedSubmissions: usedSubmissions,
+          usedCount: usedSubmissions.length,
           value,
         },
       ] as const;
-    }),
+    }).filter((entry): entry is NonNullable<typeof entry> => Boolean(entry)),
   );
+}
+
+async function getPreviousPublishedValuesByCommodityId({
+  basketIds,
+  basisIds,
+  tradeDate,
+}: {
+  basketIds: string[];
+  basisIds: string[];
+  tradeDate: Date;
+}) {
+  const rows = await db.publishedIndex.findMany({
+    orderBy: { tradeDate: "desc" },
+    where: {
+      basketId: { in: basketIds },
+      deliveryBasisId: { in: basisIds },
+      locked: true,
+      status: "published",
+      tradeDate: { lt: tradeDate },
+    },
+  });
+  const result = new Map<string, number>();
+  for (const row of rows) {
+    if (!result.has(row.commodityId)) {
+      result.set(row.commodityId, row.valueUsdPerMt.toNumber());
+    }
+  }
+  return result;
+}
+
+function isAutoPublishPreviousDayOutlier(price: number, previousPublished: number | null) {
+  return previousPublished !== null &&
+    previousPublished > 0 &&
+    Math.abs(price - previousPublished) / previousPublished > 0.05;
+}
+
+function getPreviousDayDeviationPct(price: number, previousPublished: number | null) {
+  if (previousPublished === null || previousPublished <= 0) {
+    return 0;
+  }
+  return Math.round((Math.abs(price - previousPublished) / previousPublished) * 10000) / 100;
 }
 
 export function isKyivAutoPublishHour(date = new Date()) {

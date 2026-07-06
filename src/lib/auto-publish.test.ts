@@ -64,6 +64,63 @@ describe("buildAutoPublishPlan", () => {
     });
   });
 
+  it("excludes values more than 5 percent away from the previous published value", () => {
+    const plan = buildAutoPublishPlan({
+      basisByCommodityId: new Map([["corn-fca-chop", "basis-chop"]]),
+      previousPublishedByCommodityId: new Map([["corn-fca-chop", 222]]),
+      submissions: [
+        {
+          id: "bad-submission",
+          commodityId: "corn-fca-chop",
+          deliveryBasisId: "basis-chop",
+          price: 200,
+          respondentId: "MN7R_MONITOR",
+          source: "respondent",
+          status: "submitted",
+          updatedAt: new Date("2026-07-06T14:05:00.000Z"),
+        },
+      ],
+    });
+
+    expect(plan.has("corn-fca-chop")).toBe(false);
+  });
+
+  it("keeps valid values and records previous-day exclusions in the plan", () => {
+    const plan = buildAutoPublishPlan({
+      basisByCommodityId: new Map([["corn-fca-chop", "basis-chop"]]),
+      previousPublishedByCommodityId: new Map([["corn-fca-chop", 222]]),
+      submissions: [
+        {
+          id: "valid-submission",
+          commodityId: "corn-fca-chop",
+          deliveryBasisId: "basis-chop",
+          price: 223,
+          respondentId: "partner-1",
+          source: "respondent",
+          status: "submitted",
+          updatedAt: new Date("2026-07-06T14:05:00.000Z"),
+        },
+        {
+          id: "bad-submission",
+          commodityId: "corn-fca-chop",
+          deliveryBasisId: "basis-chop",
+          price: 200,
+          respondentId: "MN7R_MONITOR",
+          source: "respondent",
+          status: "submitted",
+          updatedAt: new Date("2026-07-06T14:06:00.000Z"),
+        },
+      ],
+    });
+
+    expect(plan.get("corn-fca-chop")).toMatchObject({
+      excludedSubmissions: [{ id: "bad-submission", exclusionReason: "previous_day_5pct_deviation" }],
+      rawCount: 2,
+      usedCount: 1,
+      value: 223,
+    });
+  });
+
   it("detects the 19:00 Europe/Kyiv publish window", () => {
     expect(isKyivAutoPublishHour(new Date("2026-05-25T16:00:00.000Z"))).toBe(true);
     expect(isKyivAutoPublishHour(new Date("2026-05-25T15:00:00.000Z"))).toBe(false);
