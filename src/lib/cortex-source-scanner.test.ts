@@ -4,6 +4,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   buildCortexSourceManifest,
+  buildLocalEcosystemScanRoots,
   classifySource,
   type CortexScanRoot,
 } from "@/lib/cortex-source-scanner";
@@ -58,6 +59,21 @@ describe("cortex source scanner", () => {
     expect(manifest.totals.byKind.code).toBe(1);
     expect(manifest.totals.files).toBe(6);
     expect(manifest.sources.every((source) => source.hash.length === 64)).toBe(true);
+  });
+
+  it("builds local ecosystem roots from existing paths only", async () => {
+    const indexRoot = await createFixtureRoot();
+    const mn7rRoot = await createFixtureRoot();
+    const missingRoot = path.join(os.tmpdir(), "missing-cortex-root");
+
+    const roots = await buildLocalEcosystemScanRoots({
+      croptoRoot: missingRoot,
+      indexRoot,
+      mn7rRoot,
+    });
+
+    expect(roots.map((root) => root.rootId)).toEqual(["index-platform", "mn7r-monitor"]);
+    expect(roots.find((root) => root.rootId === "mn7r-monitor")?.visibility).toBe("protected");
   });
 });
 

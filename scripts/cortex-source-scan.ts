@@ -2,6 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
   buildCortexSourceManifest,
+  buildLocalEcosystemScanRoots,
   type CortexScanRoot,
 } from "@/lib/cortex-source-scanner";
 
@@ -11,7 +12,7 @@ type CliOptions = {
 };
 
 async function main() {
-  const options = parseArgs(process.argv.slice(2), process.cwd());
+  const options = await parseArgs(process.argv.slice(2), process.cwd());
   const manifest = await buildCortexSourceManifest({ roots: options.roots });
   await mkdir(path.dirname(options.outPath), { recursive: true });
   await writeFile(options.outPath, `${JSON.stringify(manifest, null, 2)}\n`);
@@ -26,11 +27,21 @@ async function main() {
   );
 }
 
-function parseArgs(argv: string[], cwd: string): CliOptions {
+async function parseArgs(argv: string[], cwd: string): Promise<CliOptions> {
   const outPath = path.resolve(pickArgValue(argv, "--out") ?? ".cortex/source-manifest.json");
   const rootArgs = argv.filter((value) => value.startsWith("--root=")).map((value) => value.slice("--root=".length));
+  const preset = pickArgValue(argv, "--preset");
+  if (preset && preset !== "ecosystem-local") {
+    throw new Error(`Invalid --preset: ${preset}. Supported preset: ecosystem-local`);
+  }
   const roots = rootArgs.length > 0
     ? rootArgs.map(parseRootArg)
+    : preset === "ecosystem-local"
+      ? await buildLocalEcosystemScanRoots({
+          croptoRoot: process.env.CORTEX_CROPTO_ROOT,
+          indexRoot: process.env.CORTEX_INDEX_ROOT ?? cwd,
+          mn7rRoot: process.env.CORTEX_MN7R_ROOT,
+        })
     : [
         {
           ownerProject: "index" as const,

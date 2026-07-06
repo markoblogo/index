@@ -19,6 +19,12 @@ export type CortexScanRoot = {
   visibility: CortexVisibility;
 };
 
+export type CortexLocalEcosystemRootPaths = {
+  croptoRoot?: string;
+  indexRoot: string;
+  mn7rRoot?: string;
+};
+
 export type CortexSourceManifestEntry = {
   evidenceId: string;
   extractedAt: string;
@@ -122,6 +128,40 @@ export async function buildCortexSourceManifest(input: {
   };
 }
 
+export async function buildLocalEcosystemScanRoots(
+  paths: CortexLocalEcosystemRootPaths,
+): Promise<CortexScanRoot[]> {
+  const candidates: CortexScanRoot[] = [
+    {
+      ownerProject: "index",
+      rootId: "index-platform",
+      rootPath: paths.indexRoot,
+      visibility: "internal",
+    },
+    {
+      ownerProject: "mn7r",
+      rootId: "mn7r-monitor",
+      rootPath: paths.mn7rRoot ?? "/Volumes/Work/Work/MN7R",
+      visibility: "protected",
+    },
+    {
+      ownerProject: "cropto",
+      rootId: "cropto",
+      rootPath: paths.croptoRoot ?? "/Users/antonbiletskiy-volokh/Documents/Codex/2026-07-03/files-mentioned-by-the-user-task/cropto",
+      visibility: "internal",
+    },
+  ];
+
+  const existing: CortexScanRoot[] = [];
+  for (const candidate of candidates) {
+    if (await pathExists(candidate.rootPath)) {
+      existing.push(candidate);
+    }
+  }
+
+  return existing;
+}
+
 async function scanRoot(root: CortexScanRoot, extractedAt: string) {
   const absoluteRoot = path.resolve(root.rootPath);
   const files = await listFiles(absoluteRoot);
@@ -141,7 +181,7 @@ async function scanRoot(root: CortexScanRoot, extractedAt: string) {
         relativePath,
         rootId: root.rootId,
         sizeBytes: bytes.byteLength,
-        sourceId: sourceIdForKind(sourceKind),
+        sourceId: sourceIdForKind(sourceKind, root.ownerProject),
         sourceKind,
         title: path.basename(relativePath),
         urlOrPath: `${root.rootId}:${relativePath}`,
@@ -229,7 +269,14 @@ export function classifySource(relativePath: string): CortexScannedSourceKind {
   return "repo-doc";
 }
 
-function sourceIdForKind(kind: CortexScannedSourceKind) {
+function sourceIdForKind(kind: CortexScannedSourceKind, ownerProject: CortexScanRoot["ownerProject"]) {
+  if (kind === "repo-doc" && ownerProject === "mn7r") {
+    return "mn7r-public-docs";
+  }
+  if (kind === "repo-doc" && ownerProject === "cropto") {
+    return "cropto-public-surfaces";
+  }
+
   const sourceIds: Record<CortexScannedSourceKind, string> = {
     "action-event": "ecosystem-action-events",
     archive: "ecosystem-content-archives",
@@ -240,6 +287,15 @@ function sourceIdForKind(kind: CortexScannedSourceKind) {
     "site-content": "ecosystem-site-content",
   };
   return sourceIds[kind];
+}
+
+async function pathExists(value: string) {
+  try {
+    await stat(value);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function summarizeSources(sources: CortexSourceManifestEntry[]): CortexSourceManifest["totals"] {

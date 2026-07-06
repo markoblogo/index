@@ -111,6 +111,8 @@ It scans approved local repository roots into `.cortex/source-manifest.json`
 with source kind, owner project, visibility, size, SHA-256 hash and stable
 evidence IDs. This is intentionally a manifest stage: it proves coverage and
 freshness without pushing raw content into a model or database.
+Use `--preset=ecosystem-local` to scan the local Index + MN7R + Cr0pto roots
+when present, or pass explicit `--root=owner:rootId:/path:visibility` values.
 
 ## Scope
 
@@ -359,6 +361,8 @@ into evidence items and searchable chunks.
 Acceptance:
 
 - `npm run cortex:source-scan` writes a local source manifest under `.cortex/`;
+- `--preset=ecosystem-local` can inventory Index, MN7R and Cr0pto local roots
+  into one manifest;
 - each manifest entry links to a source path, source kind, SHA-256 hash and
   evidence ID;
 - repo-local secrets and generated folders are excluded from the manifest;
