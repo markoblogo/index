@@ -12,7 +12,7 @@ import {
   type MediaHubLocalizedReport,
 } from "@/lib/media-hub-llm-report";
 import type { CortexContextPack } from "@/lib/commodity-intelligence-layer";
-import { persistCortexContextPack } from "@/lib/commodity-intelligence-ledger";
+import { persistMediaHubReportCortexContextPack } from "@/lib/commodity-intelligence-ledger";
 import { get1d3xRssWindows } from "@/lib/media-hub-rss";
 import {
   getMonthlyMediaHubDigest,
@@ -868,14 +868,7 @@ export async function publishMediaHubSnapshotReport(
       }),
       reportStatus,
     );
-    await persistMediaHubCortexContextPack({
-      content,
-      id,
-      kind,
-      periodEndDate,
-      periodStartDate,
-      tenantId,
-    });
+    await persistMediaHubReportCortexContextPack({ content, id, kind, periodEndDate, periodStartDate, tenantId });
 
     revalidatePath("/media-hub");
     revalidatePath("/uk/media-hub");
@@ -912,32 +905,6 @@ async function buildTransientPublishResult(
     sourceCount: transient.primarySnapshot?.sourceCount ?? 0,
     status: "published_transient" as const,
   };
-}
-
-async function persistMediaHubCortexContextPack(input: {
-  content: MediaHubReportContentJson;
-  id: string;
-  kind: Exclude<MediaHubPublicationKind, "none">;
-  periodEndDate: string;
-  periodStartDate: string;
-  tenantId: string;
-}) {
-  const pack = input.content.llm?.cortexContextPack;
-  if (!pack) {
-    return;
-  }
-
-  await persistCortexContextPack({
-    pack,
-    target: {
-      entityId: input.id,
-      entityType: "mediahub-report",
-      periodEndDate: input.periodEndDate,
-      periodStartDate: input.periodStartDate,
-      reportKind: input.kind,
-      tenantId: input.tenantId,
-    },
-  });
 }
 
 export async function sendMediaHubReportTelegram(

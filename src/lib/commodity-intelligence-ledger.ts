@@ -133,6 +133,36 @@ export async function persistCortexContextPack(input: {
   return record;
 }
 
+export async function persistMediaHubReportCortexContextPack(input: {
+  content: {
+    llm?: {
+      cortexContextPack?: CortexContextPack;
+    };
+  };
+  id: string;
+  kind: "daily" | "weekly" | "monthly";
+  periodEndDate: string;
+  periodStartDate: string;
+  tenantId: string;
+}) {
+  const pack = input.content.llm?.cortexContextPack;
+  if (!pack) {
+    return null;
+  }
+
+  return persistCortexContextPack({
+    pack,
+    target: {
+      entityId: input.id,
+      entityType: "mediahub-report",
+      periodEndDate: input.periodEndDate,
+      periodStartDate: input.periodStartDate,
+      reportKind: input.kind,
+      tenantId: input.tenantId,
+    },
+  });
+}
+
 export async function getCortexContextPackRecord(id: string) {
   if (!hasDatabaseUrl()) {
     return null;
