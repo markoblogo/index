@@ -106,6 +106,12 @@ now describe 1D3X Cortex as the market-context memory behind evidence-backed
 MediaHub reports. Public copy stays bounded: Cortex is presented as source
 memory, audit and gated assistant context, not as an autonomous public bot.
 
+The first ingestion artifact is available through `npm run cortex:source-scan`.
+It scans approved local repository roots into `.cortex/source-manifest.json`
+with source kind, owner project, visibility, size, SHA-256 hash and stable
+evidence IDs. This is intentionally a manifest stage: it proves coverage and
+freshness without pushing raw content into a model or database.
+
 ## Scope
 
 1D3X Cortex should cover these resource families:
@@ -352,8 +358,11 @@ into evidence items and searchable chunks.
 
 Acceptance:
 
-- a local command can sync selected docs;
-- each chunk links to a source path and evidence ID;
+- `npm run cortex:source-scan` writes a local source manifest under `.cortex/`;
+- each manifest entry links to a source path, source kind, SHA-256 hash and
+  evidence ID;
+- repo-local secrets and generated folders are excluded from the manifest;
+- a later chunk/vector step can use the manifest as its source-of-truth input;
 - search returns citations and visibility metadata.
 
 Blockers:

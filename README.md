@@ -257,6 +257,7 @@ Important modules:
 src/lib/index-platform.ts          tenant configuration
 src/lib/constants.ts               active site config
 src/lib/commodity-intelligence-layer.ts  1D3X Cortex registry/context contract
+src/lib/cortex-source-scanner.ts  1D3X Cortex local source-manifest scanner
 src/lib/commodity-intelligence-ledger.ts  1D3X Cortex context-pack audit ledger
 src/lib/media-hub-llm-report.ts  OpenAI report path with Cortex context pack
 src/lib/media-hub-publication-scheduler.ts  MediaHub report persistence with Cortex audit snapshot
@@ -437,6 +438,10 @@ Internal agents and related ecosystem products can read saved Cortex context
 packs through `GET /api/internal/cortex/context-packs` with
 `CORTEX_INTERNAL_API_SECRET` or `CRON_SECRET`; use `includePack=1` only for
 authorized internal context assembly.
+Run `npm run cortex:source-scan` to write `.cortex/source-manifest.json`, the
+first local ingestion artifact for repo/docs/manuals/code/plans coverage. Add
+other local ecosystem roots with arguments such as
+`-- --root=mn7r:mn7r-monitor:/Volumes/Work/Work/MN7R:protected`.
 Corporate Media Hub sources are also documented there, including MN7R Blog,
 Spike Spot Index Blog, 1D3X Blog, MN7R Bluesky and the corporate Telegram group
 peer/chat-id handling.

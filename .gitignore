@@ -16,3 +16,4 @@ tsconfig.tsbuildinfo
 .whatsapp-session*/
 .wwebjs_cache/
 tmp/
+.cortex/

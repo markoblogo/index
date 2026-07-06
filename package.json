@@ -26,6 +26,7 @@
     "provision:uga-admin": "node scripts/provision-uga-admin.mjs",
     "provision:spike-manual-respondents": "tsx scripts/provision-spike-manual-respondents.ts",
     "audit:respondent": "tsx scripts/respondent-telegram-audit.ts",
+    "cortex:source-scan": "tsx scripts/cortex-source-scan.ts",
     "monitor:respondent-telegram": "tsx scripts/respondent-telegram-healthcheck.ts",
     "whatsapp:worker": "node scripts/whatsapp-worker.mjs"
   },
