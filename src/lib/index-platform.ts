@@ -608,7 +608,7 @@ export const INDEX_CONFIGS: Record<IndexTenantId, IndexConfig> = {
         uk: "/ CPT Одеса · FCA Чоп · експорт і переробка",
         en: "/ CPT Odesa · FCA Chop · export and processing",
       },
-      boardKicker: { uk: "Market update", en: "Market update" },
+      boardKicker: { uk: "Оновлення ринку", en: "Market update" },
       facts: {
         uk: [
           { value: "13", label: "товарів" },
@@ -741,7 +741,7 @@ export function getSpikeCommodityCategories(locale: Locale) {
       label: locale === "uk" ? "Oilseeds crush" : "Oilseeds crush",
       description:
         locale === "uk"
-          ? "Переробка: soybean 37 pro, GMO; Sunflower Seeds 48% dry oil; Rapeseed 48% dry oil, NON-GMO. USD/t incl. VAT."
+          ? "Переробка: соя ГМО 37 протеїн; соняшник 48% сухої олії; ріпак 48% сухої олії, не ГМО. USD/t з ПДВ."
           : "Processing: soybean 37 pro, GMO; Sunflower Seeds 48% dry oil; Rapeseed 48% dry oil, NON-GMO. USD/t VAT-included.",
     },
     {
