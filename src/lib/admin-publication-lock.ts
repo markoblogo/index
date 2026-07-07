@@ -1,4 +1,4 @@
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { db, hasDatabaseUrl } from "@/lib/db";
 import type { DemoUser } from "@/lib/demo-auth";
@@ -93,4 +93,5 @@ export function revalidatePublishedIndexViews() {
   revalidatePath("/en/analytics");
   revalidatePath("/api/public/latest");
   revalidatePath("/api/public/history");
+  revalidateTag("public-index-data", "max");
 }

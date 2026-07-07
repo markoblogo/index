@@ -144,6 +144,7 @@ export default async function AnalyticsPage({
   searchParams: Promise<{
     aiAnalytics?: string;
     experimentalAnalytics?: string;
+    history?: string;
     volatilityWindow?: string;
   }>;
 }) {
@@ -153,7 +154,11 @@ export default async function AnalyticsPage({
   const fxRatesPromise = getFxRates();
   const respondentCountPromise = getActiveRespondentCountData();
   const activeRespondentCount = await respondentCountPromise;
-  const history = await getAnalyticsHistory(activeRespondentCount);
+  const useFullHistory =
+    queryParams.history === "full" ||
+    queryParams.experimentalAnalytics === "1" ||
+    queryParams.aiAnalytics === "1";
+  const history = await getAnalyticsHistory(activeRespondentCount, useFullHistory);
   const fxRates = await fxRatesPromise;
   const snapshot = buildMarketSnapshot(
     history,
@@ -638,9 +643,9 @@ function PublishedValuesTable({
   );
 }
 
-async function getAnalyticsHistory(activeRespondentCount: number) {
+async function getAnalyticsHistory(activeRespondentCount: number, useFullHistory: boolean) {
   if (hasDatabaseUrl()) {
-    const realHistory = await getRealAnalyticsHistory();
+    const realHistory = await getRealAnalyticsHistory(useFullHistory);
 
     if (realHistory.length > 0 || !allowMockFallback()) {
       return realHistory;
@@ -654,8 +659,10 @@ async function getAnalyticsHistory(activeRespondentCount: number) {
   return [];
 }
 
-async function getRealAnalyticsHistory(): Promise<AnalyticsPoint[]> {
-  const rows = await getPublicHistoryData();
+async function getRealAnalyticsHistory(useFullHistory: boolean): Promise<AnalyticsPoint[]> {
+  const rows = await getPublicHistoryData(
+    useFullHistory ? { scope: "analytics" } : undefined,
+  );
 
   return rows
     .map((row) => ({

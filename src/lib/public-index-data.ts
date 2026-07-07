@@ -1,4 +1,5 @@
 import { allowMockFallback, db, hasDatabaseUrl } from "@/lib/db";
+import { unstable_cache } from "next/cache";
 import { getLatestDemoPublishedIndices } from "@/lib/demo-published-index-store";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import {
@@ -30,6 +31,7 @@ export type PublicIndexSnapshot = {
 };
 
 const activeIndex = getActiveIndexConfig();
+const PUBLIC_INDEX_SNAPSHOT_CACHE_SECONDS = 12 * 60 * 60;
 const primaryDeliveryBasis = activeIndex.deliveryBases[0];
 const MOCK_BASIS_ID = primaryDeliveryBasis.code.toLowerCase().replaceAll("_", "-");
 const commodityCodeByMockId: Record<CommodityId, string> = Object.fromEntries(
@@ -56,7 +58,7 @@ export async function getPublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
   }
 
   try {
-    return await getDatabasePublicIndexSnapshot();
+    return await getCachedDatabasePublicIndexSnapshot();
   } catch (error) {
     if (allowMockFallback()) {
       console.warn("Falling back to mock public index data.", error);
@@ -67,6 +69,15 @@ export async function getPublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
     throw error;
   }
 }
+
+const getCachedDatabasePublicIndexSnapshot = unstable_cache(
+  async () => getDatabasePublicIndexSnapshot(),
+  ["public-index-snapshot", activeIndex.id],
+  {
+    revalidate: PUBLIC_INDEX_SNAPSHOT_CACHE_SECONDS,
+    tags: ["public-index-data"],
+  },
+);
 
 function getMockPublicIndexSnapshot(): PublicIndexSnapshot {
   const latestPublished = getLatestDemoPublishedIndices(MOCK_BASIS_ID);

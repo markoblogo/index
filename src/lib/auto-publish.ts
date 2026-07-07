@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import { Prisma } from "@prisma/client";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { db, hasDatabaseUrl } from "@/lib/db";
 import { generateAndStoreDailyAiMarketBriefs } from "@/lib/ai-market-brief-lazy";
 import { fetchWithTimeout } from "@/lib/fetch-timeout";
@@ -363,6 +363,7 @@ export async function autoPublishSpikeDailyIndices(
   revalidatePath("/en/analytics");
   revalidatePath("/api/public/latest");
   revalidatePath("/api/public/history");
+  revalidateTag("public-index-data", "max");
 
   const aiBrief =
     published > 0 && options.generateAiBrief !== false

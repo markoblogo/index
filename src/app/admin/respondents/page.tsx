@@ -1,4 +1,4 @@
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import dynamicImport from "next/dynamic";
 import { ManualHelpCard } from "@/components/manual/manual-ui";
 import { SITE_CONFIG } from "@/lib/constants";
@@ -359,4 +359,5 @@ function revalidateRespondentPages() {
   revalidatePath("/en/analytics");
   revalidatePath("/api/public/latest");
   revalidatePath("/api/public/history");
+  revalidateTag("public-index-data", "max");
 }

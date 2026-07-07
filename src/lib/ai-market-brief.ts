@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { allowMockFallback, db, hasDatabaseUrl } from "@/lib/db";
 import {
   getLatestAiCardComments as getLatestAiCardCommentsPublic,
@@ -978,7 +978,7 @@ function buildDeterministicAiMarketBrief(
 }
 
 async function getRealAnalyticsHistory(): Promise<AiAnalyticsPoint[]> {
-  const rows = await getPublicHistoryData();
+  const rows = await getPublicHistoryData({ scope: "analytics" });
 
   return rows
     .map((row) => ({
@@ -1156,6 +1156,7 @@ function revalidateAiBriefViews() {
   revalidatePath("/uk/analytics");
   revalidatePath("/en/analytics");
   revalidatePath("/api/ai/market-brief");
+  revalidateTag("public-index-data", "max");
 }
 
 function buildShortHash(value: string) {

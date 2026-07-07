@@ -768,7 +768,7 @@ export async function buildWeeklySourceManifest(reportId: string) {
   }
 
   const [history, aiBriefRows, workspaceConfig, workspaceResources, telegramDigest] = await Promise.all([
-    getPublicHistoryData(),
+    getPublicHistoryData({ scope: "analytics" }),
     db.aiMarketBrief.findMany({
       orderBy: { tradeDate: "asc" },
       where: {

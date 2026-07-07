@@ -32,6 +32,7 @@ export function PublicMediaHub({
   archiveQuery?: {
     date?: string;
     kind?: MediaHubReportArchiveItem["kind"];
+    loaded?: boolean;
     q?: string;
   };
   locale: Locale;
@@ -54,6 +55,7 @@ export function PublicMediaHub({
     { kind: "monthly", label: copy.monthly },
   ];
   const archiveHasQuery = Boolean(archiveQuery.date || archiveQuery.kind || archiveQuery.q);
+  const archiveLoaded = Boolean(archiveQuery.loaded);
 
   return (
     <div
@@ -200,9 +202,10 @@ export function PublicMediaHub({
       ) : null}
 
       <section className="mx-auto max-w-[1900px] px-5 pb-8 sm:px-8 lg:px-10">
+        {archiveLoaded ? (
         <details
           className="group rounded-[2rem] border border-white/10 bg-[var(--media-hub-panel)] p-5"
-          open={archiveHasQuery}
+          open
         >
           <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-4">
             <div>
@@ -228,6 +231,7 @@ export function PublicMediaHub({
           <div className="mt-5 rounded-[1.4rem] border border-white/10 bg-black/14 p-4">
             {archiveHref ? (
               <form className="grid gap-3 lg:grid-cols-[0.9fr_0.9fr_1.4fr_auto]" action={archiveHref({})} method="get">
+                <input name="archive" type="hidden" value="1" />
                 <label className="grid gap-1.5 text-xs font-black uppercase tracking-[0.14em] text-white/42">
                   {copy.reportType}
                   <select
@@ -334,6 +338,29 @@ export function PublicMediaHub({
             )}
           </div>
         </details>
+        ) : (
+          <div className="rounded-[2rem] border border-white/10 bg-[var(--media-hub-panel)] p-5">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-white/42">
+                  {copy.reportArchive}
+                </p>
+                <h2 className="mt-1 text-2xl font-black">{copy.publishedReports}</h2>
+                <p className="mt-2 text-sm leading-6 text-white/54">
+                  {copy.archiveLazyHint}
+                </p>
+              </div>
+              {archiveHref ? (
+                <Link
+                  className="rounded-full border border-[color:var(--media-hub-accent)] px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-[var(--media-hub-accent)]"
+                  href={archiveHref({})}
+                >
+                  {copy.openArchive}
+                </Link>
+              ) : null}
+            </div>
+          </div>
+        )}
       </section>
 
       <section className="mx-auto max-w-[1900px] px-5 pb-8 sm:px-8 lg:px-10">
@@ -567,6 +594,7 @@ function getMediaHubCopy(locale: Locale) {
       all: "Усі",
       archiveDate: "Дата",
       archiveHint: "Блок згорнутий за замовчуванням. Відкрийте його або знайдіть звіт за датою, типом чи текстом.",
+      archiveLazyHint: "Архів не завантажується разом зі сторінкою. Відкрийте блок, щоб підвантажити опубліковані звіти.",
       archiveSearch: "Пошук",
       archiveSearchPlaceholder: "Тема, ринок, культура...",
       clusters: "кластерів",
@@ -619,6 +647,7 @@ function getMediaHubCopy(locale: Locale) {
     all: "All",
     archiveDate: "Date",
     archiveHint: "Collapsed by default. Open it or find a report by date, type or text.",
+    archiveLazyHint: "The archive is not loaded with the page. Open this block to load published reports.",
     archiveSearch: "Search",
     archiveSearchPlaceholder: "Topic, market, commodity...",
     clusters: "clusters",

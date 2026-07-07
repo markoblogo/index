@@ -1,4 +1,3 @@
-import { connection } from "next/server";
 import Link from "next/link";
 import { HomeHero } from "@/components/ui/home-hero";
 import { getDictionary, type Locale } from "@/lib/i18n";
@@ -11,8 +10,6 @@ export default async function LocaleHome({
 }: {
   params: Promise<{ locale: Locale }>;
 }) {
-  await connection();
-
   const { locale } = await params;
   const dict = getDictionary(locale);
   const { activeIndex, fxRates, respondentCount, snapshot, updatedAt } =

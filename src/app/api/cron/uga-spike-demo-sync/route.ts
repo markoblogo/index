@@ -1,4 +1,4 @@
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { isCronRequestAuthorized } from "@/lib/cron-auth";
 import { syncUgaDemoIndicesFromSpike } from "@/lib/uga-spike-demo-sync";
@@ -36,6 +36,7 @@ export async function GET(request: Request) {
   revalidatePath("/en/analytics");
   revalidatePath("/api/public/latest");
   revalidatePath("/api/public/history");
+  revalidateTag("public-index-data", "max");
 
   return NextResponse.json(result);
 }

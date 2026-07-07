@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { redirect } from "next/navigation";
 import { PublicMediaHub } from "@/components/media-hub/public-media-hub";
 import type { Locale } from "@/lib/i18n";
@@ -17,9 +18,63 @@ import {
 
 export const dynamic = "force-dynamic";
 
+const MEDIA_HUB_LIVE_CACHE_SECONDS = 60 * 60;
+const MEDIA_HUB_REPORT_CACHE_SECONDS = 12 * 60 * 60;
+const MEDIA_HUB_ARCHIVE_CACHE_SECONDS = 12 * 60 * 60;
+
+const getCachedSpikeMediaHubLiveWindows = unstable_cache(
+  async (locale: Locale) => getSpikeMediaHubLiveWindows(locale),
+  ["spike-media-hub-live-windows"],
+  {
+    revalidate: MEDIA_HUB_LIVE_CACHE_SECONDS,
+    tags: ["spike-media-hub-live"],
+  },
+);
+
+const getCachedSpikePublishedSummary = unstable_cache(
+  async (
+    kind: Exclude<MediaHubPublicationKind, "none"> | undefined,
+    locale: Locale,
+    periodEndDate: string | undefined,
+  ) =>
+    getLatestPublishedMediaHubReportSummary({
+      kind,
+      locale,
+      periodEndDate,
+      tenantId: "spike-ua",
+    }),
+  ["spike-media-hub-published-summary"],
+  {
+    revalidate: MEDIA_HUB_REPORT_CACHE_SECONDS,
+    tags: ["media-hub-report-summary"],
+  },
+);
+
+const getCachedSpikeReportArchive = unstable_cache(
+  async (
+    date: string | undefined,
+    kind: Exclude<MediaHubPublicationKind, "none"> | undefined,
+    locale: Locale,
+    query: string | undefined,
+  ) =>
+    getMediaHubReportArchive({
+      date,
+      kind,
+      locale,
+      query,
+      tenantId: "spike-ua",
+      limit: 24,
+    }),
+  ["spike-media-hub-report-archive"],
+  {
+    revalidate: MEDIA_HUB_ARCHIVE_CACHE_SECONDS,
+    tags: ["media-hub-report-archive"],
+  },
+);
+
 type MediaHubPageProps = {
   params: Promise<{ locale: Locale }>;
-  searchParams: Promise<{ date?: string; kind?: string; q?: string; window?: string }>;
+  searchParams: Promise<{ archive?: string; date?: string; kind?: string; q?: string; window?: string }>;
 };
 
 export default async function MediaHubPage({
@@ -38,21 +93,13 @@ export default async function MediaHubPage({
   const requestedDate = normalizeDate(search.date);
   const requestedQuery = normalizeQuery(search.q);
   const summaryKind = requestedKind ?? (requestedWindow ? windowToKind(requestedWindow) : undefined);
+  const shouldLoadArchive = search.archive === "1" || Boolean(requestedDate || requestedKind || requestedQuery);
   const [liveWindows, publishedSummary, archive] = await Promise.all([
-    getSpikeMediaHubLiveWindows(locale),
-    getLatestPublishedMediaHubReportSummary({
-      kind: summaryKind,
-      locale,
-      periodEndDate: requestedDate,
-      tenantId: "spike-ua",
-    }),
-    getMediaHubReportArchive({
-      date: requestedDate,
-      kind: summaryKind,
-      locale,
-      query: requestedQuery,
-      tenantId: "spike-ua",
-    }),
+    getCachedSpikeMediaHubLiveWindows(locale),
+    getCachedSpikePublishedSummary(summaryKind, locale, requestedDate),
+    shouldLoadArchive
+      ? getCachedSpikeReportArchive(requestedDate, summaryKind, locale, requestedQuery)
+      : Promise.resolve([]),
   ]);
   const selectedWindow = requestedWindow
     ? requestedWindow
@@ -75,10 +122,12 @@ export default async function MediaHubPage({
       archiveQuery={{
         date: requestedDate,
         kind: requestedKind,
+        loaded: shouldLoadArchive,
         q: requestedQuery,
       }}
       archiveHref={(filter) => {
         const params = new URLSearchParams();
+        params.set("archive", "1");
         if (filter.kind) params.set("kind", filter.kind);
         if (filter.date) params.set("date", filter.date);
         if (filter.q) params.set("q", filter.q);

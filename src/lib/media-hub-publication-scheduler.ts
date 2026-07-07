@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createHash, randomUUID } from "node:crypto";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { db, hasDatabaseUrl } from "@/lib/db";
 import { fetchWithTimeout } from "@/lib/fetch-timeout";
 import { getActiveIndexConfig } from "@/lib/index-platform";
@@ -870,9 +870,7 @@ export async function publishMediaHubSnapshotReport(
     );
     await persistMediaHubReportCortexContextPack({ content, id, kind, periodEndDate, periodStartDate, tenantId });
 
-    revalidatePath("/media-hub");
-    revalidatePath("/uk/media-hub");
-    revalidatePath("/en/media-hub");
+    revalidateMediaHubPublicViews();
 
     return {
       itemCount: primarySnapshot?.itemCount ?? 0,
@@ -2675,8 +2673,7 @@ export async function publishMonthlyMediaHubReport(periodEndDate: string) {
     JSON.stringify(messageIds),
   );
 
-  revalidatePath("/uk/media-hub");
-  revalidatePath("/en/media-hub");
+  revalidateMediaHubPublicViews();
 
   return {
     messageIds,
@@ -2688,7 +2685,26 @@ export async function publishMonthlyMediaHubReport(periodEndDate: string) {
   };
 }
 
+let mediaHubReportStorageReady: Promise<void> | null = null;
+
+function revalidateMediaHubPublicViews() {
+  revalidatePath("/media-hub");
+  revalidatePath("/uk/media-hub");
+  revalidatePath("/en/media-hub");
+  revalidateTag("media-hub-report-summary", "max");
+  revalidateTag("media-hub-report-archive", "max");
+  revalidateTag("spike-media-hub-live", "max");
+  revalidateTag("id3x-media-hub-live", "max");
+  revalidateTag("public-index-data", "max");
+}
+
 async function ensureMediaHubReportStorage() {
+  mediaHubReportStorageReady ??= ensureMediaHubReportStorageUncached();
+
+  return mediaHubReportStorageReady;
+}
+
+async function ensureMediaHubReportStorageUncached() {
   await db.$executeRawUnsafe(`
     CREATE TABLE IF NOT EXISTS "MediaHubReport" (
       "id" TEXT NOT NULL,

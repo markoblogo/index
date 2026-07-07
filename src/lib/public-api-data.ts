@@ -1,4 +1,5 @@
 import { allowMockFallback, db, hasDatabaseUrl } from "@/lib/db";
+import { unstable_cache } from "next/cache";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import { spikeVerifiedPriceArchive } from "@/data/spike-verified-price-archive";
 import {
@@ -39,6 +40,9 @@ export type PublicHistoryItem = Omit<PublicLatestItem, "valueUsdPerMt"> & {
 };
 
 const activeIndex = getActiveIndexConfig();
+const PUBLIC_HISTORY_DAY_LIMIT = 10;
+const PUBLIC_INDEX_DATA_CACHE_SECONDS = 12 * 60 * 60;
+const publicIndexCacheTags = ["public-index-data"];
 const demoDates = [
   "2026-05-01",
   "2026-05-02",
@@ -71,7 +75,7 @@ export async function getPublicLatestData() {
   }
 
   try {
-    return await getDatabaseLatestData();
+    return await getCachedDatabaseLatestData();
   } catch (error) {
     if (allowMockFallback()) {
       console.warn("Falling back to mock public latest data.", error);
@@ -83,27 +87,64 @@ export async function getPublicLatestData() {
   }
 }
 
-export async function getPublicHistoryData() {
+export async function getPublicHistoryData(options: {
+  dayLimit?: number;
+  scope?: "public" | "analytics";
+} = {}) {
+  const dayLimit =
+    options.scope === "analytics" ? undefined : options.dayLimit ?? PUBLIC_HISTORY_DAY_LIMIT;
+
   if (!hasDatabaseUrl()) {
     if (!allowMockFallback()) {
       throw new Error("DATABASE_URL is required for production public history data.");
     }
 
-    return getMockHistoryData();
+    return selectRecentPublicHistoryDays(getMockHistoryData(), dayLimit);
   }
 
   try {
-    return await getDatabaseHistoryData();
+    return dayLimit
+      ? await getCachedDatabasePublicHistoryData(dayLimit)
+      : await getCachedDatabaseAnalyticsHistoryData();
   } catch (error) {
     if (allowMockFallback()) {
       console.warn("Falling back to mock public history data.", error);
-      return getMockHistoryData();
+      return selectRecentPublicHistoryDays(getMockHistoryData(), dayLimit);
     }
 
     console.error("Failed to load database public history data.", error);
     throw error;
   }
 }
+
+const getCachedDatabaseLatestData = unstable_cache(
+  async () => getDatabaseLatestData(),
+  ["public-latest-data", activeIndex.id],
+  {
+    revalidate: PUBLIC_INDEX_DATA_CACHE_SECONDS,
+    tags: publicIndexCacheTags,
+  },
+);
+
+const getCachedDatabaseHistoryData = unstable_cache(
+  async (dayLimit: number) => getDatabaseHistoryData({ dayLimit }),
+  ["public-history-data", activeIndex.id],
+  {
+    revalidate: PUBLIC_INDEX_DATA_CACHE_SECONDS,
+    tags: publicIndexCacheTags,
+  },
+);
+
+const getCachedDatabaseAnalyticsHistoryData = unstable_cache(
+  async () => getDatabaseHistoryData({ scope: "analytics" }),
+  ["public-analytics-history-data", activeIndex.id],
+  {
+    revalidate: PUBLIC_INDEX_DATA_CACHE_SECONDS,
+    tags: publicIndexCacheTags,
+  },
+);
+
+const getCachedDatabasePublicHistoryData = getCachedDatabaseHistoryData;
 
 async function getMockLatestData(): Promise<PublicLatestItem[]> {
   const snapshot = await getPublicIndexSnapshot();
@@ -298,7 +339,10 @@ async function getDatabaseLatestData(): Promise<PublicLatestItem[]> {
   return rows.filter((row): row is PublicLatestItem => Boolean(row));
 }
 
-async function getDatabaseHistoryData(): Promise<PublicHistoryItem[]> {
+async function getDatabaseHistoryData(options: {
+  dayLimit?: number;
+  scope?: "analytics";
+} = {}): Promise<PublicHistoryItem[]> {
   await syncIndexPositionDirectory(activeIndex);
 
   const [bases, baskets] = await Promise.all([
@@ -328,7 +372,9 @@ async function getDatabaseHistoryData(): Promise<PublicHistoryItem[]> {
   const rows = await db.publishedIndex.findMany({
     include: { commodity: true },
     orderBy: [{ tradeDate: "desc" }, { commodity: { sortOrder: "asc" } }],
-    take: activeIndex.id === "spike-ua" ? 5000 : 365,
+    take: options.dayLimit
+      ? Math.max(options.dayLimit * activeIndex.commodities.length * 2, 120)
+      : activeIndex.id === "spike-ua" ? 5000 : 365,
     where: {
       deliveryBasisId: { in: basisIds },
       basketId: { in: basketIds },
@@ -367,9 +413,27 @@ async function getDatabaseHistoryData(): Promise<PublicHistoryItem[]> {
       status: "published",
     }));
 
-  return activeIndex.id === "spike-ua"
+  const history = activeIndex.id === "spike-ua"
     ? mergeSpikeVerifiedArchiveHistory(publishedRows, activeRespondentCount)
     : publishedRows;
+
+  return selectRecentPublicHistoryDays(history, options.dayLimit);
+}
+
+function selectRecentPublicHistoryDays<T extends { date: string }>(
+  rows: T[],
+  dayLimit: number | undefined,
+) {
+  if (!dayLimit) {
+    return rows;
+  }
+
+  const dates = [...new Set(rows.map((row) => row.date))]
+    .sort((first, second) => second.localeCompare(first))
+    .slice(0, dayLimit);
+  const dateSet = new Set(dates);
+
+  return rows.filter((row) => dateSet.has(row.date));
 }
 
 function mergeSpikeVerifiedArchiveHistory(

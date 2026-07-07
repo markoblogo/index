@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { redirect } from "next/navigation";
 import { PublicMediaHub } from "@/components/media-hub/public-media-hub";
 import { PlatformShell } from "@/components/platform/platform-shell";
@@ -17,8 +18,60 @@ import { isPlatformSite } from "@/lib/platform-site";
 
 export const dynamic = "force-dynamic";
 
+const MEDIA_HUB_LIVE_CACHE_SECONDS = 60 * 60;
+const MEDIA_HUB_REPORT_CACHE_SECONDS = 12 * 60 * 60;
+const MEDIA_HUB_ARCHIVE_CACHE_SECONDS = 12 * 60 * 60;
+
+const getCached1d3xRssWindows = unstable_cache(
+  async () => get1d3xRssWindows(),
+  ["id3x-media-hub-rss-windows"],
+  {
+    revalidate: MEDIA_HUB_LIVE_CACHE_SECONDS,
+    tags: ["id3x-media-hub-live"],
+  },
+);
+
+const getCached1d3xPublishedSummary = unstable_cache(
+  async (
+    kind: Exclude<MediaHubPublicationKind, "none"> | undefined,
+    periodEndDate: string | undefined,
+  ) =>
+    getLatestPublishedMediaHubReportSummary({
+      kind,
+      locale: "en",
+      periodEndDate,
+      tenantId: "1d3x",
+    }),
+  ["id3x-media-hub-published-summary"],
+  {
+    revalidate: MEDIA_HUB_REPORT_CACHE_SECONDS,
+    tags: ["media-hub-report-summary"],
+  },
+);
+
+const getCached1d3xReportArchive = unstable_cache(
+  async (
+    date: string | undefined,
+    kind: Exclude<MediaHubPublicationKind, "none"> | undefined,
+    query: string | undefined,
+  ) =>
+    getMediaHubReportArchive({
+      date,
+      kind,
+      locale: "en",
+      query,
+      tenantId: "1d3x",
+      limit: 24,
+    }),
+  ["id3x-media-hub-report-archive"],
+  {
+    revalidate: MEDIA_HUB_ARCHIVE_CACHE_SECONDS,
+    tags: ["media-hub-report-archive"],
+  },
+);
+
 type PlatformMediaHubPageProps = {
-  searchParams: Promise<{ date?: string; kind?: string; q?: string; window?: string }>;
+  searchParams: Promise<{ archive?: string; date?: string; kind?: string; q?: string; window?: string }>;
 };
 
 export default async function PlatformMediaHubPage({
@@ -34,21 +87,13 @@ export default async function PlatformMediaHubPage({
   const requestedDate = normalizeDate(search.date);
   const requestedQuery = normalizeQuery(search.q);
   const summaryKind = requestedKind ?? (requestedWindow ? windowToKind(requestedWindow) : undefined);
+  const shouldLoadArchive = search.archive === "1" || Boolean(requestedDate || requestedKind || requestedQuery);
   const [liveWindows, publishedSummary, archive] = await Promise.all([
-    get1d3xRssWindows(),
-    getLatestPublishedMediaHubReportSummary({
-      kind: summaryKind,
-      locale: "en",
-      periodEndDate: requestedDate,
-      tenantId: "1d3x",
-    }),
-    getMediaHubReportArchive({
-      date: requestedDate,
-      kind: summaryKind,
-      locale: "en",
-      query: requestedQuery,
-      tenantId: "1d3x",
-    }),
+    getCached1d3xRssWindows(),
+    getCached1d3xPublishedSummary(summaryKind, requestedDate),
+    shouldLoadArchive
+      ? getCached1d3xReportArchive(requestedDate, summaryKind, requestedQuery)
+      : Promise.resolve([]),
   ]);
   const selectedWindow = requestedWindow
     ? requestedWindow
@@ -75,10 +120,12 @@ export default async function PlatformMediaHubPage({
         archiveQuery={{
           date: requestedDate,
           kind: requestedKind,
+          loaded: shouldLoadArchive,
           q: requestedQuery,
         }}
         archiveHref={(filter) => {
           const params = new URLSearchParams();
+          params.set("archive", "1");
           if (filter.kind) params.set("kind", filter.kind);
           if (filter.date) params.set("date", filter.date);
           if (filter.q) params.set("q", filter.q);
