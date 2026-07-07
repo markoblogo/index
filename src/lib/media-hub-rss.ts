@@ -1295,8 +1295,11 @@ function buildWindow(
     })),
     feed: filtered.slice(0, 6).map((item) => ({
       id: item.id,
+      processingState: item.relevanceScore >= 3 ? "accepted_after_scoring" : "fallback_accepted",
+      relevanceScore: item.relevanceScore,
       source: item.source,
       sourceType: "RSS",
+      sourceUrl: item.url,
       summary: item.summary.slice(0, 240),
       tags: item.topicTags.slice(0, 3).map(topicLabel),
       time: formatDate(item.publishedAt),
@@ -1522,6 +1525,7 @@ function formatDate(value: string) {
 
 export const __mediaHubRssTestHooks = {
   blueskyPostUrl,
+  buildWindow,
   canonicalizeUrl,
   dedupeItems,
   gdeltDocUrl,

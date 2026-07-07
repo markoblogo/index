@@ -112,6 +112,14 @@ protected records are available for Cortex analysis and audit, but remain
 excluded from external OpenAI prompt context unless a future workflow explicitly
 enables protected evidence after redaction/approval.
 
+The first raw MediaHub monitoring slice is active inside the report snapshots:
+RSS/monitoring feed items now carry source URL, relevance score and processing
+state (`accepted_after_scoring` or fallback/manual state). Cortex emits those
+records as protected `mediahub-raw-monitoring-items` evidence before the
+approved report-summary layer. This gives Cortex visibility into source
+selection and scoring. Full rejection-history analysis still requires a
+persisted monitoring ledger for discarded candidates and rejection reasons.
+
 The first persistence slice is also active for MediaHub reports:
 `MediaHubReport.contentJson.llm.cortexContextPack` stores the exact Cortex
 snapshot used for the report. This makes each SSI/1D3X report auditable: the

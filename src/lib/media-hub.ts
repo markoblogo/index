@@ -21,8 +21,12 @@ export type MediaHubSnapshotCard = {
 
 export type MediaHubFeedItem = {
   id: string;
+  processingState?: "accepted_after_scoring" | "fallback_accepted" | "manually_injected";
+  rejectionReason?: string;
+  relevanceScore?: number;
   source: string;
   sourceType: string;
+  sourceUrl?: string;
   title: string;
   summary: string;
   time: string;

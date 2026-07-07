@@ -255,8 +255,11 @@ describe("1D3X Cortex contracts", () => {
           feed: [
             {
               id: "feed-1",
+              processingState: "accepted_after_scoring",
+              relevanceScore: 8,
               source: "World Grain",
               sourceType: "rss",
+              sourceUrl: "https://example.com/freight",
               summary: "Global grain logistics update.",
               tags: ["grains", "logistics"],
               time: "2026-07-06",
@@ -279,6 +282,7 @@ describe("1D3X Cortex contracts", () => {
     expect(pack.excluded.map((item) => item.evidenceId)).toEqual([
       "cortex:respondent-input:input-1",
       "cortex:calculation:calc-1",
+      "cortex:raw-feed:week:feed-1",
     ]);
     expect(pack.knownGaps).toEqual([]);
   });

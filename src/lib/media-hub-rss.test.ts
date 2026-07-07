@@ -4,6 +4,7 @@ import { __mediaHubRssTestHooks } from "@/lib/media-hub-rss";
 
 const {
   blueskyPostUrl,
+  buildWindow,
   canonicalizeUrl,
   dedupeItems,
   gdeltDocUrl,
@@ -181,6 +182,26 @@ describe("media hub RSS source hygiene", () => {
     expect(sources.find((source) => source.id === "mn7r_bluesky")).toMatchObject({
       handle: "mn7r.bsky.social",
       transport: "bluesky-author-feed",
+    });
+  });
+
+  it("keeps raw monitoring metadata on accepted feed items", () => {
+    const window = buildWindow([
+      item({
+        relevanceScore: 8,
+        title: "Ukraine wheat exports rise through Odesa ports",
+        url: "https://example.com/wheat",
+      }),
+    ], Date.parse("2026-06-20T00:00:00.000Z"), "day", "Day", {
+      sources: [],
+      summaryScope: "ukraine",
+      timezone: "Europe/Kyiv",
+    });
+
+    expect(window.feed[0]).toMatchObject({
+      processingState: "accepted_after_scoring",
+      relevanceScore: 8,
+      sourceUrl: "https://example.com/wheat",
     });
   });
 

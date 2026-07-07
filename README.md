@@ -442,6 +442,8 @@ Cortex, but external model prompts receive only redacted, approved context.
 The first SSI DB slice is active through `src/lib/cortex-index-db-evidence.ts`,
 which exports redacted `PriceSubmission` and calculation-ledger evidence into
 MediaHub report context assembly.
+MediaHub RSS/runtime snapshots also carry raw monitoring metadata for Cortex:
+source URL, relevance score and accepted/fallback processing state.
 Internal agents and related ecosystem products can read saved Cortex context
 packs through `GET /api/internal/cortex/context-packs` with
 `CORTEX_INTERNAL_API_SECRET` or `CRON_SECRET`; use `includePack=1` only for
