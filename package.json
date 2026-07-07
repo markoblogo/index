@@ -28,6 +28,7 @@
     "audit:respondent": "tsx scripts/respondent-telegram-audit.ts",
     "cortex:context-pack": "tsx scripts/cortex-context-pack.ts",
     "cortex:memory-search": "tsx scripts/cortex-memory-search.ts",
+    "cortex:mn7r-snapshot-chunk": "tsx scripts/cortex-mn7r-snapshot-chunk.ts",
     "cortex:source-chunk": "tsx scripts/cortex-source-chunk.ts",
     "cortex:source-ingest": "tsx scripts/cortex-source-ingest.ts",
     "cortex:source-scan": "tsx scripts/cortex-source-scan.ts",

@@ -464,6 +464,11 @@ changed sources for the next chunking/RAG stage.
 Run `npm run cortex:source-chunk -- --all` for the first full local chunk
 manifest, or `npm run cortex:source-chunk` after ingest to process only queued
 changes into `.cortex/chunk-manifest.json`.
+Run `npm run cortex:mn7r-snapshot-chunk -- --snapshot=.cortex/mn7r-source-snapshot.json --base=.cortex/chunk-manifest.json --out=.cortex/chunk-manifest.with-mn7r.json`
+after MN7R exports its protected source snapshot. This converts raw
+broker/operator/user inputs, business/lifecycle traces and bid/offer
+correlation signals into protected Cortex chunks and can merge them with the
+base Index/MN7R/Cr0pto memory artifact.
 Run `npm run cortex:memory-search -- --query="SSI report context"` to search
 local Cortex chunks with owner, kind and visibility filters before a vector
 store is introduced.

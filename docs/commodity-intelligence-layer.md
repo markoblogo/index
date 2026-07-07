@@ -153,6 +153,11 @@ and unchanged sources, and creating a chunking queue for the next RAG stage.
 manifest. Use `-- --all` for the first full seed. Unsupported binaries such as
 PDFs/images stay represented as skipped source results until dedicated
 extractors are added.
+`npm run cortex:mn7r-snapshot-chunk -- --snapshot=.cortex/mn7r-source-snapshot.json --base=.cortex/chunk-manifest.json --out=.cortex/chunk-manifest.with-mn7r.json`
+converts the protected MN7R source snapshot into Cortex chunks and can merge it
+with the base memory artifact. The snapshot must already be redacted by MN7R;
+Index treats every MN7R raw-source chunk as protected and relies on context-pack
+`allowProtected` gating before any external model sees it.
 `npm run cortex:memory-search -- --query="..."` is the first local retrieval
 surface over those chunks. It supports owner, source-kind and visibility
 filters and excludes `secret` chunks by default.
@@ -430,6 +435,8 @@ Acceptance:
   removed and unchanged counts plus a chunking queue;
 - `npm run cortex:source-chunk` writes a local chunk manifest from the queue,
   and `-- --all` can seed chunks across all supported text/code/doc sources;
+- `npm run cortex:mn7r-snapshot-chunk` converts the protected MN7R source
+  snapshot into chunks and can merge those chunks with the base memory manifest;
 - `npm run cortex:memory-search` can retrieve matching chunks with snippets and
   metadata filters before a vector database is added;
 - `npm run cortex:context-pack` can assemble bounded evidence from local memory
