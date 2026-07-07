@@ -144,9 +144,6 @@ export function ScenarioModelPanel({
             <h2 className="text-xl font-black uppercase leading-6 text-black">
               {text.title}
             </h2>
-            <p className="mt-2 max-w-3xl text-xs font-semibold leading-5 text-black/55">
-              {text.description}
-            </p>
           </div>
           <span className="rounded-full border border-black bg-uga-green px-3 py-1 text-[0.65rem] font-black uppercase tracking-[0.12em] !text-[#050505]">
             {read.confidence}
@@ -224,11 +221,8 @@ export function ScenarioModelPanel({
 
       <div className="mt-5 grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
         <div className="rounded-[1rem] border border-black bg-uga-mist p-4">
-          <p className="text-xs font-black uppercase tracking-[0.18em] text-black/45">
-            {text.marketRegime}
-          </p>
-          <h3 className="mt-3 text-2xl font-black uppercase leading-tight text-black">
-            {read.regime}
+          <h3 className="text-2xl font-black uppercase leading-tight text-black">
+            {text.priceAnalysis}
           </h3>
           <ul className="mt-4 grid gap-3 text-sm font-semibold leading-5 text-black/68">
             {read.summary.map((item) => (
@@ -917,6 +911,7 @@ function getCopy(locale: Locale) {
       noSeasonalData: "н/д",
       periodMove: "Рух періоду",
       periodMoveBody: (days: number) => `Зміна за останні ${days} точок архіву.`,
+      priceAnalysis: "Price Analysis",
       publishedLine: "опублікована історія",
       recentWindow: "останні точки",
       regimeCompression: "Spread compression",
@@ -998,6 +993,7 @@ function getCopy(locale: Locale) {
     noSeasonalData: "n/a",
     periodMove: "Period move",
     periodMoveBody: (days: number) => `Change across the latest ${days} archive points.`,
+    priceAnalysis: "Price Analysis",
     publishedLine: "published history",
     recentWindow: "recent window",
     regimeCompression: "Spread compression",

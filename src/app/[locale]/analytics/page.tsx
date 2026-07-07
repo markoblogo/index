@@ -316,30 +316,13 @@ export default async function AnalyticsPage({
       )}
 
       <section className="mx-auto max-w-7xl px-6 py-12 lg:px-8 lg:py-14">
-        <div className="grid gap-8 lg:grid-cols-[0.78fr_1.22fr]">
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-uga-green">
-              {copy.scenarioEyebrow}
-            </p>
-            <h2 className="mt-4 text-3xl font-black uppercase leading-tight tracking-normal text-black lg:text-4xl">
-              {copy.scenarioTitle}
-            </h2>
-            <p className="mt-4 text-sm leading-6 text-black/65">
-              {copy.scenarioBody}
-            </p>
-            <p className="mt-4 border border-black bg-uga-mist p-4 text-xs font-semibold leading-5 text-black/60">
-              {copy.scenarioDisclaimer}
-            </p>
-          </div>
-
-          {hasHistory ? (
-            <ScenarioModelPanelAsync
-              commodities={commodities}
-              history={history}
-              locale={locale}
-            />
-          ) : null}
-        </div>
+        {hasHistory ? (
+          <ScenarioModelPanelAsync
+            commodities={commodities}
+            history={history}
+            locale={locale}
+          />
+        ) : null}
       </section>
 
       <section className="mx-auto max-w-7xl px-6 py-12 lg:px-8 lg:py-14">
