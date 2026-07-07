@@ -2688,22 +2688,14 @@ export async function publishMonthlyMediaHubReport(periodEndDate: string) {
 let mediaHubReportStorageReady: Promise<void> | null = null;
 
 function revalidateMediaHubPublicViews() {
-  revalidatePath("/media-hub");
-  revalidatePath("/uk/media-hub");
-  revalidatePath("/en/media-hub");
-  revalidateTag("media-hub-report-summary", "max");
-  revalidateTag("media-hub-report-archive", "max");
-  revalidateTag("spike-media-hub-live", "max");
-  revalidateTag("id3x-media-hub-live", "max");
-  revalidateTag("public-index-data", "max");
+  ["/media-hub", "/uk/media-hub", "/en/media-hub"].forEach((path) => revalidatePath(path));
+  ["media-hub-report-summary", "media-hub-report-archive", "spike-media-hub-live", "id3x-media-hub-live", "public-index-data"]
+    .forEach((tag) => revalidateTag(tag, "max"));
 }
 
 async function ensureMediaHubReportStorage() {
-  mediaHubReportStorageReady ??= ensureMediaHubReportStorageUncached();
-
-  return mediaHubReportStorageReady;
+  return mediaHubReportStorageReady ??= ensureMediaHubReportStorageUncached();
 }
-
 async function ensureMediaHubReportStorageUncached() {
   await db.$executeRawUnsafe(`
     CREATE TABLE IF NOT EXISTS "MediaHubReport" (
