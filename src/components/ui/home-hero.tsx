@@ -171,15 +171,17 @@ function SpikeHomeHero({
     useState<SpikeCommodityView>("all-seasons");
   const copy = getHeroCopy(locale);
   const categories = [
-    ...getSpikeCommodityCategories(locale),
+    getSpikeCommodityCategories(locale)[0],
+    getSpikeCommodityCategories(locale)[2],
     {
       id: "chop-export" as const,
-      label: "Chop Export",
+      label: locale === "uk" ? "Чоп експорт" : "Chop Export",
       description:
         locale === "uk"
           ? "Прикордонні експортні індекси на базисі FCA Чоп, завантажено в європотяг."
           : "Border export indices on FCA Chop basis, loaded into a European train.",
     },
+    getSpikeCommodityCategories(locale)[1],
   ];
   const facts = [
     { label: "index", value: "live" },
@@ -194,8 +196,6 @@ function SpikeHomeHero({
       ),
     [commodities, selectedCategory],
   );
-  const categoryDescription =
-    categories.find((category) => category.id === selectedCategory)?.description ?? "";
 
   return (
     <section className="max-w-full overflow-x-hidden text-white [background:var(--spike-hero-bg)]">
@@ -222,16 +222,7 @@ function SpikeHomeHero({
 
         <div className="min-w-0 max-w-[calc(100vw-2rem)] py-4 lg:max-w-full">
           <div className="mb-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.28em] text-white/60">
-                {locale === "uk"
-                  ? "Grains Export / Oilseeds crush / Oilseeds Export / Chop Export"
-                  : "Grains Export / Oilseeds crush / Oilseeds Export / Chop Export"}
-              </p>
-              <p className="mt-1 text-sm font-semibold leading-5 text-white/65">
-                {activeIndex.home.officialNotice[locale]}
-              </p>
-            </div>
+            <div />
             <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-center">
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:w-[35rem]">
                 {facts.map((fact) => (
@@ -264,8 +255,8 @@ function SpikeHomeHero({
             </div>
           </div>
 
-          <div className="mb-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start">
-            <div className="flex flex-wrap gap-2">
+          <div className="mb-4 grid gap-2">
+            <div className="flex flex-wrap gap-2 lg:justify-end">
               {categories.map((category) => {
                 const active = category.id === selectedCategory;
 
@@ -285,8 +276,8 @@ function SpikeHomeHero({
                 );
               })}
             </div>
-            <p className="text-sm font-semibold leading-5 text-white/58 lg:text-right">
-              {categoryDescription}
+            <p className="max-w-[38rem] text-sm font-semibold leading-5 text-white/68 lg:ml-auto lg:text-right">
+              {activeIndex.home.officialNotice[locale]}
             </p>
           </div>
 

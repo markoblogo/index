@@ -730,7 +730,7 @@ export function getSpikeCommodityCategories(locale: Locale) {
   return [
     {
       id: "all-seasons" as const,
-      label: locale === "uk" ? "Grains Export" : "Grains Export",
+      label: locale === "uk" ? "Зернові експорт" : "Grains Export",
       description:
         locale === "uk"
           ? "Зернові експортні індекси CPT Port та FCA Чоп."
@@ -738,7 +738,7 @@ export function getSpikeCommodityCategories(locale: Locale) {
     },
     {
       id: "processors" as const,
-      label: locale === "uk" ? "Oilseeds crush" : "Oilseeds crush",
+      label: locale === "uk" ? "Олійні переробка" : "Oilseeds crush",
       description:
         locale === "uk"
           ? "Переробка: соя ГМО 37 протеїн; соняшник 48% сухої олії; ріпак 48% сухої олії, не ГМО. USD/t з ПДВ."
@@ -746,7 +746,7 @@ export function getSpikeCommodityCategories(locale: Locale) {
     },
     {
       id: "seasonal-export" as const,
-      label: locale === "uk" ? "Oilseeds Export" : "Oilseeds Export",
+      label: locale === "uk" ? "Олійні експорт" : "Oilseeds Export",
       description:
         locale === "uk"
           ? "Сезонні експортні позиції сої та ріпаку."
