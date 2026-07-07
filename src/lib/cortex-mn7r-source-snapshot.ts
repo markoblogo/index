@@ -32,7 +32,7 @@ export function buildCortexMn7rSnapshotChunkManifest(input: {
 }): CortexChunkManifest {
   const generatedAt = input.generatedAt ?? new Date().toISOString();
   const chunks = input.snapshot.evidence.map((evidence, index) =>
-    buildChunk(evidence, index, input.snapshot.generatedAt),
+    buildChunk(evidence, index),
   );
 
   return {
@@ -90,7 +90,6 @@ export function mergeCortexChunkManifests(input: {
 function buildChunk(
   evidence: CortexMn7rSnapshotEvidence,
   index: number,
-  snapshotGeneratedAt: string,
 ): CortexSourceChunk {
   const sourceHash = hashJson({
     id: evidence.id,
