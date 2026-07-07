@@ -62,7 +62,7 @@ function AiSubscriptionBlock({ locale }: { locale: Locale }) {
   const copy =
     locale === "uk"
       ? {
-          body: "MediaHub збирає Telegram-джерела, API/news monitoring, ручні матеріали редактора та опубліковані індекси, щоб формувати daily / weekly / monthly market context для SPIKE Spot Index.",
+          body: "Для MediaHub також планується підписка. Це продукт пояснення поточного контексту ринку: він збирає Telegram-джерела, API/news monitoring, ручні матеріали редактора та опубліковані індекси, щоб давати зважений daily / weekly / monthly контекст до змін індексів, поведінки цін на ринку і можливих майбутніх змін.",
           eyebrow: "MediaHub",
           items: [
             "daily / weekly / monthly market reports",
@@ -73,7 +73,7 @@ function AiSubscriptionBlock({ locale }: { locale: Locale }) {
           title: "MediaHub market context layer",
         }
       : {
-          body: "MediaHub combines Telegram sources, API/news monitoring, editor-submitted materials and published index data into daily / weekly / monthly market context for SPIKE Spot Index.",
+          body: "MediaHub is also planned as a subscription product. Its core value is explaining the current market context: it combines Telegram sources, API/news monitoring, editor-submitted materials and published index data into weighted daily / weekly / monthly context around index changes, price behavior and possible future market shifts.",
           eyebrow: "MediaHub",
           items: [
             "daily / weekly / monthly market reports",
