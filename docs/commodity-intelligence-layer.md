@@ -577,6 +577,33 @@ Blockers:
 
 - logging destination and retention policy.
 
+## Future Research: Local Small Model
+
+MiniMind and similar tiny open-source LLM training projects are a possible
+research path after the Cortex data, retrieval, context-pack, redaction and eval
+layers are working. This is not part of the MVP and should not replace OpenAI or
+the core RAG architecture.
+
+Potential uses:
+
+- local classifier/router for source type, relevance, product/domain ownership
+  and simple intent labels;
+- distilled assistant trained later from approved Cortex context packs, reviewed
+  OpenAI outputs, accepted recommendations and observed outcomes;
+- sandbox for understanding tokenizer, SFT, LoRA, tool-use and agentic-RL
+  training loops before any product commitment.
+
+Entry criteria before testing a MiniMind-like model:
+
+- Cortex has enough approved context packs and outcome records to form a
+  supervised dataset;
+- eval fixtures exist for report context, monitor-vs-index comparison and
+  execution context;
+- the model is evaluated only as router/classifier/distilled helper first, not
+  as the authoritative reasoning or autonomous execution layer;
+- protected/secret data handling remains enforced by Cortex visibility gates,
+  not by model behavior.
+
 ## MVP Acceptance Criteria
 
 The first MVP is complete when:
@@ -601,6 +628,9 @@ The first MVP is complete when:
 - Decide which MN7R and Cr0pto resources are safe for the first observe/learn
   sync.
 - Decide whether AnythingLLM is useful as an operator UI during discovery.
+- Decide whether a MiniMind-like local small model is worth testing after Cortex
+  has enough approved context-pack/action/outcome data for eval-backed
+  router/classifier/distillation experiments.
 - Define the first three high-value use cases:
   market report context, monitor-vs-index comparison and execution context are
   the recommended starting set.
