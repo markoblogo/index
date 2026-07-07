@@ -577,6 +577,36 @@ Blockers:
 
 - logging destination and retention policy.
 
+## Future Research: DSPy Eval Optimizer
+
+DSPy is a useful candidate for a later Cortex evaluation and optimization
+harness. It should be treated as an offline/research layer around saved Cortex
+context packs and fixtures, not as a required runtime dependency inside Index,
+MN7R or Cr0pto.
+
+Potential uses:
+
+- define structured signatures for `ContextPack -> AnswerWithEvidence`,
+  `MonitorSignals + IndexValues -> Comparison`, `Evidence -> KnownGaps` and
+  source relevance scoring;
+- optimize prompts, examples and multi-step report/comparison programs against
+  explicit Cortex eval fixtures;
+- compare OpenAI model variants and prompt/program versions using the same
+  evidence, redaction and known-gap requirements;
+- generate better router/classifier datasets before any MiniMind-like local
+  model or distillation experiment.
+
+Entry criteria before testing DSPy:
+
+- Cortex has saved context-pack artifacts for report context,
+  monitor-vs-index comparison and execution context;
+- expected outputs and grading metrics exist for evidence coverage,
+  unsupported-claim avoidance, redaction compliance and known-gap handling;
+- experiments run in a separate Python harness, for example
+  `experiments/cortex-dspy/`, and never bypass Cortex visibility gates;
+- winning prompts/programs are promoted only after deterministic regression
+  checks, not by ad hoc manual inspection.
+
 ## Future Research: Local Small Model
 
 MiniMind and similar tiny open-source LLM training projects are a possible
@@ -628,6 +658,8 @@ The first MVP is complete when:
 - Decide which MN7R and Cr0pto resources are safe for the first observe/learn
   sync.
 - Decide whether AnythingLLM is useful as an operator UI during discovery.
+- Decide whether DSPy should become the first offline optimizer/eval harness
+  once Cortex has enough saved context-pack fixtures and scoring metrics.
 - Decide whether a MiniMind-like local small model is worth testing after Cortex
   has enough approved context-pack/action/outcome data for eval-backed
   router/classifier/distillation experiments.
