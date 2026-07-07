@@ -7,6 +7,11 @@ import {
   getMediaHubWindowProgressLabel,
   type MediaHubWindowSnapshot,
 } from "@/lib/media-hub";
+import {
+  persistMediaHubMonitoringLedgerRecords,
+  type MediaHubMonitoringLedgerRecordInput,
+  type MediaHubMonitoringLedgerState,
+} from "@/lib/media-hub-monitoring-ledger";
 import { getPlatformBlogPosts } from "@/lib/platform-blog-posts";
 
 type FeedSourceCategory =
@@ -454,7 +459,8 @@ async function getRssMonitorItems(input: {
     input.includeLegacy ? getLegacyLast30DaysItems() : Promise.resolve([] as RssNewsItem[]),
   ]);
 
-  const scoredItems = dedupeItems([...fetched.flat(), ...legacyItems])
+  const dedupedItems = dedupeItems([...fetched.flat(), ...legacyItems]);
+  const scoredItems = dedupedItems
     .filter((item) => !isUnsafeMonitoringCandidate(item.title, item.summary))
     .sort((a, b) => b.relevanceScore - a.relevanceScore || Date.parse(b.publishedAt) - Date.parse(a.publishedAt));
   const highlyRelevant = scoredItems.filter((item) => item.relevanceScore >= 3);
@@ -468,12 +474,69 @@ async function getRssMonitorItems(input: {
           ? scoredItems.slice(0, 120)
           : [];
 
+  await persistMonitoringLedger(input.cacheKey, dedupedItems, items);
+
   cache.set(input.cacheKey, {
     generatedAt: Date.now(),
     items,
   });
 
   return dedupeItems([...items, ...extraItems]);
+}
+
+async function persistMonitoringLedger(cacheKey: string, candidates: RssNewsItem[], acceptedItems: RssNewsItem[]) {
+  const acceptedIds = new Set(acceptedItems.map((item) => item.id));
+  const runKey = `${cacheKey}:${new Date().toISOString()}`;
+  const records = candidates.slice(0, 500).map((item) => {
+    const unsafe = isUnsafeMonitoringCandidate(item.title, item.summary);
+    return toMonitoringLedgerRecord({
+      cacheKey,
+      item,
+      rejectionReason: unsafe
+        ? "unsafe_monitoring_candidate"
+        : acceptedIds.has(item.id)
+          ? null
+          : item.relevanceScore <= 0 ? "low_or_zero_relevance" : "outside_selected_window",
+      runKey,
+      state: unsafe
+        ? "rejected_unsafe"
+        : acceptedIds.has(item.id)
+          ? item.relevanceScore >= 3 ? "accepted_after_scoring" : "fallback_accepted"
+          : item.relevanceScore <= 0 ? "discarded_low_relevance" : "discarded_capacity",
+    });
+  });
+
+  try {
+    await persistMediaHubMonitoringLedgerRecords(records);
+  } catch (error) {
+    console.error("Failed to persist MediaHub monitoring ledger.", error);
+  }
+}
+
+function toMonitoringLedgerRecord(input: {
+  cacheKey: string;
+  item: RssNewsItem;
+  rejectionReason: string | null;
+  runKey: string;
+  state: MediaHubMonitoringLedgerState;
+}): MediaHubMonitoringLedgerRecordInput {
+  return {
+    cacheKey: input.cacheKey,
+    cropTags: input.item.cropTags,
+    itemId: input.item.id,
+    publishedAt: input.item.publishedAt,
+    regionTags: input.item.regionTags,
+    rejectionReason: input.rejectionReason,
+    relevanceScore: input.item.relevanceScore,
+    runKey: input.runKey,
+    source: input.item.source,
+    sourceType: input.item.category,
+    state: input.state,
+    summary: input.item.summary,
+    title: input.item.title,
+    topicTags: input.item.topicTags,
+    url: input.item.url,
+  };
 }
 
 function mapExtraItems(items: ExtraRssNewsItem[]): RssNewsItem[] {

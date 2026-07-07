@@ -235,6 +235,21 @@ describe("1D3X Cortex contracts", () => {
           tenantId: "spike-ua",
         },
       ],
+      monitoringLedgerEvidence: [
+        {
+          extractedAt: new Date("2026-07-06T09:00:00.000Z"),
+          id: "ledger-1",
+          processingState: "rejected_unsafe",
+          rejectionReason: "unsafe_monitoring_candidate",
+          relevanceScore: -4,
+          source: "Noise Feed",
+          sourceType: "agro-general",
+          sourceUrl: "https://example.com/noise",
+          summary: "Generic non-market noise.",
+          tags: ["noise"],
+          title: "Casino slot giveaway",
+        },
+      ],
       periodEndDate: "2026-07-06",
       periodStartDate: "2026-06-30",
       respondentInputs: [
@@ -282,6 +297,7 @@ describe("1D3X Cortex contracts", () => {
     expect(pack.excluded.map((item) => item.evidenceId)).toEqual([
       "cortex:respondent-input:input-1",
       "cortex:calculation:calc-1",
+      "cortex:monitoring-ledger:ledger-1",
       "cortex:raw-feed:week:feed-1",
     ]);
     expect(pack.knownGaps).toEqual([]);

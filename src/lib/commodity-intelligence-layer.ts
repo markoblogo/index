@@ -154,6 +154,19 @@ export type CortexMarketReportInput = {
     summary: string;
     tenantId: string;
   }>;
+  monitoringLedgerEvidence?: Array<{
+    extractedAt: Date;
+    id: string;
+    processingState: string;
+    rejectionReason?: string;
+    relevanceScore: number;
+    source: string;
+    sourceType: string;
+    sourceUrl?: string;
+    summary: string;
+    tags: string[];
+    title: string;
+  }>;
   calculationEvidence?: Array<{
     basis: string;
     calculatedAt: Date;
@@ -562,6 +575,7 @@ export function buildCortexMarketReportContextPack(
     ...buildRespondentInputEvidence(input),
     ...buildCalculationEvidence(input),
     ...buildManualMaterialEvidence(input),
+    ...buildMonitoringLedgerEvidence(input),
     ...buildRawMonitoringEvidence(input),
     ...buildMonitoringEvidence(input),
   ];
@@ -691,6 +705,29 @@ function buildRawMonitoringEvidence(input: CortexMarketReportInput): CortexEvide
     )
     .filter((item) => item.summary.length > 0)
     .slice(0, input.reportKind === "daily" ? 40 : input.reportKind === "weekly" ? 120 : 180);
+}
+
+function buildMonitoringLedgerEvidence(input: CortexMarketReportInput): CortexEvidenceItem[] {
+  return (input.monitoringLedgerEvidence ?? [])
+    .map((item) => ({
+      extractedAt: item.extractedAt.toISOString(),
+      id: `cortex:monitoring-ledger:${item.id}`,
+      sourceId: "mediahub-raw-monitoring-items",
+      summary: compactCortexText([
+        `source=${item.source}`,
+        `sourceType=${item.sourceType}`,
+        `state=${item.processingState}`,
+        `score=${item.relevanceScore}`,
+        item.rejectionReason ? `rejectionReason=${item.rejectionReason}` : null,
+        item.tags.length > 0 ? `tags=${item.tags.join(", ")}` : null,
+        item.summary,
+      ].filter(Boolean).join("; ")),
+      title: `MediaHub monitoring ledger: ${item.title}`,
+      urlOrPath: item.sourceUrl || `mediahub-monitoring-ledger:${item.id}`,
+      visibility: "protected" as const,
+    }))
+    .filter((item) => item.summary.length > 0)
+    .slice(0, input.reportKind === "daily" ? 80 : input.reportKind === "weekly" ? 180 : 260);
 }
 
 function buildManualMaterialEvidence(input: CortexMarketReportInput): CortexEvidenceItem[] {

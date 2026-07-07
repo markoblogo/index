@@ -444,6 +444,8 @@ which exports redacted `PriceSubmission` and calculation-ledger evidence into
 MediaHub report context assembly.
 MediaHub RSS/runtime snapshots also carry raw monitoring metadata for Cortex:
 source URL, relevance score and accepted/fallback processing state.
+`src/lib/media-hub-monitoring-ledger.ts` persists accepted, discarded and
+unsafe-rejected monitoring candidates for protected Cortex audit.
 Internal agents and related ecosystem products can read saved Cortex context
 packs through `GET /api/internal/cortex/context-packs` with
 `CORTEX_INTERNAL_API_SECRET` or `CRON_SECRET`; use `includePack=1` only for

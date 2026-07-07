@@ -11,6 +11,7 @@ import { buildCortexMemoryContextPack } from "@/lib/cortex-memory-context-pack";
 import { loadCortexRuntimeChunkManifest } from "@/lib/cortex-runtime-chunk-manifest";
 import { buildCortexIndexDbEvidence } from "@/lib/cortex-index-db-evidence";
 import { hasDatabaseUrl } from "@/lib/db";
+import { buildCortexMediaHubMonitoringLedgerEvidence } from "@/lib/media-hub-monitoring-ledger";
 import type { MediaHubWindowSnapshot } from "@/lib/media-hub";
 import type { MediaHubManualMaterialDigest } from "@/lib/media-hub-manual-materials";
 import { buildMediaHubReportPrompt } from "@/lib/media-hub-report-prompts";
@@ -54,10 +55,12 @@ export async function generateMediaHubLlmReports(input: {
   skippedReason?: string;
 }> {
   const indexDbEvidence = await loadIndexDbEvidenceForReport(input);
+  const monitoringLedgerEvidence = await loadMonitoringLedgerEvidenceForReport(input);
   const deterministicContextPack = buildCortexMarketReportContextPack({
     calculationEvidence: indexDbEvidence.calculationEvidence,
     latestData: input.latestData,
     manualMaterials: input.manualMaterials,
+    monitoringLedgerEvidence,
     periodEndDate: input.periodEndDate,
     periodStartDate: input.periodStartDate,
     respondentInputs: indexDbEvidence.respondentInputs,
@@ -266,6 +269,27 @@ async function loadIndexDbEvidenceForReport(input: {
   } catch (error) {
     console.error("Failed to load Cortex Index DB evidence.", error);
     return { calculationEvidence: [], respondentInputs: [] };
+  }
+}
+
+async function loadMonitoringLedgerEvidenceForReport(input: {
+  kind: MediaHubReportKind;
+  periodEndDate: string;
+  periodStartDate: string;
+}) {
+  if (!hasDatabaseUrl()) {
+    return [];
+  }
+
+  try {
+    return await buildCortexMediaHubMonitoringLedgerEvidence({
+      limit: input.kind === "daily" ? 120 : input.kind === "weekly" ? 300 : 600,
+      periodEndDate: input.periodEndDate,
+      periodStartDate: input.periodStartDate,
+    });
+  } catch (error) {
+    console.error("Failed to load Cortex MediaHub monitoring ledger evidence.", error);
+    return [];
   }
 }
 

@@ -117,8 +117,15 @@ RSS/monitoring feed items now carry source URL, relevance score and processing
 state (`accepted_after_scoring` or fallback/manual state). Cortex emits those
 records as protected `mediahub-raw-monitoring-items` evidence before the
 approved report-summary layer. This gives Cortex visibility into source
-selection and scoring. Full rejection-history analysis still requires a
-persisted monitoring ledger for discarded candidates and rejection reasons.
+selection and scoring.
+
+The first persisted MediaHub monitoring ledger is also active:
+`MediaHubMonitoringLedger` stores accepted, fallback, low-relevance,
+capacity-discarded and unsafe-rejected RSS/runtime candidates with source URL,
+score, tags and rejection reason. `buildCortexMediaHubMonitoringLedgerEvidence`
+loads those records into Cortex report context as protected evidence, so
+rejected/discarded candidates are auditable without leaking them into external
+OpenAI prompts by default.
 
 The first persistence slice is also active for MediaHub reports:
 `MediaHubReport.contentJson.llm.cortexContextPack` stores the exact Cortex
