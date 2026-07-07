@@ -438,6 +438,8 @@ function MovementSummary({
   history: AnalyticsPoint[];
   locale: Locale;
 }) {
+  const activeIndex = getActiveIndexConfig();
+
   return (
     <div className="-mx-4 overflow-x-auto px-4 pb-2 [scrollbar-width:thin]">
       <div className="flex min-w-max gap-4">
@@ -456,15 +458,24 @@ function MovementSummary({
             latest.value - getCalendarLookbackPoint(commodityHistory, latest.date, 30).value;
           const ninetyDay =
             latest.value - getCalendarLookbackPoint(commodityHistory, latest.date, 90).value;
+          const blockLabel = getMovementCardBlockLabel(commodity, locale, activeIndex);
+          const vatLabel = locale === "uk" ? "з ПДВ" : "with VAT";
 
           return (
             <article
               className="min-h-[20rem] w-[17.5rem] rounded-[1.25rem] border border-black bg-[#050505] p-5 text-[#f8f8f2] shadow-[0_18px_55px_rgba(0,0,0,0.18)]"
               key={commodity.id}
             >
-              <p className="text-[0.66rem] font-black uppercase tracking-[0.24em] text-[var(--spike-accent)]">
-                {commodity.code}
-              </p>
+              <div className="flex min-h-6 flex-wrap items-center gap-2">
+                <span className="text-[0.66rem] font-black uppercase tracking-[0.2em] text-[var(--spike-accent)]">
+                  {blockLabel}
+                </span>
+                {commodity.vatIncluded ? (
+                  <span className="rounded-full border border-[var(--spike-pink)]/45 bg-[var(--spike-pink)]/12 px-2 py-0.5 text-[0.58rem] font-black uppercase tracking-[0.12em] text-[var(--spike-pink)]">
+                    {vatLabel}
+                  </span>
+                ) : null}
+              </div>
               <h3 className="mt-5 min-h-[3.5rem] text-2xl font-black uppercase leading-none tracking-tight text-[#f8f8f2]">
                 {commodity.name[locale]}
               </h3>
@@ -491,6 +502,28 @@ function MovementSummary({
       </div>
     </div>
   );
+}
+
+function getMovementCardBlockLabel(
+  commodity: Commodity,
+  locale: Locale,
+  activeIndex: ReturnType<typeof getActiveIndexConfig>,
+) {
+  const basis = getDeliveryBasisConfigForCommodityId(commodity.id, activeIndex);
+
+  if (basis.code === "FCA_CHOP_EXPORT") {
+    return locale === "uk" ? "Чоп експорт" : "Chop Export";
+  }
+
+  if (commodity.category === "processors") {
+    return locale === "uk" ? "Олійні переробка" : "Oilseeds crush";
+  }
+
+  if (commodity.category === "seasonal-export") {
+    return locale === "uk" ? "Олійні експорт" : "Oilseeds Export";
+  }
+
+  return locale === "uk" ? "Зернові експорт" : "Grains Export";
 }
 
 function MetricDelta({ label, value }: { label: string; value: number }) {

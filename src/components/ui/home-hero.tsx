@@ -353,7 +353,7 @@ function SpikeCommodityCard({
 }) {
   const displayCurrency = useCurrentDisplayCurrency();
   const hasValue = commodity.latest !== null;
-  const isBorderPosition = commodity.id === "corn-fca-chop";
+  const isBorderPosition = isChopExportCommodity(commodity);
   const isPositive = hasValue && commodity.absoluteChange > 0;
   const isFlat = hasValue && commodity.absoluteChange === 0;
   const trend = !hasValue || isFlat ? "flat" : isPositive ? "up" : "down";
@@ -414,6 +414,8 @@ function SpikeCommodityCard({
       ? "Поки немає даних для AI-нотатки."
       : "No data for AI note yet.");
   const currencyChipLabel = `${displayCurrency}/t`;
+  const blockLabel = getSpikeCardBlockLabel(commodity, locale);
+  const vatLabel = locale === "uk" ? "з ПДВ" : "with VAT";
 
   return (
     <article
@@ -425,15 +427,18 @@ function SpikeCommodityCard({
       />
       <div className="relative z-10 min-w-0">
         <div className="flex items-center justify-between gap-3">
-          <p
-            className={`text-[0.68rem] font-black uppercase tracking-[0.24em] ${tone.label}`}
-          >
-            {commodity.category === "processors"
-              ? "Oilseeds crush"
-              : commodity.category === "seasonal-export"
-                ? "Oilseeds Export"
-                : "Grains Export"}
-          </p>
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <span
+              className={`text-[0.68rem] font-black uppercase tracking-[0.2em] ${tone.label}`}
+            >
+              {blockLabel}
+            </span>
+            {commodity.vatIncluded ? (
+              <span className="rounded-full border border-white/14 bg-white/8 px-2 py-0.5 text-[0.56rem] font-black uppercase tracking-[0.1em] text-white/62">
+                {vatLabel}
+              </span>
+            ) : null}
+          </div>
           <span
             className={`rounded-full bg-white/10 px-2 py-1 text-[0.66rem] font-black ${tone.chip}`}
           >
@@ -529,6 +534,22 @@ function SpikeCommodityCard({
       </div>
     </article>
   );
+}
+
+function getSpikeCardBlockLabel(commodity: Commodity, locale: Locale) {
+  if (isChopExportCommodity(commodity)) {
+    return locale === "uk" ? "Чоп експорт" : "Chop Export";
+  }
+
+  if (commodity.category === "processors") {
+    return locale === "uk" ? "Олійні переробка" : "Oilseeds crush";
+  }
+
+  if (commodity.category === "seasonal-export") {
+    return locale === "uk" ? "Олійні експорт" : "Oilseeds Export";
+  }
+
+  return locale === "uk" ? "Зернові експорт" : "Grains Export";
 }
 
 function HeroIndexBoard({
