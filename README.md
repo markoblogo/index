@@ -424,6 +424,8 @@ Media Hub manual material intake is documented in
 [`docs/media-hub-manual-materials.md`](docs/media-hub-manual-materials.md).
 Browser-runtime policy for future MediaHub source extraction lives in
 [`docs/media-hub-browser-runtime.md`](docs/media-hub-browser-runtime.md).
+Optional SERP/search discovery policy lives in
+[`docs/media-hub-search-discovery.md`](docs/media-hub-search-discovery.md).
 Shared Index/MediaHub terminology lives in
 [`docs/media-hub-domain-model.md`](docs/media-hub-domain-model.md), and
 risk-sensitive workflow changes should be checked against

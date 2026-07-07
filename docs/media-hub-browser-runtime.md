@@ -82,6 +82,10 @@ mode is not the primary parser, scraper or source monitor. It creates an
 offline evidence bundle so editors, QA and report reviewers can inspect what a
 public source looked like at collection time.
 
+Search/SERP discovery is a separate candidate-finding layer and is documented in
+[`media-hub-search-discovery.md`](media-hub-search-discovery.md). Discovery
+finds candidate URLs; snapshot mode preserves accepted source evidence.
+
 Use source snapshots for:
 
 - public or permissioned source pages that may change after collection;
