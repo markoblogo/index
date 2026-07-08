@@ -4,6 +4,7 @@ import { allowMockFallback, hasDatabaseUrl } from "@/lib/db";
 import { getFxRates } from "@/lib/fx-rates";
 import type { Locale } from "@/lib/i18n";
 import { getActiveIndexConfig } from "@/lib/index-platform";
+import { getLatestPublishedMediaHubReportSummary } from "@/lib/media-hub-publication-scheduler";
 import { commodities, type Commodity, type CommodityId } from "@/lib/mock-data";
 import { getPublicHistoryData } from "@/lib/public-api-data";
 import { getActiveRespondentCountData } from "@/lib/respondent-directory-lazy";
@@ -152,6 +153,11 @@ export default async function AnalyticsPage({
   const copy = getAnalyticsCopy(locale);
   const volatilityWindow = normalizeVolatilityWindow(queryParams.volatilityWindow);
   const fxRatesPromise = getFxRates();
+  const mediaHubSummaryPromise = getLatestPublishedMediaHubReportSummary({
+    kind: "daily",
+    locale,
+    tenantId: "spike-ua",
+  });
   const respondentCountPromise = getActiveRespondentCountData();
   const activeRespondentCount = await respondentCountPromise;
   const useFullHistory =
@@ -159,7 +165,10 @@ export default async function AnalyticsPage({
     queryParams.experimentalAnalytics === "1" ||
     queryParams.aiAnalytics === "1";
   const history = await getAnalyticsHistory(activeRespondentCount, useFullHistory);
-  const fxRates = await fxRatesPromise;
+  const [fxRates, mediaHubSummary] = await Promise.all([
+    fxRatesPromise,
+    mediaHubSummaryPromise,
+  ]);
   const snapshot = buildMarketSnapshot(
     history,
     locale,
@@ -326,6 +335,7 @@ export default async function AnalyticsPage({
             commodities={commodities}
             history={history}
             locale={locale}
+            mediaHubHighlights={mediaHubSummary?.summaryBody.slice(0, 4) ?? []}
           />
         ) : null}
       </section>

@@ -15,6 +15,7 @@ type ScenarioModelPanelProps = {
   commodities: Commodity[];
   history: ScenarioSourcePoint[];
   locale: Locale;
+  mediaHubHighlights?: string[];
 };
 
 type SpreadDefinition = {
@@ -83,6 +84,7 @@ export function ScenarioModelPanel({
   commodities,
   history,
   locale,
+  mediaHubHighlights = [],
 }: ScenarioModelPanelProps) {
   const [mode, setMode] = useState<"commodity" | "spread">("commodity");
   const [commodityId, setCommodityId] = useState<CommodityId>(
@@ -113,8 +115,8 @@ export function ScenarioModelPanel({
     [period, series],
   );
   const read = useMemo(
-    () => buildMarketRead(series, sample, text, mode),
-    [mode, sample, series, text],
+    () => buildMarketRead(series, sample, text, mode, mediaHubHighlights),
+    [mediaHubHighlights, mode, sample, series, text],
   );
   const chartValues =
     sample.length > 0
@@ -144,6 +146,9 @@ export function ScenarioModelPanel({
             <h2 className="text-xl font-black uppercase leading-6 text-black">
               {text.title}
             </h2>
+            <p className="mt-1 max-w-3xl text-xs font-semibold leading-5 text-black/55">
+              {text.description}
+            </p>
           </div>
           <span className="rounded-full border border-black bg-uga-green px-3 py-1 text-[0.65rem] font-black uppercase tracking-[0.12em] !text-[#050505]">
             {read.confidence}
@@ -312,7 +317,7 @@ export function ScenarioModelPanel({
       </div>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {read.drivers.map((driver) => (
+        {read.drivers.filter((driver) => driver.value !== text.noSeasonalData).map((driver) => (
           <div
             className="rounded-[0.95rem] border border-black bg-white p-3"
             key={driver.label}
@@ -415,6 +420,7 @@ function buildMarketRead(
   sample: MarketSeriesPoint[],
   text: ReturnType<typeof getCopy>,
   mode: "commodity" | "spread",
+  mediaHubHighlights: string[],
 ) {
   const latest = sample.at(-1)?.value ?? 0;
   const previous = sample.at(-2)?.value ?? latest;
@@ -499,12 +505,8 @@ function buildMarketRead(
     summary: [
       text.summaryCurrent(latest),
       text.summarySeasonal(seasonality.averageMove, seasonality.lookbackYears),
-      text.summarySimilarYear(
-        seasonality.bestYear,
-        seasonality.bestMove,
-        seasonality.confidence,
-      ),
-      regime.body,
+      text.summarySeasonContext(latest),
+      text.summaryMediaHub(mediaHubHighlights[0]),
     ],
   };
 }
@@ -884,6 +886,13 @@ function roundOne(value: number) {
   return Math.round(value * 10) / 10;
 }
 
+function trimSentence(value: string) {
+  const trimmed = value.replace(/^[•\-\s]+/, "").replace(/\s+/g, " ").trim();
+  const sentence = trimmed.split(/(?<=[.!?])\s+/)[0] ?? trimmed;
+
+  return sentence.length > 180 ? `${sentence.slice(0, 177).trim()}...` : sentence;
+}
+
 function getCopy(locale: Locale) {
   if (locale === "uk") {
     return {
@@ -899,7 +908,7 @@ function getCopy(locale: Locale) {
           : "MediaHub-контекст може пояснювати рух, але не змінює офіційне значення.",
       days: "днів",
       description:
-        "Публічний preview читає архів індексів, короткий імпульс, volatility та спреди. Це пояснення опублікованих даних, не прогноз.",
+        "AI Market Read пояснює поточний контекст ринку та зміни індексів. Надалі цей блок планується як частина платної аналітичної підписки.",
       indexMove: "Денний рух",
       indexMoveBody: (change: number) =>
         Math.abs(change) < 0.05
@@ -951,8 +960,14 @@ function getCopy(locale: Locale) {
         `30-денний імпульс: ${formatSigned(change)}. AI читає це як структурний рух, якщо він підтверджений кількома точками.`,
       summarySeasonal: (move: number | null, years: number) =>
         move === null
-          ? "Сезонний сценарій поки не рахується: у verified archive недостатньо зіставних майбутніх точок."
+          ? "Очікування сезонного руху на наступні 30 днів поки не показується через коротку опубліковану історію."
           : `За сезонністю ${years} попередніх років наступні 30 днів давали середній рух ${formatSigned(move)}.`,
+      summarySeasonContext: (value: number) =>
+        `Поточний рівень ${roundOne(value)} USD/t читається у контексті старту нового сезону, коли поява нового врожаю в Україні може стримувати ціну або посилювати волатильність.`,
+      summaryMediaHub: (highlight: string | undefined) =>
+        highlight
+          ? `Останній MediaHub-контекст: ${trimSentence(highlight)} Це може впливати на очікування попиту, логістики або премій у найближчі дні.`
+          : "Останні новини MediaHub будуть враховуватися тут після оновлення щоденного ринкового контексту.",
       summarySimilarYear: (
         year: number | null,
         move: number | null,
@@ -981,7 +996,7 @@ function getCopy(locale: Locale) {
         : "MediaHub context can explain movement, but does not change official values.",
     days: "days",
     description:
-      "Public preview reads index history, short momentum, volatility and spreads. It explains published data; it is not a forecast.",
+      "AI Market Read explains current market context and index moves. This block is planned to become part of the paid analytics subscription.",
     indexMove: "Daily move",
     indexMoveBody: (change: number) =>
       Math.abs(change) < 0.05
@@ -1033,8 +1048,14 @@ function getCopy(locale: Locale) {
       `30-day impulse: ${formatSigned(change)}. The AI read treats it as structural only when confirmed by several points.`,
     summarySeasonal: (move: number | null, years: number) =>
       move === null
-        ? "The seasonal scenario is not calculated yet: the verified archive lacks comparable forward points."
+        ? "The expected next-30-day seasonal move is not shown yet because the published history is still short."
         : `Across ${years} prior seasonal years, the next 30 days averaged ${formatSigned(move)}.`,
+    summarySeasonContext: (value: number) =>
+      `The current ${roundOne(value)} USD/t level is read in the context of the new-season start, when fresh Ukrainian crop supply can cap prices or increase volatility.`,
+    summaryMediaHub: (highlight: string | undefined) =>
+      highlight
+        ? `Latest MediaHub context: ${trimSentence(highlight)} This can affect demand, logistics or premium expectations in the coming days.`
+        : "Latest MediaHub news context will be reflected here after the daily market context is updated.",
     summarySimilarYear: (
       year: number | null,
       move: number | null,
