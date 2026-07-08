@@ -221,15 +221,15 @@ function SpikeHomeHero({
         </div>
 
         <div className="min-w-0 max-w-[calc(100vw-2rem)] py-4 lg:max-w-full">
-          <div className="mb-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+          <div className="mb-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
             <div className="grid gap-2">
-              <div className="flex flex-wrap gap-2 lg:justify-start">
+              <div className="flex flex-wrap gap-1.5 lg:justify-start">
                 {categories.map((category) => {
                   const active = category.id === selectedCategory;
 
                   return (
                     <button
-                      className={`rounded-full border px-4 py-2 text-xs font-black uppercase tracking-[0.14em] transition ${
+                      className={`rounded-full border px-3 py-1.5 text-[0.62rem] font-black uppercase leading-none tracking-[0.12em] transition ${
                         active
                           ? "border-[var(--spike-accent)] bg-[var(--spike-accent)] !text-[#050505]"
                           : "border-white/18 bg-black/18 text-white/72 hover:border-white/38 hover:text-white"
