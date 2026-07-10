@@ -53,7 +53,7 @@ function fixtureChunkManifest(): CortexChunkManifest {
         sourceHash: "s1",
         sourceId: "ecosystem-site-content",
         sourceKind: "site-content",
-        text: "The market report context connects SSI, 1D3X and MediaHub evidence.",
+        text: "The market report context connects SSI, 1D3X and Context evidence.",
         title: "report.md",
         tokenEstimate: 16,
         visibility: "internal",

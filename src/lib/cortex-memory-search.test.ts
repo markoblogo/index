@@ -35,7 +35,7 @@ describe("cortex memory search", () => {
         sourceKind: [],
         visibility: [],
       },
-      query: "MediaHub",
+      query: "Context",
     });
 
     expect(response.totals.searchedChunks).toBe(2);
@@ -57,7 +57,7 @@ function fixtureChunkManifest(): CortexChunkManifest {
         sourceHash: "s1",
         sourceId: "ecosystem-site-content",
         sourceKind: "site-content",
-        text: "The market report context connects SSI, 1D3X and MediaHub evidence.",
+        text: "The market report context connects SSI, 1D3X and Context evidence.",
         title: "report.md",
         tokenEstimate: 16,
         visibility: "internal",
@@ -73,7 +73,7 @@ function fixtureChunkManifest(): CortexChunkManifest {
         sourceHash: "s2",
         sourceId: "ecosystem-code-snapshots",
         sourceKind: "code",
-        text: "export const label = 'MediaHub';",
+        text: "export const label = 'Context';",
         title: "page.tsx",
         tokenEstimate: 8,
         visibility: "internal",

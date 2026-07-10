@@ -137,7 +137,7 @@ function fixtureChunkManifest() {
         sourceHash: "s1",
         sourceId: "ecosystem-site-content",
         sourceKind: "site-content",
-        text: "The SSI report context connects Index and MediaHub evidence.",
+        text: "The SSI report context connects Index and Context evidence.",
         title: "report.md",
         tokenEstimate: 16,
         visibility: "internal",

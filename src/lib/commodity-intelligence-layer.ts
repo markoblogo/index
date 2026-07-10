@@ -210,7 +210,7 @@ export type CortexMarketReportInput = {
 
 export const CORTEX_PROJECT_RESOURCES: CortexProjectResource[] = [
   {
-    description: "Shared benchmark, MediaHub, analytics and public reporting platform.",
+    description: "Shared benchmark, Context, analytics and public reporting platform.",
     id: "index-platform",
     kind: "index-platform",
     name: "Index Platform",
@@ -242,10 +242,10 @@ export const CORTEX_PROJECT_RESOURCES: CortexProjectResource[] = [
     visibility: "internal",
   },
   {
-    description: "MediaHub source and evidence layer for market context.",
+    description: "Context source and evidence layer for market context.",
     id: "mediahub",
     kind: "market-media",
-    name: "MediaHub",
+    name: "Context",
     ownerProject: "index",
     visibility: "internal",
   },
@@ -312,7 +312,7 @@ export const CORTEX_INITIAL_SOURCES: CortexSource[] = [
     accessMode: "repo-docs",
     allowedActionModes: ["context-pack", "analysis", "draft"],
     cadence: "on-change",
-    description: "Cortex plan, MediaHub runtime policy, source audits and database docs.",
+    description: "Cortex plan, Context runtime policy, source audits and database docs.",
     id: "index-docs",
     resourceId: "index-platform",
     rightsNote: "Repo-local project documentation.",
@@ -327,18 +327,18 @@ export const CORTEX_INITIAL_SOURCES: CortexSource[] = [
     id: "mediahub-global-sources",
     resourceId: "mediahub",
     rightsNote: "Respect source rights, robots/ToS and source-specific retention notes.",
-    title: "MediaHub global source registry",
+    title: "Context global source registry",
     visibility: "public",
   },
   {
     accessMode: "raw-monitoring-snapshot",
     allowedActionModes: ["context-pack", "analysis"],
     cadence: "hourly",
-    description: "Raw monitored MediaHub items before report digesting: fetched RSS/API/search/Telegram candidates, source metadata, scores, tags and rejection reasons.",
+    description: "Raw monitored Context items before report digesting: fetched RSS/API/search/Telegram candidates, source metadata, scores, tags and rejection reasons.",
     id: "mediahub-raw-monitoring-items",
     resourceId: "mediahub",
     rightsNote: "Keep original source metadata, fetch time, URL and processing status; external model calls receive only approved excerpts after dedupe, relevance and rights checks.",
-    title: "MediaHub raw monitored items",
+    title: "Context raw monitored items",
     visibility: "protected",
   },
   {
@@ -422,11 +422,11 @@ export const CORTEX_INITIAL_SOURCES: CortexSource[] = [
     accessMode: "api-snapshot",
     allowedActionModes: ["context-pack", "analysis"],
     cadence: "daily",
-    description: "Derived correlations between MN7R monitor inputs, SSI respondent inputs, published index movements and MediaHub events.",
+    description: "Derived correlations between MN7R monitor inputs, SSI respondent inputs, published index movements and Context events.",
     id: "mn7r-index-correlation-signals",
     resourceId: "mn7r-monitor",
     rightsNote: "Use aggregate and redacted correlation features by default; raw event drill-down remains approval-gated.",
-    title: "MN7R/SSI/MediaHub correlation signals",
+    title: "MN7R/SSI/Context correlation signals",
     visibility: "protected",
   },
   {
@@ -499,7 +499,7 @@ export const CORTEX_INITIAL_SOURCES: CortexSource[] = [
     accessMode: "archive-snapshot",
     allowedActionModes: ["context-pack", "analysis", "draft"],
     cadence: "daily",
-    description: "Historical reports, MediaHub publications, index archives, source bundles, generated artifacts and retained snapshots.",
+    description: "Historical reports, Context publications, index archives, source bundles, generated artifacts and retained snapshots.",
     id: "ecosystem-content-archives",
     resourceId: "ecosystem-archives",
     rightsNote: "Keep immutable archive IDs, period coverage, source hashes and retention policy; never overwrite historical evidence in place.",
@@ -698,7 +698,7 @@ function buildRawMonitoringEvidence(input: CortexMarketReportInput): CortexEvide
           item.tags.length > 0 ? `tags=${item.tags.join(", ")}` : null,
           item.summary,
         ].filter(Boolean).join("; ")),
-        title: `Raw MediaHub item: ${item.title}`,
+        title: `Raw Context item: ${item.title}`,
         urlOrPath: item.sourceUrl || `mediahub-raw-feed:${snapshot.window}:${item.id}`,
         visibility: "protected" as const,
       })),
@@ -722,7 +722,7 @@ function buildMonitoringLedgerEvidence(input: CortexMarketReportInput): CortexEv
         item.tags.length > 0 ? `tags=${item.tags.join(", ")}` : null,
         item.summary,
       ].filter(Boolean).join("; ")),
-      title: `MediaHub monitoring ledger: ${item.title}`,
+      title: `Context monitoring ledger: ${item.title}`,
       urlOrPath: item.sourceUrl || `mediahub-monitoring-ledger:${item.id}`,
       visibility: "protected" as const,
     }))
@@ -743,7 +743,7 @@ function buildManualMaterialEvidence(input: CortexMarketReportInput): CortexEvid
           ? "mediahub-telegram-materials"
           : "index-docs",
         summary: compactCortexText(material.summary || material.extractedText),
-        title: `MediaHub material: ${label}`,
+        title: `Context material: ${label}`,
         urlOrPath: material.originalUrl || `mediahub-material:${material.id}`,
         visibility: "internal" as const,
       };
@@ -781,7 +781,7 @@ function buildMarketReportKnownGaps(
     gaps.push("No published SSI index values were included in this report context.");
   }
   if (!evidence.some((item) => item.sourceId === "mediahub-global-sources")) {
-    gaps.push("No monitored MediaHub feed evidence was included.");
+    gaps.push("No monitored Context feed evidence was included.");
   }
   return gaps;
 }

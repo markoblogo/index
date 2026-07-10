@@ -35,18 +35,18 @@ This means:
 ## Coverage Requirement
 
 Cortex should study and continuously track the whole agro-commodity ecosystem,
-not only MediaHub feeds or report inputs. The target memory surface includes:
+not only Context feeds or report inputs. The target memory surface includes:
 
 - static public site content across 1D3X/SSI, MN7R, Cr0pto and smaller related
   ecosystem sites;
 - dynamic public and protected product data where a product-specific workflow
   explicitly allows ingestion;
-- raw MediaHub monitoring outputs before digesting: fetched items, source
+- raw Context monitoring outputs before digesting: fetched items, source
   metadata, scores, tags, rejection reasons and processing state;
 - SSI raw respondent/admin/imported inputs, calculation runs, basket inclusion
   decisions, revisions and publication locks, alongside published index values;
 - MN7R broker/operator/user inputs, quote/deal events and correlation features
-  between Monitor, SSI and MediaHub;
+  between Monitor, SSI and Context;
 - report archives, index archives, source snapshots, generated artifacts and
   historical bundles;
 - manuals, public guides, books, playbooks, uploaded PDFs and product teaching
@@ -70,7 +70,7 @@ time, but autonomy is a staged capability, not the default starting mode.
 
 1. `observe-learn`: read ecosystem data, build evidence memory, learn workflows,
    assemble bounded context packs and expose known gaps.
-2. `assist-propose`: work inside EXE assistant, Monitor AI chat, MediaHub report
+2. `assist-propose`: work inside EXE assistant, Monitor AI chat, Context report
    flows and future Cr0pto assistants together with external LLMs such as OpenAI
    API for answers, analysis, drafts and recommendations.
 3. `approval-gated-act`: prepare tool proposals that execute only through each
@@ -95,10 +95,10 @@ contract, visibility model and context-pack builder. This is intentionally
 small: it gives Index, MN7R and Cr0pto one shared contract before ingestion
 jobs, vector storage, API routes or operator UI are added.
 
-The first runtime slice is active in MediaHub report generation: before OpenAI
+The first runtime slice is active in Context report generation: before OpenAI
 drafting, `generateMediaHubLlmReports` builds a 1D3X Cortex report context pack
 from published index values, protected SSI DB evidence, `@idex_grains_bot` /
-manual materials and monitored MediaHub feeds. The prompt includes the approved
+manual materials and monitored Context feeds. The prompt includes the approved
 portion of that context pack with evidence IDs, source IDs, exclusions and known
 gaps.
 
@@ -112,14 +112,14 @@ protected records are available for Cortex analysis and audit, but remain
 excluded from external OpenAI prompt context unless a future workflow explicitly
 enables protected evidence after redaction/approval.
 
-The first raw MediaHub monitoring slice is active inside the report snapshots:
+The first raw Context monitoring slice is active inside the report snapshots:
 RSS/monitoring feed items now carry source URL, relevance score and processing
 state (`accepted_after_scoring` or fallback/manual state). Cortex emits those
 records as protected `mediahub-raw-monitoring-items` evidence before the
 approved report-summary layer. This gives Cortex visibility into source
 selection and scoring.
 
-The first persisted MediaHub monitoring ledger is also active:
+The first persisted Context monitoring ledger is also active:
 `MediaHubMonitoringLedger` stores accepted, fallback, low-relevance,
 capacity-discarded and unsafe-rejected RSS/runtime candidates with source URL,
 score, tags and rejection reason. `buildCortexMediaHubMonitoringLedgerEvidence`
@@ -127,16 +127,16 @@ loads those records into Cortex report context as protected evidence, so
 rejected/discarded candidates are auditable without leaking them into external
 OpenAI prompts by default.
 
-The first persistence slice is also active for MediaHub reports:
+The first persistence slice is also active for Context reports:
 `MediaHubReport.contentJson.llm.cortexContextPack` stores the exact Cortex
 snapshot used for the report. This makes each SSI/1D3X report auditable: the
 saved artifact shows which Telegram/API/index evidence reached OpenAI, which
 raw/protected sources were excluded and which known gaps existed at generation
 time.
 
-The first public product surface is also active: Index home and MediaHub pages
+The first public product surface is also active: Index home and Context pages
 now describe 1D3X Cortex as the market-context memory behind evidence-backed
-MediaHub reports. Public copy stays bounded: Cortex is presented as source
+Context reports. Public copy stays bounded: Cortex is presented as source
 memory, audit and gated assistant context, not as an autonomous public bot.
 
 The first ingestion artifact is available through `npm run cortex:source-scan`.
@@ -181,7 +181,7 @@ does not accept client-controlled filesystem paths or artifact URLs.
 
 1D3X Cortex should cover these resource families:
 
-- Index Platform: UGA Index, SPIKE SPOT INDEX, 1d3x landing, MediaHub,
+- Index Platform: UGA Index, SPIKE SPOT INDEX, 1d3x landing, Context,
   analytics, raw respondent inputs, index calculations, publication locks,
   respondent/publication workflows and docs.
 - MN7R Monitor: market monitoring, execution context, quote/deal events,
@@ -199,7 +199,7 @@ into prompts.
 
 - Train a private foundation model as the MVP.
 - Replace official Index methodology, index calculation or publication locks.
-- Replace MediaHub parsers with broad web cloning.
+- Replace Context parsers with broad web cloning.
 - Send secrets, raw private execution data, credentials or protected client data
   to external models.
 - Build an autonomous trading or execution bot.
@@ -226,7 +226,7 @@ The first shared vocabulary should be small and explicit:
   benchmark or indicative reference.
 - `ExecutionContext`: deal, task, route, counterparty, risk, checklist or report
   context assembled for MN7R/Cr0pto workflows.
-- `ReportContext`: bounded fact pack for Index, MediaHub or partner reporting.
+- `ReportContext`: bounded fact pack for Index, Context or partner reporting.
 - `Correction`: human feedback that fixes an entity, claim, source mapping or
   interpretation.
 
@@ -243,7 +243,7 @@ Use separate stores for separate responsibilities:
 - Event log for ingestion runs, corrections, model calls, context-pack creation
   and approval-sensitive actions.
 
-Current implementation note: MediaHub report context packs are persisted twice:
+Current implementation note: Context report context packs are persisted twice:
 inside the generated `MediaHubReport.contentJson` artifact and in
 `CortexContextPackLedger`, a separate DB-backed audit ledger keyed by tenant,
 entity, purpose, source IDs, visibility and pack hash. A broader retrieval and
@@ -261,9 +261,9 @@ Initial ingestion modes:
 - repo/docs sync for Index, MN7R, Cr0pto and smaller ecosystem repositories;
 - database/API snapshots for published values, raw respondent/admin/imported
   inputs, calculation ledgers, monitor values and safe internal facts;
-- MediaHub source ingestion, raw monitoring item snapshots and evidence
+- Context source ingestion, raw monitoring item snapshots and evidence
   snapshots;
-- 1D3X MediaHub Telegram bot intake through `@idex_grains_bot`, including
+- 1D3X Context Telegram bot intake through `@idex_grains_bot`, including
   `#ssi`, `#1d3x`, `#daily`, `#weekly` and `#monthly` routing for SSI and 1D3X
   reports;
 - manual uploads for PDFs, partner notes, reports and historical references;
@@ -334,11 +334,11 @@ bounded context source, not as a public API.
 
 ## Product Integrations
 
-### Index And MediaHub
+### Index And Context
 
 - Build evidence-backed market report context for daily, weekly and monthly
-  MediaHub outputs.
-- Present Cortex publicly inside Index/MediaHub as the evidence and context
+  Context outputs.
+- Present Cortex publicly inside Index/Context as the evidence and context
   memory behind reports, while keeping raw context packs and ledger reads
   internal.
 - Register public/dynamic site snapshots, manuals/books, archives, codebase
@@ -346,11 +346,11 @@ bounded context source, not as a public API.
 - Treat 1D3X/SSI Telegram bot materials as first-class report evidence: Cortex
   assembles the context pack from bot materials, monitored sources, index values
   and known gaps before OpenAI API is used for SSI/1D3X report drafting.
-- Analyze raw MediaHub monitoring items as well as report-ready summaries, so
+- Analyze raw Context monitoring items as well as report-ready summaries, so
   relevance scoring, rejection reasons and source drift are visible to Cortex.
-- Compare MediaHub events against published index movements, raw respondent
+- Compare Context events against published index movements, raw respondent
   inputs and calculation ledgers without changing official methodology.
-- Reuse the existing MediaHub browser runtime policy: Obscura for DOM/text/assets
+- Reuse the existing Context browser runtime policy: Obscura for DOM/text/assets
   extraction, Playwright for visual/auth/complex fallback.
 - Keep AI analytics as a preview layer unless explicitly promoted through
   product review.
@@ -361,9 +361,9 @@ bounded context source, not as a public API.
   surfaces as the shared context/tool layer.
 - Assemble execution context from monitor values, recent source evidence,
   broker/operator/user inputs, similar historical events, Index raw/calculated
-  data and MediaHub signals.
+  data and Context signals.
 - Build protected correlation features across MN7R inputs, SSI respondent
-  inputs, published index moves and MediaHub events before exposing only
+  inputs, published index moves and Context events before exposing only
   redacted/approved context to external models.
 - Produce checklists, deal-review briefs, risk notes and internal draft text
   through OpenAI only after Cortex returns a bounded, redacted context pack.
@@ -427,7 +427,7 @@ Blockers:
 
 Type: vertical slice
 
-Ingest Index docs, MediaHub source audits, database docs and implementation docs
+Ingest Index docs, Context source audits, database docs and implementation docs
 into evidence items and searchable chunks.
 
 Acceptance:
@@ -483,7 +483,7 @@ Current implementation:
 - `generateMediaHubLlmReports` returns the pack together with OpenAI generation
   metadata.
 - `buildSnapshotReportContent` persists the pack in
-  `contentJson.llm.cortexContextPack` for the generated MediaHub report.
+  `contentJson.llm.cortexContextPack` for the generated Context report.
 - `persistCortexContextPack` writes the same pack to
   `CortexContextPackLedger` as the first cross-product Cortex memory ledger.
 - `listCortexContextPackRecords` and
@@ -516,7 +516,7 @@ Blockers:
 
 Type: product capability
 
-Compare MN7R monitor signals, published Index values and MediaHub events for a
+Compare MN7R monitor signals, published Index values and Context events for a
 bounded date range.
 
 Acceptance:
@@ -644,9 +644,9 @@ Entry criteria before testing a MiniMind-like model:
 
 The first MVP is complete when:
 
-- at least Index docs/MediaHub and one MN7R resource family are registered;
+- at least Index docs/Context and one MN7R resource family are registered;
 - search can answer ecosystem questions with evidence IDs;
-- one report context pack can be built for Index/MediaHub;
+- one report context pack can be built for Index/Context;
 - one monitor-vs-index comparison works for a real commodity/basis;
 - OpenAI receives only a bounded, redacted context pack;
 - protected/secret data is excluded by default;

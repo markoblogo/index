@@ -1,6 +1,6 @@
-# MediaHub search discovery policy
+# Context search discovery policy
 
-MediaHub may use OpenSERP-style search collection as an optional discovery layer
+Context may use OpenSERP-style search collection as an optional discovery layer
 for SSI and 1D3X report sourcing. It must not become the primary scraper,
 parser, source monitor or evidence store.
 
@@ -21,21 +21,21 @@ Non-goals:
 - cloning search engines;
 - bypassing source restrictions;
 - treating SERP snippets as verified evidence;
-- replacing RSS, Telegram/manual intake, APIs, Obscura extraction or MediaHub
+- replacing RSS, Telegram/manual intake, APIs, Obscura extraction or Context
   parsers.
 
 ## Role split
 
 ```txt
 known sources / Telegram / RSS / APIs
-        -> MediaHub parser/extractor = structured data
+        -> Context parser/extractor = structured data
         -> optional search discovery = candidate URLs only
         -> Obscura/Playwright/static snapshot = evidence/repro artifact
         -> report generation + evidence validation
 ```
 
 Search discovery returns candidates. The canonical report input remains the
-structured data produced by MediaHub extraction and validation.
+structured data produced by Context extraction and validation.
 
 ## OpenSERP-style contract
 
@@ -101,7 +101,7 @@ type MediaHubSearchDiscoveryCandidate = {
 - Obscura is the preferred extraction runtime after a candidate URL is accepted.
 - Playwright/Chromium is fallback for JS-heavy pages, screenshots, e2e and
   complex visual verification.
-- MediaHub parser/extractor remains the only source of structured report data.
+- Context parser/extractor remains the only source of structured report data.
 
 ## Implementation posture
 
@@ -110,7 +110,7 @@ start with an admin/manual workflow:
 
 1. editor or operator runs a bounded search for one report window;
 2. candidates are reviewed or filtered by source policy;
-3. accepted URLs are extracted through MediaHub runtime policy;
+3. accepted URLs are extracted through Context runtime policy;
 4. extracted evidence, not SERP snippets, is used in reports.
 
 Only consider scheduled discovery after the manual workflow proves useful and

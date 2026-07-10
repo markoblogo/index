@@ -43,10 +43,10 @@ export function getSsiPublicManual(locale: Locale) {
           : ["AI Market Read shows the last 30 published days and a separately labelled 30-day seasonal path based on the three prior years.", "If a spread price is missing for a date, the latest available value is carried forward.", "AI Market Read is a public preview of the analytical layer, not a trading recommendation."],
       },
       {
-        title: uk ? "Що таке MediaHub" : "What MediaHub does",
+        title: uk ? "Що таке Context" : "What Context does",
         body: uk
-          ? "MediaHub окремо моніторить Telegram, RSS/API news, ручні матеріали редактора і файли, а потім формує daily / weekly / monthly контекст навколо ринку та руху індексів."
-          : "MediaHub separately monitors Telegram, RSS/API news, editor-submitted materials and files, then turns them into daily / weekly / monthly context around the market and index movement.",
+          ? "Context окремо моніторить Telegram, RSS/API news, ручні матеріали редактора і файли, а потім формує daily / weekly / monthly контекст навколо ринку та руху індексів."
+          : "Context separately monitors Telegram, RSS/API news, editor-submitted materials and files, then turns them into daily / weekly / monthly context around the market and index movement.",
         bullets: uk
           ? ["Daily report виходить після публікації індексу.", "Weekly/monthly report виходить у суботу і замінює daily у цей день.", "У Telegram SSI daily містить індекси дня + стислий індексний дайджест."]
           : ["Daily report is published after the index publication.", "Weekly/monthly report is published on Saturday and replaces daily on that day.", "SSI Telegram daily contains daily indices plus a concise index digest."],
@@ -74,12 +74,12 @@ export function getSsiAdminManual() {
       {
         title: "Daily publication schedule",
         body:
-          "Respondent Telegram collection happens before the publication window. Index publication and MediaHub generation are separated from respondent reminders.",
+          "Respondent Telegram collection happens before the publication window. Index publication and Context generation are separated from respondent reminders.",
         bullets: [
           "16:00 Kyiv — initial respondent Telegram request.",
           "17:00 Kyiv — respondent reminder.",
           "17:00 Kyiv — MN7R/Monitor import window.",
-          "19:00 Kyiv — final index calculation, public index publication, MediaHub daily generation and Telegram publishing.",
+          "19:00 Kyiv — final index calculation, public index publication, Context daily generation and Telegram publishing.",
         ],
       },
       {
@@ -104,9 +104,9 @@ export function getSsiAdminManual() {
         ],
       },
       {
-        title: "MediaHub workflow",
+        title: "Context workflow",
         body:
-          "MediaHub uses monitoring sources, manual Telegram/admin materials, files, index data and LLM summarization. Reports should not publish empty sections or 'data unavailable' filler.",
+          "Context uses monitoring sources, manual Telegram/admin materials, files, index data and LLM summarization. Reports should not publish empty sections or 'data unavailable' filler.",
         bullets: [
           "Daily SSI report is Ukrainian-first and tied to the day’s index movement.",
           "1D3X reports use global English monitoring and its own Telegram bot/chat configuration.",
@@ -138,16 +138,16 @@ export function getSsiHelpBlock(area: "analytics" | "mediaHub" | "adminResponden
         ? "Analytics пояснює опубліковані індекси: рух, волатильність, спреди та групову динаміку. Це не прогноз і не trading signal."
         : "Analytics explains published indices: movement, volatility, spreads and group dynamics. It is not a forecast or trading signal.",
       bullets: uk
-        ? ["Дані базуються на опублікованому архіві.", "AI Market Read є публічним preview.", "MediaHub відповідає за новинний контекст."]
-        : ["Data is based on the published archive.", "AI Market Read is a public preview.", "MediaHub covers the news context."],
+        ? ["Дані базуються на опублікованому архіві.", "AI Market Read є публічним preview.", "Context відповідає за новинний контекст."]
+        : ["Data is based on the published archive.", "AI Market Read is a public preview.", "Context covers the news context."],
       href: publicHref,
       cta: uk ? "Відкрити manual" : "Open manual",
     },
     mediaHub: {
-      title: uk ? "MediaHub коротко" : "MediaHub in short",
+      title: uk ? "Context коротко" : "Context in short",
       body: uk
-        ? "MediaHub моніторить джерела і формує daily / weekly / monthly контекст. На SSI він пояснює, що могло впливати на ринок і рух індексів."
-        : "MediaHub monitors sources and generates daily / weekly / monthly context. On SSI it explains what may have influenced the market and index movement.",
+        ? "Context моніторить джерела і формує daily / weekly / monthly контекст. На SSI він пояснює, що могло впливати на ринок і рух індексів."
+        : "Context monitors sources and generates daily / weekly / monthly context. On SSI it explains what may have influenced the market and index movement.",
       bullets: uk
         ? ["Daily — після публікації індексу.", "Weekly/monthly — у суботу.", "Monitoring feed залишається сирим джерельним шаром."]
         : ["Daily — after index publication.", "Weekly/monthly — on Saturday.", "Monitoring feed remains the raw source layer."],
@@ -162,7 +162,7 @@ export function getSsiHelpBlock(area: "analytics" | "mediaHub" | "adminResponden
       cta: "Open admin manual",
     },
     adminMediaHub: {
-      title: "MediaHub operations",
+      title: "Context operations",
       body: "Use this area for monitoring windows, source/material intake and daily/weekly/monthly report publication control.",
       bullets: ["Avoid empty report sections.", "Manual materials strengthen weekly/monthly reports.", "Telegram tags route materials to SSI and/or 1D3X."],
       href: "/admin/manual#mediahub-workflow",

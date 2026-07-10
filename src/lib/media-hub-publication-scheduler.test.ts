@@ -93,7 +93,7 @@ describe("media hub publication scheduler", () => {
     });
   });
 
-  it("runs monitoring only on business days in the MediaHub schedule timezone", () => {
+  it("runs monitoring only on business days in the Context schedule timezone", () => {
     expect(getMediaHubMonitoringPlan(new Date("2026-06-19T12:00:00.000Z"))).toMatchObject({
       allowed: true,
       date: "2026-06-19",
@@ -129,7 +129,7 @@ describe("media hub publication scheduler", () => {
     expect(normalizeMediaHubTelegramChatId("353706900")).toBe("353706900");
   });
 
-  it("stores the 1D3X Cortex context pack inside generated MediaHub report content", () => {
+  it("stores the 1D3X Cortex context pack inside generated Context report content", () => {
     const cortexContextPack = buildCortexMarketReportContextPack({
       manualMaterials: [
         {

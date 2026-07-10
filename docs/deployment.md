@@ -39,7 +39,7 @@ npm run check:production-env -- --project 1d3x
 ```
 
 The preflight does not print secret values. It fails closed for missing cron,
-webhook and WhatsApp secrets, and warns when MediaHub Telegram ingestion has no
+webhook and WhatsApp secrets, and warns when Context Telegram ingestion has no
 read allowlist. If Telegram autopost manual approval is disabled with
 `TELEGRAM_CONNECTOR_MANUAL_APPROVAL_REQUIRED=0`, an explicit
 `TELEGRAM_CONNECTOR_POST_CHAT_IDS` allowlist is required.
@@ -184,7 +184,7 @@ npm run check:production-env -- --project 1d3x
 
 4. Confirm messaging safety:
 
-- Telegram ingestion should be restricted by `TELEGRAM_CONNECTOR_READ_CHAT_IDS` or route-level MediaHub allowlists.
+- Telegram ingestion should be restricted by `TELEGRAM_CONNECTOR_READ_CHAT_IDS` or route-level Context allowlists.
 - Telegram autoposting without manual approval requires `TELEGRAM_CONNECTOR_POST_CHAT_IDS`.
 - SSI WhatsApp posting requires the Railway worker URL/secret and a persistent WhatsApp session volume.
 

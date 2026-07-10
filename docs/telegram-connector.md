@@ -1,6 +1,6 @@
 # Telegram connector
 
-Shared Telegram integration for MediaHub and index projects is based on `grammy`.
+Shared Telegram integration for Context and index projects is based on `grammy`.
 
 ## Input contract
 
@@ -48,7 +48,7 @@ Shared policy environment variables:
 - `TELEGRAM_CONNECTOR_POST_CHAT_IDS`: comma/space-separated chat IDs allowed for posting.
 - `TELEGRAM_CONNECTOR_MANUAL_APPROVAL_REQUIRED`: defaults to required; set to `0` to allow autoposting without explicit approval.
 
-MediaHub material ingestion still also supports the existing route-level allowlists:
+Context material ingestion still also supports the existing route-level allowlists:
 
 - `MEDIA_HUB_MATERIAL_ALLOWED_TELEGRAM_CHAT_IDS`
 - `MEDIA_HUB_MATERIAL_ALLOWED_TELEGRAM_USER_IDS`

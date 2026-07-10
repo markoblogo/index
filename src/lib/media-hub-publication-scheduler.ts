@@ -742,7 +742,7 @@ function buildSsiDailyIndexChangeOverview(
 function normalizeSsiWhatsAppFooter(tenant: "spike" | "platform", text: string) {
   if (tenant !== "spike") return text;
   const lines = text.split("\n");
-  const footerStart = lines.findIndex((line) => line.includes("AI-assisted Media Hub digest"));
+  const footerStart = lines.findIndex((line) => line.includes("AI-assisted Context digest"));
   const body = footerStart >= 0 ? lines.slice(0, footerStart) : lines;
   return [
     ...body.filter((line) => !/^<b>Spike Spot Index<\/b>$/.test(line.trim()) && !/^https:\/\/spike\.1d3x\.com\/?$/.test(line.trim())),
@@ -841,7 +841,7 @@ export async function publishMediaHubSnapshotReport(
     };
   } catch (error) {
     if (isPlatformSite()) {
-      console.warn("Falling back to transient 1D3X Media Hub report.", safeErrorMessage(error));
+      console.warn("Falling back to transient 1D3X Context report.", safeErrorMessage(error));
       return buildTransientPublishResult(kind, periodEndDate);
     }
     throw error;
@@ -1127,7 +1127,7 @@ async function buildTransientMediaHubSnapshotReport(
     tenantId,
   }).catch((error: unknown) => {
     if (!isPlatformSite()) throw error;
-    console.warn("Skipping 1D3X Media Hub manual materials.", safeErrorMessage(error));
+    console.warn("Skipping 1D3X Context manual materials.", safeErrorMessage(error));
     return [] as MediaHubManualMaterialDigest[];
   });
   const avoidPhrases = await getPreviousReportAvoidPhrases({
@@ -1135,7 +1135,7 @@ async function buildTransientMediaHubSnapshotReport(
     tenantId,
   }).catch((error: unknown) => {
     if (!isPlatformSite()) throw error;
-    console.warn("Skipping 1D3X Media Hub avoid phrases.", safeErrorMessage(error));
+    console.warn("Skipping 1D3X Context avoid phrases.", safeErrorMessage(error));
     return [] as string[];
   });
   const historicalSummaries = kind === "daily"
@@ -1277,7 +1277,7 @@ function buildSnapshotReportContent(input: {
       : (primary?.summaryBody ?? []);
   const title = primaryMergedLocalized?.title || primaryLocalized?.title || evidenceFallback?.title ||
     (nonDailyFallback?.title || primary?.summaryTitle ||
-      `Media Hub ${input.kind} report · ${input.periodStartDate}—${input.periodEndDate}`);
+      `Context ${input.kind} report · ${input.periodStartDate}—${input.periodEndDate}`);
   let validation = validateMediaHubReportClaims({
     evidence,
     reportText: getMediaHubReportTextForValidation({
@@ -1732,7 +1732,7 @@ function buildMediaHubTelegramText(input: {
   }
   const title =
     input.tenant === "platform"
-      ? `🌍 <b>1D3X Media Hub · ${reportKindLabel(input.kind, input.locale)}</b>`
+      ? `🌍 <b>1D3X Context · ${reportKindLabel(input.kind, input.locale)}</b>`
       : `🇺🇦 <b>SPIKE SPOT INDEX · ${reportKindLabel(input.kind, input.locale)}</b>`;
   const lines = [
     title,
@@ -1785,8 +1785,8 @@ function buildMediaHubTelegramText(input: {
   lines.push(
     "",
     isUk
-      ? "<i>AI-assisted Media Hub digest на базі опублікованих індексів, підключених джерел і редакторських фільтрів. Не є торговою рекомендацією.</i>"
-      : "<i>AI-assisted Media Hub digest based on index data, monitored sources and editorial filters. Not a trading recommendation.</i>",
+      ? "<i>AI-assisted Context digest на базі опублікованих індексів, підключених джерел і редакторських фільтрів. Не є торговою рекомендацією.</i>"
+      : "<i>AI-assisted Context digest based on index data, monitored sources and editorial filters. Not a trading recommendation.</i>",
     "",
     input.tenant === "platform"
       ? "<b>1D3X</b>\nhttps://1d3x.com/"
@@ -1971,7 +1971,7 @@ function fitSingleTelegramMessage(text: string) {
   }
 
   const lines = text.split("\n");
-  const footerStart = lines.findIndex((line) => line.includes("AI-assisted Media Hub digest"));
+  const footerStart = lines.findIndex((line) => line.includes("AI-assisted Context digest"));
   const footer = footerStart >= 0 ? lines.slice(footerStart) : [];
   const body = footerStart >= 0 ? lines.slice(0, footerStart) : lines;
   const requiredFooter = footer.length > 0 ? ["", ...footer] : [];
@@ -2284,7 +2284,7 @@ export async function getLatestPublishedMediaHubReportSummary(input: {
     };
   } catch (error) {
     if (isPlatformSite()) {
-      console.warn("Skipping latest 1D3X Media Hub report.", safeErrorMessage(error));
+      console.warn("Skipping latest 1D3X Context report.", safeErrorMessage(error));
       return null;
     }
     throw error;
@@ -2365,7 +2365,7 @@ export async function getMediaHubReportArchive(input: {
     });
   } catch (error) {
     if (isPlatformSite()) {
-      console.warn("Skipping 1D3X Media Hub archive.", safeErrorMessage(error));
+      console.warn("Skipping 1D3X Context archive.", safeErrorMessage(error));
       return [];
     }
     throw error;
@@ -2703,7 +2703,7 @@ export async function getMediaHubReport(
     return rows[0] ?? null;
   } catch (error) {
     if (tenantId === "1d3x") {
-      console.warn("Skipping 1D3X Media Hub report lookup.", safeErrorMessage(error));
+      console.warn("Skipping 1D3X Context report lookup.", safeErrorMessage(error));
       return null;
     }
     throw error;
@@ -2765,7 +2765,7 @@ function buildMonthlyReportContent(
     periodEndDate,
     periodStartDate,
     summary: [
-      `Monthly Media Hub digest covers ${digest.postCount} included monitoring items from ${activeChannels.length} active sources.`,
+      `Monthly Context digest covers ${digest.postCount} included monitoring items from ${activeChannels.length} active sources.`,
       topChannels.length > 0
         ? `Most active sources: ${topChannels.map((channel) => `${channel.channelHandle} (${channel.includedPostCount})`).join(", ")}.`
         : "No active source concentration was detected in the monthly window.",
@@ -2773,7 +2773,7 @@ function buildMonthlyReportContent(
         ? "Editorial focus should prioritize recurring logistics, export demand, crop/weather, policy and processing signals over one-off noise."
         : "Monthly report has insufficient included posts for a high-confidence editorial synthesis.",
     ],
-    title: `1D3X Media Hub Monthly Report · ${periodStartDate}—${periodEndDate}`,
+    title: `1D3X Context Monthly Report · ${periodStartDate}—${periodEndDate}`,
     topChannels: topChannels.map((channel) => ({
       handle: channel.channelHandle,
       includedPostCount: channel.includedPostCount,

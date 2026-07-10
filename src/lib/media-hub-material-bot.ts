@@ -28,7 +28,7 @@ export function parseMediaHubMaterialBotCommand(text?: string | null) {
 
 export function buildMediaHubMaterialHelpText() {
   return [
-    "Вітаємо. Це бот для надсилання матеріалів у Media Hub SSI та 1D3X.",
+    "Вітаємо. Це бот для надсилання матеріалів у Context SSI та 1D3X.",
     "",
     "Надсилайте сюди текст, цитати, посилання або файли, які треба врахувати в наступному weekly або monthly report.",
     "",

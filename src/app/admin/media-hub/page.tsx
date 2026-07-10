@@ -26,7 +26,7 @@ export default async function AdminMediaHubPage() {
           {mediaHub.brandName}
         </p>
         <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white">
-          Spike Media Hub
+          Spike Context
         </h1>
         <p className="mt-3 max-w-4xl text-sm leading-6 text-white/68">
           Unified editorial control surface for daily, weekly and rolling 30-day
@@ -69,7 +69,7 @@ export default async function AdminMediaHubPage() {
         />
         <HubCard
           cta="Open materials"
-          description="Telegram/admin intake for links and files used in next weekly or monthly Media Hub reports."
+          description="Telegram/admin intake for links and files used in next weekly or monthly Context reports."
           href="/admin/media-hub/materials"
           label="New"
           title="Materials"
@@ -82,7 +82,7 @@ export default async function AdminMediaHubPage() {
             Current IA
           </p>
           <p className="mt-3 text-sm leading-6 text-white/72">
-            Spike now moves from scattered analytics/report pages into one Media Hub
+            Spike now moves from scattered analytics/report pages into one Context
             with three time windows: day, week and 30 days.
           </p>
         </article>
@@ -92,7 +92,7 @@ export default async function AdminMediaHubPage() {
           </p>
           <p className="mt-3 text-sm leading-6 text-white/72">
             Hidden for UGA. Active for Spike now. The same architecture is intended
-            to become the basis for 1D3X Media Hub later.
+            to become the basis for 1D3X Context later.
           </p>
         </article>
         <article className="rounded-[1rem] border border-white/10 bg-black/20 p-4">

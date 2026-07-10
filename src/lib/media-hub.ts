@@ -99,7 +99,7 @@ const spikeUkWindows: MediaHubWindowSnapshot[] = [
     window: "day",
     label: "День",
     progressLabel: "1/1",
-    summaryTitle: "Щоденний звіт MediaHub",
+    summaryTitle: "Щоденний звіт Context",
     summaryBody: [
       "Фокус дня зміщений у бік логістики, портового попиту та обережної реакції фермерів на зниження в експортних позиціях.",
       "У зовнішньому інформаційному шарі домінують повідомлення про темпи експорту, погодні фактори та дискусії щодо поведінки продавців на кукурудзі й пшениці.",
@@ -174,7 +174,7 @@ const spikeUkWindows: MediaHubWindowSnapshot[] = [
     window: "week",
     label: "7 Днів",
     progressLabel: "7/7",
-    summaryTitle: "Тижневий звіт MediaHub",
+    summaryTitle: "Тижневий звіт Context",
     summaryBody: [
       "За тиждень ядро тем сконцентроване навколо портового попиту, балансу між експортом та переробкою, а також погодного ризику нового врожаю.",
       "Weekly report має збирати не просто текстовий реферат, а тематичні блоки: логістика, pricing, урожай, policy, міжнародний фон.",
@@ -239,11 +239,11 @@ const spikeUkWindows: MediaHubWindowSnapshot[] = [
     window: "month",
     label: "30 Днів",
     progressLabel: "30/30",
-    summaryTitle: "30-денний звіт MediaHub",
+    summaryTitle: "30-денний звіт Context",
     summaryBody: [
       "Місячний зріз повинен стати не архівом weekly, а окремою strategic intelligence surface: структурні зсуви в потоках, стійкі теми, найчастіше цитовані джерела та повторювані ризики.",
       "Саме тут потрібен найбільш щільний monitoring layer: сотні матеріалів, зрозуміла навігація по джерелах і візуальні патерни концентрації тем.",
-      "Це той шар, який має перевершити old Last30Days і стати ядром 1D3X Media Hub architecture.",
+      "Це той шар, який має перевершити old Last30Days і стати ядром 1D3X Context architecture.",
     ],
     sourceCount: 24,
     itemCount: 2384,
@@ -343,7 +343,7 @@ const platformWindows: MediaHubWindowSnapshot[] = [
     progressLabel: "1/1",
     summaryTitle: "Global commodity monitoring brief",
     summaryBody: [
-      "1D3X Media Hub is meant to become the global monitoring layer above local index projects: a tight daily read first, then the raw feed, then deeper archive modes.",
+      "1D3X Context is meant to become the global monitoring layer above local index projects: a tight daily read first, then the raw feed, then deeper archive modes.",
       "The day view should combine international commodity signals, logistics noise, policy events and repeated entity mentions into one operator-grade editorial surface.",
       "Unlike a local index product, the 1D3X version should aggregate English-language international sources and present them as a reusable intelligence engine.",
     ],
@@ -530,9 +530,9 @@ export function getMediaHubProfile(locale: Locale, selectedWindow: MediaHubWindo
   if (isPlatformSite()) {
     return {
       id: "1d3x",
-      brand: "1D3X Media Hub",
+      brand: "1D3X Context",
       eyebrow: "Global commodity intelligence layer",
-      title: "1D3X Media Hub",
+      title: "1D3X Context",
       description:
         "A unified day / 7 days / 30 days intelligence surface built for international commodity monitoring, source clustering and editorial outputs.",
       accentClassName: "text-[#d6ff58]",
@@ -556,9 +556,9 @@ export function getMediaHubProfile(locale: Locale, selectedWindow: MediaHubWindo
 
   return {
     id: "spike",
-    brand: "1D3X Media Hub",
+    brand: "1D3X Context",
     eyebrow: locale === "uk" ? "Локальний intelligence layer для Spike" : "Local intelligence layer for Spike",
-    title: "SPIKE Media Hub",
+    title: "SPIKE Context",
     description:
       locale === "uk"
         ? "Живий моніторинг день / 7 днів / 30 днів та редакційні звіти поверх SPIKE SPOT INDEX."
@@ -606,7 +606,7 @@ function translateSpikeWindow(window: MediaHubWindowKey) {
   return [
     "The monthly layer should become a strategic intelligence surface, not just an archive of weekly notes: stable flow shifts, recurring themes, most-cited sources and persistent risks.",
     "This is where the monitoring depth has to be highest: hundreds or thousands of items, strong source navigation and explainable visual patterns of thematic concentration.",
-    "This is the layer that must ultimately outperform the old Last30Days product and become the core of the 1D3X Media Hub architecture.",
+    "This is the layer that must ultimately outperform the old Last30Days product and become the core of the 1D3X Context architecture.",
   ];
 }
 

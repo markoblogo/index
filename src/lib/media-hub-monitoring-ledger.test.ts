@@ -15,7 +15,7 @@ vi.mock("@/lib/db", () => ({
   hasDatabaseUrl: () => true,
 }));
 
-describe("MediaHub monitoring ledger", () => {
+describe("Context monitoring ledger", () => {
   afterEach(() => {
     mocks.executeRaw.mockReset();
     mocks.queryRaw.mockReset();

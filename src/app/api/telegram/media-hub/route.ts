@@ -229,7 +229,7 @@ export async function POST(request: Request) {
         text,
       });
       if (tenantIds.length === 0) {
-        await sendTelegramText(botToken.value, String(message.chat.id), "Матеріал збережено як corporate Telegram unrouted. Додайте #ssi або #1d3x, щоб він автоматично потрапив у відповідний Media Hub report.");
+        await sendTelegramText(botToken.value, String(message.chat.id), "Матеріал збережено як corporate Telegram unrouted. Додайте #ssi або #1d3x, щоб він автоматично потрапив у відповідний Context report.");
         return NextResponse.json({ idempotencyKey, ok: true, skippedReason: "corporate_telegram_unrouted" });
       }
     }
@@ -804,7 +804,7 @@ function buildAccessDeniedText(message: TelegramMessage) {
   const userId = message.from?.id ? String(message.from.id) : "unknown";
   return [
     "Access denied.",
-    "This Media Hub bot accepts materials only from allowed Telegram users/chats.",
+    "This Context bot accepts materials only from allowed Telegram users/chats.",
     `Your chat id: ${String(message.chat.id)}.`,
     `Your user id: ${userId}.`,
     "Ask an admin to add the needed id to MEDIA_HUB_MATERIAL_ALLOWED_TELEGRAM_CHAT_IDS or MEDIA_HUB_MATERIAL_ALLOWED_TELEGRAM_USER_IDS.",

@@ -43,7 +43,7 @@ function PlatformHeader() {
             Live indices
           </Link>
           <Link className="text-[#d6ff58] transition hover:text-white" href="/media-hub">
-            Media Hub
+            Context
           </Link>
           <Link className="transition hover:text-white" href="/#methodology">
             Methodology

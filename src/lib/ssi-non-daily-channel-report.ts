@@ -250,7 +250,7 @@ function getMeta(kind: "weekly" | "monthly", locale: Locale) {
         partFooter: "<i>Spike Brokers – Ваш торговий партнер 🌎\nПродовження нижче ⬇️</i>",
       }
     : {
-        footer: "<i>AI-assisted SSI Media Hub digest based on index data, monitored sources and editorial filters. Not a trading recommendation.</i>\n\n🔗 <i>Powered by 1D3X Platform</i> · https://spike.1d3x.com/",
+        footer: "<i>AI-assisted SSI Context digest based on index data, monitored sources and editorial filters. Not a trading recommendation.</i>\n\n🔗 <i>Powered by 1D3X Platform</i> · https://spike.1d3x.com/",
         heading: `SPIKE BROKERS | ${title}`,
         partFooter: "<i>Continuation follows in the next part.</i>",
       };

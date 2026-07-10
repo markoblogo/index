@@ -14,7 +14,7 @@ export function SiteFooter({ locale }: { locale: Locale }) {
     { href: `/${locale}/methodology`, label: dict.nav.methodology },
     { href: `/${locale}/analytics`, label: dict.nav.analytics },
     ...(isSpike
-      ? [{ href: `/${locale}/media-hub`, label: "MediaHub" }]
+      ? [{ href: `/${locale}/media-hub`, label: "Context" }]
       : []),
     { href: `/${locale}/subscription`, label: dict.nav.subscription },
     ...(isSpike

@@ -1,4 +1,4 @@
-# Media Hub Donor Audit
+# Context Donor Audit
 
 ## Scope
 
@@ -45,8 +45,8 @@ This layer used many env variables and some providers likely need refreshed cred
 - Spike Telegram collector
 - unified source registry for day / week
 - monthly Telegram monitoring window
-- public `Spike Media Hub`
-- public `1D3X Media Hub`
+- public `Spike Context`
+- public `1D3X Context`
 - donor-style `Day / 7 Days / 30 Days` shell
 
 ### Newly transferred from donor
@@ -54,7 +54,7 @@ This layer used many env variables and some providers likely need refreshed cred
 - keyless RSS monitoring mesh for `1D3X`
 - relevance scoring model
 - broad international source list
-- real feed-driven public windows for `1D3X Media Hub`
+- real feed-driven public windows for `1D3X Context`
 
 Files:
 
@@ -206,7 +206,7 @@ No new secret is required to run the transferred RSS monitoring mesh.
 
 - selectively re-enable donor macro providers using fresh keys
 - do not blindly port every provider
-- start with USDA + WFP + Nasdaq / AlphaVantage only if the outputs are actually useful for Media Hub
+- start with USDA + WFP + Nasdaq / AlphaVantage only if the outputs are actually useful for Context
 
 ## Conclusion
 
@@ -216,4 +216,4 @@ The missing piece was real:
 - The donor backbone was not primarily “paid APIs”.
 - It was mostly the broad keyless feed mesh plus a second optional provider layer.
 
-That keyless layer is now beginning to move into the `index` repo via `1D3X Media Hub`.
+That keyless layer is now beginning to move into the `index` repo via `1D3X Context`.

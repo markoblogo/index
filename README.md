@@ -52,13 +52,13 @@ Shared capabilities:
 - public JSON APIs for latest values, history and FX rates;
 - analytics pages with historical values, spreads, movers, volatility and
   scenario views;
-- MediaHub pages for daily, weekly and monthly market-news context on 1D3X and
+- Context pages for daily, weekly and monthly market-news context on 1D3X and
   SPIKE;
-- MediaHub browser extraction policy that prefers Obscura for DOM/text/assets
+- Context browser extraction policy that prefers Obscura for DOM/text/assets
   extraction and keeps Playwright/Chromium for e2e, screenshots and fallback;
 - 1D3X Cortex layer for evidence-backed internal AI context, assistant tools
   and governed OpenAI API handoff across Index, MN7R Monitor, Cr0pto and related
-  agro-commodity resources, starting in observe/learn mode with MediaHub report
+  agro-commodity resources, starting in observe/learn mode with Context report
   context packs persisted into both report artifacts and the Cortex ledger. The
   Cortex source contract covers site content, dynamic product data, archives,
   manuals/books, codebases, development plans and approved action/event logs;
@@ -89,7 +89,7 @@ Spike-specific features:
 - Telegram-first respondent workflow through `@spike_spot_bot`;
 - admin and respondent password onboarding with temporary credentials;
 - auto-publication if no manual publish happens before the evening cut-off;
-- SSI MediaHub: unified Ukrainian/English source pool, Ukrainian and English
+- SSI Context: unified Ukrainian/English source pool, Ukrainian and English
   public localizations, and Ukrainian Telegram distribution;
 - public blog with mixed-language posts and language filtering;
 - SSI public manual at `/uk/manual` and `/en/manual`, plus admin manual at
@@ -186,7 +186,7 @@ Scheduled Spike processes:
 SSI manual maintenance rule:
 
 - update `src/lib/ssi-manual-content.ts` whenever SSI functionality, naming,
-  UI, schedules, publication logic, respondent workflow, MediaHub behavior or
+  UI, schedules, publication logic, respondent workflow, Context behavior or
   admin operations change;
 - update contextual help blocks in the same commit when the affected screen has
   a manual/help entry;
@@ -260,7 +260,7 @@ src/lib/commodity-intelligence-layer.ts  1D3X Cortex registry/context contract
 src/lib/cortex-source-scanner.ts  1D3X Cortex local source-manifest scanner
 src/lib/commodity-intelligence-ledger.ts  1D3X Cortex context-pack audit ledger
 src/lib/media-hub-llm-report.ts  OpenAI report path with Cortex context pack
-src/lib/media-hub-publication-scheduler.ts  MediaHub report persistence with Cortex audit snapshot
+src/lib/media-hub-publication-scheduler.ts  Context report persistence with Cortex audit snapshot
 src/app/api/internal/cortex/context-packs/route.ts  internal Cortex ledger read API
 src/lib/public-index-data.ts       public homepage and analytics data
 src/lib/admin-daily-inputs.ts      admin daily matrix data/actions
@@ -420,13 +420,13 @@ SPIKE_AI_INPUT_USD_PER_1M="0.4"
 SPIKE_AI_OUTPUT_USD_PER_1M="1.6"
 ```
 
-Media Hub manual material intake is documented in
+Context manual material intake is documented in
 [`docs/media-hub-manual-materials.md`](docs/media-hub-manual-materials.md).
-Browser-runtime policy for future MediaHub source extraction lives in
+Browser-runtime policy for future Context source extraction lives in
 [`docs/media-hub-browser-runtime.md`](docs/media-hub-browser-runtime.md).
 Optional SERP/search discovery policy lives in
 [`docs/media-hub-search-discovery.md`](docs/media-hub-search-discovery.md).
-Shared Index/MediaHub terminology lives in
+Shared Index/Context terminology lives in
 [`docs/media-hub-domain-model.md`](docs/media-hub-domain-model.md), and
 risk-sensitive workflow changes should be checked against
 [`docs/media-hub-review-checklist.md`](docs/media-hub-review-checklist.md).
@@ -437,14 +437,14 @@ context pack first, OpenAI API drafts the SSI/1D3X report from that approved
 context, and Index stores the Cortex snapshot for audit in the report artifact
 and `CortexContextPackLedger`.
 Cortex is also scoped to raw and calculated ecosystem data, not only finished
-reports: MediaHub raw monitored items, SSI respondent/admin/imported inputs,
+reports: Context raw monitored items, SSI respondent/admin/imported inputs,
 SSI calculation ledgers, MN7R broker/operator inputs and cross-product
 correlation signals are protected Cortex sources. They can be analyzed inside
 Cortex, but external model prompts receive only redacted, approved context.
 The first SSI DB slice is active through `src/lib/cortex-index-db-evidence.ts`,
 which exports redacted `PriceSubmission` and calculation-ledger evidence into
-MediaHub report context assembly.
-MediaHub RSS/runtime snapshots also carry raw monitoring metadata for Cortex:
+Context report context assembly.
+Context RSS/runtime snapshots also carry raw monitoring metadata for Cortex:
 source URL, relevance score and accepted/fallback processing state.
 `src/lib/media-hub-monitoring-ledger.ts` persists accepted, discarded and
 unsafe-rejected monitoring candidates for protected Cortex audit.
@@ -489,7 +489,7 @@ Internal products can request the same pack over
 `.cortex/chunk-manifest.json`, in that order. Use
 `CORTEX_CHUNK_MANIFEST_BEARER_TOKEN` when the hosted artifact needs a bearer
 token. The endpoint never accepts a client-provided manifest path or URL.
-Corporate Media Hub sources are also documented there, including MN7R Blog,
+Corporate Context sources are also documented there, including MN7R Blog,
 Spike Spot Index Blog, 1D3X Blog, MN7R Bluesky and the corporate Telegram group
 peer/chat-id handling.
 
@@ -497,14 +497,14 @@ Do not commit production secrets, connection strings or bot tokens. Use Vercel
 Environment Variables or an untracked local `.env` file for operational
 commands.
 
-## MediaHub
+## Context
 
-MediaHub is the shared news/context layer for `1d3x` and `spike-ua`.
+Context is the shared news/context layer for `1d3x` and `spike-ua`.
 It is separate from index analytics:
 
 - analytics pages explain published index values, history, volatility and
   spreads;
-- MediaHub monitors market news, Telegram channels, API/search providers, RSS
+- Context monitors market news, Telegram channels, API/search providers, RSS
   feeds and editor-submitted links/files;
 - uploaded PDFs/images/files are decomposed into `MediaHubManualMaterialAsset`
   rows: original material, extracted text, preview image slots and visual
@@ -512,13 +512,13 @@ It is separate from index analytics:
 - daily reports are published on business days;
 - weekly reports replace daily reports on weekly publication days;
 - monthly reports replace weekly reports on monthly publication days;
-- reports are persisted in `MediaHubReport` and rendered on public MediaHub
+- reports are persisted in `MediaHubReport` and rendered on public Context
   pages;
 - Telegram publication uses the same persisted report text, with SSI keeping
-  the deterministic index table before the MediaHub report.
+  the deterministic index table before the Context report.
 
-1D3X MediaHub covers global grains, oilseeds, vegetable oils, crop-weather,
-trade-policy and ag-logistics signals in English. SSI MediaHub uses a unified
+1D3X Context covers global grains, oilseeds, vegetable oils, crop-weather,
+trade-policy and ag-logistics signals in English. SSI Context uses a unified
 Ukrainian/English source pool for Ukraine-focused market context and renders
 localized reports on the Ukrainian and English Spike sites. Empty source-backed
 sections are omitted instead of publishing placeholder text.
@@ -535,9 +535,9 @@ Operational pieces:
 - docs: [`docs/media-hub-manual-materials.md`](docs/media-hub-manual-materials.md).
 
 `AiMarketBrief` remains an internal SPIKE index-data helper for admin/index-card
-context, but the public market-news product is MediaHub.
+context, but the public market-news product is Context.
 
-MediaHub and Index workflow changes should name the affected state explicitly:
+Context and Index workflow changes should name the affected state explicitly:
 `collect`, `normalize`, `generate`, `validate`, `publish-site` or
 `send-channel`. Site publication and external channel delivery are separate
 approval-sensitive actions; keep them separable in code, docs, endpoints and

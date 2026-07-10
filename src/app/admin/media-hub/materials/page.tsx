@@ -50,10 +50,10 @@ export default async function AdminMediaHubMaterialsPage() {
     <section className="grid gap-6">
       <header className="rounded-[1.5rem] border border-white/12 bg-[#050505] p-6">
         <p className="text-sm font-semibold uppercase tracking-[0.18em] text-uga-green">
-          Media Hub inputs
+          Context inputs
         </p>
         <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white">
-          Manual materials for Media Hub reports
+          Manual materials for Context reports
         </h1>
         <p className="mt-3 max-w-4xl text-sm leading-6 text-white/68">
           Use this page when Telegram upload is inconvenient or when you need

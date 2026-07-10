@@ -92,7 +92,7 @@ export function build1d3xDailyReportPrompt(input: {
   tenant: Tenant;
 }) {
   return [
-    "You write for 1D3X Media Hub. Write only in English. Scope is global grains, oilseeds, vegetable oils, physical/futures markets and logistics.",
+    "You write for 1D3X Context. Write only in English. Scope is global grains, oilseeds, vegetable oils, physical/futures markets and logistics.",
     "Create a compact daily market/news report. 1D3X has no index section; do not include SPIKE Spot Commodity Index Ukraine.",
     "Use API/scheduled materials as primary evidence when present. The report must discuss concrete market events, not only source counts or topic names.",
     "Ignore general trucking, LNG, crude/shadow-fleet, automotive, coal, infrastructure or finance stories unless they explicitly mention grains, oilseeds, vegetable oils, crop weather, export tenders, futures, ports/freight for agricultural commodities, or Black Sea grain flows.",

@@ -1,6 +1,6 @@
-# MediaHub and Index domain model
+# Context and Index domain model
 
-This document keeps the shared vocabulary for Index and MediaHub work. Use it
+This document keeps the shared vocabulary for Index and Context work. Use it
 when changing ingestion, calculation, report generation, site publication or
 channel delivery.
 
@@ -42,7 +42,7 @@ Expected boundaries:
   snapshot at send time, not stale saved report tables.
 - Site publication and channel sending are separate operations and must be named
   separately in docs, PRs and runbooks.
-- Daily MediaHub overview items must be current-period market signals, not old
+- Daily Context overview items must be current-period market signals, not old
   background facts.
 - Evidence and source freshness matter more than source volume.
 - Duplicate channel sends require explicit force/manual intent and idempotency

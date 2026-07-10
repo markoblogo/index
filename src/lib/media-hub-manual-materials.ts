@@ -275,7 +275,7 @@ export async function ingestMediaHubLinkMaterial(input: {
   const contentType = response.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() ?? "text/html";
   const bytes = Buffer.from(await response.arrayBuffer());
   if (bytes.length > getManualMaterialMaxBytes()) {
-    return buildResult(input.tenantId, input.kind, "failed", "File exceeds Media Hub material size limit.");
+    return buildResult(input.tenantId, input.kind, "failed", "File exceeds Context material size limit.");
   }
 
   const extraction = await extractMaterialContent({
@@ -308,7 +308,7 @@ export async function ingestMediaHubFileMaterial(input: {
   tenantId: MediaHubManualMaterialTenant;
 }) {
   if (input.bytes.length > getManualMaterialMaxBytes()) {
-    return buildResult(input.tenantId, input.kind, "failed", "File exceeds Media Hub material size limit.");
+    return buildResult(input.tenantId, input.kind, "failed", "File exceeds Context material size limit.");
   }
 
   const extraction = await extractMaterialContent(input);
@@ -788,7 +788,7 @@ async function extractMaterialContent(input: {
   if (mimeType.includes("csv") || filename.endsWith(".csv")) {
     const text = decodeText(input.bytes);
     return {
-      assets: buildTextAssets(text, "CSV text/table extracted for MediaHub evidence."),
+      assets: buildTextAssets(text, "CSV text/table extracted for Context evidence."),
       extractedFacts: extractFacts(text),
       extractedTables: [parseCsvTable(text)],
       extractedText: text.slice(0, MAX_EXTRACTED_TEXT_CHARS),
@@ -798,7 +798,7 @@ async function extractMaterialContent(input: {
   if (mimeType.includes("html") || filename.endsWith(".html") || filename.endsWith(".htm")) {
     const text = stripHtml(decodeText(input.bytes));
     return {
-      assets: buildTextAssets(text, "HTML text extracted for MediaHub evidence."),
+      assets: buildTextAssets(text, "HTML text extracted for Context evidence."),
       extractedFacts: extractFacts(text),
       extractedTables: [],
       extractedText: text.slice(0, MAX_EXTRACTED_TEXT_CHARS),
@@ -863,7 +863,7 @@ async function extractMaterialContent(input: {
 
   const text = decodeText(input.bytes);
   return {
-    assets: buildTextAssets(text, "Text extracted for MediaHub evidence."),
+    assets: buildTextAssets(text, "Text extracted for Context evidence."),
     extractedFacts: extractFacts(text),
     extractedTables: [],
     extractedText: text.slice(0, MAX_EXTRACTED_TEXT_CHARS),
@@ -1201,7 +1201,7 @@ async function fetchWithTimeout(url: string) {
   try {
     return await fetch(url, {
       headers: {
-        "User-Agent": "1D3X-MediaHub/1.0 (+https://1d3x.com)",
+        "User-Agent": "1D3X-Context/1.0 (+https://1d3x.com)",
       },
       redirect: "follow",
       signal: controller.signal,

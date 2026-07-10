@@ -78,7 +78,7 @@ export default async function AdminMediaHubMonthlyPage() {
     <section className="grid gap-6">
       <header className="rounded-[1.5rem] border border-white/12 bg-[#050505] p-6 shadow-2xl shadow-black/20">
         <p className="text-sm font-semibold uppercase tracking-[0.18em] text-uga-green">
-          1D3X Media Hub
+          1D3X Context
         </p>
         <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white">
           30-Day Monitoring Workspace

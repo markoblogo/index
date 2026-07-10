@@ -1,8 +1,8 @@
-# Media Hub Blueprint
+# Context Blueprint
 
 ## Goal
 
-Build a real `1D3X Media Hub` that is better than the legacy `Last30Days` product in both editorial usefulness and monitoring depth.
+Build a real `1D3X Context` that is better than the legacy `Last30Days` product in both editorial usefulness and monitoring depth.
 
 The target is not a reports landing page.
 The target is a living media-intelligence system with:
@@ -18,7 +18,7 @@ Each window must combine:
 - editor controls
 - publish workflows
 
-Browser extraction note: MediaHub browser tasks should prefer Obscura for
+Browser extraction note: Context browser tasks should prefer Obscura for
 JavaScript-rendered DOM/text/assets extraction and keep Playwright/Chromium for
 e2e, screenshots, visual/layout work and fallback. See
 `docs/media-hub-browser-runtime.md`.
@@ -124,7 +124,7 @@ e2e, screenshots, visual/layout work and fallback. See
 
 ### Admin page wireframe
 
-1. Media Hub overview bar
+1. Context overview bar
 2. Window tabs
 3. Run status row
 4. Summary workspace
@@ -349,7 +349,7 @@ e2e, screenshots, visual/layout work and fallback. See
 
 ## Existing Spike Areas To Merge Or Remove
 
-### Move into Media Hub
+### Move into Context
 
 - daily AI brief
 - weekly report workflow
@@ -404,7 +404,7 @@ e2e, screenshots, visual/layout work and fallback. See
 
 ### Phase 1
 
-- shared media hub domain model
+- shared Context domain model
 - shared public shell
 - site profiles for Spike and 1D3X
 
@@ -430,7 +430,7 @@ e2e, screenshots, visual/layout work and fallback. See
 ### Phase 5
 
 - remove duplicated Spike analytics surfaces
-- fold weekly article and report publishing into Media Hub
+- fold weekly article and report publishing into Context
 
 ### Phase 6
 
@@ -440,7 +440,7 @@ e2e, screenshots, visual/layout work and fallback. See
 
 This repository now starts that migration with:
 
-- a shared public `Media Hub` shell component
+- a shared public `Context` shell component
 - window switching for `day / week / month`
 - a Spike public surface
 - a 1D3X public surface

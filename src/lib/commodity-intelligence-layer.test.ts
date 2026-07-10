@@ -156,7 +156,7 @@ describe("1D3X Cortex contracts", () => {
           visibility: "public",
         },
       ],
-      knownGaps: ["No monitored MediaHub feed evidence was included."],
+      knownGaps: ["No monitored Context feed evidence was included."],
       purpose: "market-report",
       query: "spike:weekly",
     });
@@ -180,7 +180,7 @@ describe("1D3X Cortex contracts", () => {
 
     expect(merged.evidence.map((item) => item.id)).toEqual(["ev-index", "ev-memory"]);
     expect(merged.sourceIds).toEqual(["ecosystem-site-content", "published-index-values"]);
-    expect(merged.knownGaps).toEqual(["No monitored MediaHub feed evidence was included."]);
+    expect(merged.knownGaps).toEqual(["No monitored Context feed evidence was included."]);
     expect(merged.query).toBe("spike:weekly + corn freight context");
   });
 
@@ -316,6 +316,6 @@ describe("1D3X Cortex contracts", () => {
     expect(pack.knownGaps).toContain(
       "No Telegram bot materials were included for this report context.",
     );
-    expect(pack.knownGaps).toContain("No monitored MediaHub feed evidence was included.");
+    expect(pack.knownGaps).toContain("No monitored Context feed evidence was included.");
   });
 });

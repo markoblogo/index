@@ -59,11 +59,11 @@ npm run audit:production-env:ci
 | Public API reliability | Implemented | shared structured public responses, `no-store` on failures, ETag/conditional 304 support | runtime DB/network failures still need external monitoring |
 | External calls/timeouts | Implemented | shared fetch timeout applied to OpenAI, Telegram, Resend, WhatsApp, manual-material and source-collector paths | timeout values may need tuning under production load |
 | Telegram connector | Implemented | grammY connector with normalized input contract, idempotency key, read/post policy, outbound helpers, docs | production chat allowlists must be configured per tenant |
-| MediaHub ingestion | Implemented | text/link/file ingestion, PDF extraction isolated behind lazy module, SSRF guardrails | Poppler previews require host-level Poppler installation |
+| Context ingestion | Implemented | text/link/file ingestion, PDF extraction isolated behind lazy module, SSRF guardrails | Poppler previews require host-level Poppler installation |
 | SSI Telegram formatting | Implemented | daily/weekly publication code uses rounded public values and `$` formatting in publication-facing paths | generated AI prose can still mention units if prompts allow it; monitor live reports |
 | SSI WhatsApp worker | Implemented/documented | Railway worker docs and webhook delivery timeout path | WhatsApp Web session stability depends on Railway volume and linked device session |
 | Tenant boundary checks | Implemented | project-aware production env checker validates `NEXT_PUBLIC_SITE_URL` host set; `npm run audit:production-env:ci` checks all project profiles with safe dummy env | custom domains must be added to the checker before cutover |
-| Public/site documentation | Updated | deployment checklist, Telegram connector docs, MediaHub manual-material docs, repo audit notes | rendered production sites still require post-deploy smoke checks |
+| Public/site documentation | Updated | deployment checklist, Telegram connector docs, Context manual-material docs, repo audit notes | rendered production sites still require post-deploy smoke checks |
 | CI coverage | Implemented | GitHub Actions runs `npm run audit:all` | CI uses safe dummy env for preflight logic, not real production secrets |
 
 ## Not considered fully proven without production access

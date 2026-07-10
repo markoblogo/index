@@ -219,35 +219,35 @@ Implemented fixes:
 - removed unused `xlsx` dependency; XLSX uploads are currently treated as metadata-only materials and no code imports SheetJS;
 - changed cron/internal shared authorization to fail closed when no secret is configured; previously an empty secret list authorized the request, which made misconfigured cron endpoints unsafe;
 - added unit coverage for cron/admin bearer-token authorization and centralized admin Bearer auth in the shared fail-closed helper;
-- switched shared cron/admin/webhook secret comparison to timing-safe string comparison and made Telegram MediaHub/respondent webhooks fail closed when their webhook secret is missing;
+- switched shared cron/admin/webhook secret comparison to timing-safe string comparison and made Telegram Context/respondent webhooks fail closed when their webhook secret is missing;
 - added baseline security headers across all routes (`X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`) while keeping embed-specific CSP/frame rules separate;
 - narrowed `next/image` remote host policy from arbitrary `http/https` hosts to known HTTPS asset domains plus explicit `NEXT_IMAGE_ALLOWED_HOSTS` overrides;
-- expanded MediaHub manual-material URL safety checks to block localhost, single-label intranet hosts, private IPv4 ranges, link-local metadata IPs and private/link-local IPv6 targets before server-side fetching;
-- moved MediaHub PDF extraction's `child_process`/filesystem dependencies behind lazy imports so cron/API route tracing no longer pulls the whole project into the Turbopack NFT list;
+- expanded Context manual-material URL safety checks to block localhost, single-label intranet hosts, private IPv4 ranges, link-local metadata IPs and private/link-local IPv6 targets before server-side fetching;
+- moved Context PDF extraction's `child_process`/filesystem dependencies behind lazy imports so cron/API route tracing no longer pulls the whole project into the Turbopack NFT list;
 - wrapped public latest/history API routes with structured `503` responses and `Cache-Control: no-store` on data-loading failures, preventing generic uncaught 500s from being cached by edge/CDN layers;
 - added weak ETag support and conditional `304` responses for public JSON data routes, and aligned `/api/public/fx-rates` with the shared structured `503`/`no-store` response path;
 - disabled public AI market-brief auto-repair by default so public GET traffic cannot trigger OpenAI spend unless `SPIKE_AI_BRIEF_PUBLIC_AUTO_REPAIR=1` is explicitly enabled;
 - added a shared hashed in-memory request rate limiter and applied it to public contact and password-reset request endpoints, reducing email/workflow spam risk while avoiding storage of raw IP/email keys;
 - extended the same hashed request limiter to password reset completion and password setup POST endpoints to reduce token/password brute-force attempts;
-- added an abort timeout to the legacy Last30Days JSON MediaHub source so one slow external JSON endpoint cannot stall report-source collection;
+- added an abort timeout to the legacy Last30Days JSON Context source so one slow external JSON endpoint cannot stall report-source collection;
 - added a shared external fetch timeout helper and applied it to OpenAI report/brief generation, AI Telegram delivery and Resend contact delivery calls;
 - extended the shared external fetch timeout to Resend respondent schedule, respondent onboarding, password reset and Spike admin invite emails;
-- extended the shared external fetch timeout to Telegram delivery paths for SSI auto-publish fallback, respondent survey/confirmation messages, MediaHub report publishing and Telegram target smoke tests;
-- extended the shared external fetch timeout to MediaHub Telegram webhook API calls, including `getFile`, file download, bot status/setup calls and access-denied/submission replies;
+- extended the shared external fetch timeout to Telegram delivery paths for SSI auto-publish fallback, respondent survey/confirmation messages, Context report publishing and Telegram target smoke tests;
+- extended the shared external fetch timeout to Context Telegram webhook API calls, including `getFile`, file download, bot status/setup calls and access-denied/submission replies;
 - extended the shared external fetch timeout to weekly AI report OpenAI cover/text generation and weekly Telegram `sendPhoto`/`sendMessage` delivery calls;
 - extended the shared external fetch timeout to the internal Spike setup onboarding email and Telegram re-onboarding delivery calls;
-- extended the shared external fetch timeout to SSI WhatsApp MediaHub webhook delivery calls;
-- extended the shared external fetch timeout to MediaHub manual-material OpenAI visual summarization calls;
+- extended the shared external fetch timeout to SSI WhatsApp Context webhook delivery calls;
+- extended the shared external fetch timeout to Context manual-material OpenAI visual summarization calls;
 - extended the shared external fetch timeout to UGA demo-mode sync reads from the public SPIKE API;
 - extended the shared external fetch timeout to Telegram channel HTML source collection used by report-source collector jobs;
-- added a shared grammY-based Telegram connector for MediaHub/index Telegram work, including `message`/`channel_post` normalization, media/link/caption/forward extraction, `telegram:{chat_id}:{message_id}` idempotency keys, read/post policy checks and outbound `sendMessage`/`sendPhoto`/`sendDocument`/`copyMessage`/`forwardMessage` helpers;
-- split MediaHub PDF/Poppler extraction into a lazy `media-hub-pdf-extraction` module so scheduler/reporting imports of manual materials no longer carry `child_process`, temporary filesystem and Poppler preview code unless a PDF is actually ingested;
+- added a shared grammY-based Telegram connector for Context/index Telegram work, including `message`/`channel_post` normalization, media/link/caption/forward extraction, `telegram:{chat_id}:{message_id}` idempotency keys, read/post policy checks and outbound `sendMessage`/`sendPhoto`/`sendDocument`/`copyMessage`/`forwardMessage` helpers;
+- split Context PDF/Poppler extraction into a lazy `media-hub-pdf-extraction` module so scheduler/reporting imports of manual materials no longer carry `child_process`, temporary filesystem and Poppler preview code unless a PDF is actually ingested;
 - added npm overrides for vulnerable transitive tooling packages:
   - `@prisma/dev@0.24.14`;
   - `esbuild@^0.28.1`;
   - `@hono/node-server@^1.19.13`;
 - expanded the production environment checker into a project-aware preflight for `1d3x`, `spike-ua-index` and `uga-index`, including critical cron/webhook/WhatsApp/tenant-mode validation without printing secret values;
-- extended the production environment checker with Telegram connector safety checks: warning on unrestricted MediaHub Telegram ingestion and failure when manual autopost approval is disabled without explicit post target allowlist;
+- extended the production environment checker with Telegram connector safety checks: warning on unrestricted Context Telegram ingestion and failure when manual autopost approval is disabled without explicit post target allowlist;
 - extended the production environment checker with project/domain boundary validation so `NEXT_PUBLIC_SITE_URL` must match the expected host set for `1d3x`, `spike-ua-index` or `uga-index`;
 - upgraded `npm run audit:repo` from an informational report into a threshold-based repo health gate covering `public/` payload size, single public asset size, largest source-file size and minimum test count. Thresholds are configurable through `REPO_AUDIT_MAX_PUBLIC_MB`, `REPO_AUDIT_MAX_PUBLIC_ASSET_MB`, `REPO_AUDIT_MAX_SOURCE_FILE_LINES` and `REPO_AUDIT_MIN_TESTS`;
 - added a GitHub Actions CI workflow for push/PR quality gates: dependency install, repo health audit, production-env preflight for `spike-ua-index`/`uga-index`/`1d3x`, lint, tests and production build;
@@ -259,8 +259,8 @@ Implemented fixes:
 - fixed React compiler lint findings:
   - theme toggles now initialize from DOM state lazily instead of setting state synchronously in mount effects;
   - currency toggle initializes from local storage lazily;
-  - MediaHub distribution chart precomputes donut slices without mutating render-local cursor state;
-- removed unused `dedupeKey` helper from MediaHub RSS ingestion.
+  - Context distribution chart precomputes donut slices without mutating render-local cursor state;
+- removed unused `dedupeKey` helper from Context RSS ingestion.
 
 Verification status after the pass:
 

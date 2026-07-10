@@ -1,10 +1,10 @@
-# SPIKE Media Hub Source Audit
+# SPIKE Context Source Audit
 
 Updated: 2026-06-20
 
 ## Scope
 
-SPIKE Media Hub uses one unified Ukraine-focused source pool for both `uk` and `en` localizations. The monitored material can be Ukrainian or English; report language is selected by page or publication locale.
+SPIKE Context uses one unified Ukraine-focused source pool for both `uk` and `en` localizations. The monitored material can be Ukrainian or English; report language is selected by page or publication locale.
 
 This audit covers no-key sources only: Telegram channels already configured in the report workspace, direct RSS/Atom feeds, Google News RSS discovery, and GDELT Doc API discovery.
 

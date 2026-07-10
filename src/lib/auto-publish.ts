@@ -521,7 +521,7 @@ async function publishSsiDailyFallbackReport(date: string, sourceError: string) 
     );
     stored = true;
   } catch (storageError) {
-    console.warn("SSI daily fallback MediaHub storage failed.", safeErrorMessage(storageError));
+    console.warn("SSI daily fallback Context storage failed.", safeErrorMessage(storageError));
   }
 
   let telegram: Awaited<ReturnType<typeof sendSsiFallbackTelegram>>;
@@ -561,7 +561,7 @@ async function sendSsiFallbackTelegram(date: string, summary: string[]) {
       "<b>Published SSI index values</b>",
       ...summary.map(escapeHtml),
       "",
-      "<i>Fallback MediaHub digest based on published SSI index data. Not a trading recommendation.</i>",
+      "<i>Fallback Context digest based on published SSI index data. Not a trading recommendation.</i>",
       "",
       "<b>Spike Spot Index</b>",
       "https://spike.1d3x.com/",

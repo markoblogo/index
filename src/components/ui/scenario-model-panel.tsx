@@ -1199,7 +1199,7 @@ function getCopy(locale: Locale) {
       contextBody: (mode: "commodity" | "spread") =>
         mode === "spread"
           ? "Спред читається як сигнал розриву між двома ринковими корзинами."
-          : "MediaHub-контекст може пояснювати рух, але не змінює офіційне значення.",
+          : "Context-контекст може пояснювати рух, але не змінює офіційне значення.",
       days: "днів",
       chartWindow: "30 днів + наступні 30 днів",
       description:
@@ -1219,7 +1219,7 @@ function getCopy(locale: Locale) {
             : "Немає зіставного історичного року для сезонного reference.",
       latestLabel: (value: number) => `${roundOne(value)} USD/t`,
       marketRegime: "Режим ринку",
-      mediaHubCta: "Глибший аналіз контексту ринку та цін - у MediaHub",
+      mediaHubCta: "Глибший аналіз контексту ринку та цін - у Context",
       normalRange: "нормальний діапазон",
       noSeasonalData: "н/д",
       periodMove: "Рух періоду",
@@ -1274,8 +1274,8 @@ function getCopy(locale: Locale) {
       summarySeasonContext: (context: string) => context,
       summaryMediaHub: (highlight: string | undefined) =>
         highlight
-          ? `Актуальний MediaHub-контекст: ${trimSentence(highlight)}`
-          : "Актуальних повідомлень MediaHub за останні 2 дні немає.",
+          ? `Актуальний Context-контекст: ${trimSentence(highlight)}`
+          : "Актуальних повідомлень Context за останні 2 дні немає.",
       summarySimilarYear: (
         year: number | null,
         move: number | null,
@@ -1301,7 +1301,7 @@ function getCopy(locale: Locale) {
     contextBody: (mode: "commodity" | "spread") =>
       mode === "spread"
         ? "The spread is read as a signal between two market baskets."
-        : "MediaHub context can explain movement, but does not change official values.",
+        : "Context context can explain movement, but does not change official values.",
     days: "days",
     chartWindow: "30 days + next 30 days",
     description:
@@ -1321,7 +1321,7 @@ function getCopy(locale: Locale) {
             : "No comparable historical year is available for a seasonal reference.",
     latestLabel: (value: number) => `${roundOne(value)} USD/t`,
     marketRegime: "Market regime",
-    mediaHubCta: "Find deeper market and price context in MediaHub",
+    mediaHubCta: "Find deeper market and price context in Context",
     normalRange: "normal range",
     noSeasonalData: "n/a",
     periodMove: "Period move",
@@ -1376,8 +1376,8 @@ function getCopy(locale: Locale) {
     summarySeasonContext: (context: string) => context,
     summaryMediaHub: (highlight: string | undefined) =>
       highlight
-        ? `Current MediaHub context: ${trimSentence(highlight)}`
-        : "There are no current MediaHub updates from the last two days.",
+        ? `Current Context context: ${trimSentence(highlight)}`
+        : "There are no current Context updates from the last two days.",
     summarySimilarYear: (
       year: number | null,
       move: number | null,

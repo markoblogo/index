@@ -1,10 +1,10 @@
-# 1D3X Media Hub Source Audit
+# 1D3X Context Source Audit
 
 Updated: 2026-06-20
 
 ## Scope
 
-The global 1D3X Media Hub monitors international agri-commodity signals for grains, oilseeds, adjacent crop risk, freight, trade policy and input-cost factors.
+The global 1D3X Context monitors international agri-commodity signals for grains, oilseeds, adjacent crop risk, freight, trade policy and input-cost factors.
 
 This pass uses no-key sources only: direct RSS/Atom, Google News RSS and GDELT Doc API. No manual API keys or new environment variables are required.
 

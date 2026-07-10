@@ -1,11 +1,11 @@
-# MediaHub browser runtime policy
+# Context browser runtime policy
 
-MediaHub browser work should prefer a lightweight extraction runtime before
+Context browser work should prefer a lightweight extraction runtime before
 using full Chrome.
 
 ## Default rule
 
-Use Obscura as the preferred runtime for MediaHub browser tasks that need:
+Use Obscura as the preferred runtime for Context browser tasks that need:
 
 - JavaScript-rendered DOM extraction;
 - page title, text, links, assets, canonical URL and metadata extraction;
@@ -23,12 +23,12 @@ Keep Playwright/Chromium for:
 - fallback when Obscura extraction fails or returns thin content.
 
 Do not replace Playwright test configuration with Obscura. They solve different
-jobs: Obscura is the MediaHub extraction runtime; Playwright/Chromium is the
+jobs: Obscura is the Context extraction runtime; Playwright/Chromium is the
 browser verification runtime.
 
 ## Runtime selection contract
 
-Future MediaHub browser adapters should route through one small interface:
+Future Context browser adapters should route through one small interface:
 
 ```ts
 type MediaHubBrowserRuntime = "obscura" | "playwright";
@@ -77,7 +77,7 @@ Suggested metadata fields:
 
 ## Source snapshot mode
 
-MediaHub may also use a `source snapshot mode` for reproducible evidence. This
+Context may also use a `source snapshot mode` for reproducible evidence. This
 mode is not the primary parser, scraper or source monitor. It creates an
 offline evidence bundle so editors, QA and report reviewers can inspect what a
 public source looked like at collection time.
@@ -99,7 +99,7 @@ Do not use source snapshots for:
 - paywall bypass;
 - CAPTCHA/rate-limit/block circumvention;
 - stealth access to sources that reject collection;
-- broad site cloning unrelated to a specific MediaHub source item.
+- broad site cloning unrelated to a specific Context source item.
 
 ### Tool roles
 
@@ -110,7 +110,7 @@ Do not use source snapshots for:
   extraction when a static snapshot is too thin.
 - Playwright/Chromium: fallback for screenshots, e2e, complex JS behavior,
   authenticated permissioned sessions and visual verification.
-- MediaHub parser/extractor: remains the source of structured data used by
+- Context parser/extractor: remains the source of structured data used by
   reports. A snapshot is only an evidence/reproducibility artifact.
 
 ### Snapshot contract
@@ -183,7 +183,7 @@ working without it.
 - Do not use stealth mode to bypass authentication, paywalls, rate limits,
   CAPTCHAs or explicit blocks.
 - Keep per-source timeouts and bounded retries.
-- Respect MediaHub source allowlists and editorial source policy.
+- Respect Context source allowlists and editorial source policy.
 - Store enough evidence to explain why a fallback happened.
 
 ## Local cleanup note
@@ -192,7 +192,7 @@ For local agent/browser hygiene, keep:
 
 - system browsers for human work;
 - Playwright-managed Chromium only for tests;
-- Obscura as the lightweight MediaHub extraction binary;
+- Obscura as the lightweight Context extraction binary;
 - no extra Chrome/Chromium installs unless a project explicitly needs them.
 
 Before deleting a browser installation, check whether it is managed by

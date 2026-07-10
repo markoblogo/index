@@ -1,15 +1,15 @@
-# Media Hub manual materials
+# Context manual materials
 
-Manual materials let the team push links and files into the next Media Hub report without editing code or waiting for a crawler.
+Manual materials let the team push links and files into the next Context report without editing code or waiting for a crawler.
 
-For future automated link extraction, MediaHub should prefer the lightweight
+For future automated link extraction, Context should prefer the lightweight
 Obscura runtime for DOM/text/assets extraction and fall back to
 Playwright/Chromium only when visual, authenticated or unsupported browser
 behavior is required. See `docs/media-hub-browser-runtime.md`.
 
 ## Telegram intake
 
-Use the 1D3X Media Hub bot (`@idex_grains_bot`) for links and files. The respondent bot is not used for this flow.
+Use the 1D3X Context bot (`@idex_grains_bot`) for links and files. The respondent bot is not used for this flow.
 
 Commands:
 
@@ -59,7 +59,7 @@ original/preview asset and a visual-summary slot; full OCR/vision extraction can
 be added later without changing the material flow. Prefer PDF, table files, or
 links when exact numbers must be parsed automatically.
 
-If `OPENAI_API_KEY` is configured, Media Hub also generates real vision summaries
+If `OPENAI_API_KEY` is configured, Context also generates real vision summaries
 for image uploads and PDF preview pages. This is optional: failed or missing
 vision generation never blocks ingestion.
 
@@ -87,7 +87,7 @@ The admin page supports:
 - A file and caption are processed together, so tags in the caption are enough.
 - Duplicates are skipped by content hash or canonical URL for the same reporting window.
 - Unknown links are stored as source candidates or manual materials depending on tag/context.
-- Materials are used by Media Hub report generation through the persisted
+- Materials are used by Context report generation through the persisted
   `MediaHubManualMaterial` table.
 - File intelligence assets are stored in `MediaHubManualMaterialAsset`:
   `original`, `extracted_text`, `preview_image` and `visual_summary`.
@@ -109,9 +109,9 @@ Vision-related environment variables:
 - `MEDIA_HUB_STORE_PREVIEW_BYTES=0` - keeps preview metadata/summaries without
   storing preview binary bytes.
 
-## Corporate Media Hub sources
+## Corporate Context sources
 
-First-party corporate sources are connected to the Media Hub monitoring layer without new paid APIs or manual API keys:
+First-party corporate sources are connected to the Context monitoring layer without new paid APIs or manual API keys:
 
 - `mn7r_blog` - MN7R Blog, `https://mn7r.com/blog`, HTML blog fallback adapter.
 - `spike_spot_index_blog` - Spike Spot Index Blog, `https://spike.1d3x.com/en/blog`, internal blog adapter.
@@ -137,11 +137,11 @@ Telegram peer id vs Bot API chat id:
 
 Operational notes:
 
-- Use `@idex_grains_bot` for Media Hub material intake.
+- Use `@idex_grains_bot` for Context material intake.
 - The bot/client must be present in the Telegram group.
 - If Bot API privacy mode hides messages, disable privacy or use explicit mentions/commands depending on Telegram setup.
 - Bluesky uses public read-only AppView endpoint; no login or app password is required.
-- Corporate blog posts are deduped by canonical URL, title fingerprint and content/source hash logic already used by Media Hub.
+- Corporate blog posts are deduped by canonical URL, title fingerprint and content/source hash logic already used by Context.
 
 ## Production webhook setup
 
@@ -162,7 +162,7 @@ Required environment variables:
 - `NEXT_PUBLIC_SITE_URL` - fallback base URL when `MEDIA_HUB_TELEGRAM_WEBHOOK_URL` is not set.
 - `MEDIA_HUB_MATERIAL_ALLOWED_TELEGRAM_USER_IDS` - optional allowlist; empty means all users are accepted.
 - `MEDIA_HUB_MATERIAL_ALLOWED_TELEGRAM_CHAT_IDS` - optional allowlist; empty means all chats are accepted.
-- `TELEGRAM_CONNECTOR_READ_CHAT_IDS` - shared grammY connector read allowlist for MediaHub/index Telegram ingestion.
+- `TELEGRAM_CONNECTOR_READ_CHAT_IDS` - shared grammY connector read allowlist for Context/index Telegram ingestion.
 - `TELEGRAM_CONNECTOR_POST_CHAT_IDS` - shared grammY connector post allowlist for outbound/autopost targets.
 - `TELEGRAM_CONNECTOR_MANUAL_APPROVAL_REQUIRED` - defaults to approval required; if set to `0`, production preflight requires `TELEGRAM_CONNECTOR_POST_CHAT_IDS`.
 

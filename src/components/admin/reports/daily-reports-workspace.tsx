@@ -203,7 +203,7 @@ function EvidencePanel({
             Evidence / claim gate
           </p>
           <p className="mt-2 text-sm text-white/68">
-            Shows source support saved with the latest generated Media Hub daily report.
+            Shows source support saved with the latest generated Context daily report.
           </p>
         </div>
         <span className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] ${
@@ -259,7 +259,7 @@ function EvidencePanel({
         ))}
         {evidence.length === 0 ? (
           <p className="text-sm text-white/55">
-            No evidence ledger saved yet. Generate/publish a Media Hub daily report first.
+            No evidence ledger saved yet. Generate/publish a Context daily report first.
           </p>
         ) : null}
       </div>

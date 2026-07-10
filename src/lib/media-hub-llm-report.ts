@@ -288,7 +288,7 @@ async function loadMonitoringLedgerEvidenceForReport(input: {
       periodStartDate: input.periodStartDate,
     });
   } catch (error) {
-    console.error("Failed to load Cortex MediaHub monitoring ledger evidence.", error);
+    console.error("Failed to load Cortex Context monitoring ledger evidence.", error);
     return [];
   }
 }

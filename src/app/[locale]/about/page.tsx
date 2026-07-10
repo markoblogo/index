@@ -528,30 +528,30 @@ function SpikeAboutAiLayer({ locale }: { locale: Locale }) {
     locale === "uk"
       ? {
           body: [
-            "SPIKE SPOT INDEX розвивається не лише як щоденний benchmark спотових цін, а й як поєднання index analytics та MediaHub для українських аграрних commodities.",
+            "SPIKE SPOT INDEX розвивається не лише як щоденний benchmark спотових цін, а й як поєднання index analytics та Context для українських аграрних commodities.",
             "Офіційне значення індексу залишається методологічним. Воно базується на оцінках партнерів-респондентів, медіанній валідації, фільтрації викидів, правилах мінімального покриття та locked publication.",
-            "Аналітика на сайті пояснює опубліковані значення індексу: рух, волатильність, спреди та історичні зрізи. MediaHub окремо моніторить Telegram, news/API sources і редакційні матеріали, щоб показати новинний, логістичний та міжнародний контекст, який може впливати на ринок.",
+            "Аналітика на сайті пояснює опубліковані значення індексу: рух, волатильність, спреди та історичні зрізи. Context окремо моніторить Telegram, news/API sources і редакційні матеріали, щоб показати новинний, логістичний та міжнародний контекст, який може впливати на ринок.",
             "Для основних позицій SPIKE підключено архів індексів з 01.09.2025; він використовується для довших графіків, спредів, volatility та аналітики руху.",
           ],
-          card: "Офіційні значення залишаються методологічними. AI використовується для пояснення опублікованого руху індексу та для MediaHub-звітів, а не для генерації чи коригування самого індексу.",
-          eyebrow: "Analytics + MediaHub",
+          card: "Офіційні значення залишаються методологічними. AI використовується для пояснення опублікованого руху індексу та для Context-звітів, а не для генерації чи коригування самого індексу.",
+          eyebrow: "Analytics + Context",
           title:
-            "Index analytics і MediaHub над перевіреними даними",
+            "Index analytics і Context над перевіреними даними",
           manualCta: "Відкрити manual",
-          mediaHubCta: "Відкрити MediaHub",
+          mediaHubCta: "Відкрити Context",
         }
       : {
           body: [
-            "SPIKE SPOT INDEX is being developed not only as a daily spot-price benchmark, but also as a combination of index analytics and MediaHub for Ukrainian agricultural commodities.",
+            "SPIKE SPOT INDEX is being developed not only as a daily spot-price benchmark, but also as a combination of index analytics and Context for Ukrainian agricultural commodities.",
             "The official index value remains methodology-driven. It is based on respondent-partner assessments, median validation, outlier filtering, minimum coverage rules and locked publication.",
-            "Analytics explains published index data: movement, volatility, spreads and historical views. MediaHub separately monitors Telegram, news/API sources and editor-submitted materials to provide news, logistics and international context around the market.",
+            "Analytics explains published index data: movement, volatility, spreads and historical views. Context separately monitors Telegram, news/API sources and editor-submitted materials to provide news, logistics and international context around the market.",
             "For the core SPIKE positions, a historical index archive from 2025-09-01 is connected and used for longer charts, spread views, volatility and movement analytics.",
           ],
-          card: "Official values remain methodology-based. AI is used to explain published index movement and to generate MediaHub reports, not to generate or adjust the index itself.",
-          eyebrow: "Analytics + MediaHub",
+          card: "Official values remain methodology-based. AI is used to explain published index movement and to generate Context reports, not to generate or adjust the index itself.",
+          eyebrow: "Analytics + Context",
           manualCta: "Open manual",
-          mediaHubCta: "Open MediaHub",
-          title: "Index analytics and MediaHub above verified data",
+          mediaHubCta: "Open Context",
+          title: "Index analytics and Context above verified data",
         };
 
   return (

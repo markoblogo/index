@@ -3,7 +3,7 @@ import { buildCortexMarketReportContextPack } from "@/lib/commodity-intelligence
 import { buildMediaHubReportPrompt } from "@/lib/media-hub-report-prompts";
 import type { MediaHubManualMaterialDigest } from "@/lib/media-hub-manual-materials";
 
-describe("MediaHub report prompts", () => {
+describe("Context report prompts", () => {
   it("includes the approved 1D3X Cortex context pack before OpenAI drafting", () => {
     const manualMaterials: MediaHubManualMaterialDigest[] = [
       {

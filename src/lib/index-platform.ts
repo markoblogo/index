@@ -487,8 +487,8 @@ export const INDEX_CONFIGS: Record<IndexTenantId, IndexConfig> = {
     features: { externalIndicative: true, memberArea: true },
     mediaHub: {
       enabled: false,
-      brandName: "1D3X Media Hub",
-      publicLabel: { uk: "Media Hub", en: "Media Hub" },
+      brandName: "1D3X Context",
+      publicLabel: { uk: "Context", en: "Context" },
       windows: [],
       localePolicies: [],
     },
@@ -570,8 +570,8 @@ export const INDEX_CONFIGS: Record<IndexTenantId, IndexConfig> = {
     features: { externalIndicative: false, memberArea: true },
     mediaHub: {
       enabled: true,
-      brandName: "1D3X Media Hub",
-      publicLabel: { uk: "Media Hub", en: "Media Hub" },
+      brandName: "1D3X Context",
+      publicLabel: { uk: "Context", en: "Context" },
       windows: ["daily", "weekly", "monthly"],
       localePolicies: [
         {

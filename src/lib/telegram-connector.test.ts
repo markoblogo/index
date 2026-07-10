@@ -12,7 +12,7 @@ import {
 } from "./telegram-connector";
 
 describe("telegram connector", () => {
-  it("normalizes messages into the shared MediaHub contract", () => {
+  it("normalizes messages into the shared Context contract", () => {
     const normalized = normalizeTelegramUpdate({
       message: {
         caption: "caption https://example.com/report.pdf",

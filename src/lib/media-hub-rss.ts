@@ -509,7 +509,7 @@ async function persistMonitoringLedger(cacheKey: string, candidates: RssNewsItem
   try {
     await persistMediaHubMonitoringLedgerRecords(records);
   } catch (error) {
-    console.error("Failed to persist MediaHub monitoring ledger.", error);
+    console.error("Failed to persist Context monitoring ledger.", error);
   }
 }
 

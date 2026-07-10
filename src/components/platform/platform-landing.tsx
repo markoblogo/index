@@ -72,7 +72,7 @@ const faqs = [
   {
     question: "What is 1D3X Cortex?",
     answer:
-      "1D3X Cortex is the planned internal intelligence layer that connects Index, MediaHub, MN7R and Cr0pto through evidence-backed context packs, governed assistant tools and later bounded autonomy per capability.",
+      "1D3X Cortex is the planned internal intelligence layer that connects Index, Context, MN7R and Cr0pto through evidence-backed context packs, governed assistant tools and later bounded autonomy per capability.",
   },
   {
     question: "Are the indices trading advice?",
@@ -134,7 +134,7 @@ const platformPillars = [
   },
   {
     number: "02",
-    title: "MediaHub",
+    title: "Context",
     text: "Monitored market context, daily / weekly / monthly report rhythm and editor-submitted material intelligence.",
   },
   {
@@ -147,7 +147,7 @@ const platformPillars = [
 const operatingStack = [
   "Verified respondent and source workflows",
   "Methodology-based calculation layer",
-  "Market context via MediaHub and AI-assisted reports",
+  "Market context via Context and AI-assisted reports",
   "Public embeds, landing pages and partner distribution",
 ] as const;
 
@@ -161,7 +161,7 @@ const mediaHubSignals = [
 const cortexCapabilities = [
   {
     title: "Evidence packs",
-    text: "Index values, MediaHub sources, Telegram bot materials and approved project records are assembled with source IDs, timestamps and known gaps.",
+    text: "Index values, Context sources, Telegram bot materials and approved project records are assembled with source IDs, timestamps and known gaps.",
   },
   {
     title: "Ecosystem context",
@@ -224,7 +224,7 @@ export function PlatformLanding() {
               Live indices
             </a>
             <Link className="transition hover:text-black" href="/media-hub">
-              Media Hub
+              Context
             </Link>
             <a className="transition hover:text-black" href="#methodology">
               Methodology
@@ -262,14 +262,14 @@ export function PlatformLanding() {
         <div className="relative z-10 mx-auto grid min-h-[calc(100svh-4rem)] max-w-7xl items-center gap-10 px-5 py-16 sm:px-8 lg:grid-cols-[1.08fr_0.92fr] lg:py-20">
           <div>
             <p className="max-w-xl text-xs font-black uppercase tracking-[0.32em] text-[#d6ff58]">
-              1D3X infrastructure / MediaHub / local benchmark franchise
+              1D3X infrastructure / Context / local benchmark franchise
             </p>
             <h1 className="mt-8 max-w-5xl text-6xl font-black leading-[0.82] tracking-[-0.07em] sm:text-8xl lg:text-[7.5rem]">
               Commodity intelligence canvas.
             </h1>
             <p className="mt-8 max-w-2xl text-xl leading-8 text-white/70">
               1d3x turns local commodity markets into index products: verified
-              price workflows, public benchmark pages, MediaHub context and
+              price workflows, public benchmark pages, Context context and
               partner distribution in one launch system.
             </p>
             <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
@@ -289,7 +289,7 @@ export function PlatformLanding() {
                 className="inline-flex h-12 items-center justify-center whitespace-nowrap rounded-full border border-white/20 px-5 text-center text-[0.68rem] font-black uppercase tracking-[0.08em] text-white transition hover:border-[#d6ff58] hover:text-[#d6ff58] sm:text-xs"
                 href="/media-hub"
               >
-                Open media hub
+                Open Context
               </Link>
             </div>
           </div>
@@ -392,13 +392,13 @@ export function PlatformLanding() {
         <div className="relative z-10 mx-auto grid max-w-7xl gap-10 px-5 py-16 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:py-24">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.28em] text-[#d6ff58]">
-              MediaHub intelligence layer
+              Context intelligence layer
             </p>
             <h2 className="mt-5 text-5xl font-black leading-[0.92] tracking-[-0.05em] sm:text-7xl">
               Market context, not content noise.
             </h2>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-white/62">
-              MediaHub monitors relevant market sources, accepts analyst
+              Context monitors relevant market sources, accepts analyst
               materials through Telegram and turns the flow into daily, weekly
               and monthly briefs for each index franchise.
             </p>
@@ -451,7 +451,7 @@ export function PlatformLanding() {
             </h2>
             <p className="mt-6 text-lg leading-8 text-black/62">
               Cortex is planned as the evidence-backed intelligence and tool
-              layer that connects Index, MediaHub, MN7R Monitor, Cr0pto and
+              layer that connects Index, Context, MN7R Monitor, Cr0pto and
               smaller agro-commodity resources. For SSI and 1D3X reports it can
               ingest Telegram bot materials, build a bounded evidence pack, and
               then hand the approved context to OpenAI API for drafting. Over
@@ -633,7 +633,7 @@ export function PlatformLanding() {
               Each index tenant runs through repeatable quality gates before
               release: production-env smoke checks, repo health audit, lint,
               regression tests and production build. Public methodology,
-              MediaHub delivery and tenant boundaries are treated as part of the
+              Context delivery and tenant boundaries are treated as part of the
               operational system, not as afterthoughts.
             </p>
           </div>
@@ -648,7 +648,7 @@ export function PlatformLanding() {
                 body: "Index values are calculated, reviewed, locked and recorded through auditable publication events.",
               },
               {
-                title: "MediaHub resilience",
+                title: "Context resilience",
                 body: "Telegram, WhatsApp and report workflows use explicit secrets, allowlists, timeout bounds and catch-up paths.",
               },
               {

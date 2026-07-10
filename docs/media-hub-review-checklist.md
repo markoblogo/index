@@ -1,4 +1,4 @@
-# MediaHub and Index review checklist
+# Context and Index review checklist
 
 Use this checklist before merging or deploying changes to ingestion,
 calculation, report generation, site publication, Telegram/WhatsApp delivery,

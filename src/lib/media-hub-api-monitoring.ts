@@ -75,7 +75,7 @@ type ApiMonitoringResult = {
 };
 
 const DEFAULT_TIMEOUT_MS = 8_000;
-const USER_AGENT = "1D3X-MediaHub/1.0 (+https://1d3x.com)";
+const USER_AGENT = "1D3X-Context/1.0 (+https://1d3x.com)";
 
 export const MEDIA_HUB_API_PROVIDER_REGISTRY: ProviderRegistryEntry[] = [
   provider("guardian", "GUARDIAN_API_KEY", "news_api", 50, 4, "500 calls/day; commodity search endpoint."),

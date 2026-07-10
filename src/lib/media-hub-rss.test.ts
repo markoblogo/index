@@ -154,7 +154,7 @@ describe("media hub RSS source hygiene", () => {
     expect(gdeltDocUrl("Ukraine grain export")).toContain("api.gdeltproject.org/api/v2/doc/doc");
   });
 
-  it("registers first-party corporate Media Hub sources without duplicates", () => {
+  it("registers first-party corporate Context sources without duplicates", () => {
     const sources = listCorporateMediaHubRssSources();
     const ids = sources.map((source) => source.id);
 
