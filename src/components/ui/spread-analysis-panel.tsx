@@ -70,10 +70,11 @@ export function SpreadAnalysisPanel({
   const chartSeries = activeSeries.slice(-SPREAD_WINDOW_DAYS);
   const rangeSeries = chartSeries;
   const currentPoint = chartSeries.at(-1) ?? activeSeries.at(-1);
-  const rangeMin = Math.min(...rangeSeries.map((point) => point.value));
-  const rangeMax = Math.max(...rangeSeries.map((point) => point.value));
+  const rangeValues = rangeSeries.map((point) => point.value);
+  const rangeMin = rangeValues.length ? Math.min(...rangeValues) : 0;
+  const rangeMax = rangeValues.length ? Math.max(...rangeValues) : 0;
   const markerPosition =
-    rangeMax === rangeMin
+    !currentPoint || rangeMax === rangeMin
       ? 50
       : ((currentPoint.value - rangeMin) / (rangeMax - rangeMin)) * 100;
   const chartValues = chartSeries.map((point) => point.value);
@@ -212,10 +213,10 @@ export function SpreadAnalysisPanel({
                 {activeSpread.label[locale]}
               </p>
               <p className="mt-2 text-3xl font-black text-uga-green">
-                {formatSigned(currentPoint.value)} USD/t
+                {currentPoint ? `${formatSigned(currentPoint.value)} USD/t` : "—"}
               </p>
               <p className="mt-1 text-xs font-semibold text-black/50">
-                {formatDate(currentPoint.date, locale)}
+                {currentPoint ? formatDate(currentPoint.date, locale) : "—"}
               </p>
               <div className="relative mt-5 h-3 border border-black bg-white">
                 <div
