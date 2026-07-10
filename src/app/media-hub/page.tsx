@@ -15,7 +15,7 @@ import {
 } from "@/lib/media-hub-publication-scheduler";
 import { isPlatformSite } from "@/lib/platform-site";
 
-export const revalidate = 24 * 60 * 60;
+export const revalidate = 86400;
 
 const MEDIA_HUB_REPORT_CACHE_SECONDS = 24 * 60 * 60;
 const MEDIA_HUB_ARCHIVE_CACHE_SECONDS = 12 * 60 * 60;
