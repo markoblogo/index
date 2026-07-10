@@ -34,7 +34,7 @@ const getCachedScenarioMarketReadSnapshot = unstable_cache(
       })),
     );
   },
-  ["scenario-market-read-v2", "spike-ua"],
+  ["scenario-market-read-v3", "spike-ua"],
   {
     revalidate: 24 * 60 * 60,
     tags: [SCENARIO_MARKET_READ_CACHE_TAG],
