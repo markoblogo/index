@@ -3,6 +3,7 @@
 import { useMemo, useState, type PointerEvent } from "react";
 import type { Locale } from "@/lib/i18n";
 import type { Commodity, CommodityId } from "@/lib/mock-data";
+import { getDeliveryBasisConfigForCommodityId } from "@/lib/tenant-basis";
 
 type AnalyticsTrendPoint = {
   date: string;
@@ -174,7 +175,7 @@ export function AnalyticsTrendChart({
                   style={{ backgroundColor: entry.color }}
                 />
                 <span className="max-w-36 truncate text-white/74">
-                  {entry.commodity.shortName?.[locale] ?? entry.commodity.name[locale]}
+                  {getCommodityLegendLabel(entry.commodity, locale)}
                 </span>
                 <span className="text-left tabular-nums text-white">
                   {entry.value.toFixed(0)} USD/t
@@ -200,7 +201,7 @@ export function AnalyticsTrendChart({
                 }`}
                 key={commodity.id}
                 onClick={() => toggleCommodity(commodity.id)}
-                title={commodity.name[locale]}
+                title={getCommodityLegendLabel(commodity, locale)}
                 type="button"
               >
                 <span
@@ -216,7 +217,7 @@ export function AnalyticsTrendChart({
                   }
                 />
                 <span className="max-w-36 truncate">
-                  {commodity.shortName?.[locale] ?? commodity.name[locale]}
+                  {getCommodityLegendLabel(commodity, locale)}
                 </span>
               </button>
             );
@@ -240,6 +241,12 @@ export function AnalyticsTrendChart({
       </div>
     </div>
   );
+}
+
+function getCommodityLegendLabel(commodity: Commodity, locale: Locale) {
+  const name = commodity.shortName?.[locale] ?? commodity.name[locale];
+  const basis = getDeliveryBasisConfigForCommodityId(commodity.id).name;
+  return `${name} · ${basis}`;
 }
 
 type TrendSeries = {

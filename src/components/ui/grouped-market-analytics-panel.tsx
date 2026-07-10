@@ -37,7 +37,7 @@ const marketGroups: MarketGroup[] = [
     },
     id: "grains",
     ids: ["corn", "corn-fca-chop", "wheat-115", "feed-wheat"],
-    label: { en: "Grains", uk: "Зернові" },
+    label: { en: "Grains export", uk: "Зернові експорт" },
     toggles: ["port", "chop"],
   },
   {
@@ -244,13 +244,13 @@ function getCopy(locale: Locale) {
     return {
       basisFilter: "Увімкнути / вимкнути базис",
       basisLabels: {
-        chop: "Chop",
-        port: "Port",
+        chop: "FCA Чоп",
+        port: "CPT Одеса",
       },
       eyebrow: "Групова аналітика",
       title: "Динаміка та волатильність за групами",
       trendDescription:
-        "Вибрані позиції групи відображаються за останні 180 днів, щоб порівняти рух Port / Chop та структуру корзини.",
+        "Вибрані позиції та їхній базис поставки відображаються за останні 180 днів.",
       trendTitle: "Динаміка індексів за позиціями",
       volatilityDescription:
         "Волатильність і ціновий діапазон за останні 180 днів тільки для вибраної групи.",
@@ -261,13 +261,13 @@ function getCopy(locale: Locale) {
   return {
     basisFilter: "Enable / disable basis",
     basisLabels: {
-      chop: "Chop",
-      port: "Port",
+      chop: "FCA Chop",
+      port: "CPT Odesa",
     },
     eyebrow: "Grouped analytics",
     title: "Dynamics and volatility by group",
     trendDescription:
-      "Selected group positions are shown over the last 180 days to compare Port / Chop movement and basket structure.",
+      "Selected positions and their delivery basis are shown over the last 180 days.",
     trendTitle: "Index dynamics by position",
     volatilityDescription:
       "Volatility and price range over the last 180 days for the selected group only.",

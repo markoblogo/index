@@ -1,6 +1,7 @@
 export const SCENARIO_FORECAST_DAYS = 30;
 export const SCENARIO_HISTORY_DAYS = 30;
 export const SCENARIO_LOOKBACK_YEARS = 3;
+export const SCENARIO_MIN_COMPLETE_YEARS = 2;
 
 export type ScenarioMarketReadInputPoint = {
   commodityId: string;
@@ -76,7 +77,7 @@ function buildSeasonalForecast(
   latest: ScenarioMarketReadInputPoint,
   priorYears: number[],
 ) {
-  if (priorYears.length < SCENARIO_LOOKBACK_YEARS) {
+  if (priorYears.length < SCENARIO_MIN_COMPLETE_YEARS) {
     return [];
   }
 
@@ -115,7 +116,7 @@ function buildSeasonalRange(
     return point ? [point.value] : [];
   });
 
-  return values.length >= SCENARIO_LOOKBACK_YEARS
+  return values.length >= SCENARIO_MIN_COMPLETE_YEARS
     ? { lower: Math.min(...values), upper: Math.max(...values) }
     : null;
 }

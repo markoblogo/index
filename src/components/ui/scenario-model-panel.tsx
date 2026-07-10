@@ -147,8 +147,10 @@ export function ScenarioModelPanel({
       mediaHubReportDate,
       projectedSeries?.seasonalRange ?? null,
       seasonalityOverride,
+      Boolean(projectedSeries),
+      projectedSeries?.lookbackYears ?? 0,
     ),
-    [mediaHubHighlights, mediaHubReportDate, mode, projectedSeries?.seasonalRange, sample, seasonalityOverride, series, text],
+    [mediaHubHighlights, mediaHubReportDate, mode, projectedSeries, sample, seasonalityOverride, series, text],
   );
   const chartValues =
     sample.length > 0
@@ -342,7 +344,7 @@ export function ScenarioModelPanel({
       </div>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
-        {read.drivers.filter((driver) => driver.value !== text.noSeasonalData).map((driver) => (
+        {read.drivers.map((driver) => (
           <div
             className="rounded-[0.95rem] border border-black bg-white p-3"
             key={driver.label}
@@ -450,6 +452,8 @@ function buildMarketRead(
   mediaHubReportDate: string | undefined,
   seasonalRange: { lower: number; upper: number } | null,
   seasonalityOverride?: SeasonalityRead | null,
+  hasScenarioSnapshot = false,
+  snapshotLookbackYears = 0,
 ) {
   const latest = sample.at(-1)?.value ?? 0;
   const previous = sample.at(-2)?.value ?? latest;
@@ -468,7 +472,9 @@ function buildMarketRead(
   const normalLower = average - normalBand;
   const normalUpper = average + normalBand;
   const percentile = percentileRank(values, latest);
-  const seasonality = seasonalityOverride ?? buildSeasonalityRead(series);
+  const seasonality = hasScenarioSnapshot
+    ? seasonalityOverride ?? emptySeasonalityRead(snapshotLookbackYears)
+    : buildSeasonalityRead(series);
   const regime = getRegime(change1d, change30d, volatility, percentile, mode, text);
   const confidence =
     seasonality.confidence !== null && seasonality.confidence >= 72
@@ -523,18 +529,18 @@ function buildMarketRead(
     regime: regime.title,
     seasonality,
     summary: [
-      text.summaryCurrent(latest, seasonalRange),
+      text.summaryCurrent(latest, seasonalRange, seasonality.lookbackYears),
       text.summarySeasonal(
         seasonalMoveAtDay(sample, seasonality.averageMove, 7),
         seasonality.averageMove,
         seasonality.lookbackYears,
       ),
       text.summarySeasonContext(getSeasonContext(sample.at(-1)?.date, locale)),
-      text.summaryMediaHub(
-        isFreshMediaHubContext(sample.at(-1)?.date, mediaHubReportDate)
-          ? mediaHubHighlights[0]
-          : undefined,
-      ),
+      text.summaryMediaHub(getFreshMediaHubHighlight(
+        mediaHubHighlights,
+        sample.at(-1)?.date,
+        mediaHubReportDate,
+      )),
     ],
   };
 }
@@ -1006,6 +1012,33 @@ function buildSeasonalityFromProjection(
   };
 }
 
+function emptySeasonalityRead(lookbackYears: number): SeasonalityRead {
+  return {
+    averageMove: null,
+    bestMove: null,
+    bestYear: null,
+    confidence: null,
+    lookbackYears,
+  };
+}
+
+function getFreshMediaHubHighlight(
+  highlights: string[],
+  marketDate: string | undefined,
+  reportDate: string | undefined,
+) {
+  if (!isFreshMediaHubContext(marketDate, reportDate)) {
+    return undefined;
+  }
+
+  return highlights
+    .map((highlight) => trimSentence(highlight))
+    .find((highlight) =>
+      highlight.length >= 28 &&
+      !/^(головні сигнали|key signals|ринковий огляд|market overview)[:.\s]*$/i.test(highlight),
+    );
+}
+
 function seasonalMoveAtDay(
   actual: MarketSeriesPoint[],
   averageMove: number | null,
@@ -1176,9 +1209,9 @@ function getCopy(locale: Locale) {
       next7Days: "Наступні 7 днів",
       next30Days: "Наступні 30 днів",
       nextSeasonalMoveBody: (days: number, years: number) =>
-        years > 0
+        years >= 2
           ? `Сезонна траєкторія на ${days} днів за ${years} попередні роки.`
-          : "Недостатньо історії для сезонної траєкторії.",
+          : "Потрібно щонайменше два зіставні історичні роки.",
       latestLabel: (value: number) => `${roundOne(value)} USD/t`,
       marketRegime: "Режим ринку",
       mediaHubCta: "Глибший аналіз контексту ринку та цін - у MediaHub",
@@ -1221,15 +1254,15 @@ function getCopy(locale: Locale) {
           ? "Схожий сезонний рік ще не визначено."
           : `Найближча форма сезонності зараз: ${year}.`,
       similarity: "Схожість",
-      summaryCurrent: (value: number, range: { lower: number; upper: number } | null) =>
+      summaryCurrent: (value: number, range: { lower: number; upper: number } | null, years: number) =>
         range
-          ? `Поточна ціна ${roundOne(value)} USD/t ${describeSeasonalPosition(value, range, "uk")} сезонного діапазону ${roundOne(range.lower)}-${roundOne(range.upper)} USD/t за попередні 3 роки.`
-          : `Поточна ціна ${roundOne(value)} USD/t: сезонний діапазон поки недоступний через недостатню історію.`,
+          ? `Поточна ціна ${roundOne(value)} USD/t ${describeSeasonalPosition(value, range, "uk")} сезонного діапазону ${roundOne(range.lower)}-${roundOne(range.upper)} USD/t за ${years} зіставні історичні роки.`
+          : `Поточна ціна ${roundOne(value)} USD/t: для сезонного діапазону потрібно щонайменше два зіставні історичні роки.`,
       summaryMonth: (change: number) =>
         `30-денний імпульс: ${formatSigned(change)}. AI читає це як структурний рух, якщо він підтверджений кількома точками.`,
       summarySeasonal: (move7: number | null, move30: number | null, years: number) =>
         move30 === null
-          ? "Очікування сезонного руху на наступні 30 днів поки не показується через коротку опубліковану історію."
+          ? "Очікування сезонного руху не показується без двох зіставних історичних років."
           : `За сезонністю ${years} попередніх років очікуваний рух: ${formatSigned(move7 ?? 0)} за 7 днів і ${formatSigned(move30)} за 30 днів.`,
       summarySeasonContext: (context: string) => context,
       summaryMediaHub: (highlight: string | undefined) =>
@@ -1273,10 +1306,10 @@ function getCopy(locale: Locale) {
         : "The latest change gives a short signal for reading the current tone.",
     next7Days: "Next 7 days",
     next30Days: "Next 30 days",
-    nextSeasonalMoveBody: (days: number, years: number) =>
-      years > 0
-        ? `Seasonal path for ${days} days across ${years} prior years.`
-        : "History is insufficient for a seasonal path.",
+      nextSeasonalMoveBody: (days: number, years: number) =>
+        years >= 2
+          ? `Seasonal path for ${days} days across ${years} prior years.`
+          : "At least two comparable historical years are required.",
     latestLabel: (value: number) => `${roundOne(value)} USD/t`,
     marketRegime: "Market regime",
     mediaHubCta: "Find deeper market and price context in MediaHub",
@@ -1319,15 +1352,15 @@ function getCopy(locale: Locale) {
         ? "A comparable seasonal year is not available yet."
         : `Closest seasonal shape right now: ${year}.`,
     similarity: "Similarity",
-    summaryCurrent: (value: number, range: { lower: number; upper: number } | null) =>
+    summaryCurrent: (value: number, range: { lower: number; upper: number } | null, years: number) =>
       range
-        ? `Current price ${roundOne(value)} USD/t is ${describeSeasonalPosition(value, range, "en")} the ${roundOne(range.lower)}-${roundOne(range.upper)} USD/t seasonal range across the prior three years.`
-        : `Current price ${roundOne(value)} USD/t: the seasonal range is unavailable because history is insufficient.`,
+        ? `Current price ${roundOne(value)} USD/t is ${describeSeasonalPosition(value, range, "en")} the ${roundOne(range.lower)}-${roundOne(range.upper)} USD/t seasonal range across ${years} comparable historical years.`
+        : `Current price ${roundOne(value)} USD/t: at least two comparable historical years are required for a seasonal range.`,
     summaryMonth: (change: number) =>
       `30-day impulse: ${formatSigned(change)}. The AI read treats it as structural only when confirmed by several points.`,
     summarySeasonal: (move7: number | null, move30: number | null, years: number) =>
       move30 === null
-        ? "The expected next-30-day seasonal move is not shown yet because the published history is still short."
+        ? "The expected seasonal move is not shown without two comparable historical years."
         : `Across ${years} prior seasonal years, the expected move is ${formatSigned(move7 ?? 0)} in 7 days and ${formatSigned(move30)} in 30 days.`,
     summarySeasonContext: (context: string) => context,
     summaryMediaHub: (highlight: string | undefined) =>
