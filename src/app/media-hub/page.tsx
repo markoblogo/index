@@ -13,23 +13,12 @@ import {
   getMediaHubPublicationPlan,
   type MediaHubPublicationKind,
 } from "@/lib/media-hub-publication-scheduler";
-import { get1d3xRssWindows } from "@/lib/media-hub-rss";
 import { isPlatformSite } from "@/lib/platform-site";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 24 * 60 * 60;
 
-const MEDIA_HUB_LIVE_CACHE_SECONDS = 60 * 60;
-const MEDIA_HUB_REPORT_CACHE_SECONDS = 12 * 60 * 60;
+const MEDIA_HUB_REPORT_CACHE_SECONDS = 24 * 60 * 60;
 const MEDIA_HUB_ARCHIVE_CACHE_SECONDS = 12 * 60 * 60;
-
-const getCached1d3xRssWindows = unstable_cache(
-  async () => get1d3xRssWindows(),
-  ["id3x-media-hub-rss-windows"],
-  {
-    revalidate: MEDIA_HUB_LIVE_CACHE_SECONDS,
-    tags: ["id3x-media-hub-live"],
-  },
-);
 
 const getCached1d3xPublishedSummary = unstable_cache(
   async (
@@ -88,8 +77,7 @@ export default async function PlatformMediaHubPage({
   const requestedQuery = normalizeQuery(search.q);
   const summaryKind = requestedKind ?? (requestedWindow ? windowToKind(requestedWindow) : undefined);
   const shouldLoadArchive = search.archive === "1" || Boolean(requestedDate || requestedKind || requestedQuery);
-  const [liveWindows, publishedSummary, archive] = await Promise.all([
-    getCached1d3xRssWindows(),
+  const [publishedSummary, archive] = await Promise.all([
     getCached1d3xPublishedSummary(summaryKind, requestedDate),
     shouldLoadArchive
       ? getCached1d3xReportArchive(requestedDate, summaryKind, requestedQuery)
@@ -101,12 +89,12 @@ export default async function PlatformMediaHubPage({
       ? kindToWindow(requestedKind)
     : kindToWindow(publishedSummary?.kind ?? getMediaHubPublicationPlan().kind);
   const profile = getMediaHubProfile("en", selectedWindow);
-  const active = liveWindows.find((window) => window.window === selectedWindow) ?? liveWindows[0];
+  const active = profile.windows.find((window) => window.window === selectedWindow) ?? profile.windows[0];
   const activeWithPublishedSummary = applyPublishedSummary(
     active,
     publishedSummary ?? buildLiveFallbackReport(active, selectedWindow),
   );
-  const rest = liveWindows.filter((window) => window.window !== active.window);
+  const rest = profile.windows.filter((window) => window.window !== active.window);
   const mergedProfile = {
     ...profile,
     windows: [activeWithPublishedSummary, ...rest],

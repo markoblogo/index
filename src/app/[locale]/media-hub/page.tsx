@@ -2,7 +2,6 @@ import { unstable_cache } from "next/cache";
 import { redirect } from "next/navigation";
 import { PublicMediaHub } from "@/components/media-hub/public-media-hub";
 import type { Locale } from "@/lib/i18n";
-import { getSpikeMediaHubLiveWindows } from "@/lib/media-hub-monitoring";
 import {
   getMediaHubProfile,
   isMediaHubEnabled,
@@ -16,20 +15,10 @@ import {
   type MediaHubPublicationKind,
 } from "@/lib/media-hub-publication-scheduler";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 24 * 60 * 60;
 
-const MEDIA_HUB_LIVE_CACHE_SECONDS = 60 * 60;
-const MEDIA_HUB_REPORT_CACHE_SECONDS = 12 * 60 * 60;
+const MEDIA_HUB_REPORT_CACHE_SECONDS = 24 * 60 * 60;
 const MEDIA_HUB_ARCHIVE_CACHE_SECONDS = 12 * 60 * 60;
-
-const getCachedSpikeMediaHubLiveWindows = unstable_cache(
-  async (locale: Locale) => getSpikeMediaHubLiveWindows(locale),
-  ["spike-media-hub-live-windows"],
-  {
-    revalidate: MEDIA_HUB_LIVE_CACHE_SECONDS,
-    tags: ["spike-media-hub-live"],
-  },
-);
 
 const getCachedSpikePublishedSummary = unstable_cache(
   async (
@@ -94,8 +83,7 @@ export default async function MediaHubPage({
   const requestedQuery = normalizeQuery(search.q);
   const summaryKind = requestedKind ?? (requestedWindow ? windowToKind(requestedWindow) : undefined);
   const shouldLoadArchive = search.archive === "1" || Boolean(requestedDate || requestedKind || requestedQuery);
-  const [liveWindows, publishedSummary, archive] = await Promise.all([
-    getCachedSpikeMediaHubLiveWindows(locale),
+  const [publishedSummary, archive] = await Promise.all([
     getCachedSpikePublishedSummary(summaryKind, locale, requestedDate),
     shouldLoadArchive
       ? getCachedSpikeReportArchive(requestedDate, summaryKind, locale, requestedQuery)
@@ -107,9 +95,9 @@ export default async function MediaHubPage({
       ? kindToWindow(requestedKind)
     : kindToWindow(publishedSummary?.kind ?? getMediaHubPublicationPlan().kind);
   const profile = getMediaHubProfile(locale, selectedWindow);
-  const active = liveWindows.find((window) => window.window === selectedWindow) ?? liveWindows[0];
+  const active = profile.windows.find((window) => window.window === selectedWindow) ?? profile.windows[0];
   const activeWithPublishedSummary = applyPublishedSummary(active, publishedSummary);
-  const rest = liveWindows.filter((window) => window.window !== active.window);
+  const rest = profile.windows.filter((window) => window.window !== active.window);
   const mergedProfile = {
     ...profile,
     windows: [activeWithPublishedSummary, ...rest],
