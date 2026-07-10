@@ -431,7 +431,7 @@ describe("media hub publication scheduler", () => {
     expect(html).not.toContain("200$");
   });
 
-  it("filters stale month facts from SSI daily Telegram overview", () => {
+  it("omits external market facts from SSI daily Telegram overview", () => {
     const [html] = buildMediaHubTelegramMessages({
       content: {
         dailyReports: {
@@ -469,7 +469,7 @@ describe("media hub publication scheduler", () => {
       tenant: "spike",
     });
 
-    expect(html).toContain("Франції");
+    expect(html).not.toContain("Франції");
     expect(html).not.toContain("квітень");
   });
 
