@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import type { Locale } from "@/lib/i18n";
 import type { Commodity, CommodityId } from "@/lib/mock-data";
 
@@ -16,20 +16,18 @@ type VolatilityRangePanelProps = {
   locale: Locale;
 };
 
-const periodOptions = [30, 90, 180, 360] as const;
+const VOLATILITY_WINDOW_DAYS = 180;
 
 export function VolatilityRangePanel({
   commodities,
   history,
   locale,
 }: VolatilityRangePanelProps) {
-  const [period, setPeriod] = useState<(typeof periodOptions)[number]>(30);
-
   const rows = useMemo(() => {
     return commodities.flatMap((commodity) => {
       const commodityHistory = history
         .filter((point) => point.commodityId === commodity.id)
-        .slice(-period);
+        .slice(-VOLATILITY_WINDOW_DAYS);
 
       if (commodityHistory.length === 0) {
         return [];
@@ -43,33 +41,12 @@ export function VolatilityRangePanel({
 
       return [{ commodity, max, min, volatility }];
     });
-  }, [commodities, history, period]);
+  }, [commodities, history]);
 
   const maxVolatility = Math.max(...rows.map((row) => row.volatility), 1);
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap justify-end gap-1.5">
-        {periodOptions.map((option) => {
-          const active = period === option;
-
-          return (
-            <button
-              className={`border px-2.5 py-1.5 text-[0.68rem] font-black uppercase transition ${
-                active
-                  ? "border-black bg-uga-dark text-white"
-                  : "border-black/25 bg-white text-black/50 hover:border-black hover:text-black"
-              }`}
-              key={option}
-              onClick={() => setPeriod(option)}
-              type="button"
-            >
-              {option}
-            </button>
-          );
-        })}
-      </div>
-
       <div className="grid gap-3">
         {rows.map((row) => (
           <div key={row.commodity.id}>

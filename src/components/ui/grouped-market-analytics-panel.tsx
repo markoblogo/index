@@ -250,10 +250,10 @@ function getCopy(locale: Locale) {
       eyebrow: "Групова аналітика",
       title: "Динаміка та волатильність за групами",
       trendDescription:
-        "Вибрані позиції групи відображаються в одному графіку, щоб порівняти рух Port / Chop та структуру корзини.",
+        "Вибрані позиції групи відображаються за останні 180 днів, щоб порівняти рух Port / Chop та структуру корзини.",
       trendTitle: "Динаміка індексів за позиціями",
       volatilityDescription:
-        "Рейтинг короткострокової волатильності та цінового діапазону тільки для вибраної групи.",
+        "Волатильність і ціновий діапазон за останні 180 днів тільки для вибраної групи.",
       volatilityTitle: "Волатильність і ціновий діапазон",
     };
   }
@@ -267,10 +267,10 @@ function getCopy(locale: Locale) {
     eyebrow: "Grouped analytics",
     title: "Dynamics and volatility by group",
     trendDescription:
-      "Selected group positions are shown in one chart to compare Port / Chop movement and basket structure.",
+      "Selected group positions are shown over the last 180 days to compare Port / Chop movement and basket structure.",
     trendTitle: "Index dynamics by position",
     volatilityDescription:
-      "Short-term volatility and price range ranking for the selected group only.",
+      "Volatility and price range over the last 180 days for the selected group only.",
     volatilityTitle: "Volatility and price range",
   };
 }

@@ -39,8 +39,8 @@ export function getSsiPublicManual(locale: Locale) {
           ? "Analytics пояснює вже опубліковані індекси: динаміку, волатильність, спреди, групи товарів і архів з 2025-09-01 для основних позицій."
           : "Analytics explains already published index values: movement, volatility, spreads, commodity groups and the archive from 2025-09-01 for core positions.",
         bullets: uk
-          ? ["Графіки показують опубліковані значення, а не прогноз.", "Якщо у день немає ціни для спреду, використовується останнє доступне значення.", "AI Market Read є публічним preview аналітичного шару, а не торговою рекомендацією."]
-          : ["Charts show published values, not forecasts.", "If a spread price is missing for a date, the latest available value is carried forward.", "AI Market Read is a public preview of the analytical layer, not a trading recommendation."],
+          ? ["AI Market Read показує 30 останніх опублікованих днів і окремо позначену сезонну траєкторію на наступні 30 днів за трьома попередніми роками.", "Якщо у день немає ціни для спреду, використовується останнє доступне значення.", "AI Market Read є публічним preview аналітичного шару, а не торговою рекомендацією."]
+          : ["AI Market Read shows the last 30 published days and a separately labelled 30-day seasonal path based on the three prior years.", "If a spread price is missing for a date, the latest available value is carried forward.", "AI Market Read is a public preview of the analytical layer, not a trading recommendation."],
       },
       {
         title: uk ? "Що таке MediaHub" : "What MediaHub does",

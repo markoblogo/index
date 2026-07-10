@@ -8,6 +8,7 @@ import { getLatestPublishedMediaHubReportSummary } from "@/lib/media-hub-publica
 import { commodities, type Commodity, type CommodityId } from "@/lib/mock-data";
 import { getPublicHistoryData } from "@/lib/public-api-data";
 import { getActiveRespondentCountData } from "@/lib/respondent-directory-lazy";
+import { getScenarioMarketReadSnapshot } from "@/lib/scenario-market-read-data";
 import { getDeliveryBasisConfigForCommodityId } from "@/lib/tenant-basis";
 
 export const dynamic = "force-dynamic";
@@ -151,8 +152,9 @@ export default async function AnalyticsPage({
 }) {
   const [{ locale }, queryParams] = await Promise.all([params, searchParams]);
   const copy = getAnalyticsCopy(locale);
-  const volatilityWindow = normalizeVolatilityWindow(queryParams.volatilityWindow);
+  const volatilityWindow = normalizeVolatilityWindow("365");
   const fxRatesPromise = getFxRates();
+  const scenarioMarketReadSnapshotPromise = getScenarioMarketReadSnapshot();
   const mediaHubSummaryPromise = getLatestPublishedMediaHubReportSummary({
     kind: "daily",
     locale,
@@ -165,9 +167,10 @@ export default async function AnalyticsPage({
     queryParams.experimentalAnalytics === "1" ||
     queryParams.aiAnalytics === "1";
   const history = await getAnalyticsHistory(activeRespondentCount, useFullHistory);
-  const [fxRates, mediaHubSummary] = await Promise.all([
+  const [fxRates, mediaHubSummary, scenarioMarketReadSnapshot] = await Promise.all([
     fxRatesPromise,
     mediaHubSummaryPromise,
+    scenarioMarketReadSnapshotPromise,
   ]);
   const snapshot = buildMarketSnapshot(
     history,
@@ -226,31 +229,6 @@ export default async function AnalyticsPage({
       </section>
 
       <section className="mx-auto max-w-7xl px-6 py-6 lg:px-8 lg:py-7">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-xs font-black uppercase tracking-[0.14em] text-black/55">
-            {copy.volatilityWindowLabel}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {VOLATILITY_WINDOWS.map((windowDays) => {
-              const isActive = windowDays === volatilityWindow;
-              const windowUrl = `?volatilityWindow=${windowDays}`;
-              const label = `${windowDays} ${copy.daysLabel}`;
-              return (
-                <a
-                  className={`rounded-full border border-black px-3 py-1.5 text-xs font-black uppercase tracking-[0.08em] transition ${
-                    isActive
-                      ? "border-black/55 bg-uga-mist !text-[#050505]"
-                      : "bg-white text-black hover:bg-[#eff0b0]"
-                  }`}
-                  href={windowUrl}
-                  key={windowDays}
-                >
-                  {label}
-                </a>
-                );
-            })}
-          </div>
-        </div>
         <KpiStrip items={snapshot} />
       </section>
 
@@ -336,6 +314,8 @@ export default async function AnalyticsPage({
             history={history}
             locale={locale}
             mediaHubHighlights={mediaHubSummary?.summaryBody.slice(0, 4) ?? []}
+            mediaHubReportDate={mediaHubSummary?.periodEndDate}
+            snapshot={scenarioMarketReadSnapshot}
           />
         ) : null}
       </section>

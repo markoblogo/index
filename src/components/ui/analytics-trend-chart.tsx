@@ -25,13 +25,7 @@ const chartColors = [
   "#7c6cff",
 ];
 
-const periodOptions = [
-  { label: "30", value: 30 },
-  { label: "60", value: 60 },
-  { label: "90", value: 90 },
-  { label: "180", value: 180 },
-  { label: "All period", value: "all" },
-] as const;
+const CHART_WINDOW_DAYS = 180;
 
 export function AnalyticsTrendChart({
   commodities,
@@ -41,7 +35,6 @@ export function AnalyticsTrendChart({
   const [selectedIds, setSelectedIds] = useState<CommodityId[]>(
     commodities.map((commodity) => commodity.id),
   );
-  const [period, setPeriod] = useState<(typeof periodOptions)[number]["value"]>(30);
   const [hoverPoint, setHoverPoint] = useState<TrendHoverPoint | null>(null);
   const [legendExpanded, setLegendExpanded] = useState(false);
 
@@ -50,7 +43,7 @@ export function AnalyticsTrendChart({
       .filter((commodity) => selectedIds.includes(commodity.id))
       .map((commodity) => {
         const fullHistory = history.filter((point) => point.commodityId === commodity.id);
-        const points = period === "all" ? fullHistory : fullHistory.slice(-period);
+        const points = fullHistory.slice(-CHART_WINDOW_DAYS);
         const colorIndex = commodities.findIndex((item) => item.id === commodity.id);
 
         return {
@@ -59,7 +52,7 @@ export function AnalyticsTrendChart({
           points,
         };
       });
-  }, [commodities, history, period, selectedIds]);
+  }, [commodities, history, selectedIds]);
 
   const visibleValues = series.flatMap((item) => item.points.map((point) => point.value));
   const minValue = Math.min(...visibleValues);
@@ -243,27 +236,6 @@ export function AnalyticsTrendChart({
                   : `+${hiddenLegendCount} more`}
             </button>
           ) : null}
-        </div>
-
-        <div className="flex flex-wrap justify-start gap-1.5 lg:justify-end">
-          {periodOptions.map((option) => {
-            const active = period === option.value;
-
-            return (
-              <button
-                className={`rounded-full border px-2.5 py-1 text-[0.64rem] font-black uppercase transition ${
-                  active
-                    ? "border-black bg-uga-dark text-white"
-                    : "border-black/25 bg-white text-black/50 hover:border-black hover:text-black"
-                }`}
-                key={option.label}
-                onClick={() => setPeriod(option.value)}
-                type="button"
-              >
-                {option.label}
-              </button>
-            );
-          })}
         </div>
       </div>
     </div>

@@ -3,6 +3,11 @@
 import { useMemo, useState } from "react";
 import type { Locale } from "@/lib/i18n";
 import type { Commodity, CommodityId } from "@/lib/mock-data";
+import {
+  SCENARIO_FORECAST_DAYS,
+  type ScenarioMarketReadSnapshot,
+} from "@/lib/scenario-market-read";
+import { getDeliveryBasisConfigForCommodityId } from "@/lib/tenant-basis";
 
 type ScenarioSourcePoint = {
   commodityId: CommodityId;
@@ -16,6 +21,8 @@ type ScenarioModelPanelProps = {
   history: ScenarioSourcePoint[];
   locale: Locale;
   mediaHubHighlights?: string[];
+  mediaHubReportDate?: string;
+  snapshot?: ScenarioMarketReadSnapshot;
 };
 
 type SpreadDefinition = {
@@ -45,8 +52,8 @@ type SeasonalityRead = {
   lookbackYears: number;
 };
 
-const periods = [30, 60, 90, 180] as const;
-const HISTORY_END_X = 82;
+const HISTORY_END_X = 50;
+const HISTORY_WINDOW_DAYS = 30;
 const MAX_ISOLATED_SPREAD_JUMP = 30;
 const MAX_ABSOLUTE_SPREAD = 250;
 
@@ -85,16 +92,25 @@ export function ScenarioModelPanel({
   history,
   locale,
   mediaHubHighlights = [],
+  mediaHubReportDate,
+  snapshot,
 }: ScenarioModelPanelProps) {
   const [mode, setMode] = useState<"commodity" | "spread">("commodity");
   const [commodityId, setCommodityId] = useState<CommodityId>(
     commodities[0]?.id ?? "corn",
   );
   const [spreadId, setSpreadId] = useState(spreadDefinitions[0].id);
-  const [period, setPeriod] = useState<(typeof periods)[number]>(90);
   const text = getCopy(locale);
+  const projectedSeries = useMemo(
+    () => buildProjectedSeries(snapshot, mode, commodityId, spreadId),
+    [commodityId, mode, snapshot, spreadId],
+  );
 
   const series = useMemo(() => {
+    if (projectedSeries) {
+      return projectedSeries.actual;
+    }
+
     if (mode === "commodity") {
       return history
         .filter((point) => point.commodityId === commodityId)
@@ -108,15 +124,31 @@ export function ScenarioModelPanel({
       spreadDefinitions.find((item) => item.id === spreadId) ??
       spreadDefinitions[0];
     return buildSpreadSeries(history, spread);
-  }, [commodityId, history, mode, spreadId]);
+  }, [commodityId, history, mode, projectedSeries, spreadId]);
 
-  const sample = useMemo(
-    () => series.slice(-Math.min(period, series.length)),
-    [period, series],
+  const sample = useMemo(() => series.slice(-HISTORY_WINDOW_DAYS), [series]);
+  const seasonalProjection = projectedSeries?.forecast ?? [];
+  const seasonalityOverride = useMemo(
+    () => buildSeasonalityFromProjection(
+      sample,
+      seasonalProjection,
+      projectedSeries?.lookbackYears ?? 0,
+    ),
+    [projectedSeries?.lookbackYears, sample, seasonalProjection],
   );
   const read = useMemo(
-    () => buildMarketRead(series, sample, text, mode, mediaHubHighlights),
-    [mediaHubHighlights, mode, sample, series, text],
+    () => buildMarketRead(
+      series,
+      sample,
+      text,
+      locale,
+      mode,
+      mediaHubHighlights,
+      mediaHubReportDate,
+      projectedSeries?.seasonalRange ?? null,
+      seasonalityOverride,
+    ),
+    [mediaHubHighlights, mediaHubReportDate, mode, projectedSeries?.seasonalRange, sample, seasonalityOverride, series, text],
   );
   const chartValues =
     sample.length > 0
@@ -130,12 +162,16 @@ export function ScenarioModelPanel({
           read.seasonality.bestMove === null
             ? point.value
             : point.value + read.seasonality.bestMove,
+          ...seasonalProjection.map((point) => point.value),
         ])
       : [0, read.normalLower, read.normalUpper];
   const range = getPaddedRange(Math.min(...chartValues), Math.max(...chartValues));
   const title =
     mode === "commodity"
-      ? commodities.find((commodity) => commodity.id === commodityId)?.name[locale]
+      ? getCommodityChartTitle(
+          commodities.find((commodity) => commodity.id === commodityId),
+          locale,
+        )
       : spreadDefinitions.find((spread) => spread.id === spreadId)?.label[locale];
 
   return (
@@ -150,13 +186,10 @@ export function ScenarioModelPanel({
               {text.description}
             </p>
           </div>
-          <span className="rounded-full border border-black bg-uga-green px-3 py-1 text-[0.65rem] font-black uppercase tracking-[0.12em] !text-[#050505]">
-            {read.confidence}
-          </span>
         </div>
       </div>
 
-      <div className="mt-4 grid gap-3 lg:grid-cols-[auto_1fr_1fr_auto] lg:items-end">
+      <div className="mt-4 grid gap-3 lg:grid-cols-[auto_1fr_1fr] lg:items-end">
         <div className="flex overflow-hidden rounded-full border border-black bg-white">
           {(["commodity", "spread"] as const).map((item) => (
             <button
@@ -205,23 +238,6 @@ export function ScenarioModelPanel({
             ))}
           </select>
         </label>
-
-        <div className="flex flex-wrap gap-1.5 lg:justify-end">
-          {periods.map((item) => (
-            <button
-              className={`rounded-full border px-2.5 py-2 text-[0.68rem] font-black uppercase transition ${
-                period === item
-                  ? "border-black bg-uga-dark text-white"
-                  : "border-black/25 bg-white text-black/50 hover:border-black hover:text-black"
-              }`}
-              key={item}
-              onClick={() => setPeriod(item)}
-              type="button"
-            >
-              {item}
-            </button>
-          ))}
-        </div>
       </div>
 
       <div className="mt-5 grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
@@ -243,9 +259,7 @@ export function ScenarioModelPanel({
           <div className="mb-2 flex flex-wrap justify-between gap-3 text-xs font-black uppercase text-white/58">
             <span>{title}</span>
             <span>{read.latestLabel}</span>
-            <span>
-              {period} {text.days}
-            </span>
+            <span>{text.chartWindow}</span>
           </div>
           <svg
             aria-label={text.title}
@@ -253,7 +267,7 @@ export function ScenarioModelPanel({
             preserveAspectRatio="none"
             viewBox="0 0 100 100"
           >
-            <GridLines />
+            <GridLines range={range} />
             {sample.length > 1 ? (
               <>
                 <rect
@@ -301,6 +315,7 @@ export function ScenarioModelPanel({
                   vectorEffect="non-scaling-stroke"
                 />
                 <SeasonalityProjection
+                  forecast={seasonalProjection}
                   latest={sample.at(-1)?.value ?? 0}
                   range={range}
                   seasonality={read.seasonality}
@@ -308,15 +323,19 @@ export function ScenarioModelPanel({
               </>
             ) : null}
           </svg>
+          <div className="mt-1 grid grid-cols-3 text-[0.58rem] font-black uppercase text-white/42">
+            <span>{formatChartDate(sample[0]?.date, locale)}</span>
+            <span className="text-center">{formatChartDate(sample.at(-1)?.date, locale)}</span>
+            <span className="text-right">{formatChartDate(seasonalProjection.at(-1)?.date, locale)}</span>
+          </div>
           <div className="mt-3 flex flex-wrap gap-3 text-[0.68rem] font-black uppercase text-white/62">
             <span>{text.publishedLine}</span>
-            <span>{text.normalRange}</span>
-            <span>{text.recentWindow}</span>
+            <span>{text.seasonalProjection}</span>
           </div>
         </div>
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mt-4 grid gap-3 sm:grid-cols-3">
         {read.drivers.filter((driver) => driver.value !== text.noSeasonalData).map((driver) => (
           <div
             className="rounded-[0.95rem] border border-black bg-white p-3"
@@ -419,8 +438,12 @@ function buildMarketRead(
   series: MarketSeriesPoint[],
   sample: MarketSeriesPoint[],
   text: ReturnType<typeof getCopy>,
+  locale: Locale,
   mode: "commodity" | "spread",
   mediaHubHighlights: string[],
+  mediaHubReportDate: string | undefined,
+  seasonalRange: { lower: number; upper: number } | null,
+  seasonalityOverride?: SeasonalityRead | null,
 ) {
   const latest = sample.at(-1)?.value ?? 0;
   const previous = sample.at(-2)?.value ?? latest;
@@ -439,7 +462,7 @@ function buildMarketRead(
   const normalLower = average - normalBand;
   const normalUpper = average + normalBand;
   const percentile = percentileRank(values, latest);
-  const seasonality = buildSeasonalityRead(series);
+  const seasonality = seasonalityOverride ?? buildSeasonalityRead(series);
   const regime = getRegime(change1d, change30d, volatility, percentile, mode, text);
   const confidence =
     seasonality.confidence !== null && seasonality.confidence >= 72
@@ -460,8 +483,22 @@ function buildMarketRead(
         value: formatSigned(change1d),
       },
       {
-        body: text.seasonalAverageBody(seasonality.lookbackYears),
-        label: text.seasonalAverage,
+        body: text.nextSeasonalMoveBody(7, seasonality.lookbackYears),
+        label: text.next7Days,
+        tone:
+          (seasonalMoveAtDay(sample, seasonality.averageMove, 7) ?? 0) > 0
+            ? "green"
+            : (seasonalMoveAtDay(sample, seasonality.averageMove, 7) ?? 0) < 0
+              ? "amber"
+              : "blue",
+        value:
+          seasonalMoveAtDay(sample, seasonality.averageMove, 7) === null
+            ? text.noSeasonalData
+            : formatSigned(seasonalMoveAtDay(sample, seasonality.averageMove, 7) ?? 0),
+      },
+      {
+        body: text.nextSeasonalMoveBody(30, seasonality.lookbackYears),
+        label: text.next30Days,
         tone:
           (seasonality.averageMove ?? 0) > 0
             ? "green"
@@ -473,29 +510,6 @@ function buildMarketRead(
             ? text.noSeasonalData
             : formatSigned(seasonality.averageMove),
       },
-      {
-        body: text.similarYearBody(seasonality.bestYear),
-        label: text.similarYear,
-        tone:
-          (seasonality.bestMove ?? 0) > 0
-            ? "green"
-            : (seasonality.bestMove ?? 0) < 0
-              ? "amber"
-              : "blue",
-        value:
-          seasonality.bestMove === null
-            ? text.noSeasonalData
-            : formatSigned(seasonality.bestMove),
-      },
-      {
-        body: text.contextBody(mode),
-        label: text.similarity,
-        tone: "blue",
-        value:
-          seasonality.confidence === null
-            ? text.noSeasonalData
-            : `${Math.round(seasonality.confidence)}%`,
-      },
     ] satisfies MarketDriver[],
     latestLabel: text.latestLabel(latest),
     normalLower,
@@ -503,10 +517,18 @@ function buildMarketRead(
     regime: regime.title,
     seasonality,
     summary: [
-      text.summaryCurrent(latest),
-      text.summarySeasonal(seasonality.averageMove, seasonality.lookbackYears),
-      text.summarySeasonContext(latest),
-      text.summaryMediaHub(mediaHubHighlights[0]),
+      text.summaryCurrent(latest, seasonalRange),
+      text.summarySeasonal(
+        seasonalMoveAtDay(sample, seasonality.averageMove, 7),
+        seasonality.averageMove,
+        seasonality.lookbackYears,
+      ),
+      text.summarySeasonContext(getSeasonContext(sample.at(-1)?.date, locale)),
+      text.summaryMediaHub(
+        isFreshMediaHubContext(sample.at(-1)?.date, mediaHubReportDate)
+          ? mediaHubHighlights[0]
+          : undefined,
+      ),
     ],
   };
 }
@@ -774,6 +796,23 @@ function toChartPoints(
     .join(" ");
 }
 
+function toChartSegmentPoints(
+  values: number[],
+  min: number,
+  max: number,
+  startX: number,
+  endX: number,
+) {
+  return values
+    .map((value, index) => {
+      const x = values.length === 1
+        ? startX
+        : startX + (index / (values.length - 1)) * (endX - startX);
+      return `${x},${toChartY(value, min, max)}`;
+    })
+    .join(" ");
+}
+
 function toBandPoints(
   sample: MarketSeriesPoint[],
   lower: number,
@@ -806,14 +845,37 @@ function recentWindowWidth(length: number, endX = 100) {
 }
 
 function SeasonalityProjection({
+  forecast,
   latest,
   range,
   seasonality,
 }: {
+  forecast: MarketSeriesPoint[];
   latest: number;
   range: { max: number; min: number };
   seasonality: SeasonalityRead;
 }) {
+  if (forecast.length > 0) {
+    return (
+      <polyline
+        fill="none"
+        points={toChartSegmentPoints(
+          [latest, ...forecast.map((point) => point.value)],
+          range.min,
+          range.max,
+          HISTORY_END_X,
+          100,
+        )}
+        stroke="#f8f8f2"
+        strokeDasharray="4 4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2.1"
+        vectorEffect="non-scaling-stroke"
+      />
+    );
+  }
+
   const projections = [
     { move: seasonality.averageMove, stroke: "var(--spike-accent)" },
     { move: seasonality.bestMove, stroke: "#f8f8f2" },
@@ -839,7 +901,9 @@ function SeasonalityProjection({
   );
 }
 
-function GridLines() {
+function GridLines({ range }: { range: { max: number; min: number } }) {
+  const labels = [range.max, (range.max + range.min) / 2, range.min];
+
   return (
     <>
       {[16, 33, 50, 67, 84].map((y) => (
@@ -854,8 +918,188 @@ function GridLines() {
           y2={y}
         />
       ))}
+      {labels.map((value) => (
+        <text
+          fill="rgba(255,255,255,0.58)"
+          fontSize="3"
+          fontWeight="800"
+          key={value}
+          textAnchor="end"
+          x="99"
+          y={toChartY(value, range.min, range.max) - 1.5}
+        >
+          {Math.round(value)} $
+        </text>
+      ))}
     </>
   );
+}
+
+function buildProjectedSeries(
+  snapshot: ScenarioMarketReadSnapshot | undefined,
+  mode: "commodity" | "spread",
+  commodityId: CommodityId,
+  spreadId: string,
+) {
+  if (!snapshot) {
+    return null;
+  }
+
+  if (mode === "commodity") {
+    return snapshot.seriesByCommodityId[commodityId] ?? null;
+  }
+
+  const spread = spreadDefinitions.find((item) => item.id === spreadId);
+  if (!spread) {
+    return null;
+  }
+
+  const first = snapshot.seriesByCommodityId[spread.a];
+  const second = snapshot.seriesByCommodityId[spread.b];
+  if (!first || !second) {
+    return null;
+  }
+
+  return {
+    actual: subtractSeries(first.actual, second.actual),
+    forecast: subtractSeries(first.forecast, second.forecast),
+    lookbackYears: Math.min(first.lookbackYears, second.lookbackYears),
+    seasonalRange: null,
+  };
+}
+
+function subtractSeries(
+  first: MarketSeriesPoint[],
+  second: MarketSeriesPoint[],
+) {
+  const secondValueByDate = new Map(second.map((point) => [point.date, point.value]));
+
+  return first.flatMap((point) => {
+    const value = secondValueByDate.get(point.date);
+    return value === undefined ? [] : [{ date: point.date, value: roundOne(point.value - value) }];
+  });
+}
+
+function buildSeasonalityFromProjection(
+  actual: MarketSeriesPoint[],
+  forecast: MarketSeriesPoint[],
+  lookbackYears: number,
+): SeasonalityRead | null {
+  const latest = actual.at(-1)?.value;
+  const projected = forecast.at(-1)?.value;
+  if (latest === undefined || projected === undefined) {
+    return null;
+  }
+
+  return {
+    averageMove: roundOne(projected - latest),
+    bestMove: null,
+    bestYear: null,
+    confidence: null,
+    lookbackYears,
+  };
+}
+
+function seasonalMoveAtDay(
+  actual: MarketSeriesPoint[],
+  averageMove: number | null,
+  day: number,
+) {
+  if (averageMove === null || actual.length === 0) {
+    return null;
+  }
+
+  return roundOne(averageMove * (day / SCENARIO_FORECAST_DAYS));
+}
+
+function getCommodityChartTitle(commodity: Commodity | undefined, locale: Locale) {
+  if (!commodity) {
+    return "";
+  }
+
+  const basis = getDeliveryBasisConfigForCommodityId(commodity.id).name;
+  const isChop = /chop/i.test(basis);
+  const group = commodity.group === "processing"
+    ? locale === "uk" ? "Олійні переробка" : "Oilseeds processing"
+    : isChop
+      ? locale === "uk" ? "Chop експорт" : "Chop export"
+      : commodity.category === "seasonal-export"
+        ? locale === "uk" ? "Олійні експорт" : "Oilseeds export"
+        : locale === "uk" ? "Зернові експорт" : "Grains export";
+
+  return `${commodity.name[locale]} · ${basis} · ${group}`;
+}
+
+function getSeasonContext(date: string | undefined, locale: Locale) {
+  const month = date ? new Date(`${date}T00:00:00.000Z`).getUTCMonth() + 1 : 0;
+
+  if (month >= 7 && month <= 10) {
+    return locale === "uk"
+      ? "Триває період жнив в Україні: надходження нового врожаю може посилювати пропозицію та стримувати ціну."
+      : "Ukraine is in the harvest period: new-crop arrivals can expand supply and cap prices.";
+  }
+
+  if (month >= 5 && month <= 6) {
+    return locale === "uk"
+      ? "Це кінець сезону: обмеження старого врожаю може підтримувати ціну, а очікування нового врожаю стримує премії."
+      : "This is the end of the season: tighter old-crop supply can support price while new-crop expectations cap premiums.";
+  }
+
+  if (month >= 11 || month <= 2) {
+    return locale === "uk"
+      ? "Ринок перебуває в середині сезону, коли ціна сильніше залежить від темпів експорту, логістики та попиту."
+      : "The market is in the middle of the season, when export pace, logistics and demand carry more weight for price.";
+  }
+
+  return locale === "uk"
+    ? "Ринок наближається до завершення сезону: баланс старого врожаю та очікування нового поступово формують ціну."
+    : "The market is approaching the season end: the old-crop balance and new-crop expectations increasingly shape price.";
+}
+
+function describeSeasonalPosition(
+  value: number,
+  range: { lower: number; upper: number },
+  locale: Locale,
+) {
+  const width = Math.max(range.upper - range.lower, 1);
+  const position = (value - range.lower) / width;
+
+  if (position <= 0.2) {
+    return locale === "uk" ? "знаходиться біля нижньої межі" : "is near the lower boundary of";
+  }
+
+  if (position >= 0.8) {
+    return locale === "uk" ? "знаходиться біля верхньої межі" : "is near the upper boundary of";
+  }
+
+  return locale === "uk" ? "знаходиться в середині" : "is in the middle of";
+}
+
+function isFreshMediaHubContext(
+  indexDate: string | undefined,
+  reportDate: string | undefined,
+) {
+  if (!indexDate || !reportDate) {
+    return false;
+  }
+
+  const age = Math.abs(
+    new Date(`${indexDate}T00:00:00.000Z`).getTime() -
+      new Date(`${reportDate}T00:00:00.000Z`).getTime(),
+  );
+
+  return age <= 2 * 24 * 60 * 60 * 1000;
+}
+
+function formatChartDate(value: string | undefined, locale: Locale) {
+  if (!value) {
+    return "";
+  }
+
+  return new Intl.DateTimeFormat(locale === "uk" ? "uk-UA" : "en-GB", {
+    day: "2-digit",
+    month: "short",
+  }).format(new Date(`${value}T00:00:00.000Z`));
 }
 
 function driverToneClass(tone: MarketDriver["tone"]) {
@@ -907,6 +1151,7 @@ function getCopy(locale: Locale) {
           ? "Спред читається як сигнал розриву між двома ринковими корзинами."
           : "MediaHub-контекст може пояснювати рух, але не змінює офіційне значення.",
       days: "днів",
+      chartWindow: "30 днів + наступні 30 днів",
       description:
         "AI Market Read пояснює поточний контекст ринку та зміни індексів. Надалі цей блок планується як частина платної аналітичної підписки.",
       indexMove: "Денний рух",
@@ -914,6 +1159,12 @@ function getCopy(locale: Locale) {
         Math.abs(change) < 0.05
           ? "Останнє значення не показує суттєвого денного імпульсу."
           : "Остання зміна дає короткий сигнал для читання поточного тону.",
+      next7Days: "Наступні 7 днів",
+      next30Days: "Наступні 30 днів",
+      nextSeasonalMoveBody: (days: number, years: number) =>
+        years > 0
+          ? `Сезонна траєкторія на ${days} днів за ${years} попередні роки.`
+          : "Недостатньо історії для сезонної траєкторії.",
       latestLabel: (value: number) => `${roundOne(value)} USD/t`,
       marketRegime: "Режим ринку",
       normalRange: "нормальний діапазон",
@@ -922,6 +1173,7 @@ function getCopy(locale: Locale) {
       periodMoveBody: (days: number) => `Зміна за останні ${days} точок архіву.`,
       priceAnalysis: "Price Analysis",
       publishedLine: "опублікована історія",
+      seasonalProjection: "сезонна траєкторія, наступні 30 днів",
       recentWindow: "останні точки",
       regimeCompression: "Spread compression",
       regimeCompressionBody:
@@ -954,20 +1206,21 @@ function getCopy(locale: Locale) {
           ? "Схожий сезонний рік ще не визначено."
           : `Найближча форма сезонності зараз: ${year}.`,
       similarity: "Схожість",
-      summaryCurrent: (value: number) =>
-        `Поточна ціна ${roundOne(value)} USD/t знаходиться біля нижньої межі історичного діапазону цін (3 роки).`,
+      summaryCurrent: (value: number, range: { lower: number; upper: number } | null) =>
+        range
+          ? `Поточна ціна ${roundOne(value)} USD/t ${describeSeasonalPosition(value, range, "uk")} сезонного діапазону ${roundOne(range.lower)}-${roundOne(range.upper)} USD/t за попередні 3 роки.`
+          : `Поточна ціна ${roundOne(value)} USD/t: сезонний діапазон поки недоступний через недостатню історію.`,
       summaryMonth: (change: number) =>
         `30-денний імпульс: ${formatSigned(change)}. AI читає це як структурний рух, якщо він підтверджений кількома точками.`,
-      summarySeasonal: (move: number | null, years: number) =>
-        move === null
+      summarySeasonal: (move7: number | null, move30: number | null, years: number) =>
+        move30 === null
           ? "Очікування сезонного руху на наступні 30 днів поки не показується через коротку опубліковану історію."
-          : `За сезонністю ${years} попередніх років наступні 30 днів давали середній рух ${formatSigned(move)}.`,
-      summarySeasonContext: (value: number) =>
-        `Поточний рівень ${roundOne(value)} USD/t читається у контексті старту нового сезону, коли поява нового врожаю в Україні може стримувати ціну або посилювати волатильність.`,
+          : `За сезонністю ${years} попередніх років очікуваний рух: ${formatSigned(move7 ?? 0)} за 7 днів і ${formatSigned(move30)} за 30 днів.`,
+      summarySeasonContext: (context: string) => context,
       summaryMediaHub: (highlight: string | undefined) =>
         highlight
-          ? `Останній MediaHub-контекст: ${trimSentence(highlight)} Це може впливати на очікування попиту, логістики або премій у найближчі дні.`
-          : "Останні новини MediaHub будуть враховуватися тут після оновлення щоденного ринкового контексту.",
+          ? `Актуальний MediaHub-контекст: ${trimSentence(highlight)}`
+          : "Актуальних повідомлень MediaHub за останні 2 дні немає.",
       summarySimilarYear: (
         year: number | null,
         move: number | null,
@@ -995,6 +1248,7 @@ function getCopy(locale: Locale) {
         ? "The spread is read as a signal between two market baskets."
         : "MediaHub context can explain movement, but does not change official values.",
     days: "days",
+    chartWindow: "30 days + next 30 days",
     description:
       "AI Market Read explains current market context and index moves. This block is planned to become part of the paid analytics subscription.",
     indexMove: "Daily move",
@@ -1002,6 +1256,12 @@ function getCopy(locale: Locale) {
       Math.abs(change) < 0.05
         ? "The latest value does not show a meaningful daily impulse."
         : "The latest change gives a short signal for reading the current tone.",
+    next7Days: "Next 7 days",
+    next30Days: "Next 30 days",
+    nextSeasonalMoveBody: (days: number, years: number) =>
+      years > 0
+        ? `Seasonal path for ${days} days across ${years} prior years.`
+        : "History is insufficient for a seasonal path.",
     latestLabel: (value: number) => `${roundOne(value)} USD/t`,
     marketRegime: "Market regime",
     normalRange: "normal range",
@@ -1010,6 +1270,7 @@ function getCopy(locale: Locale) {
     periodMoveBody: (days: number) => `Change across the latest ${days} archive points.`,
     priceAnalysis: "Price Analysis",
     publishedLine: "published history",
+    seasonalProjection: "seasonal path, next 30 days",
     recentWindow: "recent window",
     regimeCompression: "Spread compression",
     regimeCompressionBody:
@@ -1042,20 +1303,21 @@ function getCopy(locale: Locale) {
         ? "A comparable seasonal year is not available yet."
         : `Closest seasonal shape right now: ${year}.`,
     similarity: "Similarity",
-    summaryCurrent: (value: number) =>
-      `Current price ${roundOne(value)} USD/t is near the lower boundary of the historical price range (3 years).`,
+    summaryCurrent: (value: number, range: { lower: number; upper: number } | null) =>
+      range
+        ? `Current price ${roundOne(value)} USD/t is ${describeSeasonalPosition(value, range, "en")} the ${roundOne(range.lower)}-${roundOne(range.upper)} USD/t seasonal range across the prior three years.`
+        : `Current price ${roundOne(value)} USD/t: the seasonal range is unavailable because history is insufficient.`,
     summaryMonth: (change: number) =>
       `30-day impulse: ${formatSigned(change)}. The AI read treats it as structural only when confirmed by several points.`,
-    summarySeasonal: (move: number | null, years: number) =>
-      move === null
+    summarySeasonal: (move7: number | null, move30: number | null, years: number) =>
+      move30 === null
         ? "The expected next-30-day seasonal move is not shown yet because the published history is still short."
-        : `Across ${years} prior seasonal years, the next 30 days averaged ${formatSigned(move)}.`,
-    summarySeasonContext: (value: number) =>
-      `The current ${roundOne(value)} USD/t level is read in the context of the new-season start, when fresh Ukrainian crop supply can cap prices or increase volatility.`,
+        : `Across ${years} prior seasonal years, the expected move is ${formatSigned(move7 ?? 0)} in 7 days and ${formatSigned(move30)} in 30 days.`,
+    summarySeasonContext: (context: string) => context,
     summaryMediaHub: (highlight: string | undefined) =>
       highlight
-        ? `Latest MediaHub context: ${trimSentence(highlight)} This can affect demand, logistics or premium expectations in the coming days.`
-        : "Latest MediaHub news context will be reflected here after the daily market context is updated.",
+        ? `Current MediaHub context: ${trimSentence(highlight)}`
+        : "There are no current MediaHub updates from the last two days.",
     summarySimilarYear: (
       year: number | null,
       move: number | null,
