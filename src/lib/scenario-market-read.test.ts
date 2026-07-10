@@ -18,7 +18,7 @@ describe("buildScenarioMarketReadSnapshot", () => {
     expect(snapshot.seriesByCommodityId.corn.forecast).toHaveLength(30);
   });
 
-  it("does not fabricate a seasonal range or forecast from one incomplete prior year", () => {
+  it("uses one complete prior year as a labelled seasonal reference without fabricating a range", () => {
     const snapshot = buildScenarioMarketReadSnapshot([
       { commodityId: "corn", date: "2024-07-10", value: 190 },
       { commodityId: "corn", date: "2024-08-09", value: 200 },
@@ -30,6 +30,6 @@ describe("buildScenarioMarketReadSnapshot", () => {
       lookbackYears: 1,
       seasonalRange: null,
     });
-    expect(snapshot.seriesByCommodityId.corn.forecast).toEqual([]);
+    expect(snapshot.seriesByCommodityId.corn.forecast).toHaveLength(30);
   });
 });

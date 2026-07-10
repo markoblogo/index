@@ -77,7 +77,7 @@ function buildSeasonalForecast(
   latest: ScenarioMarketReadInputPoint,
   priorYears: number[],
 ) {
-  if (priorYears.length < SCENARIO_MIN_COMPLETE_YEARS) {
+  if (priorYears.length === 0) {
     return [];
   }
 

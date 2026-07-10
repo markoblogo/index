@@ -96,8 +96,8 @@ export function ScenarioModelPanel({
   snapshot,
 }: ScenarioModelPanelProps) {
   const [mode, setMode] = useState<"commodity" | "spread">("commodity");
-  const [commodityId, setCommodityId] = useState<CommodityId>(
-    commodities[0]?.id ?? "corn",
+  const [commodityId, setCommodityId] = useState<CommodityId>(() =>
+    getDefaultCommodityId(commodities, snapshot),
   );
   const [spreadId, setSpreadId] = useState(spreadDefinitions[0].id);
   const text = getCopy(locale);
@@ -269,13 +269,14 @@ export function ScenarioModelPanel({
             <span>{read.latestLabel}</span>
             <span>{text.chartWindow}</span>
           </div>
+          <div className="relative">
           <svg
             aria-label={text.title}
             className="h-64 w-full overflow-visible"
             preserveAspectRatio="none"
             viewBox="0 0 100 100"
           >
-            <GridLines range={range} />
+            <GridLines />
             {sample.length > 1 ? (
               <>
                 <rect
@@ -331,6 +332,12 @@ export function ScenarioModelPanel({
               </>
             ) : null}
           </svg>
+            <div className="pointer-events-none absolute inset-y-8 right-0 flex flex-col justify-between text-right text-xs font-black tabular-nums text-white/58">
+              <span>{Math.round(range.max)} $</span>
+              <span>{Math.round((range.max + range.min) / 2)} $</span>
+              <span>{Math.round(range.min)} $</span>
+            </div>
+          </div>
           <div className="mt-1 grid grid-cols-3 text-[0.58rem] font-black uppercase text-white/42">
             <span>{formatChartDate(sample[0]?.date, locale)}</span>
             <span className="text-center">{formatChartDate(sample.at(-1)?.date, locale)}</span>
@@ -913,8 +920,7 @@ function SeasonalityProjection({
   );
 }
 
-function GridLines({ range }: { range: { max: number; min: number } }) {
-  const labels = [range.max, (range.max + range.min) / 2, range.min];
+function GridLines() {
 
   return (
     <>
@@ -929,19 +935,6 @@ function GridLines({ range }: { range: { max: number; min: number } }) {
           y1={y}
           y2={y}
         />
-      ))}
-      {labels.map((value) => (
-        <text
-          fill="rgba(255,255,255,0.58)"
-          fontSize="3"
-          fontWeight="800"
-          key={value}
-          textAnchor="end"
-          x="99"
-          y={toChartY(value, range.min, range.max) - 1.5}
-        >
-          {Math.round(value)} $
-        </text>
       ))}
     </>
   );
@@ -978,6 +971,16 @@ function buildProjectedSeries(
     lookbackYears: Math.min(first.lookbackYears, second.lookbackYears),
     seasonalRange: null,
   };
+}
+
+function getDefaultCommodityId(
+  commodities: Commodity[],
+  snapshot: ScenarioMarketReadSnapshot | undefined,
+) {
+  return commodities.find((commodity) => {
+    const series = snapshot?.seriesByCommodityId[commodity.id];
+    return Boolean(series?.seasonalRange && series.forecast.length === SCENARIO_FORECAST_DAYS);
+  })?.id ?? commodities[0]?.id ?? "corn";
 }
 
 function subtractSeries(
@@ -1210,8 +1213,10 @@ function getCopy(locale: Locale) {
       next30Days: "Наступні 30 днів",
       nextSeasonalMoveBody: (days: number, years: number) =>
         years >= 2
-          ? `Сезонна траєкторія на ${days} днів за ${years} попередні роки.`
-          : "Потрібно щонайменше два зіставні історичні роки.",
+          ? `Середня сезонна траєкторія на ${days} днів за ${years} зіставні роки.`
+          : years === 1
+            ? `Сезонний reference на ${days} днів за один зіставний історичний рік.`
+            : "Немає зіставного історичного року для сезонного reference.",
       latestLabel: (value: number) => `${roundOne(value)} USD/t`,
       marketRegime: "Режим ринку",
       mediaHubCta: "Глибший аналіз контексту ринку та цін - у MediaHub",
@@ -1262,8 +1267,10 @@ function getCopy(locale: Locale) {
         `30-денний імпульс: ${formatSigned(change)}. AI читає це як структурний рух, якщо він підтверджений кількома точками.`,
       summarySeasonal: (move7: number | null, move30: number | null, years: number) =>
         move30 === null
-          ? "Очікування сезонного руху не показується без двох зіставних історичних років."
-          : `За сезонністю ${years} попередніх років очікуваний рух: ${formatSigned(move7 ?? 0)} за 7 днів і ${formatSigned(move30)} за 30 днів.`,
+          ? "Очікування сезонного руху не показується без зіставного історичного року."
+          : years === 1
+            ? `За сезонним reference одного зіставного року рух становив: ${formatSigned(move7 ?? 0)} за 7 днів і ${formatSigned(move30)} за 30 днів.`
+            : `За середньою сезонністю ${years} зіставних років очікуваний рух: ${formatSigned(move7 ?? 0)} за 7 днів і ${formatSigned(move30)} за 30 днів.`,
       summarySeasonContext: (context: string) => context,
       summaryMediaHub: (highlight: string | undefined) =>
         highlight
@@ -1308,8 +1315,10 @@ function getCopy(locale: Locale) {
     next30Days: "Next 30 days",
       nextSeasonalMoveBody: (days: number, years: number) =>
         years >= 2
-          ? `Seasonal path for ${days} days across ${years} prior years.`
-          : "At least two comparable historical years are required.",
+          ? `Average seasonal path for ${days} days across ${years} comparable years.`
+          : years === 1
+            ? `Seasonal reference for ${days} days from one comparable historical year.`
+            : "No comparable historical year is available for a seasonal reference.",
     latestLabel: (value: number) => `${roundOne(value)} USD/t`,
     marketRegime: "Market regime",
     mediaHubCta: "Find deeper market and price context in MediaHub",
@@ -1360,8 +1369,10 @@ function getCopy(locale: Locale) {
       `30-day impulse: ${formatSigned(change)}. The AI read treats it as structural only when confirmed by several points.`,
     summarySeasonal: (move7: number | null, move30: number | null, years: number) =>
       move30 === null
-        ? "The expected seasonal move is not shown without two comparable historical years."
-        : `Across ${years} prior seasonal years, the expected move is ${formatSigned(move7 ?? 0)} in 7 days and ${formatSigned(move30)} in 30 days.`,
+        ? "The expected seasonal move is not shown without a comparable historical year."
+        : years === 1
+          ? `The seasonal reference from one comparable year moved ${formatSigned(move7 ?? 0)} in 7 days and ${formatSigned(move30)} in 30 days.`
+          : `Across ${years} comparable seasonal years, the expected move is ${formatSigned(move7 ?? 0)} in 7 days and ${formatSigned(move30)} in 30 days.`,
     summarySeasonContext: (context: string) => context,
     summaryMediaHub: (highlight: string | undefined) =>
       highlight
