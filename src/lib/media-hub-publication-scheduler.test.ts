@@ -288,7 +288,7 @@ describe("media hub publication scheduler", () => {
     expect(text).toContain("🏭 *PROCESSING MARKET*");
     expect(text).toContain("* Soybeans GMO 37pro – 459$ incl. VAT (0$)");
     expect(text).toContain("📰 *MARKET OVERVIEW*");
-    expect(text).toContain("Ukraine fieldwork and harvest progress");
+    expect(text).toContain("Export indices: Corn (CPT Odesa, Ukraine) -2$ to 210$");
     expect(text).toContain("🔗 _Powered by 1D3X Platform_ · https://spike.1d3x.com/");
     expect(text).not.toContain("daily report");
     expect(text).not.toContain("*📊 Spot Index Ukraine*");
@@ -354,7 +354,7 @@ describe("media hub publication scheduler", () => {
     expect(text).toContain("* Corn – 210$ (-2$)");
     expect(text).toContain("* Soybeans GMO 37pro – 459$ incl. VAT (0$)");
     expect(text).toContain("📰 *MARKET OVERVIEW*");
-    expect(text).toContain("Ukraine fieldwork and harvesting");
+    expect(text).toContain("Export indices: Corn (CPT Odesa, Ukraine) -2$ to 210$");
     expect(text).not.toContain("daily report");
     expect(text).not.toContain("*📊 Spot Index Ukraine*");
     expect(text).not.toContain("д/д");

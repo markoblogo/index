@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { isCronRequestAuthorized } from "@/lib/cron-auth";
 import {
+  getAnalyticsDisplaySnapshot,
   getScenarioMarketReadSnapshot,
+  revalidateAnalyticsDisplaySnapshot,
   revalidateScenarioMarketReadSnapshot,
 } from "@/lib/scenario-market-read-data";
 
@@ -18,10 +20,16 @@ export async function GET(request: Request) {
   }
 
   revalidateScenarioMarketReadSnapshot();
-  const snapshot = await getScenarioMarketReadSnapshot();
+  revalidateAnalyticsDisplaySnapshot();
+  const [snapshot, analyticsSnapshot] = await Promise.all([
+    getScenarioMarketReadSnapshot(),
+    getAnalyticsDisplaySnapshot(),
+  ]);
 
   return NextResponse.json({
     generatedAt: snapshot.generatedAt,
+    analyticsGeneratedAt: analyticsSnapshot.generatedAt,
+    analyticsHistoryCount: analyticsSnapshot.history.length,
     seriesCount: Object.keys(snapshot.seriesByCommodityId).length,
     status: "refreshed",
   });

@@ -52,15 +52,7 @@ const spreadDefinitions: SpreadDefinition[] = [
   },
 ];
 
-const chartPeriods = [
-  { label: "30", value: 30 },
-  { label: "60", value: 60 },
-  { label: "90", value: 90 },
-  { label: "180", value: 180 },
-  { label: "All period", value: "all" },
-] as const;
-
-const rangePeriods = [30, 90, 180, 360] as const;
+const SPREAD_WINDOW_DAYS = 180;
 const MAX_ISOLATED_SPREAD_JUMP = 30;
 const MAX_ABSOLUTE_SPREAD = 250;
 
@@ -69,33 +61,15 @@ export function SpreadAnalysisPanel({
   locale,
 }: SpreadAnalysisPanelProps) {
   const [spreadId, setSpreadId] = useState(spreadDefinitions[0].id);
-  const [chartPeriod, setChartPeriod] =
-    useState<(typeof chartPeriods)[number]["value"]>(90);
-  const [rangePeriod, setRangePeriod] = useState<(typeof rangePeriods)[number]>(90);
   const [hoveredChartIndex, setHoveredChartIndex] = useState<number | null>(null);
 
   const spreadSeries = useMemo(() => buildSpreadSeries(history), [history]);
   const activeSpread =
     spreadDefinitions.find((spread) => spread.id === spreadId) ?? spreadDefinitions[0];
   const activeSeries = spreadSeries[activeSpread.id] ?? [];
-  const latestDate = activeSeries.at(-1)?.date ?? "";
-  const [selectedDate, setSelectedDate] = useState(latestDate);
-  const effectiveDate = activeSeries.some((point) => point.date === selectedDate)
-    ? selectedDate
-    : latestDate;
-  const selectedIndex = Math.max(
-    activeSeries.findIndex((point) => point.date === effectiveDate),
-    0,
-  );
-  const chartSeries =
-    chartPeriod === "all"
-      ? activeSeries.slice(0, selectedIndex + 1)
-      : activeSeries.slice(Math.max(selectedIndex - chartPeriod + 1, 0), selectedIndex + 1);
-  const rangeSeries = activeSeries.slice(
-    Math.max(selectedIndex - rangePeriod + 1, 0),
-    selectedIndex + 1,
-  );
-  const currentPoint = activeSeries[selectedIndex] ?? activeSeries.at(-1);
+  const chartSeries = activeSeries.slice(-SPREAD_WINDOW_DAYS);
+  const rangeSeries = chartSeries;
+  const currentPoint = chartSeries.at(-1) ?? activeSeries.at(-1);
   const rangeMin = Math.min(...rangeSeries.map((point) => point.value));
   const rangeMax = Math.max(...rangeSeries.map((point) => point.value));
   const markerPosition =
@@ -134,7 +108,7 @@ export function SpreadAnalysisPanel({
             </p>
           </div>
 
-          <div className="mt-4 grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
+          <div className="mt-4">
             <label className="grid gap-1.5 text-xs font-black uppercase tracking-[0.1em] text-black/55">
               {text.spreadLabel}
               <select
@@ -150,16 +124,6 @@ export function SpreadAnalysisPanel({
               </select>
             </label>
 
-            <div className="flex flex-wrap gap-1.5 md:justify-end">
-              {chartPeriods.map((option) => (
-                <PeriodButton
-                  active={chartPeriod === option.value}
-                  key={option.label}
-                  label={option.label}
-                  onClick={() => setChartPeriod(option.value)}
-                />
-              ))}
-            </div>
           </div>
 
           <div
@@ -217,7 +181,10 @@ export function SpreadAnalysisPanel({
                     top: `${Math.max(hoveredPosition.y - 13, 2)}%`,
                   }}
                 >
-                  {formatSigned(hoveredPoint.value)} USD/t
+                  <span className="block">{formatSigned(hoveredPoint.value)} USD/t</span>
+                  <span className="mt-0.5 block text-[0.62rem] text-black/55">
+                    {formatDate(hoveredPoint.date, locale)}
+                  </span>
                 </div>
               </>
             ) : null}
@@ -240,29 +207,6 @@ export function SpreadAnalysisPanel({
           </div>
 
           <div className="mt-4 grid gap-3">
-            <label className="grid gap-1.5 text-xs font-black uppercase tracking-[0.1em] text-black/55">
-              {text.dateLabel}
-              <input
-                className="rounded-[3px] border border-black bg-white px-3 py-2 text-sm font-semibold text-black"
-                max={latestDate}
-                min={activeSeries[0]?.date}
-                onChange={(event) => setSelectedDate(event.target.value)}
-                type="date"
-                value={effectiveDate}
-              />
-            </label>
-
-            <div className="flex flex-wrap gap-1.5">
-              {rangePeriods.map((option) => (
-                <PeriodButton
-                  active={rangePeriod === option}
-                  key={option}
-                  label={String(option)}
-                  onClick={() => setRangePeriod(option)}
-                />
-              ))}
-            </div>
-
             <div className="border border-black bg-uga-mist p-4">
               <p className="text-xs font-black uppercase tracking-[0.12em] text-black/45">
                 {activeSpread.label[locale]}
@@ -357,56 +301,30 @@ function normalizeSpreadSeries(series: Array<{ date: string; value: number }>) {
   });
 }
 
-function PeriodButton({
-  active,
-  label,
-  onClick,
-}: {
-  active: boolean;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      className={`border px-2.5 py-1.5 text-[0.68rem] font-black uppercase transition ${
-        active
-          ? "border-black bg-uga-dark text-white"
-          : "border-black/25 bg-white text-black/50 hover:border-black hover:text-black"
-      }`}
-      onClick={onClick}
-      type="button"
-    >
-      {label}
-    </button>
-  );
-}
-
 function getCopy(locale: Locale) {
   if (locale === "uk") {
     return {
       chartDescription:
-        "Оберіть конкретний спред і період, щоб побачити його історичну динаміку.",
+        "Динаміка вибраного спреду за останні 180 опублікованих днів.",
       chartTitle: "Динаміка спреду",
-      dateLabel: "Дата значення",
       eyebrow: "Спреди",
       rangeDescription:
-        "Оберіть період діапазону та дату, щоб побачити позицію спреду всередині історичного min/max.",
-      rangeNote: "Маркер показує, де вибране значення знаходиться всередині діапазону.",
-      rangeTitle: "Позиція в діапазоні",
+        "Поточне значення спреду всередині min/max за останні 180 опублікованих днів.",
+      rangeNote: "Маркер показує, де поточне значення знаходиться всередині 180-денного діапазону.",
+      rangeTitle: "Поточна позиція в діапазоні",
       spreadLabel: "Спред",
     };
   }
 
   return {
     chartDescription:
-      "Select a specific spread and period to review its historical movement.",
+      "Selected spread dynamics over the last 180 published days.",
     chartTitle: "Spread dynamics",
-    dateLabel: "Value date",
     eyebrow: "Spreads",
     rangeDescription:
-      "Select the range period and date to see where the spread sits inside historical min/max.",
-    rangeNote: "The marker shows where the selected value sits inside the range.",
-    rangeTitle: "Range position",
+      "Current spread value inside the min/max across the last 180 published days.",
+    rangeNote: "The marker shows where the current value sits inside the 180-day range.",
+    rangeTitle: "Current range position",
     spreadLabel: "Spread",
   };
 }

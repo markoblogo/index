@@ -8,7 +8,10 @@ import { getLatestPublishedMediaHubReportSummary } from "@/lib/media-hub-publica
 import { commodities, type Commodity, type CommodityId } from "@/lib/mock-data";
 import { getPublicHistoryData } from "@/lib/public-api-data";
 import { getActiveRespondentCountData } from "@/lib/respondent-directory-lazy";
-import { getScenarioMarketReadSnapshot } from "@/lib/scenario-market-read-data";
+import {
+  getAnalyticsDisplaySnapshot,
+  getScenarioMarketReadSnapshot,
+} from "@/lib/scenario-market-read-data";
 import { getDeliveryBasisConfigForCommodityId } from "@/lib/tenant-basis";
 
 export const dynamic = "force-dynamic";
@@ -155,31 +158,42 @@ export default async function AnalyticsPage({
   const volatilityWindow = normalizeVolatilityWindow("365");
   const fxRatesPromise = getFxRates();
   const scenarioMarketReadSnapshotPromise = getScenarioMarketReadSnapshot();
+  const analyticsDisplaySnapshotPromise = getAnalyticsDisplaySnapshot();
   const mediaHubSummaryPromise = getLatestPublishedMediaHubReportSummary({
     kind: "daily",
     locale,
     tenantId: "spike-ua",
   });
   const respondentCountPromise = getActiveRespondentCountData();
-  const activeRespondentCount = await respondentCountPromise;
+  const [activeRespondentCount, analyticsDisplaySnapshot] = await Promise.all([
+    respondentCountPromise,
+    analyticsDisplaySnapshotPromise,
+  ]);
   const useFullHistory =
     queryParams.history === "full" ||
     queryParams.experimentalAnalytics === "1" ||
     queryParams.aiAnalytics === "1";
-  const history = await getAnalyticsHistory(activeRespondentCount, useFullHistory);
+  const isSpike = getActiveIndexConfig().id === "spike-ua";
+  const analyticsHistory =
+    isSpike && !useFullHistory
+      ? analyticsDisplaySnapshot.history
+      : await getAnalyticsHistory(activeRespondentCount, useFullHistory);
+  const history =
+    isSpike && !useFullHistory
+      ? selectRecentPublishedRows(analyticsHistory, 180)
+      : analyticsHistory;
   const [fxRates, mediaHubSummary, scenarioMarketReadSnapshot] = await Promise.all([
     fxRatesPromise,
     mediaHubSummaryPromise,
     scenarioMarketReadSnapshotPromise,
   ]);
   const snapshot = buildMarketSnapshot(
-    history,
+    analyticsHistory,
     locale,
     activeRespondentCount,
     volatilityWindow,
   );
-  const tableRows = selectRecentPublishedRows(history, 3);
-  const isSpike = getActiveIndexConfig().id === "spike-ua";
+  const tableRows = selectRecentPublishedRows(analyticsHistory, 3);
   const hasHistory = history.length > 0;
   const showExperimentalAnalytics =
     isSpike &&

@@ -253,6 +253,12 @@ export function ScenarioModelPanel({
               </li>
             ))}
           </ul>
+          <a
+            className="mt-4 inline-flex text-xs font-black uppercase tracking-[0.08em] text-black underline decoration-uga-green decoration-2 underline-offset-4 transition hover:text-uga-green"
+            href={`/${locale}/media-hub`}
+          >
+            {text.mediaHubCta} →
+          </a>
         </div>
 
         <div className="rounded-[1rem] border border-black bg-[#050805] p-4 text-white">
@@ -1061,6 +1067,14 @@ function describeSeasonalPosition(
   range: { lower: number; upper: number },
   locale: Locale,
 ) {
+  if (value < range.lower) {
+    return locale === "uk" ? "знаходиться нижче" : "below";
+  }
+
+  if (value > range.upper) {
+    return locale === "uk" ? "знаходиться вище" : "above";
+  }
+
   const width = Math.max(range.upper - range.lower, 1);
   const position = (value - range.lower) / width;
 
@@ -1167,6 +1181,7 @@ function getCopy(locale: Locale) {
           : "Недостатньо історії для сезонної траєкторії.",
       latestLabel: (value: number) => `${roundOne(value)} USD/t`,
       marketRegime: "Режим ринку",
+      mediaHubCta: "Глибший аналіз контексту ринку та цін - у MediaHub",
       normalRange: "нормальний діапазон",
       noSeasonalData: "н/д",
       periodMove: "Рух періоду",
@@ -1264,6 +1279,7 @@ function getCopy(locale: Locale) {
         : "History is insufficient for a seasonal path.",
     latestLabel: (value: number) => `${roundOne(value)} USD/t`,
     marketRegime: "Market regime",
+    mediaHubCta: "Find deeper market and price context in MediaHub",
     normalRange: "normal range",
     noSeasonalData: "n/a",
     periodMove: "Period move",

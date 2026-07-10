@@ -40,14 +40,25 @@ export function buildScenarioMarketReadSnapshot(
         .filter((year) => year < latestDate.getUTCFullYear())
         .sort((first, second) => second - first)
         .slice(0, SCENARIO_LOOKBACK_YEARS);
+      const completePriorYears = priorYears.filter((year) => {
+        const anchor = findPointForYearAndOffset(series, latestDate, year, 0);
+        const forward = findPointForYearAndOffset(
+          series,
+          latestDate,
+          year,
+          SCENARIO_FORECAST_DAYS,
+        );
+
+        return Boolean(anchor && forward && anchor.value !== 0);
+      });
 
       return [
         commodityId,
         {
           actual: series.slice(-SCENARIO_HISTORY_DAYS),
-          forecast: buildSeasonalForecast(series, latest, priorYears),
-          lookbackYears: priorYears.length,
-          seasonalRange: buildSeasonalRange(series, latestDate, priorYears),
+          forecast: buildSeasonalForecast(series, latest, completePriorYears),
+          lookbackYears: completePriorYears.length,
+          seasonalRange: buildSeasonalRange(series, latestDate, completePriorYears),
         },
       ];
     }),
@@ -65,7 +76,7 @@ function buildSeasonalForecast(
   latest: ScenarioMarketReadInputPoint,
   priorYears: number[],
 ) {
-  if (priorYears.length === 0) {
+  if (priorYears.length < SCENARIO_LOOKBACK_YEARS) {
     return [];
   }
 
@@ -104,7 +115,7 @@ function buildSeasonalRange(
     return point ? [point.value] : [];
   });
 
-  return values.length
+  return values.length >= SCENARIO_LOOKBACK_YEARS
     ? { lower: Math.min(...values), upper: Math.max(...values) }
     : null;
 }

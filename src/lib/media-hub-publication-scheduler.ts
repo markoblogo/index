@@ -544,7 +544,7 @@ function buildSsiDailyWhatsAppFallbackReport(
 function buildSsiDailyWhatsAppText(
   periodEndDate: string,
   dailyReport: MediaHubDailyReportView,
-  englishSummary: string[],
+  _englishSummary: string[],
 ) {
   const indexSection = dailyReport.indexSection;
   const lines = [
@@ -579,7 +579,9 @@ function buildSsiDailyWhatsAppText(
     }
   }
 
-  const newsItems = buildSsiDailyWhatsAppMarketOverview(dailyReport.newsSection, englishSummary, periodEndDate);
+  const newsItems = indexSection
+    ? buildSsiDailyIndexChangeOverview(indexSection, "en")
+    : [];
   if (newsItems.length > 0) {
     lines.push(
       "",
@@ -702,83 +704,39 @@ function formatSsiDailyWhatsAppCommodityName(
     .replace(/\s+FCA Чоп$/i, "");
 }
 
-function buildSsiDailyWhatsAppMarketOverview(
-  newsSection: MediaHubDailyReportView["newsSection"],
-  englishSummary: string[],
-  periodEndDate: string,
+function buildSsiDailyIndexChangeOverview(
+  indexSection: NonNullable<MediaHubDailyReportView["indexSection"]>,
+  locale: "en" | "uk",
 ) {
-  const fieldworkPattern = /\b(harvest|harvesting|sowing|planting|fieldwork|field work|crop progress|winter crop|spring crop)\b/i;
-  const preferredThemeIds = ["key_signals", "grains", "oilseeds", "processing", "logistics"];
-  const summaryItems = englishSummary
-    .map((item) => normalizeSsiWhatsAppMarketSentence(item))
-    .filter((item) => item.length > 0 && isUkraineFocusedWhatsAppMarketSentence(item));
-  const items = newsSection.themes
-    .filter((theme) => preferredThemeIds.includes(theme.id))
-    .flatMap((theme) => theme.items)
-    .map((item) => normalizeSsiWhatsAppMarketSentence(item))
-    .filter((item) => item.length > 0);
-  const focused = items.filter((item) => isUkraineFocusedWhatsAppMarketSentence(item));
-  const base = dedupeNonEmpty(summaryItems.length > 0 ? summaryItems : focused.length > 0 ? focused : items);
-  const fieldwork = dedupeNonEmpty([...summaryItems, ...focused, ...items]).find((item) => fieldworkPattern.test(item));
-  const enriched = fieldwork && !base.includes(fieldwork) ? [fieldwork, ...base] : base;
-  return enriched
-    .filter((item) => !/\b(USDA|CBOT|Euronext|MATIF)\b/i.test(item) || /\bUkraine|Ukrainian\b/i.test(item))
-    .filter((item) => isCurrentPeriodDailyMarketItem(item, periodEndDate))
-    .slice(0, 4);
-}
+  const sections = indexSection.groups
+    .map((group) => {
+      const mode = group.id === "processing" ? "processing" : "export";
+      const changed = group.items.filter(
+        (item) => item.value !== null && item.dayChange !== null && item.dayChange !== 0,
+      );
+      if (changed.length === 0) {
+        return null;
+      }
 
-function isUkraineFocusedWhatsAppMarketSentence(value: string) {
-  return /\b(Ukraine|Ukrainian|Odesa|Odessa|Black Sea|Danube|CPT|FCA|Chop|harvest|harvesting|sowing|planting|fieldwork|field work|crop|export|port|processing|domestic|farm|plant|crush|logistics)\b/i.test(value);
-}
+      const heading = locale === "uk"
+        ? mode === "processing" ? "Переробка" : "Експорт"
+        : mode === "processing" ? "Processing indices" : "Export indices";
+      const changes = changed.map((item) => {
+        const name = locale === "uk"
+          ? formatSsiDailyTelegramCommodityName(item.name, item.commodityCode, item.basis, mode)
+          : formatSsiDailyWhatsAppCommodityName(item.name, item.commodityCode, item.basis, mode);
+        const basis = locale === "uk"
+          ? formatSsiDailyTelegramBasis(item.basis)
+          : formatSsiDailyWhatsAppBasis(item.basis, mode);
 
-function isCurrentPeriodDailyMarketItem(value: string, periodEndDate: string) {
-  const reportMonth = Number(periodEndDate.slice(5, 7));
-  if (!Number.isFinite(reportMonth) || reportMonth < 1 || reportMonth > 12) {
-    return true;
-  }
+        return `${name} (${basis}) ${formatWholeSignedCurrency(item.dayChange)} ${locale === "uk" ? "до" : "to"} ${formatWholeValueCurrency(item.value)}`;
+      });
 
-  const normalized = value.toLowerCase();
-  const currentPeriodAnchor =
-    /\b(today|this week|current week|current period|updated|fresh|now)\b/i.test(value) ||
-    /\b(сьогодні|цього тижня|поточного тижня|поточн(?:ий|ого|ому)? період|оновлен|свіж)\b/i.test(value);
-  if (currentPeriodAnchor) {
-    return true;
-  }
+      return `${heading}: ${changes.join("; ")}.`;
+    })
+    .filter((item): item is string => Boolean(item));
 
-  const oldMonthMentioned = MONTH_PATTERNS.some(({ index, pattern }) =>
-    index < reportMonth && pattern.test(normalized),
-  );
-  return !oldMonthMentioned;
-}
-
-const MONTH_PATTERNS = [
-  { index: 1, pattern: /(січн|\bjanuary\b|\bjan\.?\b)/i },
-  { index: 2, pattern: /(лют|\bfebruary\b|\bfeb\.?\b)/i },
-  { index: 3, pattern: /(берез|\bmarch\b|\bmar\.?\b)/i },
-  { index: 4, pattern: /(квіт|\bapril\b|\bapr\.?\b)/i },
-  { index: 5, pattern: /(трав|\bmay\b)/i },
-  { index: 6, pattern: /(черв|\bjune\b|\bjun\.?\b)/i },
-  { index: 7, pattern: /(лип|\bjuly\b|\bjul\.?\b)/i },
-  { index: 8, pattern: /(серп|\baugust\b|\baug\.?\b)/i },
-  { index: 9, pattern: /(верес|\bseptember\b|\bsep\.?\b)/i },
-  { index: 10, pattern: /(жовт|\boctober\b|\boct\.?\b)/i },
-  { index: 11, pattern: /(листоп|\bnovember\b|\bnov\.?\b)/i },
-  { index: 12, pattern: /(груд|\bdecember\b|\bdec\.?\b)/i },
-];
-
-function normalizeSsiWhatsAppMarketSentence(value: string) {
-  return value
-    .replace(/\bUSD\s*\/\s*(?:t|mt|tonne|ton)\b/gi, "$")
-    .replace(/\bUSD\/t\b/gi, "$")
-    .replace(/\$\s*\/\s*(?:t|mt|tonne|ton)\b/gi, "$")
-    .replace(/\bUAH\s*\/\s*(?:t|mt|tonne|ton)\b/gi, "₴")
-    .replace(/\bEUR\s*\/\s*(?:t|mt|tonne|ton)\b/gi, "€")
-    .replace(/^\s*(?:🔎|🌾|🌻|🏭|🚚|⚖️|🌍|📰)\s*/u, "")
-    .replace(/^Main signals\s*:?/i, "")
-    .replace(/^Market overview\s*:?/i, "")
-    .replace(/^Ukraine market overview\s*:?/i, "")
-    .replace(/\s+/g, " ")
-    .trim();
+  return sections;
 }
 
 function normalizeSsiWhatsAppFooter(tenant: "spike" | "platform", text: string) {
@@ -1869,7 +1827,9 @@ function buildSsiDailyTelegramText(periodEndDate: string, dailyReport: MediaHubD
     }
   }
 
-  const newsItems = buildSsiDailyTelegramMarketReview(dailyReport.newsSection, periodEndDate);
+  const newsItems = indexSection
+    ? buildSsiDailyIndexChangeOverview(indexSection, "uk")
+    : [];
   if (newsItems.length > 0) {
     lines.push(
       "",
@@ -1907,16 +1867,6 @@ function renderSsiDailyTelegramBasisBlock(
       return `• ${escapeHtml(formatSsiDailyTelegramCommodityName(item.name, item.commodityCode, basis, mode))} - ${formatWholeValueCurrency(item.value)}${vat} (${formatWholeSignedCurrency(item.dayChange)})`;
     }),
   ]);
-}
-
-function buildSsiDailyTelegramMarketReview(newsSection: MediaHubDailyReportView["newsSection"], periodEndDate: string) {
-  const preferredThemeIds = ["grains", "oilseeds", "processing", "key_signals"];
-  return newsSection.themes
-    .filter((theme) => preferredThemeIds.includes(theme.id))
-    .flatMap((theme) => theme.items)
-    .filter((item) => item.trim().length > 0)
-    .filter((item) => isCurrentPeriodDailyMarketItem(item, periodEndDate))
-    .slice(0, 4);
 }
 
 function formatSsiDailyTelegramBasis(basis: string) {
