@@ -452,6 +452,8 @@ Internal agents and related ecosystem products can read saved Cortex context
 packs through `GET /api/internal/cortex/context-packs` with
 `CORTEX_INTERNAL_API_SECRET` or `CRON_SECRET`; use `includePack=1` only for
 authorized internal context assembly.
+For the repeatable local artifact flow across Index, MN7R and Cr0pto, use
+[`docs/cortex-artifact-pipeline.md`](docs/cortex-artifact-pipeline.md).
 Run `npm run cortex:source-scan` to write `.cortex/source-manifest.json`, the
 first local ingestion artifact for repo/docs/manuals/code/plans coverage. Add
 other local ecosystem roots with arguments such as
