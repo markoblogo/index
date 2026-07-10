@@ -27,6 +27,7 @@
     "provision:spike-manual-respondents": "tsx scripts/provision-spike-manual-respondents.ts",
     "audit:respondent": "tsx scripts/respondent-telegram-audit.ts",
     "cortex:context-pack": "tsx scripts/cortex-context-pack.ts",
+    "cortex:cropto-source-chunk": "tsx scripts/cortex-cropto-source-chunk.ts",
     "cortex:memory-search": "tsx scripts/cortex-memory-search.ts",
     "cortex:mn7r-snapshot-chunk": "tsx scripts/cortex-mn7r-snapshot-chunk.ts",
     "cortex:source-chunk": "tsx scripts/cortex-source-chunk.ts",

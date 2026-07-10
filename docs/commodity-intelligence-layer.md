@@ -158,6 +158,10 @@ converts the protected MN7R source snapshot into Cortex chunks and can merge it
 with the base memory artifact. The snapshot must already be redacted by MN7R;
 Index treats every MN7R raw-source chunk as protected and relies on context-pack
 `allowProtected` gating before any external model sees it.
+`npm run cortex:cropto-source-chunk -- --manifest=.cortex/cropto-source-manifest.json --base=.cortex/chunk-manifest.json --out=.cortex/chunk-manifest.with-cropto.json`
+normalizes the Cr0pto source manifest into the same chunk pipeline, preserving
+Cr0pto source IDs, visibility and source kinds for retrieval and context-pack
+assembly.
 `npm run cortex:memory-search -- --query="..."` is the first local retrieval
 surface over those chunks. It supports owner, source-kind and visibility
 filters and excludes `secret` chunks by default.
@@ -437,6 +441,8 @@ Acceptance:
   and `-- --all` can seed chunks across all supported text/code/doc sources;
 - `npm run cortex:mn7r-snapshot-chunk` converts the protected MN7R source
   snapshot into chunks and can merge those chunks with the base memory manifest;
+- `npm run cortex:cropto-source-chunk` converts the Cr0pto source manifest into
+  standard chunks and can merge those chunks with the base memory manifest;
 - `npm run cortex:memory-search` can retrieve matching chunks with snippets and
   metadata filters before a vector database is added;
 - `npm run cortex:context-pack` can assemble bounded evidence from local memory

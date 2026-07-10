@@ -471,6 +471,10 @@ after MN7R exports its protected source snapshot. This converts raw
 broker/operator/user inputs, business/lifecycle traces and bid/offer
 correlation signals into protected Cortex chunks and can merge them with the
 base Index/MN7R/Cr0pto memory artifact.
+Run `npm run cortex:cropto-source-chunk -- --manifest=.cortex/cropto-source-manifest.json --base=.cortex/chunk-manifest.json --out=.cortex/chunk-manifest.with-cropto.json`
+after Cr0pto exports its source manifest. This normalizes approved Cr0pto docs,
+public surfaces, code, runbooks and plans into the standard Cortex chunk
+pipeline.
 Run `npm run cortex:memory-search -- --query="SSI report context"` to search
 local Cortex chunks with owner, kind and visibility filters before a vector
 store is introduced.
