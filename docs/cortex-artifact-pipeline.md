@@ -102,6 +102,21 @@ npm run cortex:context-pack -- \
 The no-`--allow-protected` run should exclude protected evidence. Do not forward
 excluded evidence to OpenAI or other external model providers.
 
+Smoke-test the promoted runtime artifact:
+
+```bash
+npm run cortex:artifact-smoke -- \
+  --manifest=.cortex/chunk-manifest.runtime.json \
+  --require-project=index \
+  --require-project=mn7r \
+  --require-project=cropto \
+  --min-chunks=100
+```
+
+This is the local gate before wiring an artifact into runtime retrieval: the
+manifest must be non-empty, internally consistent, and cover the expected
+ecosystem projects.
+
 ## Runtime Configuration
 
 The internal context-pack API reads the server-side chunk artifact from:
@@ -127,7 +142,7 @@ The API is authorized by `CORTEX_INTERNAL_API_SECRET` or `CRON_SECRET`.
 - Keep `.cortex/` artifacts local or publish them to a controlled artifact
   location.
 - Promote a runtime artifact only after source scan, chunking, search and at
-  least one context-pack smoke check pass.
+  least one context-pack smoke check and one artifact smoke check pass.
 - Protected chunks can enter external model prompts only through explicit
   `allowProtected` workflows with redaction and audit.
 - Secret chunks must not be included in context packs.
