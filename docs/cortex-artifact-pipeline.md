@@ -27,6 +27,25 @@ prototype internals are normally `internal`.
 
 From the Index repository:
 
+For the normal local flow, build the full runtime artifact with one command:
+
+```bash
+npm run cortex:artifact-build -- \
+  --require-project=index \
+  --require-project=mn7r \
+  --require-project=cropto \
+  --min-chunks=100
+```
+
+This writes the source manifest, source ledger, base chunk manifest and
+`.cortex/chunk-manifest.runtime.json`, then runs the artifact smoke gate.
+Optional product-authored artifacts are merged automatically when present at:
+
+- `.cortex/mn7r-source-snapshot.json`
+- `.cortex/cropto-source-manifest.json`
+
+The lower-level manual flow remains useful when debugging a specific stage.
+
 ```bash
 npm run cortex:source-ingest -- \
   --preset=ecosystem-local \
