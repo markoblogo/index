@@ -226,7 +226,7 @@ async function getDatabaseLatestData(): Promise<PublicLatestItem[]> {
   const visibleTradeDate =
     activeIndex.id === "spike-ua" ? getSpikePublicVisibleTradeDate() : todayKyivDate();
   const visibleTradeDateAtMidnightUtc = new Date(`${visibleTradeDate}T00:00:00.000Z`);
-  const rows = await Promise.all(
+  const rows: Array<PublicLatestItem | null> = await Promise.all(
     dbCommodities.map(async (commodity) => {
       const basisConfig = getDeliveryBasisConfigForCommodityCode(
         commodity.code,
