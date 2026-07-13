@@ -37,8 +37,8 @@ describe("buildAutoPublishPlan", () => {
           deliveryBasisId: "basis-corn",
           price: 208,
           respondentId: "MN7R_MONITOR",
-          source: "respondent",
-          status: "submitted",
+          source: "admin",
+          status: "draft",
           updatedAt: new Date("2026-05-25T14:05:00.000Z"),
         },
         {

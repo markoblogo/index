@@ -154,7 +154,7 @@ export async function autoPublishSpikeDailyIndices(
         active: true,
         status: "active",
       },
-      status: { in: ["submitted", "verified", "published"] },
+      status: { in: ["draft", "submitted", "verified", "published"] },
       tradeDate,
     },
   });
@@ -223,6 +223,7 @@ export async function autoPublishSpikeDailyIndices(
       },
       where: {
         basketId: { in: basketIds },
+        commodityId: { in: commodityIdsToPublish },
         deliveryBasisId: { in: basisIds },
         locked: true,
         status: "published",
@@ -673,7 +674,7 @@ export function buildAutoPublishPlan({
       !basisId ||
       submission.deliveryBasisId !== basisId ||
       submission.source === "spike" ||
-      submission.status === "draft" ||
+      (submission.status === "draft" && submission.source !== "admin") ||
       !Number.isFinite(submission.price) ||
       submission.price <= 0
     ) {
