@@ -19,7 +19,6 @@ import {
   getDeliveryBasisConfigForCommodityCode,
 } from "@/lib/tenant-basis";
 import { getSpikePublicVisibleTradeDate } from "@/lib/spike-publication-window";
-import { getLatestSubmissionFallbacks } from "@/lib/public-submission-fallbacks";
 
 export type PublicLatestItem = {
   commodityId: CommodityId;
@@ -216,22 +215,6 @@ async function getDatabaseLatestData(): Promise<PublicLatestItem[]> {
   ]);
   const basisByCode = new Map(bases.map((basis) => [basis.code, basis]));
   const basketByCode = new Map(baskets.map((basket) => [basket.code, basket]));
-  const basisByCommodityId = new Map(
-    dbCommodities
-      .map((commodity) => {
-        const basisConfig = getDeliveryBasisConfigForCommodityCode(
-          commodity.code,
-          activeIndex,
-        );
-        const basis = basisByCode.get(basisConfig.code);
-
-        return basis ? ([commodity.id, basis] as const) : null;
-      })
-      .filter((entry): entry is readonly [string, (typeof bases)[number]] =>
-        Boolean(entry),
-      ),
-  );
-
   if (bases.length === 0 || baskets.length === 0) {
     if (allowMockFallback()) {
       return getMockLatestData();
@@ -243,16 +226,6 @@ async function getDatabaseLatestData(): Promise<PublicLatestItem[]> {
   const visibleTradeDate =
     activeIndex.id === "spike-ua" ? getSpikePublicVisibleTradeDate() : todayKyivDate();
   const visibleTradeDateAtMidnightUtc = new Date(`${visibleTradeDate}T00:00:00.000Z`);
-  const submissionFallbackByCommodityId = await getLatestSubmissionFallbacks({
-    basisByCommodityId,
-    commodities: dbCommodities,
-    maxTradeDate: visibleTradeDateAtMidnightUtc,
-  });
-  const latestSubmissionFallbackByCommodityId = await getLatestSubmissionFallbacks({
-    basisByCommodityId,
-    commodities: dbCommodities,
-  });
-
   const rows = await Promise.all(
     dbCommodities.map(async (commodity) => {
       const basisConfig = getDeliveryBasisConfigForCommodityCode(
@@ -292,22 +265,6 @@ async function getDatabaseLatestData(): Promise<PublicLatestItem[]> {
             },
           })
         : null;
-      const submissionFallback =
-        submissionFallbackByCommodityId.get(commodity.id) ??
-        (published ? null : latestSubmissionFallbackByCommodityId.get(commodity.id));
-      const displayFallback =
-        submissionFallback &&
-        (!published ||
-          submissionFallback.date > published.tradeDate.toISOString().slice(0, 10))
-          ? submissionFallback
-          : null;
-      const previous =
-        displayFallback === null
-          ? null
-          : (displayFallback.previousValue ?? published?.valueUsdPerMt.toNumber() ?? null);
-      const fallbackChange = displayFallback
-        ? computeChange(displayFallback.value, previous)
-        : null;
       const publishedChange = published
         ? computeChange(
             published.valueUsdPerMt.toNumber(),
@@ -315,23 +272,24 @@ async function getDatabaseLatestData(): Promise<PublicLatestItem[]> {
           )
         : null;
 
+      if (!published) {
+        return null;
+      }
+
       return {
         commodityId: mockCommodityIdByCode[commodity.code] ?? "corn",
         commodityCode: commodity.code,
         commodityNameUk: commodity.nameUk,
         commodityNameEn: commodity.nameEn,
         date:
-          displayFallback?.date ??
-          published?.tradeDate.toISOString().slice(0, 10) ??
-          visibleTradeDate,
+          published.tradeDate.toISOString().slice(0, 10),
         basis: basisConfig.name,
-        valueUsdPerMt:
-          displayFallback?.value ?? published?.valueUsdPerMt.toNumber() ?? null,
+        valueUsdPerMt: published.valueUsdPerMt.toNumber(),
         changeAbs: formatPublicChangeAbs(
-          fallbackChange?.changeAbs ?? publishedChange?.changeAbs ?? 0,
+          publishedChange?.changeAbs ?? 0,
         ),
-        changePct: fallbackChange?.changePct ?? publishedChange?.changePct ?? 0,
-        respondents: displayFallback?.rawCount ?? activeRespondentCount,
+        changePct: publishedChange?.changePct ?? 0,
+        respondents: activeRespondentCount,
       };
     }),
   );

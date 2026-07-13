@@ -2,6 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { db, hasDatabaseUrl } from "@/lib/db";
+import { calculateIndexValue } from "@/lib/index-calculation";
 import { generateAndStoreDailyAiMarketBriefs } from "@/lib/ai-market-brief-lazy";
 import { fetchWithTimeout } from "@/lib/fetch-timeout";
 import { getActiveIndexConfig } from "@/lib/index-platform";
@@ -33,10 +34,13 @@ const TELEGRAM_DELIVERY_TIMEOUT_MS = 15_000;
 
 export type AutoPublishPlanItem = {
   excludedSubmissions: Array<AutoPublishSubmission & {
-    exclusionReason: "previous_day_5pct_deviation";
+    deviationPct: number;
+    exclusionReason: "previous_day_5pct_deviation" | "outside_2pct_median_band";
   }>;
   latestUpdatedAt: Date;
+  median: number;
   rawCount: number;
+  rawValue: number;
   selectedSubmissions: AutoPublishSubmission[];
   usedCount: number;
   value: number;
@@ -124,7 +128,8 @@ export async function autoPublishSpikeDailyIndices(
     return { date, published: 0, skippedReason: "missing_basis_or_basket" };
   }
 
-  const existingPublishedCount = await db.publishedIndex.count({
+  const existingPublishedRows = await db.publishedIndex.findMany({
+    select: { commodityId: true },
     where: {
       basketId: { in: basketIds },
       deliveryBasisId: { in: basisIds },
@@ -133,17 +138,13 @@ export async function autoPublishSpikeDailyIndices(
       tradeDate,
     },
   });
+  const existingPublishedCount = existingPublishedRows.length;
+  const existingPublishedCommodityIds = new Set(
+    existingPublishedRows.map((row) => row.commodityId),
+  );
 
   if (options.existingPublishedOnly && existingPublishedCount === 0) {
     return { date, published: 0, skippedReason: "not_yet_published" };
-  }
-
-  if (existingPublishedCount > 0 && !options.replaceExisting) {
-    let mediaHub: AutoPublishResult["mediaHub"] = null;
-    if (options.publishMediaHub !== false) {
-      mediaHub = await ensureDailyMediaHubPublication(date);
-    }
-    return { date, mediaHub, published: 0, skippedReason: "already_published" };
   }
 
   const submissions = await db.priceSubmission.findMany({
@@ -169,6 +170,7 @@ export async function autoPublishSpikeDailyIndices(
         basis.id,
       ]),
     ),
+    date,
     previousPublishedByCommodityId,
     submissions: submissions.map((submission) => ({
       id: submission.id,
@@ -183,8 +185,33 @@ export async function autoPublishSpikeDailyIndices(
   });
 
   if (plan.size === 0) {
-    return { date, published: 0, skippedReason: "no_submissions" };
+    let mediaHub: AutoPublishResult["mediaHub"] = null;
+    if (existingPublishedCount > 0 && options.publishMediaHub !== false) {
+      mediaHub = await ensureDailyMediaHubPublication(date);
+    }
+    return {
+      date,
+      mediaHub,
+      published: 0,
+      skippedReason: existingPublishedCount > 0 ? "already_published" : "no_submissions",
+    };
   }
+
+  const commodityIdsToPublish = selectAutoPublishCommodityIds({
+    existingPublishedCommodityIds,
+    plannedCommodityIds: [...plan.keys()],
+    replaceExisting: Boolean(options.replaceExisting),
+  });
+
+  if (commodityIdsToPublish.length === 0) {
+    let mediaHub: AutoPublishResult["mediaHub"] = null;
+    if (options.publishMediaHub !== false) {
+      mediaHub = await ensureDailyMediaHubPublication(date);
+    }
+    return { date, mediaHub, published: 0, skippedReason: "already_published" };
+  }
+
+  const commodityIdsToPublishSet = new Set(commodityIdsToPublish);
 
   let published = 0;
 
@@ -205,6 +232,10 @@ export async function autoPublishSpikeDailyIndices(
   }
 
   for (const commodity of dbCommodities) {
+    if (!commodityIdsToPublishSet.has(commodity.id)) {
+      continue;
+    }
+
     const planItem = plan.get(commodity.id);
     const basis = basisByCommodityId.get(commodity.id);
     const basket = basketByCommodityId.get(commodity.id);
@@ -246,12 +277,12 @@ export async function autoPublishSpikeDailyIndices(
       },
       update: {
         calculatedAt: new Date(),
-        medianUsdPerMt: null,
+        medianUsdPerMt: new Prisma.Decimal(planItem.median),
         publicValueUsdPerMt: new Prisma.Decimal(planItem.value),
         rawCount: planItem.rawCount,
         status: "verified",
         usedCount: planItem.usedCount,
-        valueUsdPerMt: new Prisma.Decimal(planItem.value),
+        valueUsdPerMt: new Prisma.Decimal(planItem.rawValue),
         version: nextVersion,
       },
       create: {
@@ -259,13 +290,13 @@ export async function autoPublishSpikeDailyIndices(
         basketWeight: basket.weight,
         commodityId: commodity.id,
         deliveryBasisId: basis.id,
-        medianUsdPerMt: null,
+        medianUsdPerMt: new Prisma.Decimal(planItem.median),
         publicValueUsdPerMt: new Prisma.Decimal(planItem.value),
         rawCount: planItem.rawCount,
         status: "verified",
         tradeDate,
         usedCount: planItem.usedCount,
-        valueUsdPerMt: new Prisma.Decimal(planItem.value),
+        valueUsdPerMt: new Prisma.Decimal(planItem.rawValue),
         version: nextVersion,
       },
     });
@@ -285,10 +316,7 @@ export async function autoPublishSpikeDailyIndices(
         })),
         ...planItem.excludedSubmissions.map((submission) => ({
           calculationId: calculation.id,
-          deviationPct: new Prisma.Decimal(getPreviousDayDeviationPct(
-            submission.price,
-            previousPublishedByCommodityId.get(submission.commodityId) ?? null,
-          )),
+          deviationPct: new Prisma.Decimal(submission.deviationPct),
           exclusionReason: submission.exclusionReason,
           included: false,
           priceSubmissionId: submission.id,
@@ -627,10 +655,12 @@ function safeErrorMessage(error: unknown) {
 
 export function buildAutoPublishPlan({
   basisByCommodityId,
+  date = "auto-publish",
   previousPublishedByCommodityId = new Map(),
   submissions,
 }: {
   basisByCommodityId: Map<string, string>;
+  date?: string;
   previousPublishedByCommodityId?: Map<string, number>;
   submissions: AutoPublishSubmission[];
 }) {
@@ -669,23 +699,55 @@ export function buildAutoPublishPlan({
   return new Map(
     [...byCommodity.entries()].map(([commodityId, commoditySubmissions]) => {
       const previousPublished = previousPublishedByCommodityId.get(commodityId) ?? null;
-      const usedSubmissions = commoditySubmissions.filter(
-        (submission) => !isAutoPublishPreviousDayOutlier(submission.price, previousPublished),
-      );
-      const excludedSubmissions = commoditySubmissions
+      const previousDayExcludedSubmissions = commoditySubmissions
         .filter((submission) => isAutoPublishPreviousDayOutlier(submission.price, previousPublished))
         .map((submission) => ({
           ...submission,
+          deviationPct: getPreviousDayDeviationPct(submission.price, previousPublished),
           exclusionReason: "previous_day_5pct_deviation" as const,
         }));
+      const candidateSubmissions = commoditySubmissions.filter(
+        (submission) => !isAutoPublishPreviousDayOutlier(submission.price, previousPublished),
+      );
 
-      if (usedSubmissions.length === 0) {
+      if (candidateSubmissions.length === 0) {
         return null;
       }
-      const value = roundToOneDecimal(
-        usedSubmissions.reduce((sum, submission) => sum + submission.price, 0) /
-          usedSubmissions.length,
+      const calculation = calculateIndexValue({
+        date,
+        commodityId,
+        deliveryBasisId: basisByCommodityId.get(commodityId) ?? "",
+        submissions: candidateSubmissions.map((submission) => ({
+          respondentId: submission.respondentId,
+          price: submission.price,
+        })),
+      });
+
+      if (
+        calculation.status !== "publishable" ||
+        calculation.value === null ||
+        calculation.rawValue === null ||
+        calculation.median === null
+      ) {
+        return null;
+      }
+
+      const medianExcludedByRespondentId = new Map(
+        calculation.excluded.map((excluded) => [excluded.respondentId, excluded]),
       );
+      const selectedSubmissions = candidateSubmissions.filter(
+        (submission) => !medianExcludedByRespondentId.has(submission.respondentId),
+      );
+      const medianExcludedSubmissions = candidateSubmissions.flatMap((submission) => {
+        const excluded = medianExcludedByRespondentId.get(submission.respondentId);
+        return excluded
+          ? [{
+              ...submission,
+              deviationPct: excluded.deviationPct,
+              exclusionReason: "outside_2pct_median_band" as const,
+            }]
+          : [];
+      });
       const latestUpdatedAt = commoditySubmissions
         .map((submission) => submission.updatedAt)
         .sort((first, second) => second.getTime() - first.getTime())[0];
@@ -693,15 +755,31 @@ export function buildAutoPublishPlan({
       return [
         commodityId,
         {
-          excludedSubmissions,
+          excludedSubmissions: [...previousDayExcludedSubmissions, ...medianExcludedSubmissions],
           latestUpdatedAt,
+          median: calculation.median,
           rawCount: commoditySubmissions.length,
-          selectedSubmissions: usedSubmissions,
-          usedCount: usedSubmissions.length,
-          value,
+          rawValue: calculation.rawValue,
+          selectedSubmissions,
+          usedCount: calculation.usedCount,
+          value: calculation.value,
         },
       ] as const;
     }).filter((entry): entry is NonNullable<typeof entry> => Boolean(entry)),
+  );
+}
+
+export function selectAutoPublishCommodityIds({
+  existingPublishedCommodityIds,
+  plannedCommodityIds,
+  replaceExisting,
+}: {
+  existingPublishedCommodityIds: Set<string>;
+  plannedCommodityIds: string[];
+  replaceExisting: boolean;
+}) {
+  return plannedCommodityIds.filter(
+    (commodityId) => replaceExisting || !existingPublishedCommodityIds.has(commodityId),
   );
 }
 

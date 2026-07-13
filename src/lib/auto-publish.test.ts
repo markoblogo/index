@@ -3,10 +3,11 @@ vi.mock("server-only", () => ({}));
 import {
   buildAutoPublishPlan,
   isKyivAutoPublishHour,
+  selectAutoPublishCommodityIds,
 } from "@/lib/auto-publish";
 
 describe("buildAutoPublishPlan", () => {
-  it("builds one publishable value from MN7R only", () => {
+  it("does not publish an insufficient respondent sample", () => {
     const plan = buildAutoPublishPlan({
       basisByCommodityId: new Map([["corn", "basis-corn"]]),
       submissions: [
@@ -23,14 +24,10 @@ describe("buildAutoPublishPlan", () => {
       ],
     });
 
-    expect(plan.get("corn")).toMatchObject({
-      rawCount: 1,
-      usedCount: 1,
-      value: 233.5,
-    });
+    expect(plan.has("corn")).toBe(false);
   });
 
-  it("averages all current respondent values for a commodity", () => {
+  it("uses the cleaned arithmetic average, not the median, for a publishable basket", () => {
     const plan = buildAutoPublishPlan({
       basisByCommodityId: new Map([["corn", "basis-corn"]]),
       submissions: [
@@ -38,7 +35,7 @@ describe("buildAutoPublishPlan", () => {
           id: "submission-1",
           commodityId: "corn",
           deliveryBasisId: "basis-corn",
-          price: 233.5,
+          price: 208,
           respondentId: "MN7R_MONITOR",
           source: "respondent",
           status: "submitted",
@@ -48,19 +45,51 @@ describe("buildAutoPublishPlan", () => {
           id: "submission-2",
           commodityId: "corn",
           deliveryBasisId: "basis-corn",
-          price: 236.5,
+          price: 209,
           respondentId: "partner-1",
           source: "admin",
           status: "verified",
           updatedAt: new Date("2026-05-25T14:10:00.000Z"),
         },
+        {
+          id: "submission-3",
+          commodityId: "corn",
+          deliveryBasisId: "basis-corn",
+          price: 209,
+          respondentId: "partner-2",
+          source: "respondent",
+          status: "submitted",
+          updatedAt: new Date("2026-05-25T14:11:00.000Z"),
+        },
+        {
+          id: "submission-4",
+          commodityId: "corn",
+          deliveryBasisId: "basis-corn",
+          price: 210,
+          respondentId: "partner-3",
+          source: "respondent",
+          status: "submitted",
+          updatedAt: new Date("2026-05-25T14:12:00.000Z"),
+        },
+        {
+          id: "submission-5",
+          commodityId: "corn",
+          deliveryBasisId: "basis-corn",
+          price: 210,
+          respondentId: "partner-4",
+          source: "respondent",
+          status: "submitted",
+          updatedAt: new Date("2026-05-25T14:13:00.000Z"),
+        },
       ],
     });
 
     expect(plan.get("corn")).toMatchObject({
-      rawCount: 2,
-      usedCount: 2,
-      value: 235,
+      median: 209,
+      rawCount: 5,
+      rawValue: 209.2,
+      usedCount: 5,
+      value: 209.2,
     });
   });
 
@@ -110,15 +139,33 @@ describe("buildAutoPublishPlan", () => {
           status: "submitted",
           updatedAt: new Date("2026-07-06T14:06:00.000Z"),
         },
+        ...[221, 222, 223, 224].map((price, index) => ({
+          id: `valid-submission-${index + 2}`,
+          commodityId: "corn-fca-chop",
+          deliveryBasisId: "basis-chop",
+          price,
+          respondentId: `partner-${index + 2}`,
+          source: "respondent" as const,
+          status: "submitted",
+          updatedAt: new Date(`2026-07-06T14:0${7 + index}:00.000Z`),
+        })),
       ],
     });
 
     expect(plan.get("corn-fca-chop")).toMatchObject({
       excludedSubmissions: [{ id: "bad-submission", exclusionReason: "previous_day_5pct_deviation" }],
-      rawCount: 2,
-      usedCount: 1,
-      value: 223,
+      rawCount: 6,
+      usedCount: 5,
+      value: 222.6,
     });
+  });
+
+  it("publishes missing commodities on a retry without overwriting existing ones", () => {
+    expect(selectAutoPublishCommodityIds({
+      existingPublishedCommodityIds: new Set(["corn", "wheat-115"]),
+      plannedCommodityIds: ["corn", "wheat-115", "feed-wheat"],
+      replaceExisting: false,
+    })).toEqual(["feed-wheat"]);
   });
 
   it("detects the 19:00 Europe/Kyiv publish window", () => {
