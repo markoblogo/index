@@ -57,7 +57,7 @@ const noticeText: Record<string, string> = {
   published_mock:
     "Publish action completed. Published values are locked in the current dev session.",
   published_database:
-    "Publish action completed. Published values, locks and audit logs were created.",
+    "Publication completed. The receipt below shows the exact Kyiv time and actor.",
   ai_generated: "AI Market Brief regenerated and stored for this trade date.",
   locked: `Published ${SITE_CONFIG.name} values for this trade date are locked and cannot be recalculated or republished.`,
   unlocked:

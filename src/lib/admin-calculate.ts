@@ -71,6 +71,8 @@ export type AdminCalculationCommodity = {
     changeAbs: number | null;
     changePct: number | null;
     locked: boolean;
+    publishedAt?: Date;
+    publishedByName?: string | null;
   } | null;
 };
 
@@ -398,6 +400,9 @@ async function getDatabaseCalculationData(date: string): Promise<AdminCalculatio
               changeAbs: publishedIndex.changeAbsUsdPerMt?.toNumber() ?? null,
               changePct: publishedIndex.changePct?.toNumber() ?? null,
               locked: publishedIndex.locked,
+              publishedAt: publishedIndex.publishedAt,
+              publishedByName:
+                publishedIndex.publishedBy?.name ?? publishedIndex.publishedBy?.email ?? null,
             }
           : null,
         basketRespondentCount: context.dbRespondents.length,
@@ -794,6 +799,14 @@ async function getDatabaseCalculationContext(date: string) {
         tradeDate,
         deliveryBasisId: { in: basisIds },
         basketId: { in: basketIds },
+      },
+      include: {
+        publishedBy: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
       },
     }),
     db.publishedIndex.findMany({

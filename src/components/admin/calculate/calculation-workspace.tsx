@@ -1,5 +1,6 @@
 "use client";
 
+import { useFormStatus } from "react-dom";
 import { SITE_CONFIG } from "@/lib/constants";
 import type { AdminCalculationCommodity } from "@/lib/admin-calculate";
 import type { IndexCalculationStatus } from "@/lib/index-calculation";
@@ -50,6 +51,14 @@ export function CalculationWorkspace({
   publishAction,
   recalculateAction,
 }: CalculationWorkspaceProps) {
+  const latestPublication = data.commodities
+    .filter((commodity) => commodity.published?.publishedAt)
+    .sort(
+      (left, right) =>
+        new Date(right.published!.publishedAt!).getTime() -
+        new Date(left.published!.publishedAt!).getTime(),
+    )[0]?.published;
+
   return (
     <>
       <div className="rounded-[1.5rem] border border-black/10 bg-white p-6 shadow-sm">
@@ -125,6 +134,12 @@ export function CalculationWorkspace({
         </div>
 
         {notice ? <Notice message={notice} /> : null}
+        {latestPublication ? (
+          <div className="mt-3 rounded-2xl border border-uga-green/20 bg-uga-mist px-4 py-3 text-sm text-uga-dark">
+            <span className="font-semibold">Latest publication:</span>{" "}
+            {formatPublicationReceipt(latestPublication)}
+          </div>
+        ) : null}
         {data.lockedForPublication ? (
           <div className="mt-5 border border-black bg-uga-mist px-4 py-3 text-sm font-semibold text-black/70">
             {data.lockReason}
@@ -175,13 +190,7 @@ export function CalculationWorkspace({
                 : " and publication lock status."}
             </p>
           </div>
-          <button
-            className="admin-contrast-pill w-full rounded-full bg-uga-green px-5 py-3 text-sm font-semibold text-white shadow-soft transition hover:bg-uga-dark disabled:cursor-not-allowed disabled:bg-black/20 lg:w-auto"
-            disabled={publishableCount === 0}
-            type="submit"
-          >
-            Publish {SITE_CONFIG.name}
-          </button>
+          <PublishButton disabled={publishableCount === 0} />
         </div>
 
         <div className="overflow-x-auto">
@@ -317,6 +326,9 @@ function CalculationRow({
               <span className="text-xs text-black/55">
                 {formatUsd(commodity.published.value)}
               </span>
+              <span className="text-xs leading-5 text-black/55">
+                {formatPublicationReceipt(commodity.published)}
+              </span>
             </div>
           ) : (
             <span className="text-sm text-black/55">Not published</span>
@@ -334,6 +346,42 @@ function CalculationRow({
       ) : null}
     </>
   );
+}
+
+function PublishButton({ disabled }: { disabled: boolean }) {
+  const { pending } = useFormStatus();
+
+  return (
+    <button
+      className="admin-contrast-pill w-full rounded-full bg-uga-green px-5 py-3 text-sm font-semibold text-white shadow-soft transition hover:bg-uga-dark disabled:cursor-not-allowed disabled:bg-black/20 lg:w-auto"
+      disabled={disabled || pending}
+      type="submit"
+    >
+      {pending ? "Publishing..." : `Publish ${SITE_CONFIG.name}`}
+    </button>
+  );
+}
+
+function formatPublicationReceipt(
+  published: NonNullable<AdminCalculationCommodity["published"]>,
+) {
+  if (!published.publishedAt) {
+    return "Published index";
+  }
+
+  const publishedAt = new Date(published.publishedAt);
+  if (Number.isNaN(publishedAt.getTime())) {
+    return "Published index";
+  }
+
+  const timestamp = new Intl.DateTimeFormat("en-GB", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Europe/Kyiv",
+  }).format(publishedAt);
+  const actor = published.publishedByName ? ` · by ${published.publishedByName}` : "";
+
+  return `${timestamp} Kyiv${actor}`;
 }
 
 function formatExcludedRows(commodity: AdminCalculationCommodity["excluded"]) {
