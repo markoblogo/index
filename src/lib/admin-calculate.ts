@@ -71,7 +71,7 @@ export type AdminCalculationCommodity = {
     changeAbs: number | null;
     changePct: number | null;
     locked: boolean;
-    publishedAt?: Date;
+    publishedAt?: Date | string;
     publishedByName?: string | null;
   } | null;
 };
