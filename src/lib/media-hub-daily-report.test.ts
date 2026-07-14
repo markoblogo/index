@@ -118,7 +118,7 @@ describe("media hub daily report formatting", () => {
     ], "2026-06-19", "uk");
 
     expect(fact.dayChange).toBe(-2);
-    expect(fact.previousFridayChange).toBe(-3.5);
+    expect(fact.previousFridayChange).toBe(-3);
   });
 
   it("builds SSI daily content with index section before themed news", () => {
