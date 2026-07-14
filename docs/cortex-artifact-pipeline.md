@@ -136,6 +136,29 @@ This is the local gate before wiring an artifact into runtime retrieval: the
 manifest must be non-empty, internally consistent, and cover the expected
 ecosystem projects.
 
+## Artifact Promotion
+
+The runtime artifact must be published to controlled storage; `.cortex/` stays
+out of Git and public Vercel assets. Index provides a storage-provider-neutral
+promotion command for an authenticated upload endpoint:
+
+```bash
+export CORTEX_ARTIFACT_UPLOAD_URL="https://<private-artifact-store>/cortex/chunk-manifest.runtime.json"
+export CORTEX_ARTIFACT_UPLOAD_TOKEN="<upload-token>"
+npm run cortex:artifact-publish -- \
+  --manifest=.cortex/chunk-manifest.runtime.json
+```
+
+The command validates the Cortex product/schema, a minimum chunk count and
+coverage for `index`, `mn7r` and `cropto`, then performs a bearer-authenticated
+`PUT`. It never accepts or prints tokens. Configure the corresponding read URL
+as `CORTEX_CHUNK_MANIFEST_URL` and, if the store requires it, set
+`CORTEX_CHUNK_MANIFEST_BEARER_TOKEN` for the deployed Index runtime.
+
+The upload endpoint is intentionally infrastructure-specific and is not
+implemented by the Next.js app. The same command can target a private object
+store, a signed upload gateway or a future Cortex service.
+
 ## Runtime Configuration
 
 The internal context-pack API reads the server-side chunk artifact from:

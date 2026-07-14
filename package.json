@@ -28,6 +28,7 @@
     "provision:spike-manual-respondents": "tsx scripts/provision-spike-manual-respondents.ts",
     "audit:respondent": "tsx scripts/respondent-telegram-audit.ts",
     "cortex:artifact-build": "tsx scripts/cortex-artifact-build.ts",
+    "cortex:artifact-publish": "node scripts/cortex-artifact-publish.mjs",
     "cortex:context-pack": "tsx scripts/cortex-context-pack.ts",
     "cortex:artifact-smoke": "tsx scripts/cortex-artifact-smoke.ts",
     "cortex:cropto-source-chunk": "tsx scripts/cortex-cropto-source-chunk.ts",
