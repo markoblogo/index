@@ -25,7 +25,7 @@ type SavedItem = {
 };
 
 const CURRENCY_LABEL = "USD/t";
-const SURVEY_GROUP_ORDER = ["grains-export", "oilseeds-crush", "oilseeds-export", "chop-export"] as const;
+const SURVEY_GROUP_ORDER = ["grains-export", "oilseeds-export", "oilseeds-crush", "chop-export"] as const;
 
 type SurveyGroupKey = typeof SURVEY_GROUP_ORDER[number];
 

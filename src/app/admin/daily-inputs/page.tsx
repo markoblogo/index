@@ -53,15 +53,6 @@ export default async function DailyInputsPage({
       defaultOpen: true,
     },
     {
-      key: "processors",
-      label: "Oilseeds crush",
-      description: "Domestic processing-market positions with VAT-inclusive logic.",
-      commodities: data.commodities.filter(
-        (commodity) => commodity.category === "processors",
-      ),
-      defaultOpen: true,
-    },
-    {
       key: "seasonal-export",
       label: "Oilseeds Export",
       description: "Seasonal export positions that expand the matrix during active trade periods.",
@@ -69,6 +60,15 @@ export default async function DailyInputsPage({
         (commodity) => commodity.category === "seasonal-export",
       ),
       defaultOpen: false,
+    },
+    {
+      key: "processors",
+      label: "Oilseeds crush",
+      description: "Domestic processing-market positions with VAT-inclusive logic.",
+      commodities: data.commodities.filter(
+        (commodity) => commodity.category === "processors",
+      ),
+      defaultOpen: true,
     },
   ].filter((group) => group.commodities.length > 0);
   const cellByKey = new Map(

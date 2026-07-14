@@ -12,6 +12,12 @@ import {
 export type Mn7rPosition = {
   indexCode: string;
   currency: string | null;
+  deliveryEnd?: string | null;
+  deliveryStart?: string | null;
+  endDate?: string | null;
+  periodEnd?: string | null;
+  periodStart?: string | null;
+  startDate?: string | null;
   avgBid: number | null;
   avgOffer: number | null;
   monitorPrice: number | null;
@@ -489,11 +495,24 @@ async function ensureMn7rMonitorImportAuditStorage() {
 }
 
 function normalizePayload(payload: Mn7rPayload): NormalizedMn7rPayload {
+  if ((payload.records?.length ?? 0) > 0 || (payload.items?.length ?? 0) > 0) {
+    return aggregateRawRecords(payload);
+  }
+
   if (payload.positions?.length) {
+    const diagnostics = buildPositionDiagnostics(payload);
+
     return {
-      diagnostics: buildPositionDiagnostics(payload),
-      missingIndexCodes: [] as string[],
-      positions: payload.positions,
+      diagnostics,
+      missingIndexCodes: diagnostics
+        .filter(
+          (diagnostic) =>
+            diagnostic.matchedIndexCode && !diagnostic.passedDeliveryWindow,
+        )
+        .map((diagnostic) => diagnostic.matchedIndexCode!),
+      positions: payload.positions.filter(
+        (_, index) => diagnostics[index]?.passedDeliveryWindow,
+      ),
       rawCount: payload.positions.length,
       skipped: 0,
     };
@@ -641,27 +660,32 @@ function buildPositionDiagnostics(payload: Mn7rPayload): Mn7rRawRecordDiagnostic
   const window = buildDeliveryWindow(payload.asOfDate);
 
   return (payload.positions ?? []).map((position) => {
+    const deliveryOverlap = calculateDeliveryOverlap(position, window);
+    const passedDeliveryWindow = deliveryOverlap.overlapDays >= 10;
     const noData = position.quality === "no_data";
     const missingPrice = position.monitorPrice == null;
-    const decision = noData || missingPrice ? "skipped" : "matched";
-    const reason: Mn7rRawRecordDiagnostic["reason"] = noData
-      ? "matched_but_no_data"
-      : missingPrice
-        ? "matched_but_price_missing"
-        : "position_payload";
+    const decision =
+      passedDeliveryWindow && !noData && !missingPrice ? "matched" : "skipped";
+    const reason: Mn7rRawRecordDiagnostic["reason"] = !passedDeliveryWindow
+      ? "delivery_overlap_below_10_days"
+      : noData
+        ? "matched_but_no_data"
+        : missingPrice
+          ? "matched_but_price_missing"
+          : "position_payload";
 
     return {
       basisText: position.indexCode,
       currency: position.currency,
       decision,
-      deliveryEnd: null,
-      deliveryStart: null,
+      deliveryEnd: deliveryOverlap.deliveryEnd,
+      deliveryStart: deliveryOverlap.deliveryStart,
       deliveryWindowEnd: formatDateOnly(window.end),
       deliveryWindowStart: formatDateOnly(window.start),
       matchedIndexCode: position.indexCode,
       monitorPrice: position.monitorPrice,
-      overlapDays: 30,
-      passedDeliveryWindow: true,
+      overlapDays: deliveryOverlap.overlapDays,
+      passedDeliveryWindow,
       quality: position.quality,
       rawId: null,
       rawText: position.indexCode,
@@ -846,19 +870,37 @@ function buildDeliveryWindow(asOfDate: string) {
 }
 
 function calculateDeliveryOverlap(
-  raw: Mn7rRawRecord,
+  raw: Pick<
+    Mn7rRawRecord,
+    | "deliveryStart"
+    | "deliveryEnd"
+    | "periodStart"
+    | "periodEnd"
+    | "startDate"
+    | "endDate"
+  >,
   window: { start: Date; end: Date },
 ) {
-  const deliveryStart =
-    parseFlexibleDate(
-      raw.deliveryStart ?? raw.periodStart ?? raw.startDate ?? null,
-    ) ?? window.start;
-  const deliveryEnd =
-    parseFlexibleDate(raw.deliveryEnd ?? raw.periodEnd ?? raw.endDate ?? null) ??
-    deliveryStart;
+  const deliveryStart = parseFlexibleDate(
+    raw.deliveryStart ?? raw.periodStart ?? raw.startDate ?? null,
+  );
+  const deliveryEnd = parseFlexibleDate(
+    raw.deliveryEnd ?? raw.periodEnd ?? raw.endDate ?? null,
+  );
+
+  if (!deliveryStart && !deliveryEnd) {
+    return {
+      deliveryEnd: null,
+      deliveryStart: null,
+      overlapDays: 0,
+    };
+  }
+
+  const effectiveStart = deliveryStart ?? deliveryEnd!;
+  const effectiveEnd = deliveryEnd ?? deliveryStart!;
   const rangeStart =
-    deliveryStart <= deliveryEnd ? deliveryStart : deliveryEnd;
-  const rangeEnd = deliveryStart <= deliveryEnd ? deliveryEnd : deliveryStart;
+    effectiveStart <= effectiveEnd ? effectiveStart : effectiveEnd;
+  const rangeEnd = effectiveStart <= effectiveEnd ? effectiveEnd : effectiveStart;
   const overlapStart = new Date(
     Math.max(rangeStart.getTime(), window.start.getTime()),
   );
