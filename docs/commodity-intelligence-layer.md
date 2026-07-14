@@ -139,6 +139,13 @@ now describe 1D3X Cortex as the market-context memory behind evidence-backed
 Context reports. Public copy stays bounded: Cortex is presented as source
 memory, audit and gated assistant context, not as an autonomous public bot.
 
+The first durable market-workforce slice is also active as an internal
+contract: `CortexMarketWorkforceLedger` stores versioned decision packets
+append-only by task, correlation ID and packet hash. The protected endpoint
+`/api/internal/cortex/workforce` accepts a validated packet and lists prior
+versions for internal review. It does not execute, publish or approve actions;
+it records the packet and its human/officer state for later bounded workflows.
+
 The first ingestion artifact is available through `npm run cortex:source-scan`.
 It scans approved local repository roots into `.cortex/source-manifest.json`
 with source kind, owner project, visibility, size, SHA-256 hash and stable
