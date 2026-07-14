@@ -79,6 +79,36 @@ describe("internal Cortex assistant gateway", () => {
     expect(response.status).toBe(400);
     expect(readFile).not.toHaveBeenCalled();
   });
+
+  it("keeps public assistant retrieval public-only", async () => {
+    vi.stubEnv("CORTEX_INTERNAL_API_SECRET", "cortex-secret");
+    vi.stubEnv("OPENAI_API_KEY", "openai-secret");
+    vi.mocked(readFile).mockResolvedValueOnce(JSON.stringify(fixtureChunkManifest()));
+    const fetchMock = vi.fn().mockResolvedValueOnce(Response.json({
+      output: [{ content: [{ text: "Public-safe answer." }] }],
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    const { POST } = await import("./route");
+
+    const response = await POST(buildRequest({
+      language: "en",
+      localContext: { currentSection: "AI layer" },
+      project: "mn7r",
+      query: "What is MN7R?",
+      roleMode: "public",
+      surface: "public-assistant",
+    }, "cortex-secret"));
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.contextPack.evidence).toHaveLength(1);
+    expect(body.contextPack.evidence[0]).toMatchObject({
+      sourceId: "mn7r-public-runtime-context",
+      visibility: "public",
+    });
+    expect(body.contextPack.evidence.some((item: { visibility: string }) => item.visibility !== "public")).toBe(false);
+    expect(body.audit.surface).toBe("public-assistant");
+  });
 });
 
 function buildRequest(body: unknown, token: string) {

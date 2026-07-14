@@ -209,10 +209,11 @@ does not accept client-controlled filesystem paths or artifact URLs.
 The Cortex-owned assistant gateway is `POST /api/internal/cortex/assistant`.
 It accepts only a bounded, project-scoped adapter request, retrieves approved
 memory, merges it with adapter context, selects `CORTEX_ASSISTANT_MODEL` and
-performs the OpenAI handoff. MN7R EXE Assistant and its role-scoped Manual AI
-chat are the first consumers; they do not send raw database state or choose the
-external model themselves. If the gateway is unavailable, MN7R falls back to
-its deterministic answer paths.
+performs the OpenAI handoff. MN7R EXE Assistant, role-scoped Manual AI chat and
+the public-safe landing chat are consumers; they do not send raw database state
+or choose the external model themselves. Public requests are restricted to
+public evidence. If the gateway is unavailable, MN7R falls back to its
+deterministic answer paths.
 Each successful handoff returns and, when a database is configured, persists a
 correlation record with `requestId`, `contextPackId`, provider/model, evidence
 count and known-gap count. The audit record contains no question or raw

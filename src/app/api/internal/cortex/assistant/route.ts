@@ -28,8 +28,8 @@ type ParsedAssistantRequest = {
   language: "en" | "uk" | "ru" | "mixed";
   localContext: Record<string, unknown>;
   query: string;
-  roleMode: "broker" | "boss" | "admin";
-  surface: "exe-assistant" | "manual-assistant";
+  roleMode: "broker" | "boss" | "admin" | "public";
+  surface: "exe-assistant" | "manual-assistant" | "public-assistant";
 };
 
 export async function POST(request: Request) {
@@ -50,13 +50,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: manifest.error }, { status: 503 });
   }
 
-  const purpose = parsed.value.surface === "manual-assistant" ? "source-review" : "execution-context";
+  const purpose = parsed.value.surface === "exe-assistant" ? "execution-context" : "source-review";
+  const isPublic = parsed.value.surface === "public-assistant";
   const memory = buildCortexMemoryContextPack({
-    allowProtected: true,
+    allowProtected: !isPublic,
     chunkManifest: manifest.value,
     filters: {
       ownerProject: ["mn7r", "index", "ecosystem"],
-      visibility: ["internal", "protected"],
+      visibility: isPublic ? ["public"] : ["internal", "protected"],
     },
     maxEvidence: 8,
     maxTokens: 2_400,
@@ -64,7 +65,7 @@ export async function POST(request: Request) {
     query: parsed.value.query,
   });
   const localPack = buildCortexContextPack({
-    allowProtected: true,
+    allowProtected: !isPublic,
     evidence: [buildLocalContextEvidence({
       localContext: parsed.value.localContext,
       surface: parsed.value.surface,
@@ -133,8 +134,9 @@ async function readBody(request: Request): Promise<AssistantRequestBody> {
 function parseRequest(body: AssistantRequestBody):
   | { ok: true; value: ParsedAssistantRequest }
   | { error: string; ok: false } {
-  if (body.project !== "mn7r" || (body.surface !== "exe-assistant" && body.surface !== "manual-assistant")) {
-    return { error: "Only the MN7R EXE and manual assistant surfaces are enabled", ok: false };
+  if (body.project !== "mn7r" ||
+    (body.surface !== "exe-assistant" && body.surface !== "manual-assistant" && body.surface !== "public-assistant")) {
+    return { error: "Only the MN7R EXE, manual and public assistant surfaces are enabled", ok: false };
   }
   if (typeof body.query !== "string" || body.query.trim().length === 0 || body.query.length > 2_000) {
     return { error: "query is required and must be at most 2000 characters", ok: false };
@@ -147,7 +149,7 @@ function parseRequest(body: AssistantRequestBody):
     return { error: "language is invalid or missing", ok: false };
   }
   const roleMode = body.roleMode;
-  if (roleMode !== "broker" && roleMode !== "boss" && roleMode !== "admin") {
+  if (roleMode !== "broker" && roleMode !== "boss" && roleMode !== "admin" && roleMode !== "public") {
     return { error: "roleMode is invalid or missing", ok: false };
   }
   return {
@@ -173,14 +175,16 @@ function limitObject(value: Record<string, unknown>) {
 
 function buildLocalContextEvidence(input: { localContext: Record<string, unknown>; surface: ParsedAssistantRequest["surface"] }): CortexEvidenceItem {
   const isManual = input.surface === "manual-assistant";
+  const isPublic = input.surface === "public-assistant";
+  const label = isPublic ? "public" : isManual ? "manual" : "exe";
   return {
     extractedAt: new Date().toISOString(),
-    id: `cortex:mn7r:${isManual ? "manual" : "exe"}-runtime:${hashText(JSON.stringify(input.localContext))}`,
-    sourceId: isManual ? "mn7r-manual-runtime-context" : "mn7r-exe-runtime-context",
+    id: `cortex:mn7r:${label}-runtime:${hashText(JSON.stringify(input.localContext))}`,
+    sourceId: isPublic ? "mn7r-public-runtime-context" : isManual ? "mn7r-manual-runtime-context" : "mn7r-exe-runtime-context",
     summary: JSON.stringify(input.localContext).slice(0, 14_000),
-    title: isManual ? "MN7R bounded manual runtime context" : "MN7R bounded EXE runtime context",
-    urlOrPath: isManual ? "mn7r://manual-assistant/bounded-runtime-context" : "mn7r://exe-assistant/bounded-runtime-context",
-    visibility: "protected",
+    title: isPublic ? "MN7R bounded public runtime context" : isManual ? "MN7R bounded manual runtime context" : "MN7R bounded EXE runtime context",
+    urlOrPath: isPublic ? "mn7r://public-assistant/bounded-runtime-context" : isManual ? "mn7r://manual-assistant/bounded-runtime-context" : "mn7r://exe-assistant/bounded-runtime-context",
+    visibility: isPublic ? "public" : "protected",
   };
 }
 
@@ -229,7 +233,9 @@ function buildSystemPrompt(
     `You are 1D3X Cortex serving the protected MN7R ${surface} surface.`,
     languageRule,
     `The current MN7R role is ${roleMode}; never reveal capabilities outside that role.`,
-    surface === "manual-assistant"
+    surface === "public-assistant"
+      ? "Use only public-safe product context. Never reveal protected workflows, private data, secrets, hidden routes or internal operational details."
+      : surface === "manual-assistant"
       ? "Use only the supplied role-allowed manual context and approved Cortex evidence."
       : "Use only the supplied bounded EXE context and approved Cortex evidence.",
     "Do not claim that a payment, message, status, contract, or execution action was changed.",

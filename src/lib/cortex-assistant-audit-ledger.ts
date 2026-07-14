@@ -13,7 +13,7 @@ export type CortexAssistantAuditRecord = {
   provider: "openai";
   purpose: "execution-context" | "source-review";
   requestId: string;
-  surface: "exe-assistant" | "manual-assistant";
+  surface: "exe-assistant" | "manual-assistant" | "public-assistant";
 };
 
 export function buildCortexAssistantAuditRecord(input: {
