@@ -30,6 +30,7 @@ export type RespondentSurveyCommodity = {
   code: string;
   name: string;
   price: number | null;
+  quality: string | null;
 };
 
 export type RespondentSurveyData = {
@@ -342,6 +343,11 @@ function getMockRespondentSurveyData({
           ? commodity.name.uk
           : `${commodity.name.uk} / ${commodity.name.en}`,
       price: storedSubmissions[index]?.price ?? null,
+      quality:
+        activeIndex.commodities
+          .find((item) => item.id === commodity.id)
+          ?.detailMetrics.find((metric) => metric.label.uk === "Якість")
+          ?.value[locale] ?? null,
     })),
   };
 }
@@ -418,6 +424,11 @@ async function getDatabaseRespondentSurveyData({
             ? commodity.nameUk
             : `${commodity.nameUk} / ${commodity.nameEn}`,
         price: submission?.priceUsdPerMt.toNumber() ?? null,
+        quality:
+          activeIndex.commodities
+            .find((item) => item.dbCode === commodity.code)
+            ?.detailMetrics.find((metric) => metric.label.uk === "Якість")
+            ?.value[locale] ?? null,
       };
     }),
   };

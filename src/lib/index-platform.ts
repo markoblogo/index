@@ -346,7 +346,10 @@ const spikeCommodities: IndexCommodityConfig[] = [
     percentChange: 0,
     sparkline: [468, 469, 470, 471, 472, 472, 472],
     detailMetrics: [
-      { label: { uk: "Якість", en: "Quality" }, value: { uk: "ГМО", en: "GMO" } },
+      {
+        label: { uk: "Якість", en: "Quality" },
+        value: { uk: "37% протеїну, ГМО", en: "37% protein, GMO" },
+      },
       { label: { uk: "Базис", en: "Basis" }, value: { uk: "CPT Port", en: "CPT Port" } },
       { label: { uk: "Напрямок", en: "Direction" }, value: { uk: "порт експорт", en: "port export" } },
     ],
@@ -367,7 +370,10 @@ const spikeCommodities: IndexCommodityConfig[] = [
     percentChange: 0,
     sparkline: [462, 463, 464, 465, 466, 466, 466],
     detailMetrics: [
-      { label: { uk: "Якість", en: "Quality" }, value: { uk: "ГМО", en: "GMO" } },
+      {
+        label: { uk: "Якість", en: "Quality" },
+        value: { uk: "37% протеїну, ГМО", en: "37% protein, GMO" },
+      },
       { label: { uk: "Базис", en: "Basis" }, value: { uk: "FCA Чоп", en: "FCA Chop" } },
       { label: { uk: "Напрямок", en: "Direction" }, value: { uk: "кордон експорт", en: "border export" } },
     ],
@@ -387,7 +393,10 @@ const spikeCommodities: IndexCommodityConfig[] = [
     percentChange: 0,
     sparkline: [484, 485, 486, 487, 488, 488, 488],
     detailMetrics: [
-      { label: { uk: "Якість", en: "Quality" }, value: { uk: "не ГМО", en: "NON-GMO" } },
+      {
+        label: { uk: "Якість", en: "Quality" },
+        value: { uk: "37% протеїну, не ГМО", en: "37% protein, NON-GMO" },
+      },
       { label: { uk: "Базис", en: "Basis" }, value: { uk: "CPT Port", en: "CPT Port" } },
       { label: { uk: "Напрямок", en: "Direction" }, value: { uk: "порт експорт", en: "port export" } },
     ],
@@ -408,7 +417,10 @@ const spikeCommodities: IndexCommodityConfig[] = [
     percentChange: 0,
     sparkline: [477, 478, 479, 480, 481, 481, 481],
     detailMetrics: [
-      { label: { uk: "Якість", en: "Quality" }, value: { uk: "не ГМО", en: "NON-GMO" } },
+      {
+        label: { uk: "Якість", en: "Quality" },
+        value: { uk: "37% протеїну, не ГМО", en: "37% protein, NON-GMO" },
+      },
       { label: { uk: "Базис", en: "Basis" }, value: { uk: "FCA Чоп", en: "FCA Chop" } },
       { label: { uk: "Напрямок", en: "Direction" }, value: { uk: "кордон експорт", en: "border export" } },
     ],
@@ -428,7 +440,10 @@ const spikeCommodities: IndexCommodityConfig[] = [
     percentChange: 0,
     sparkline: [497, 498, 499, 500, 501, 501, 501],
     detailMetrics: [
-      { label: { uk: "Якість", en: "Quality" }, value: { uk: "48% олії, не ГМО", en: "48% oil, NON-GMO" } },
+      {
+        label: { uk: "Якість", en: "Quality" },
+        value: { uk: "48% сухої олії, не ГМО", en: "48% dry oil, NON-GMO" },
+      },
       { label: { uk: "Базис", en: "Basis" }, value: { uk: "CPT Port", en: "CPT Port" } },
       { label: { uk: "Напрямок", en: "Direction" }, value: { uk: "порт експорт", en: "port export" } },
     ],
@@ -449,7 +464,10 @@ const spikeCommodities: IndexCommodityConfig[] = [
     percentChange: 0,
     sparkline: [490, 491, 492, 493, 494, 494, 494],
     detailMetrics: [
-      { label: { uk: "Якість", en: "Quality" }, value: { uk: "48% олії, не ГМО", en: "48% oil, NON-GMO" } },
+      {
+        label: { uk: "Якість", en: "Quality" },
+        value: { uk: "48% сухої олії, не ГМО", en: "48% dry oil, NON-GMO" },
+      },
       { label: { uk: "Базис", en: "Basis" }, value: { uk: "FCA Чоп", en: "FCA Chop" } },
       { label: { uk: "Напрямок", en: "Direction" }, value: { uk: "кордон експорт", en: "border export" } },
     ],

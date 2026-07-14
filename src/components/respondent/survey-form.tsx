@@ -200,6 +200,11 @@ export function RespondentSurveyForm({
                   <span className="mt-1 block text-xs font-semibold uppercase tracking-[0.14em] text-black/45">
                     {commodity.code} · {commodity.basisLabel}
                   </span>
+                  {commodity.quality ? (
+                    <span className="mt-1 block text-xs font-semibold text-uga-green">
+                      {locale === "uk" ? "Якість:" : "Quality:"} {commodity.quality}
+                    </span>
+                  ) : null}
                 </span>
                 <span className="grid min-w-0 gap-1">
                   <span className="text-xs font-semibold uppercase tracking-[0.14em] text-black/45">

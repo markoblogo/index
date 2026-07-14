@@ -14,6 +14,7 @@ import {
   type Mn7rRawRecordDiagnostic,
 } from "@/lib/mn7r-monitor-import";
 import { getSsiHelpBlock } from "@/lib/ssi-manual-content";
+import { getActiveIndexConfig } from "@/lib/index-platform";
 
 type DailyInputsPageProps = {
   searchParams: Promise<{
@@ -273,25 +274,34 @@ export default async function DailyInputsPage({
                       <th className="sticky left-0 z-30 w-[17rem] min-w-[17rem] border-r border-white/10 bg-uga-dark px-4 py-4 text-xs font-semibold uppercase tracking-[0.16em] text-white/70">
                         Respondent
                       </th>
-                      {group.commodities.map((commodity) => (
-                        <th
-                          className={`${isCompactView ? "w-[13rem] min-w-[13rem]" : "w-[15rem] min-w-[15rem]"} bg-uga-dark border-l border-white/10 px-3 py-4 align-bottom text-xs font-semibold uppercase tracking-[0.12em] text-white/70`}
-                          key={commodity.id}
-                        >
-                          <span className="mb-2 block text-[0.58rem] uppercase tracking-[0.18em] text-uga-lime">
-                            {formatCategoryBadge(commodity.category)}
-                          </span>
-                          <span className="block text-sm font-semibold normal-case tracking-normal text-white">
-                            {commodity.name}
-                          </span>
-                          <span className="mt-1 block text-[0.65rem] uppercase tracking-[0.14em] text-white/50">
-                            {commodity.code}
-                          </span>
-                          <span className="mt-1 block text-[0.72rem] normal-case tracking-normal text-white/42">
-                            {commodity.basisLabel}
-                          </span>
-                        </th>
-                      ))}
+                      {group.commodities.map((commodity) => {
+                        const quality = getCommodityQualityLabel(commodity.code);
+
+                        return (
+                          <th
+                            className={`${isCompactView ? "w-[13rem] min-w-[13rem]" : "w-[15rem] min-w-[15rem]"} bg-uga-dark border-l border-white/10 px-3 py-4 align-bottom text-xs font-semibold uppercase tracking-[0.12em] text-white/70`}
+                            key={commodity.id}
+                          >
+                            <span className="mb-2 block text-[0.58rem] uppercase tracking-[0.18em] text-uga-lime">
+                              {formatCategoryBadge(commodity.category)}
+                            </span>
+                            <span className="block text-sm font-semibold normal-case tracking-normal text-white">
+                              {commodity.name}
+                            </span>
+                            <span className="mt-1 block text-[0.65rem] uppercase tracking-[0.14em] text-white/50">
+                              {commodity.code}
+                            </span>
+                            {quality ? (
+                              <span className="mt-1 block text-[0.68rem] normal-case tracking-normal text-uga-lime">
+                                {quality}
+                              </span>
+                            ) : null}
+                            <span className="mt-1 block text-[0.72rem] normal-case tracking-normal text-white/42">
+                              {commodity.basisLabel}
+                            </span>
+                          </th>
+                        );
+                      })}
                     </tr>
                   </thead>
                   <tbody>
@@ -562,6 +572,15 @@ function formatDiagnosticReason(reason: Mn7rRawRecordDiagnostic["reason"]) {
   }
 
   return "matched";
+}
+
+function getCommodityQualityLabel(code: string) {
+  return (
+    getActiveIndexConfig().commodities
+      .find((commodity) => commodity.dbCode === code)
+      ?.detailMetrics.find((metric) => metric.label.uk === "Якість")
+      ?.value.uk ?? null
+  );
 }
 
 function MatrixCell({
