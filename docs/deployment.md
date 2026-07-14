@@ -61,6 +61,13 @@ The response must have HTTP `200`, `"ok": true`, a configured assistant
 provider and readable manifest totals. The endpoint does not return the token,
 OpenAI key or chunk contents.
 
+The same check is available as a repeatable release command. It reads the
+token from the environment and never accepts it as a command-line argument:
+
+```bash
+npm run check:cortex-runtime
+```
+
 For the internal SPIKE setup route, `exposeTemporaryPassword=1` is protected by
 an additional `x-spike-setup-expose-secret` header matching
 `SPIKE_SETUP_EXPOSE_SECRET`; cron/internal bearer access alone is intentionally

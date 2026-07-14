@@ -15,6 +15,7 @@
     "audit:production-env:ci": "node scripts/check-production-env-smoke.mjs",
     "audit:all": "npm run audit:production-env:ci && npm run audit:release",
     "check:production-env": "node scripts/check-production-env.mjs",
+    "check:cortex-runtime": "node scripts/check-cortex-runtime.mjs",
     "db:generate": "prisma generate",
     "db:seed": "prisma db seed",
     "deploy:1d3x": "node scripts/verify-vercel-project.mjs --project 1d3x && node scripts/check-deploy-worktree.mjs && node scripts/deploy-vercel-project.mjs --project 1d3x --profile 1d3x",

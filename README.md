@@ -77,6 +77,8 @@ Shared capabilities:
   public-only and product-side role/action gates remain in MN7R.
 - The protected `/api/internal/cortex/health` route is the post-deploy
   readiness probe for the Cortex manifest and OpenAI provider.
+- `npm run check:cortex-runtime` performs the authenticated post-deploy smoke
+  check without printing secrets or runtime evidence.
 - Vercel cron endpoints for scheduled imports, notifications and publication.
 
 UGA-specific features:
