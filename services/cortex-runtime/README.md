@@ -17,8 +17,10 @@ Index-hosted Cortex gateway.
 
 ## Railway setup
 
-Deploy this directory with `services/cortex-runtime/Dockerfile`, attach a
-persistent volume mounted at `/data`, and set:
+Deploy this directory with `railway up ./services/cortex-runtime
+--path-as-root --new --name 1d3x-cortex-runtime`. The included
+`railway.toml` selects the Dockerfile and `/health` check. Attach a persistent
+volume mounted at `/data`, and set:
 
 ```text
 CORTEX_RUNTIME_TOKEN=<long-random-secret>
