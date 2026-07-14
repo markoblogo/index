@@ -318,7 +318,7 @@ async function publishMockIndices(
         ? commodity.benchmarkBlendedValue
         : commodity.value;
     const change = computePublishedChange(publishedValue, previous?.value ?? null, {
-      displayRounding: getActiveIndexTenant() === "spike-ua" ? "whole" : "one_decimal",
+      displayRounding: getActiveIndexTenant().id === "spike-ua" ? "whole" : "one_decimal",
     });
 
     setDemoPublishedIndex({
@@ -633,7 +633,7 @@ async function publishDatabaseCalculations(
       previous?.valueUsdPerMt.toNumber() ?? null,
       {
         displayRounding:
-          getActiveIndexTenant() === "spike-ua" ? "whole" : "one_decimal",
+          getActiveIndexTenant().id === "spike-ua" ? "whole" : "one_decimal",
       },
     );
 
