@@ -206,6 +206,13 @@ server-side chunk artifact from `CORTEX_CHUNK_MANIFEST_URL`,
 Remote artifacts can use `CORTEX_CHUNK_MANIFEST_BEARER_TOKEN`. The endpoint
 does not accept client-controlled filesystem paths or artifact URLs.
 
+The Cortex-owned assistant gateway is `POST /api/internal/cortex/assistant`.
+It accepts only a bounded, project-scoped adapter request, retrieves approved
+memory, merges it with adapter context, selects `CORTEX_ASSISTANT_MODEL` and
+performs the OpenAI handoff. MN7R EXE Assistant is the first consumer; it does
+not send raw database state or choose the external model itself. If the gateway
+is unavailable, MN7R falls back to its deterministic answer path.
+
 ## Scope
 
 1D3X Cortex should cover these resource families:
