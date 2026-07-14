@@ -344,9 +344,8 @@ function getMockRespondentSurveyData({
           : `${commodity.name.uk} / ${commodity.name.en}`,
       price: storedSubmissions[index]?.price ?? null,
       quality:
-        activeIndex.commodities
-          .find((item) => item.id === commodity.id)
-          ?.detailMetrics.find((metric) => metric.label.uk === "Якість")
+        activeIndex?.commodities?.find((item) => item.id === commodity.id)
+          ?.detailMetrics?.find((metric) => metric.label.uk === "Якість")
           ?.value[locale] ?? null,
     })),
   };
@@ -425,9 +424,8 @@ async function getDatabaseRespondentSurveyData({
             : `${commodity.nameUk} / ${commodity.nameEn}`,
         price: submission?.priceUsdPerMt.toNumber() ?? null,
         quality:
-          activeIndex.commodities
-            .find((item) => item.dbCode === commodity.code)
-            ?.detailMetrics.find((metric) => metric.label.uk === "Якість")
+          activeIndex?.commodities?.find((item) => item.dbCode === commodity.code)
+            ?.detailMetrics?.find((metric) => metric.label.uk === "Якість")
             ?.value[locale] ?? null,
       };
     }),

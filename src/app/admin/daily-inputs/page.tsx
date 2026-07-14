@@ -576,9 +576,8 @@ function formatDiagnosticReason(reason: Mn7rRawRecordDiagnostic["reason"]) {
 
 function getCommodityQualityLabel(code: string) {
   return (
-    getActiveIndexConfig().commodities
-      .find((commodity) => commodity.dbCode === code)
-      ?.detailMetrics.find((metric) => metric.label.uk === "Якість")
+    getActiveIndexConfig()?.commodities?.find((commodity) => commodity.dbCode === code)
+      ?.detailMetrics?.find((metric) => metric.label.uk === "Якість")
       ?.value.uk ?? null
   );
 }

@@ -62,7 +62,7 @@ function fixtureManifest(): CortexChunkManifest {
         rootId: "mn7r-protected-source-snapshot",
         sourceHash: "mn7r-source-hash",
         sourceId: "mn7r-broker-user-inputs",
-        sourceKind: "raw-data",
+        sourceKind: "action-event",
         text: "MN7R protected broker input.",
         title: "MN7R source",
         tokenEstimate: 7,

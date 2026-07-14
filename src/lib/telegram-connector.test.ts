@@ -127,7 +127,7 @@ describe("telegram connector", () => {
       sendMessage: vi.fn(async () => ({ message_id: 1 })),
       sendPhoto: vi.fn(async () => ({ message_id: 2 })),
     } as unknown as Api;
-    const signal = new AbortController().signal;
+    const signal = new AbortController().signal as any;
 
     await telegramConnectorSendMessage({ api, chatId: "1", signal, text: "hello" });
     await telegramConnectorSendPhoto({ api, chatId: "1", photo: "photo-id", signal });

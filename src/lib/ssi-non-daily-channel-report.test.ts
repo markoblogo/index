@@ -10,8 +10,13 @@ describe("SSI non-daily channel report formatter", () => {
           {
             claim: "Кукурудза index 210.0 $; Кукурудза; Corn; CORN; CPT Odesa, Ukraine (export)",
             excerpt: "Продовольча пшениця index 206.8 $; Продовольча пшениця; Milling Wheat; WHT_115; CPT Odesa, Ukraine (export); d/d -1.0",
-            sourceId: "index",
-            url: null,
+            id: "evidence-1",
+            confidence: "high",
+            sourceDate: null,
+            sourceTitle: "Index",
+            sourceType: "index",
+            sourceUrl: null,
+            usedInSection: "market",
           },
         ],
         localized: {
@@ -21,6 +26,7 @@ describe("SSI non-daily channel report formatter", () => {
               "✅Поточна ситуація з обробкою вагонів із зерном в морських портах України станом на 02.07.2026 року: ⚡️Середньодобовий показник вивантаження вагонів в портах Великої Одеси - 1 054 ваг/доба; ✅Кількість вагонів із зерном, що рухаються в напрямку портів Великої Одеси - 5 136 ваг.",
               "🌻 SUNFLOWER:",
             ],
+            title: "Weekly market report",
           },
         },
         summary: [],
