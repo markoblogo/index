@@ -20,6 +20,26 @@ and project-specific facts. External models are used for reasoning, drafting,
 summarization and transformations only when the internal layer has assembled a
 bounded context pack.
 
+## Ownership Boundary
+
+1D3X Cortex is the owner of the shared AI layer for the agro-commodity
+ecosystem. Product assistants are Cortex surfaces, not separate competing AI
+products:
+
+- Cortex owns context assembly, source/memory retrieval, model routing,
+  workforce packets, hypothesis diversity, evaluation records and the
+  OpenAI/API handoff;
+- MN7R owns the EXE Assistant surface, brokerage domain rules, auth/scope,
+  deterministic checks and approval-gated action tools;
+- Index owns SSI/1D3X, Context and MediaHub data, report workflows and the
+  Cortex runtime/artifact service;
+- Cropto owns indexed trading, document, settlement and wallet/clearing domain
+  controls while consuming Cortex context through reviewed contracts.
+
+The EXE Assistant in MN7R is therefore the MN7R domain interface to Cortex. It
+may display and request Cortex work, but must not create a parallel memory,
+model-routing or autonomous-action layer outside the Cortex contract.
+
 This means:
 
 - own layer first for source discovery, retrieval, facts, entity linking,

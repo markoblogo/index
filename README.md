@@ -64,6 +64,13 @@ Shared capabilities:
   context packs persisted into both report artifacts and the Cortex ledger. The
   Cortex source contract covers site content, dynamic product data, archives,
   manuals/books, codebases, development plans and approved action/event logs;
+- Cortex is the owner of the shared AI layer. Index, MN7R EXE Assistant and
+  Cropto assistant surfaces are domain interfaces and adapters, while Cortex
+  owns cross-product context, memory, model routing, workforce packets and
+  evaluation gates. See [`docs/commodity-intelligence-layer.md`](docs/commodity-intelligence-layer.md).
+- Future cross-source synthesis rules are recorded in
+  [`docs/cortex-evidence-synthesis-contract.md`](docs/cortex-evidence-synthesis-contract.md);
+  GBrain is a reference only, not an installed dependency.
 - Vercel cron endpoints for scheduled imports, notifications and publication.
 
 UGA-specific features:
