@@ -162,6 +162,12 @@ The upload endpoint is intentionally infrastructure-specific and is not
 implemented by the Next.js app. The same command can target a private object
 store, a signed upload gateway or a future Cortex service.
 
+For the first Railway deployment, the repository includes a minimal storage
+service in [`services/cortex-runtime`](../services/cortex-runtime/README.md).
+It uses a persistent `/data` volume, validates uploads, and exposes the exact
+read contract expected by Index. Keep its runtime token separate from
+`CORTEX_INTERNAL_API_SECRET`.
+
 ## Runtime Configuration
 
 The internal context-pack API reads the server-side chunk artifact from:
