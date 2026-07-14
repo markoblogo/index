@@ -23,6 +23,8 @@ This is not a mixed "UGA plus Spike" app. It is a multi-brand index platform
 where UGA and Spike are two clients running on the same calculation,
 publication, respondent and analytics foundation.
 
+For agent-facing public positioning, partnership language, evidence surfaces, and claim boundaries, read [`docs/product-context.md`](docs/product-context.md) before marketing, analytics, SEO, or recurring review work.
+
 UGA Index is also available on the 1d3x mirror domain
 [uga.1d3x.com](https://uga.1d3x.com). This mirror stays active and must not
 redirect to the UGA-owned domain. Legacy `cr0pto.com` domains are configured as

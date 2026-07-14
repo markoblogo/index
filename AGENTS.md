@@ -2,6 +2,10 @@
 
 Use this repo-local guidance together with the global Codex instructions.
 
+## Product Context
+
+Read `docs/product-context.md` before public positioning, partnership copy, SEO, analytics, or recurring product-review work. It is evidence and claim-boundary context, not authority to publish, send a channel message, change a calculation, or make financial claims. Keep recurring work report-only or proposal-first until an explicit human gate settles it.
+
 ## Product decision discipline
 
 For ambiguous Index/MediaHub product behavior, use a lightweight
