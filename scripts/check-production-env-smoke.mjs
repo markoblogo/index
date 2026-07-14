@@ -2,6 +2,8 @@ import { validateProductionEnv } from "./check-production-env.mjs";
 
 const baseEnv = {
   ALLOWED_EMBED_ORIGINS: "https://example.com",
+  CORTEX_CHUNK_MANIFEST_PATH: ".cortex/chunk-manifest.json",
+  CORTEX_INTERNAL_API_SECRET: "12345678901234567890123456789012",
   CRON_SECRET: "12345678901234567890123456789012",
   DATABASE_URL: "postgresql://user:pass@example.com:5432/index",
   DEMO_AUTH_SECRET: "12345678901234567890123456789012",
