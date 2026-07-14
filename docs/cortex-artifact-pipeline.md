@@ -1,7 +1,7 @@
 # 1D3X Cortex Artifact Pipeline
 
 Status: operational runbook
-Updated: 2026-07-11
+Updated: 2026-07-14
 
 This runbook turns the current agro-commodity ecosystem sources into a bounded
 Cortex memory artifact that Index can use through
@@ -162,7 +162,9 @@ The upload endpoint is intentionally infrastructure-specific and is not
 implemented by the Next.js app. The same command can target a private object
 store, a signed upload gateway or a future Cortex service.
 
-For the first Railway deployment, the repository includes a minimal storage
+The first Railway deployment is
+`https://1d3x-cortex-runtime-production.up.railway.app`. The repository
+includes a minimal storage
 service in [`services/cortex-runtime`](../services/cortex-runtime/README.md).
 It uses a persistent `/data` volume, validates uploads, and exposes the exact
 read contract expected by Index. Keep its runtime token separate from

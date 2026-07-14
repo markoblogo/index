@@ -17,6 +17,9 @@ Index-hosted Cortex gateway.
 
 ## Railway setup
 
+The first deployed instance is
+`https://1d3x-cortex-runtime-production.up.railway.app`.
+
 Deploy this directory with `railway up ./services/cortex-runtime
 --path-as-root --new --name 1d3x-cortex-runtime`. The included
 `railway.toml` selects the Dockerfile and `/health` check. Attach a persistent
