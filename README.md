@@ -75,6 +75,8 @@ Shared capabilities:
   landing chat use the Cortex-owned `/api/internal/cortex/assistant` gateway
   for retrieval, model routing and OpenAI handoff; public requests remain
   public-only and product-side role/action gates remain in MN7R.
+- The protected `/api/internal/cortex/health` route is the post-deploy
+  readiness probe for the Cortex manifest and OpenAI provider.
 - Vercel cron endpoints for scheduled imports, notifications and publication.
 
 UGA-specific features:

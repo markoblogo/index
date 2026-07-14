@@ -219,6 +219,13 @@ correlation record with `requestId`, `contextPackId`, provider/model, evidence
 count and known-gap count. The audit record contains no question or raw
 context.
 
+Production readiness is checked through the protected
+`GET /api/internal/cortex/health` endpoint. It verifies that the runtime chunk
+manifest is readable and that the OpenAI provider is configured, then returns
+only manifest metadata and readiness status. It does not perform a model call
+or expose secrets. Use the same `CORTEX_INTERNAL_API_SECRET` or `CRON_SECRET`
+as the other internal Cortex routes.
+
 ## Scope
 
 1D3X Cortex should cover these resource families:

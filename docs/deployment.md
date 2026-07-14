@@ -47,6 +47,20 @@ It also validates that `NEXT_PUBLIC_SITE_URL` belongs to the expected Vercel
 project domain set, preventing `1d3x`, SSI and UGA deploys from shipping with a
 cross-tenant public URL.
 
+For the `1d3x` Cortex runtime, the preflight additionally requires
+`CORTEX_INTERNAL_API_SECRET`, `OPENAI_API_KEY`, and either
+`CORTEX_CHUNK_MANIFEST_URL` or `CORTEX_CHUNK_MANIFEST_PATH`. After deployment,
+verify the protected runtime readiness route with the configured bearer token:
+
+```bash
+curl -sS https://1d3x.com/api/internal/cortex/health \
+  -H "Authorization: Bearer $CORTEX_INTERNAL_API_SECRET"
+```
+
+The response must have HTTP `200`, `"ok": true`, a configured assistant
+provider and readable manifest totals. The endpoint does not return the token,
+OpenAI key or chunk contents.
+
 For the internal SPIKE setup route, `exposeTemporaryPassword=1` is protected by
 an additional `x-spike-setup-expose-secret` header matching
 `SPIKE_SETUP_EXPOSE_SECRET`; cron/internal bearer access alone is intentionally
