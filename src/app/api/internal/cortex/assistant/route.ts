@@ -7,6 +7,10 @@ import {
 } from "@/lib/commodity-intelligence-layer";
 import { buildCortexMemoryContextPack } from "@/lib/cortex-memory-context-pack";
 import { loadCortexRuntimeChunkManifest } from "@/lib/cortex-runtime-chunk-manifest";
+import {
+  buildCortexAssistantAuditRecord,
+  persistCortexAssistantAuditRecord,
+} from "@/lib/cortex-assistant-audit-ledger";
 import { isBearerTokenAuthorized } from "@/lib/cron-auth";
 
 export const dynamic = "force-dynamic";
@@ -77,8 +81,18 @@ export async function POST(request: Request) {
     }, { status: 502 });
   }
 
+  const audit = buildCortexAssistantAuditRecord({
+    contextPack,
+    evidenceCount: contextPack.evidence.length,
+    knownGapCount: contextPack.knownGaps.length,
+    model: resolveModel(),
+    query: parsed.value.query,
+  });
+  await persistCortexAssistantAuditRecord(audit);
+
   return NextResponse.json({
     answer,
+    audit,
     contextPack,
     knownGaps: contextPack.knownGaps,
     product: "1D3X Cortex",

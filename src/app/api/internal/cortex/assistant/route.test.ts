@@ -17,7 +17,7 @@ describe("internal Cortex assistant gateway", () => {
       language: "en",
       localContext: {},
       project: "mn7r",
-      query: "What needs attention?",
+      query: "EXE payment status",
       surface: "exe-assistant",
     }, "wrong-token"));
 
@@ -40,7 +40,7 @@ describe("internal Cortex assistant gateway", () => {
       language: "en",
       localContext: { exeStatus: "open", suggestions: ["review payment"] },
       project: "mn7r",
-      query: "What needs attention?",
+      query: "EXE payment status",
       surface: "exe-assistant",
     }, "cortex-secret"));
     const body = await response.json();
@@ -48,6 +48,13 @@ describe("internal Cortex assistant gateway", () => {
     expect(response.status).toBe(200);
     expect(body.product).toBe("1D3X Cortex");
     expect(body.answer).toContain("[mn7r-exe-runtime-context]");
+    expect(body.audit).toMatchObject({
+      contextPackId: expect.stringContaining("cortex-pack:"),
+      evidenceCount: 2,
+      knownGapCount: expect.any(Number),
+      provider: "openai",
+      requestId: expect.stringContaining("cortex-assistant:"),
+    });
     expect(body.routing).toEqual({ handoff: "cortex-owned", model: "gpt-test", provider: "openai" });
     expect(body.contextPack.sourceIds).toContain("mn7r-exe-runtime-context");
     expect(fetchMock).toHaveBeenCalledWith("https://api.openai.com/v1/responses", expect.objectContaining({

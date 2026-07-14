@@ -212,6 +212,10 @@ memory, merges it with adapter context, selects `CORTEX_ASSISTANT_MODEL` and
 performs the OpenAI handoff. MN7R EXE Assistant is the first consumer; it does
 not send raw database state or choose the external model itself. If the gateway
 is unavailable, MN7R falls back to its deterministic answer path.
+Each successful handoff returns and, when a database is configured, persists a
+correlation record with `requestId`, `contextPackId`, provider/model, evidence
+count and known-gap count. The audit record contains no question or raw
+context.
 
 ## Scope
 
