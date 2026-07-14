@@ -214,6 +214,9 @@ the public-safe landing chat are consumers; they do not send raw database state
 or choose the external model themselves. Public requests are restricted to
 public evidence. If the gateway is unavailable, MN7R falls back to its
 deterministic answer paths.
+Protected EXE/manual handoffs reserve `1800` output tokens by default, while
+public handoffs use `900`; set `CORTEX_ASSISTANT_MAX_OUTPUT_TOKENS` only when a
+bounded production override is needed.
 Each successful handoff returns and, when a database is configured, persists a
 correlation record with `requestId`, `contextPackId`, provider/model, evidence
 count and known-gap count. The audit record contains no question or raw

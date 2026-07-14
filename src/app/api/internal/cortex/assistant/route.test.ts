@@ -81,6 +81,26 @@ describe("internal Cortex assistant gateway", () => {
     expect(readFile).not.toHaveBeenCalled();
   });
 
+  it("accepts the Responses API output_text fallback", async () => {
+    vi.stubEnv("CORTEX_INTERNAL_API_SECRET", "cortex-secret");
+    vi.stubEnv("OPENAI_API_KEY", "openai-secret");
+    vi.mocked(readFile).mockResolvedValueOnce(JSON.stringify(fixtureChunkManifest()));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(Response.json({ output_text: "Fallback answer." })));
+    const { POST } = await import("./route");
+
+    const response = await POST(buildRequest({
+      language: "en",
+      localContext: {},
+      project: "mn7r",
+      query: "What is available?",
+      roleMode: "admin",
+      surface: "exe-assistant",
+    }, "cortex-secret"));
+
+    expect(response.status).toBe(200);
+    expect((await response.json()).answer).toBe("Fallback answer.");
+  });
+
   it("keeps public assistant retrieval public-only", async () => {
     vi.stubEnv("CORTEX_INTERNAL_API_SECRET", "cortex-secret");
     vi.stubEnv("OPENAI_API_KEY", "openai-secret");
