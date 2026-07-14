@@ -330,6 +330,10 @@ export async function autoPublishSpikeDailyIndices(
     const change = computePublishedChange(
       planItem.value,
       previous?.valueUsdPerMt.toNumber() ?? null,
+      {
+        displayRounding:
+          getActiveIndexConfig().id === "spike-ua" ? "whole" : "one_decimal",
+      },
     );
     const publishedData = {
       benchmarkBlendEnabled: false,

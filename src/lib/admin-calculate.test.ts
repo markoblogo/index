@@ -12,6 +12,15 @@ describe("computePublishedChange", () => {
     });
   });
 
+  it("uses the displayed whole SSI values when calculating the daily change", () => {
+    expect(
+      computePublishedChange(211.2, 210.4, { displayRounding: "whole" }),
+    ).toEqual({
+      changeAbs: 1,
+      changePct: 0.48,
+    });
+  });
+
   it("returns null changes when no previous value exists", () => {
     expect(computePublishedChange(215.5, null)).toEqual({
       changeAbs: null,

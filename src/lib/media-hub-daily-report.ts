@@ -158,7 +158,7 @@ export function buildSsiDailyIndexFacts(
       const previousFridayChange =
         value === null || previousFridayValue === null
           ? null
-          : roundOne(value - previousFridayValue);
+          : Math.round(value) - Math.round(previousFridayValue);
 
       return {
         basis: formatBasis(item.basis, locale),

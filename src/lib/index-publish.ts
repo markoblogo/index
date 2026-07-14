@@ -1,15 +1,23 @@
 export function computePublishedChange(
   currentValue: number,
   previousValue: number | null,
+  options: { displayRounding?: "one_decimal" | "whole" } = {},
 ) {
   if (previousValue === null || previousValue <= 0) {
     return { changeAbs: null, changePct: null };
   }
 
-  const changeAbs = roundToOneDecimal(currentValue - previousValue);
-  const changePct = roundToTwoDecimals((changeAbs / previousValue) * 100);
+  const displayRounding = options.displayRounding ?? "one_decimal";
+  const displayedCurrent = roundPublishedValue(currentValue, displayRounding);
+  const displayedPrevious = roundPublishedValue(previousValue, displayRounding);
+  const changeAbs = displayedCurrent - displayedPrevious;
+  const changePct = roundToTwoDecimals((changeAbs / displayedPrevious) * 100);
 
   return { changeAbs, changePct };
+}
+
+function roundPublishedValue(value: number, rounding: "one_decimal" | "whole") {
+  return rounding === "whole" ? Math.round(value) : roundToOneDecimal(value);
 }
 
 export function computeBenchmarkBlend(

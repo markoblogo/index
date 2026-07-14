@@ -471,11 +471,16 @@ function computeChange(latest: number, previous: number | null) {
     return { changeAbs: 0, changePct: 0 };
   }
 
-  const changeAbs = roundOne(latest - previous);
+  const displayedLatest = activeIndex.id === "spike-ua" ? Math.round(latest) : latest;
+  const displayedPrevious = activeIndex.id === "spike-ua" ? Math.round(previous) : previous;
+  const changeAbs =
+    activeIndex.id === "spike-ua"
+      ? displayedLatest - displayedPrevious
+      : roundOne(displayedLatest - displayedPrevious);
 
   return {
     changeAbs,
-    changePct: roundTwo((changeAbs / previous) * 100),
+    changePct: roundTwo((changeAbs / displayedPrevious) * 100),
   };
 }
 
