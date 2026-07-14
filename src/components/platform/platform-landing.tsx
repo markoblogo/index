@@ -72,7 +72,7 @@ const faqs = [
   {
     question: "What is 1D3X Cortex?",
     answer:
-      "1D3X Cortex is the planned internal intelligence layer that connects Index, Context, MN7R and Cr0pto through evidence-backed context packs, governed assistant tools and later bounded autonomy per capability.",
+      "1D3X Cortex is the shared internal intelligence layer being rolled out across Index, Context, MN7R and Cr0pto. It currently builds evidence-backed context packs and governed assistant context; later capabilities remain approval-gated and bounded.",
   },
   {
     question: "Are the indices trading advice?",
@@ -450,13 +450,14 @@ export function PlatformLanding() {
               The internal context layer for the commodity stack.
             </h2>
             <p className="mt-6 text-lg leading-8 text-black/62">
-              Cortex is planned as the evidence-backed intelligence and tool
-              layer that connects Index, Context, MN7R Monitor, Cr0pto and
-              smaller agro-commodity resources. For SSI and 1D3X reports it can
-              ingest Telegram bot materials, build a bounded evidence pack, and
-              then hand the approved context to OpenAI API for drafting. Over
-              time, the same layer can support approval-gated actions and
-              bounded autonomy inside ecosystem products.
+              Cortex is the shared internal intelligence and tool layer being
+              rolled out across Index, Context, MN7R Monitor, Cr0pto and
+              smaller agro-commodity resources. Its current observe/learn
+              runtime ingests approved Telegram bot materials, raw and
+              calculated product data, code, manuals and archives, builds a
+              bounded evidence pack, and hands approved context to the OpenAI
+              API for drafting. Future actions remain approval-gated and
+              bounded inside each ecosystem product.
             </p>
           </div>
           <div className="grid gap-4">

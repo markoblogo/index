@@ -1,7 +1,7 @@
-# 1D3X Cortex Plan
+# 1D3X Cortex
 
-Status: planning + first runtime slices
-Updated: 2026-07-06
+Status: active internal product, staged observe/learn rollout
+Updated: 2026-07-14
 
 ## Purpose
 
