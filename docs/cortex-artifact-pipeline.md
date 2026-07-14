@@ -151,8 +151,11 @@ npm run cortex:artifact-publish -- \
 
 The command validates the Cortex product/schema, a minimum chunk count and
 coverage for `index`, `mn7r` and `cropto`, then performs a bearer-authenticated
-`PUT`. It never accepts or prints tokens. Configure the corresponding read URL
-as `CORTEX_CHUNK_MANIFEST_URL` and, if the store requires it, set
+`PUT`. Uploads use gzip and send `Content-Encoding: gzip` by default to reduce
+the runtime artifact size; set `CORTEX_ARTIFACT_UPLOAD_GZIP=0` only when the
+storage endpoint cannot preserve content encoding. It never accepts or prints
+tokens. Configure the corresponding read URL as
+`CORTEX_CHUNK_MANIFEST_URL` and, if the store requires it, set
 `CORTEX_CHUNK_MANIFEST_BEARER_TOKEN` for the deployed Index runtime.
 
 The upload endpoint is intentionally infrastructure-specific and is not

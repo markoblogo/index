@@ -1,3 +1,4 @@
+import { gzipSync } from "node:zlib";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -54,17 +55,21 @@ async function main() {
   const errors = validateCortexArtifactForPublish(manifest);
   if (errors.length > 0) throw new Error(`artifact validation failed: ${errors.join(", ")}`);
 
+  const compressed = process.env.CORTEX_ARTIFACT_UPLOAD_GZIP !== "0";
+  const uploadBody = compressed ? gzipSync(body) : body;
+
   const response = await fetch(uploadUrl, {
     method: "PUT",
     headers: {
       authorization: `Bearer ${token}`,
       "content-type": "application/json",
+      ...(compressed ? { "content-encoding": "gzip" } : {}),
     },
-    body,
+    body: uploadBody,
   });
   if (!response.ok) throw new Error(`artifact upload returned HTTP ${response.status}`);
   console.log(`Cortex artifact published: ${uploadUrl}`);
-  console.log(`manifest=${absoluteManifestPath} chunks=${manifest.totals.chunks}`);
+  console.log(`manifest=${absoluteManifestPath} chunks=${manifest.totals.chunks} encoding=${compressed ? "gzip" : "identity"}`);
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
