@@ -71,9 +71,9 @@ Shared capabilities:
 - Future cross-source synthesis rules are recorded in
   [`docs/cortex-evidence-synthesis-contract.md`](docs/cortex-evidence-synthesis-contract.md);
   GBrain is a reference only, not an installed dependency.
-- The protected MN7R EXE Assistant uses the Cortex-owned
-  `/api/internal/cortex/assistant` gateway for retrieval, model routing and
-  OpenAI handoff; product-side action gates remain in MN7R.
+- The protected MN7R EXE Assistant and role-scoped Manual AI chat use the
+  Cortex-owned `/api/internal/cortex/assistant` gateway for retrieval, model
+  routing and OpenAI handoff; product-side role/action gates remain in MN7R.
 - Vercel cron endpoints for scheduled imports, notifications and publication.
 
 UGA-specific features:

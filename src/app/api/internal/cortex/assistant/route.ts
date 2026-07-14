@@ -20,6 +20,7 @@ type AssistantRequestBody = {
   localContext?: unknown;
   project?: unknown;
   query?: unknown;
+  roleMode?: unknown;
   surface?: unknown;
 };
 
@@ -27,6 +28,8 @@ type ParsedAssistantRequest = {
   language: "en" | "uk" | "ru" | "mixed";
   localContext: Record<string, unknown>;
   query: string;
+  roleMode: "broker" | "boss" | "admin";
+  surface: "exe-assistant" | "manual-assistant";
 };
 
 export async function POST(request: Request) {
@@ -47,6 +50,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: manifest.error }, { status: 503 });
   }
 
+  const purpose = parsed.value.surface === "manual-assistant" ? "source-review" : "execution-context";
   const memory = buildCortexMemoryContextPack({
     allowProtected: true,
     chunkManifest: manifest.value,
@@ -56,14 +60,17 @@ export async function POST(request: Request) {
     },
     maxEvidence: 8,
     maxTokens: 2_400,
-    purpose: "execution-context",
+    purpose,
     query: parsed.value.query,
   });
   const localPack = buildCortexContextPack({
     allowProtected: true,
-    evidence: [buildLocalContextEvidence(parsed.value.localContext)],
+    evidence: [buildLocalContextEvidence({
+      localContext: parsed.value.localContext,
+      surface: parsed.value.surface,
+    })],
     knownGaps: ["MN7R supplied bounded runtime context; raw database state was not exported."],
-    purpose: "execution-context",
+    purpose,
     query: parsed.value.query,
   });
   const contextPack = mergeCortexContextPacks({ primary: localPack, secondary: memory.pack });
@@ -74,6 +81,8 @@ export async function POST(request: Request) {
       contextPack,
       language: parsed.value.language,
       query: parsed.value.query,
+      roleMode: parsed.value.roleMode,
+      surface: parsed.value.surface,
     });
   } catch (error) {
     return NextResponse.json({
@@ -86,7 +95,9 @@ export async function POST(request: Request) {
     evidenceCount: contextPack.evidence.length,
     knownGapCount: contextPack.knownGaps.length,
     model: resolveModel(),
+    purpose,
     query: parsed.value.query,
+    surface: parsed.value.surface,
   });
   await persistCortexAssistantAuditRecord(audit);
 
@@ -122,8 +133,8 @@ async function readBody(request: Request): Promise<AssistantRequestBody> {
 function parseRequest(body: AssistantRequestBody):
   | { ok: true; value: ParsedAssistantRequest }
   | { error: string; ok: false } {
-  if (body.project !== "mn7r" || body.surface !== "exe-assistant") {
-    return { error: "Only the MN7R EXE Assistant surface is enabled", ok: false };
+  if (body.project !== "mn7r" || (body.surface !== "exe-assistant" && body.surface !== "manual-assistant")) {
+    return { error: "Only the MN7R EXE and manual assistant surfaces are enabled", ok: false };
   }
   if (typeof body.query !== "string" || body.query.trim().length === 0 || body.query.length > 2_000) {
     return { error: "query is required and must be at most 2000 characters", ok: false };
@@ -135,12 +146,18 @@ function parseRequest(body: AssistantRequestBody):
   if (language !== "en" && language !== "uk" && language !== "ru" && language !== "mixed") {
     return { error: "language is invalid or missing", ok: false };
   }
+  const roleMode = body.roleMode;
+  if (roleMode !== "broker" && roleMode !== "boss" && roleMode !== "admin") {
+    return { error: "roleMode is invalid or missing", ok: false };
+  }
   return {
     ok: true,
     value: {
       language,
       localContext: limitObject(body.localContext as Record<string, unknown>),
       query: body.query.trim(),
+      roleMode,
+      surface: body.surface,
     },
   };
 }
@@ -154,14 +171,15 @@ function limitObject(value: Record<string, unknown>) {
   };
 }
 
-function buildLocalContextEvidence(localContext: Record<string, unknown>): CortexEvidenceItem {
+function buildLocalContextEvidence(input: { localContext: Record<string, unknown>; surface: ParsedAssistantRequest["surface"] }): CortexEvidenceItem {
+  const isManual = input.surface === "manual-assistant";
   return {
     extractedAt: new Date().toISOString(),
-    id: `cortex:mn7r:exe-runtime:${hashText(JSON.stringify(localContext))}`,
-    sourceId: "mn7r-exe-runtime-context",
-    summary: JSON.stringify(localContext).slice(0, 14_000),
-    title: "MN7R bounded EXE runtime context",
-    urlOrPath: "mn7r://exe-assistant/bounded-runtime-context",
+    id: `cortex:mn7r:${isManual ? "manual" : "exe"}-runtime:${hashText(JSON.stringify(input.localContext))}`,
+    sourceId: isManual ? "mn7r-manual-runtime-context" : "mn7r-exe-runtime-context",
+    summary: JSON.stringify(input.localContext).slice(0, 14_000),
+    title: isManual ? "MN7R bounded manual runtime context" : "MN7R bounded EXE runtime context",
+    urlOrPath: isManual ? "mn7r://manual-assistant/bounded-runtime-context" : "mn7r://exe-assistant/bounded-runtime-context",
     visibility: "protected",
   };
 }
@@ -171,11 +189,13 @@ async function callOpenAi(input: {
   contextPack: CortexContextPack;
   language: ParsedAssistantRequest["language"];
   query: string;
+  roleMode: ParsedAssistantRequest["roleMode"];
+  surface: ParsedAssistantRequest["surface"];
 }) {
   const response = await fetch("https://api.openai.com/v1/responses", {
     body: JSON.stringify({
       input: [
-        { content: buildSystemPrompt(input.language), role: "system" },
+        { content: buildSystemPrompt(input.language, input.roleMode, input.surface), role: "system" },
         { content: buildUserPrompt(input.query, input.contextPack), role: "user" },
       ],
       max_output_tokens: 900,
@@ -197,14 +217,21 @@ async function callOpenAi(input: {
   return answer;
 }
 
-function buildSystemPrompt(language: ParsedAssistantRequest["language"]) {
+function buildSystemPrompt(
+  language: ParsedAssistantRequest["language"],
+  roleMode: ParsedAssistantRequest["roleMode"],
+  surface: ParsedAssistantRequest["surface"],
+) {
   const languageRule = language === "uk" || language === "mixed"
     ? "Відповідай українською мовою."
     : language === "ru" ? "Отвечай по-русски." : "Reply in English.";
   return [
-    "You are 1D3X Cortex serving the protected MN7R EXE Assistant surface.",
+    `You are 1D3X Cortex serving the protected MN7R ${surface} surface.`,
     languageRule,
-    "Use only the supplied bounded EXE context and approved Cortex evidence.",
+    `The current MN7R role is ${roleMode}; never reveal capabilities outside that role.`,
+    surface === "manual-assistant"
+      ? "Use only the supplied role-allowed manual context and approved Cortex evidence."
+      : "Use only the supplied bounded EXE context and approved Cortex evidence.",
     "Do not claim that a payment, message, status, contract, or execution action was changed.",
     "Be concise and operational. Separate observed facts from derived interpretation and recommendations.",
     "Cite evidence inline as [sourceId] when using it. End with a short Known gaps section when gaps are present.",

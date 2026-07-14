@@ -41,6 +41,7 @@ describe("internal Cortex assistant gateway", () => {
       localContext: { exeStatus: "open", suggestions: ["review payment"] },
       project: "mn7r",
       query: "EXE payment status",
+      roleMode: "admin",
       surface: "exe-assistant",
     }, "cortex-secret"));
     const body = await response.json();
@@ -71,6 +72,7 @@ describe("internal Cortex assistant gateway", () => {
       localContext: {},
       project: "cropto",
       query: "What needs attention?",
+      roleMode: "admin",
       surface: "assistant",
     }, "cortex-secret"));
 

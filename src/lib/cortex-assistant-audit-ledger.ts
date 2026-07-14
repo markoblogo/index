@@ -11,9 +11,9 @@ export type CortexAssistantAuditRecord = {
   product: "1D3X Cortex";
   project: "mn7r";
   provider: "openai";
-  purpose: "execution-context";
+  purpose: "execution-context" | "source-review";
   requestId: string;
-  surface: "exe-assistant";
+  surface: "exe-assistant" | "manual-assistant";
 };
 
 export function buildCortexAssistantAuditRecord(input: {
@@ -22,7 +22,9 @@ export function buildCortexAssistantAuditRecord(input: {
   evidenceCount: number;
   knownGapCount: number;
   model: string;
+  purpose: CortexAssistantAuditRecord["purpose"];
   query: string;
+  surface: CortexAssistantAuditRecord["surface"];
 }): CortexAssistantAuditRecord {
   const createdAt = input.createdAt ?? new Date().toISOString();
   const contextPackId = `cortex-pack:${hashValue(input.contextPack).slice(0, 24)}`;
@@ -37,9 +39,9 @@ export function buildCortexAssistantAuditRecord(input: {
     product: "1D3X Cortex",
     project: "mn7r",
     provider: "openai",
-    purpose: "execution-context",
+    purpose: input.purpose,
     requestId,
-    surface: "exe-assistant",
+    surface: input.surface,
   };
 }
 
