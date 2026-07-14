@@ -202,7 +202,7 @@ async function callOpenAi(input: {
         { content: buildSystemPrompt(input.language, input.roleMode, input.surface), role: "system" },
         { content: buildUserPrompt(input.query, input.contextPack), role: "user" },
       ],
-      max_output_tokens: 900,
+      max_output_tokens: resolveOutputTokenLimit(input.surface),
       model: resolveModel(),
     }),
     headers: {
@@ -267,8 +267,20 @@ function resolveModel() {
   return String(process.env.CORTEX_ASSISTANT_MODEL || "gpt-5").trim() || "gpt-5";
 }
 
+function resolveOutputTokenLimit(surface: ParsedAssistantRequest["surface"]) {
+  const configured = Number.parseInt(String(process.env.CORTEX_ASSISTANT_MAX_OUTPUT_TOKENS || ""), 10);
+  if (Number.isFinite(configured) && configured >= 256 && configured <= 4_000) return configured;
+  return surface === "public-assistant" ? 900 : 1_800;
+}
+
 function extractResponseText(payload: unknown) {
-  const output = (payload as { output?: Array<{ content?: Array<{ text?: string }> }> })?.output;
+  const typedPayload = payload as {
+    output?: Array<{ content?: Array<{ text?: string }> }>;
+    output_text?: string;
+  };
+  const outputText = typeof typedPayload?.output_text === "string" ? typedPayload.output_text.trim() : "";
+  if (outputText) return outputText;
+  const output = typedPayload?.output;
   return Array.isArray(output)
     ? output.flatMap((item) => item.content || []).map((part) => part.text || "").filter(Boolean).join("\n").trim()
     : "";

@@ -61,6 +61,7 @@ describe("internal Cortex assistant gateway", () => {
     expect(fetchMock).toHaveBeenCalledWith("https://api.openai.com/v1/responses", expect.objectContaining({
       method: "POST",
       headers: expect.objectContaining({ Authorization: "Bearer openai-secret" }),
+      body: expect.stringContaining('"max_output_tokens":1800'),
     }));
   });
 
