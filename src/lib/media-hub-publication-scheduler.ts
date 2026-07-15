@@ -19,6 +19,7 @@ import {
   type CortexEditorialQualityCandidate,
 } from "@/lib/cortex-editorial-quality-gate";
 import { persistMediaHubReportCortexContextPack } from "@/lib/commodity-intelligence-ledger";
+import { observeCortexSsiTelegramDraft } from "@/lib/cortex-ssi-integrity";
 import { get1d3xRssWindows } from "@/lib/media-hub-rss";
 import {
   getMonthlyMediaHubDigest,
@@ -63,9 +64,11 @@ import {
 } from "@/lib/media-hub-schedule";
 import {
   escapeHtml,
+  formatShortTelegramDate,
   isId3xMediaHubTelegramPaused,
   isSsiDailyIndexDataCurrent,
   parseJsonNumberArray,
+  safeJson,
 } from "@/lib/media-hub-publication-utils";
 import type { TelegramSourceDigest } from "@/lib/telegram-source-collector";
 
@@ -780,14 +783,6 @@ function normalizeSsiWhatsAppFooter(tenant: "spike" | "platform", text: string) 
   ].join("\n").trim();
 }
 
-function safeJson(value: string) {
-  try {
-    return JSON.parse(value) as unknown;
-  } catch {
-    return value;
-  }
-}
-
 export async function publishMediaHubSnapshotReport(
   kind: Exclude<MediaHubPublicationKind, "none">,
   periodEndDate: string,
@@ -981,17 +976,20 @@ export async function sendMediaHubReportTelegram(
     options.audience === "spike" && kind === "daily"
       ? await getPublicLatestData()
       : [];
+  const historyData =
+    options.audience === "spike" && kind === "daily"
+      ? await getPublicHistoryData()
+      : [];
   if (
     options.audience === "spike" &&
     kind === "daily" &&
     !isSsiDailyIndexDataCurrent(latestData, periodEndDate)
   ) {
+    await observeCortexSsiTelegramDraft({ date: periodEndDate, history: historyData, latest: latestData, telegramText: "", tenantId }).catch((error: unknown) => {
+      console.warn("Skipping Cortex SSI stale-index integrity observation.", safeErrorMessage(error));
+    });
     return { skippedReason: "daily_index_not_current", status: "skipped" as const };
   }
-  const historyData =
-    options.audience === "spike" && kind === "daily"
-      ? await getPublicHistoryData()
-      : [];
   const messages = buildMediaHubTelegramMessages({
     content,
     historyData,
@@ -1001,6 +999,17 @@ export async function sendMediaHubReportTelegram(
     periodEndDate,
     tenant: options.audience,
   });
+  if (options.audience === "spike" && kind === "daily") {
+    await observeCortexSsiTelegramDraft({
+      date: periodEndDate,
+      history: historyData,
+      latest: latestData,
+      telegramText: messages.join("\n\n"),
+      tenantId,
+    }).catch((error: unknown) => {
+      console.warn("Skipping Cortex SSI Telegram integrity observation.", safeErrorMessage(error));
+    });
+  }
   const deliveryClaim = await claimMediaHubTelegramDelivery({
     force: options.force,
     kind,
@@ -1978,11 +1987,6 @@ function formatWholeSignedCurrency(value: number | null) {
   if (value === null) return "н/д";
   const rounded = Math.round(value);
   return `${rounded > 0 ? "+" : ""}${rounded}$`;
-}
-
-function formatShortTelegramDate(date: string) {
-  const [year, month, day] = date.split("-");
-  return `${day}.${month}.${year?.slice(-2)}`;
 }
 
 export const __mediaHubPublicationSchedulerTestHooks = {

@@ -25,3 +25,16 @@ export function escapeHtml(value: string) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 }
+
+export function safeJson(value: string) {
+  try {
+    return JSON.parse(value) as unknown;
+  } catch {
+    return value;
+  }
+}
+
+export function formatShortTelegramDate(date: string) {
+  const [year, month, day] = date.split("-");
+  return `${day}.${month}.${year?.slice(-2)}`;
+}

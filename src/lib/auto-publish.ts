@@ -7,6 +7,7 @@ import { generateAndStoreDailyAiMarketBriefs } from "@/lib/ai-market-brief-lazy"
 import { fetchWithTimeout } from "@/lib/fetch-timeout";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import { computePublishedChange } from "@/lib/index-publish";
+import { persistCortexSsiIntegrityObservation } from "@/lib/cortex-ssi-integrity";
 import {
   normalizeMediaHubTelegramChatId,
   isSsiDailyReportReadyForPublication,
@@ -213,6 +214,13 @@ export async function autoPublishSpikeDailyIndices(
   }
 
   const commodityIdsToPublishSet = new Set(commodityIdsToPublish);
+  const integritySnapshots: Array<{
+    currentValue: number;
+    positionKey: string;
+    previousValue: number | null;
+    snapshotDate?: string;
+    storedChangeAbs: number | null;
+  }> = [];
 
   let published = 0;
 
@@ -388,7 +396,30 @@ export async function autoPublishSpikeDailyIndices(
         summary: `Auto-published ${commodity.code} at ${planItem.value} USD/t for ${date}.`,
       },
     });
+    integritySnapshots.push({
+      currentValue: planItem.value,
+      positionKey: `${commodity.id}:${basis.id}`,
+      previousValue: previous?.valueUsdPerMt.toNumber() ?? null,
+      snapshotDate: date,
+      storedChangeAbs: change.changeAbs,
+    });
     published += 1;
+  }
+
+  if (published > 0) {
+    await persistCortexSsiIntegrityObservation({
+      date,
+      inputs: submissions.map((submission) => ({
+        positionKey: `${submission.commodityId}:${submission.deliveryBasisId}`,
+        price: submission.priceUsdPerMt.toNumber(),
+        respondentId: submission.respondentId,
+      })),
+      snapshots: integritySnapshots,
+      stage: "index_snapshot",
+      tenantId: activeIndex.id,
+    }).catch((error: unknown) => {
+      console.warn("Skipping Cortex SSI index integrity observation.", safeErrorMessage(error));
+    });
   }
 
   revalidatePath("/uk");
