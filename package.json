@@ -32,6 +32,7 @@
     "cortex:context-pack": "tsx scripts/cortex-context-pack.ts",
     "cortex:editorial-shadow": "tsx scripts/cortex-editorial-shadow.ts",
     "cortex:editorial-promotion": "tsx scripts/cortex-editorial-promotion.ts",
+    "cortex:autonomy-readiness": "tsx scripts/cortex-autonomy-readiness.ts",
     "cortex:operational-eval": "tsx scripts/cortex-operational-eval.ts",
     "cortex:artifact-smoke": "tsx scripts/cortex-artifact-smoke.ts",
     "cortex:cropto-source-chunk": "tsx scripts/cortex-cropto-source-chunk.ts",

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { isCronRequestAuthorized } from "@/lib/cron-auth";
+import { runCortexAutonomyReadinessMonitor } from "@/lib/cortex-autonomy-readiness";
 import { syncCortexEditorialShadowObservations } from "@/lib/cortex-editorial-shadow";
 import { evaluateCortexEditorialPromotion } from "@/lib/cortex-editorial-promotion";
 import {
@@ -33,7 +34,9 @@ export async function GET(request: Request) {
       ? await runEditorialShadow({ kind: "monthly", periodEndDate: month })
       : null;
     const editorialPromotion = await runEditorialPromotion("monthly");
+    const autonomyReadiness = await runCortexAutonomyReadiness();
     return NextResponse.json({
+      autonomyReadiness,
       editorialPromotion,
       editorialShadow,
       kind: "monthly",
@@ -49,7 +52,9 @@ export async function GET(request: Request) {
       ? await runEditorialShadow({ kind: "weekly", periodEndDate: week })
       : null;
     const editorialPromotion = await runEditorialPromotion("weekly");
+    const autonomyReadiness = await runCortexAutonomyReadiness();
     return NextResponse.json({
+      autonomyReadiness,
       digest,
       editorialPromotion,
       editorialShadow,
@@ -65,7 +70,9 @@ export async function GET(request: Request) {
     ? await runEditorialShadow({ kind: "daily", periodEndDate: date })
     : null;
   const editorialPromotion = await runEditorialPromotion("daily");
+  const autonomyReadiness = await runCortexAutonomyReadiness();
   return NextResponse.json({
+    autonomyReadiness,
     date: date ?? null,
     digest,
     editorialPromotion,
@@ -89,5 +96,13 @@ async function runEditorialPromotion(kind: "daily" | "weekly" | "monthly") {
     return await evaluateCortexEditorialPromotion({ kind });
   } catch {
     return { evaluations: [], policy: null, skippedReason: "editorial_promotion_failed" };
+  }
+}
+
+async function runCortexAutonomyReadiness() {
+  try {
+    return await runCortexAutonomyReadinessMonitor();
+  } catch {
+    return { skippedReason: "cortex_autonomy_readiness_failed", snapshot: null };
   }
 }

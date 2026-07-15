@@ -260,6 +260,23 @@ npm run cortex:editorial-promotion -- --kind=weekly
 npm run cortex:editorial-promotion -- --kind=monthly
 ```
 
+### Autonomy Readiness Monitor
+
+`CortexAutonomyReadinessLedger` records one protected internal snapshot per
+UTC day after the report-source collection flow. It keeps daily, weekly and
+monthly tracks separate: qualified corpus size, factual-safety failures,
+original-to-revised score lift, revised win rate, current policy mode and the
+reason for it. If a previously recommendation-ready track returns to
+`shadow`, the snapshot records that rollback explicitly.
+
+The monitor is observability only. It cannot select a delivery candidate,
+change a promotion policy, contact users, or publish a report. The latest
+snapshot can also be collected manually:
+
+```bash
+npm run cortex:autonomy-readiness
+```
+
 The first ingestion artifact is available through `npm run cortex:source-scan`.
 It scans approved local repository roots into `.cortex/source-manifest.json`
 with source kind, owner project, visibility, size, SHA-256 hash and stable
