@@ -189,6 +189,29 @@ creates a protected, pending workforce proposal from its exact Cortex context
 pack. Its review packet is evidence and audit state, never a publication or
 delivery permission.
 
+### Editorial Shadow Loop
+
+The next protected learning slice compares a saved SSI daily or weekly
+MediaHub draft with a later public post from `@spike_brokers` (peer
+`1198567788`). `CortexEditorialShadowLedger` records only deterministic,
+auditable observations: candidate post URL and timestamp, lexical overlap,
+sentence/word deltas, numeric additions/removals and a matching state:
+`awaiting_editorial`, `ambiguous` or `matched`.
+
+This is a read-only shadow loop. It does not message the channel, change a
+prompt, approve a report, alter delivery, or treat lexical overlap as quality
+or financial confidence. Ambiguous matches remain separate from matched
+examples. The protected source-collector runs the bounded comparison after a
+dated source sync; it can also be run explicitly:
+
+```bash
+npm run cortex:editorial-shadow -- --kind=daily --date=YYYY-MM-DD
+npm run cortex:editorial-shadow -- --kind=weekly --date=YYYY-MM-DD
+```
+
+Only after a reviewed corpus exists should a later evaluation gate decide
+whether any editorial pattern may influence a proposed draft.
+
 The first ingestion artifact is available through `npm run cortex:source-scan`.
 It scans approved local repository roots into `.cortex/source-manifest.json`
 with source kind, owner project, visibility, size, SHA-256 hash and stable
