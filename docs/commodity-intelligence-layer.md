@@ -183,9 +183,11 @@ input; `executed` and `published` outcomes require recorded human approval.
 `npm run cortex:operational-eval` runs the offline fixture gate for citations,
 known gaps, packet shape, candidate diversity and approval compliance. It does
 not call OpenAI, mutate the ledger or grant a tool permission. The first fixture
-is `fixtures/cortex-operational/monitor-index-comparison.json`; saved report and
-EXE fixtures should join it only after their source packs and approved outcomes
-are available.
+includes `monitor-index-comparison.json` and
+`ssi-telegram-report-proposal.json`. Each saved SSI/Telegram report now also
+creates a protected, pending workforce proposal from its exact Cortex context
+pack. Its review packet is evidence and audit state, never a publication or
+delivery permission.
 
 The first ingestion artifact is available through `npm run cortex:source-scan`.
 It scans approved local repository roots into `.cortex/source-manifest.json`

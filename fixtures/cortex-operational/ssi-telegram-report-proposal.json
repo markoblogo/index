@@ -1,0 +1,52 @@
+{
+  "id": "ssi-telegram-report-proposal",
+  "expected": { "minCandidates": 1, "requireApprovalGate": true, "requireKnownGaps": true },
+  "contextPack": {
+    "createdAt": "2026-07-15T09:00:00.000Z",
+    "product": "1D3X Cortex",
+    "purpose": "market-report",
+    "query": "spike:daily:2026-07-15",
+    "sourceIds": ["published-index-values"],
+    "excluded": [],
+    "knownGaps": ["respondent sample size is unavailable"],
+    "evidence": [{
+      "extractedAt": "2026-07-15T09:00:00.000Z",
+      "id": "ssi-evidence-1",
+      "sourceId": "published-index-values",
+      "summary": "Wheat CPT Odesa: 210 USD/t.",
+      "title": "Published wheat index",
+      "urlOrPath": "https://1d3x.com/",
+      "visibility": "public"
+    }]
+  },
+  "packet": {
+    "packetType": "market-workforce",
+    "taskId": "mediahub-report:report-1",
+    "correlationId": "mediahub-report:spike-ua:report-1",
+    "trigger": "ssi-telegram-report-proposal",
+    "roles": ["mediahub-report-analyst", "risk-compliance-officer"],
+    "diversityMode": "off",
+    "candidates": [{
+      "candidateId": "citation-and-freshness-review",
+      "hypothesis": "The draft report is suitable for review only after citations, freshness and known gaps are checked.",
+      "probabilityUse": "ranking_hint_only",
+      "evidenceChecklist": ["Verify every material claim against cited evidence."],
+      "evidence": [{ "capturedAt": "2026-07-15T09:00:00.000Z", "id": "ssi-evidence-1", "sourceId": "published-index-values" }],
+      "counterevidence": [],
+      "missingData": ["respondent sample size is unavailable"],
+      "confidence": "low",
+      "officerReview": "pending"
+    }],
+    "observed": [{ "capturedAt": "2026-07-15T09:00:00.000Z", "id": "ssi-evidence-1", "sourceId": "published-index-values" }],
+    "derived": ["reportKind=daily", "evidenceCount=1", "excludedEvidenceCount=0"],
+    "assumed": ["unresolved gap: respondent sample size is unavailable"],
+    "recommended": ["Review the generated SSI/Telegram report before publication or delivery."],
+    "blockedBy": ["review required for known context gaps"],
+    "humanApproval": { "required": true, "status": "pending" },
+    "outcome": "pending"
+  },
+  "synthesis": {
+    "claims": [{ "text": "Published wheat index is 210 USD/t.", "evidenceIds": ["ssi-evidence-1"] }],
+    "knownGaps": ["respondent sample size is unavailable"]
+  }
+}

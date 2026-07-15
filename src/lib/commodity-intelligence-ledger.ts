@@ -1,6 +1,10 @@
 import { createHash } from "node:crypto";
 import { db, hasDatabaseUrl } from "@/lib/db";
 import type { CortexContextPack, CortexVisibility } from "@/lib/commodity-intelligence-layer";
+import {
+  buildCortexMediaHubReportProposalPacket,
+  persistCortexMarketWorkforcePacket,
+} from "@/lib/cortex-market-workforce-ledger";
 
 export type CortexLedgerTarget = {
   entityId?: string | null;
@@ -158,7 +162,7 @@ export async function persistMediaHubReportCortexContextPack(input: {
     return null;
   }
 
-  return persistCortexContextPack({
+  const contextRecord = await persistCortexContextPack({
     pack,
     target: {
       entityId: input.id,
@@ -169,6 +173,17 @@ export async function persistMediaHubReportCortexContextPack(input: {
       tenantId: input.tenantId,
     },
   });
+  await persistCortexMarketWorkforcePacket({
+    packet: buildCortexMediaHubReportProposalPacket({
+      contextPack: pack,
+      reportId: input.id,
+      reportKind: input.kind,
+      tenantId: input.tenantId,
+    }),
+    tenantId: input.tenantId,
+    visibility: "protected",
+  });
+  return contextRecord;
 }
 
 export async function getCortexContextPackRecord(id: string) {

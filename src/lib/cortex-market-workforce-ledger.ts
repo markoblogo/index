@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { db, hasDatabaseUrl } from "@/lib/db";
 import type { CortexVisibility } from "@/lib/commodity-intelligence-layer";
+import type { CortexContextPack } from "@/lib/commodity-intelligence-layer";
 
 export type CortexWorkforceDiversityMode = "off" | "research" | "adversarial";
 
@@ -96,6 +97,48 @@ export function buildCortexMarketWorkforceLedgerRecord(input: {
     taskId: input.packet.taskId,
     tenantId: input.tenantId,
     visibility: input.visibility ?? "protected",
+  };
+}
+
+export function buildCortexMediaHubReportProposalPacket(input: {
+  contextPack: CortexContextPack;
+  reportId: string;
+  reportKind: "daily" | "weekly" | "monthly";
+  tenantId: string;
+}): CortexMarketWorkforcePacket {
+  const knownGaps = input.contextPack.knownGaps;
+  return {
+    assumed: knownGaps.map((gap) => `unresolved gap: ${gap}`),
+    blockedBy: knownGaps.length > 0 ? ["review required for known context gaps"] : [],
+    candidates: [{
+      candidateId: "citation-and-freshness-review",
+      confidence: "low",
+      counterevidence: [],
+      evidence: input.contextPack.evidence.map(toWorkforceEvidenceRef),
+      evidenceChecklist: [
+        "Verify every material claim against cited evidence.",
+        "Verify timestamps, source freshness and tenant scope before delivery.",
+      ],
+      hypothesis: "The draft report is suitable for review only after citations, freshness and known gaps are checked.",
+      missingData: knownGaps,
+      officerReview: "pending",
+      probabilityUse: "ranking_hint_only",
+    }],
+    correlationId: `mediahub-report:${input.tenantId}:${input.reportId}`,
+    derived: [
+      `reportKind=${input.reportKind}`,
+      `evidenceCount=${input.contextPack.evidence.length}`,
+      `excludedEvidenceCount=${input.contextPack.excluded.length}`,
+    ],
+    diversityMode: "off",
+    humanApproval: { required: true, reviewerRole: "risk-compliance-officer", status: "pending" },
+    observed: input.contextPack.evidence.map(toWorkforceEvidenceRef),
+    outcome: "pending",
+    packetType: "market-workforce",
+    recommended: ["Review the generated SSI/Telegram report before publication or delivery."],
+    roles: ["mediahub-report-analyst", "risk-compliance-officer"],
+    taskId: `mediahub-report:${input.reportId}`,
+    trigger: "ssi-telegram-report-proposal",
   };
 }
 
@@ -234,6 +277,14 @@ function isEvidenceRef(value: unknown): value is CortexWorkforceEvidenceRef {
   return typeof ref.id === "string" && ref.id.trim().length > 0 &&
     typeof ref.sourceId === "string" && ref.sourceId.trim().length > 0 &&
     typeof ref.capturedAt === "string" && !Number.isNaN(Date.parse(ref.capturedAt));
+}
+
+function toWorkforceEvidenceRef(evidence: CortexContextPack["evidence"][number]): CortexWorkforceEvidenceRef {
+  return {
+    capturedAt: evidence.extractedAt,
+    id: evidence.id,
+    sourceId: evidence.sourceId,
+  };
 }
 
 async function ensureCortexMarketWorkforceLedgerStorage() {

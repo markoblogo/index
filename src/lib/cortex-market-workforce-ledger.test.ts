@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   buildCortexMarketWorkforceLedgerRecord,
+  buildCortexMediaHubReportProposalPacket,
   normalizeCortexMarketWorkforceListLimit,
+  validateCortexMarketWorkforcePacket,
   type CortexMarketWorkforcePacket,
 } from "@/lib/cortex-market-workforce-ledger";
 
@@ -39,5 +41,39 @@ describe("1D3X Cortex market workforce ledger", () => {
     expect(normalizeCortexMarketWorkforceListLimit(0)).toBe(1);
     expect(normalizeCortexMarketWorkforceListLimit(12.8)).toBe(12);
     expect(normalizeCortexMarketWorkforceListLimit(500)).toBe(100);
+  });
+
+  it("builds a pending SSI/Telegram proposal from the exact report context", () => {
+    const proposal = buildCortexMediaHubReportProposalPacket({
+      contextPack: {
+        createdAt: "2026-07-15T09:00:00.000Z",
+        evidence: [{
+          extractedAt: "2026-07-15T09:00:00.000Z",
+          id: "ssi-evidence-1",
+          sourceId: "published-index-values",
+          summary: "Wheat CPT Odesa: 210 USD/t.",
+          title: "Published wheat index",
+          urlOrPath: "https://1d3x.com/",
+          visibility: "public",
+        }],
+        excluded: [],
+        knownGaps: ["respondent sample size is unavailable"],
+        product: "1D3X Cortex",
+        purpose: "market-report",
+        query: "spike:daily:2026-07-15",
+        sourceIds: ["published-index-values"],
+      },
+      reportId: "report-1",
+      reportKind: "daily",
+      tenantId: "spike-ua",
+    });
+
+    expect(proposal).toMatchObject({
+      humanApproval: { required: true, status: "pending" },
+      observed: [expect.objectContaining({ id: "ssi-evidence-1" })],
+      taskId: "mediahub-report:report-1",
+      trigger: "ssi-telegram-report-proposal",
+    });
+    expect(validateCortexMarketWorkforcePacket(proposal).ok).toBe(true);
   });
 });
