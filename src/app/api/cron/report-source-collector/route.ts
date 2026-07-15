@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isCronRequestAuthorized } from "@/lib/cron-auth";
 import { runCortexAutonomyReadinessMonitor } from "@/lib/cortex-autonomy-readiness";
+import { runCortexEditorialMatchDiagnostics } from "@/lib/cortex-editorial-match-diagnostics";
 import {
   backfillCortexEditorialEvaluationCorpus,
   normalizeCortexEditorialCorpusBackfillLimit,
@@ -42,8 +43,10 @@ export async function GET(request: Request) {
     const editorialPromotion = await runEditorialPromotion("monthly");
     const editorialBackfill = backfillRequested ? await runEditorialCorpusBackfill(backfillLimit) : null;
     const autonomyReadiness = editorialBackfill?.readiness ?? await runCortexAutonomyReadiness();
+    const benchmarkDiagnostics = editorialBackfill?.diagnostics ?? await runCortexBenchmarkDiagnostics("monthly");
     return NextResponse.json({
       autonomyReadiness,
+      benchmarkDiagnostics,
       editorialBackfill,
       editorialPromotion,
       editorialShadow,
@@ -62,8 +65,10 @@ export async function GET(request: Request) {
     const editorialPromotion = await runEditorialPromotion("weekly");
     const editorialBackfill = backfillRequested ? await runEditorialCorpusBackfill(backfillLimit) : null;
     const autonomyReadiness = editorialBackfill?.readiness ?? await runCortexAutonomyReadiness();
+    const benchmarkDiagnostics = editorialBackfill?.diagnostics ?? await runCortexBenchmarkDiagnostics("weekly");
     return NextResponse.json({
       autonomyReadiness,
+      benchmarkDiagnostics,
       editorialBackfill,
       digest,
       editorialPromotion,
@@ -82,8 +87,10 @@ export async function GET(request: Request) {
   const editorialPromotion = await runEditorialPromotion("daily");
   const editorialBackfill = backfillRequested ? await runEditorialCorpusBackfill(backfillLimit) : null;
   const autonomyReadiness = editorialBackfill?.readiness ?? await runCortexAutonomyReadiness();
+  const benchmarkDiagnostics = editorialBackfill?.diagnostics ?? await runCortexBenchmarkDiagnostics("daily");
   return NextResponse.json({
     autonomyReadiness,
+    benchmarkDiagnostics,
     date: date ?? null,
     editorialBackfill,
     digest,
@@ -127,6 +134,14 @@ async function runEditorialCorpusBackfill(limitPerKind: number) {
     });
     return { archiveSync, ...await backfillCortexEditorialEvaluationCorpus({ limitPerKind }) };
   } catch {
-    return { archiveSync: null, readiness: null, skippedReason: "editorial_corpus_backfill_failed", tracks: [] };
+    return { archiveSync: null, diagnostics: null, readiness: null, skippedReason: "editorial_corpus_backfill_failed", tracks: [] };
+  }
+}
+
+async function runCortexBenchmarkDiagnostics(kind: "daily" | "weekly" | "monthly") {
+  try {
+    return await runCortexEditorialMatchDiagnostics({ kind });
+  } catch {
+    return { diagnostics: [], skippedReason: "editorial_match_diagnostics_failed" };
   }
 }

@@ -299,6 +299,21 @@ npm run cortex:editorial-corpus-backfill -- --kind=daily --limit=60
 # Protected cron request: /api/cron/report-source-collector?kind=daily&backfill=1&backfill_limit=60
 ```
 
+### Benchmark Coverage And Match Diagnostics
+
+`CortexEditorialMatchDiagnosticsLedger` records protected daily diagnostics by
+report kind: scanned reports, legacy original-only reports, available and
+matched original/revised pairs, promotion-qualified pairs and coverage rate.
+It separates `awaiting_editorial`, low lexical overlap and competing-post
+ambiguity, so incomplete archive coverage is not mistaken for a poor revised
+candidate. Normal source collection refreshes the relevant kind; backfill
+returns all three kinds.
+
+```bash
+npm run cortex:editorial-match-diagnostics
+npm run cortex:editorial-match-diagnostics -- --kind=daily
+```
+
 The first ingestion artifact is available through `npm run cortex:source-scan`.
 It scans approved local repository roots into `.cortex/source-manifest.json`
 with source kind, owner project, visibility, size, SHA-256 hash and stable

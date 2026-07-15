@@ -10,6 +10,7 @@ import {
   type CortexEditorialShadowObservation,
 } from "@/lib/cortex-editorial-shadow";
 import { getActiveIndexConfig } from "@/lib/index-platform";
+import { runCortexEditorialMatchDiagnostics } from "@/lib/cortex-editorial-match-diagnostics";
 
 const KINDS: CortexEditorialPromotionKind[] = ["daily", "weekly", "monthly"];
 const DEFAULT_LIMIT_PER_KIND = 30;
@@ -25,6 +26,7 @@ export type CortexEditorialCorpusBackfillTrack = {
 };
 
 export type CortexEditorialCorpusBackfillResult = {
+  diagnostics: Awaited<ReturnType<typeof runCortexEditorialMatchDiagnostics>>;
   limitPerKind: number;
   readiness: Awaited<ReturnType<typeof runCortexAutonomyReadinessMonitor>>;
   tenantId: string;
@@ -57,6 +59,7 @@ export async function backfillCortexEditorialEvaluationCorpus(input: {
   }
 
   return {
+    diagnostics: await runCortexEditorialMatchDiagnostics({ limit: limitPerKind, tenantId }),
     limitPerKind,
     readiness: await runCortexAutonomyReadinessMonitor({ tenantId }),
     tenantId,
