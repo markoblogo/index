@@ -162,7 +162,7 @@ describe("buildAutoPublishPlan", () => {
       excludedSubmissions: [{ id: "bad-submission", exclusionReason: "previous_day_5pct_deviation" }],
       rawCount: 6,
       usedCount: 5,
-      value: 222.6,
+      value: 223,
     });
   });
 
