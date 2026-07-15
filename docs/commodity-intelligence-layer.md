@@ -209,8 +209,17 @@ npm run cortex:editorial-shadow -- --kind=daily --date=YYYY-MM-DD
 npm run cortex:editorial-shadow -- --kind=weekly --date=YYYY-MM-DD
 ```
 
-Only after a reviewed corpus exists should a later evaluation gate decide
-whether any editorial pattern may influence a proposed draft.
+After a bounded matched corpus exists, Cortex derives a versioned style profile
+and attaches it to the next report prompt. The threshold is 10 matched daily
+outcomes for daily reports and 6 matched weekly outcomes for weekly reports.
+The profile can influence only editorial density and concision; citations,
+evidence scope, claim validation and delivery permissions remain unchanged.
+Its exact version is stored with the generated report context for audit.
+
+Monthly reports use the weekly profile as their benchmark. It is applied as a
+structure and per-section density reference, never as a total-length cap: a
+monthly report must retain its broader period coverage and its existing monthly
+evidence requirements.
 
 The first ingestion artifact is available through `npm run cortex:source-scan`.
 It scans approved local repository roots into `.cortex/source-manifest.json`

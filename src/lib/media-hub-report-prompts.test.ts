@@ -51,4 +51,29 @@ describe("Context report prompts", () => {
     expect(prompt).toContain("mediahub-telegram-materials");
     expect(prompt).toContain("Use the approved Cortex evidence above as the primary context");
   });
+
+  it("uses an active editorial profile as style-only guidance", () => {
+    const prompt = buildMediaHubReportPrompt({
+      editorialGuidance: {
+        active: true,
+        benchmarkKind: "weekly",
+        reason: "test",
+        sampleCount: 6,
+        targetSentenceRange: { max: 18, min: 12 },
+        targetWordRange: { max: 280, min: 180 },
+        version: "profile-test-0001",
+      },
+      kind: "monthly",
+      latestData: [],
+      locale: "uk",
+      periodEndDate: "2026-07-31",
+      periodStartDate: "2026-07-01",
+      snapshots: [],
+      tenant: "spike",
+    });
+
+    expect(prompt).toContain("profile-test-0001");
+    expect(prompt).toContain("weekly benchmark as a structural and density reference");
+    expect(prompt).toContain("Do not copy benchmark text, transfer facts");
+  });
 });

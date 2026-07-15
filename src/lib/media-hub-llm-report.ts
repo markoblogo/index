@@ -11,6 +11,7 @@ import { buildCortexMemoryContextPack } from "@/lib/cortex-memory-context-pack";
 import { loadCortexRuntimeChunkManifest } from "@/lib/cortex-runtime-chunk-manifest";
 import { buildCortexIndexDbEvidence } from "@/lib/cortex-index-db-evidence";
 import { hasDatabaseUrl } from "@/lib/db";
+import { getCortexEditorialGuidance, type CortexEditorialGuidance } from "@/lib/cortex-editorial-shadow";
 import { buildCortexMediaHubMonitoringLedgerEvidence } from "@/lib/media-hub-monitoring-ledger";
 import type { MediaHubWindowSnapshot } from "@/lib/media-hub";
 import type { MediaHubManualMaterialDigest } from "@/lib/media-hub-manual-materials";
@@ -49,6 +50,7 @@ export async function generateMediaHubLlmReports(input: {
   tenant: MediaHubTenant;
 }): Promise<{
   cortexContextPack: CortexContextPack;
+  editorialGuidance?: CortexEditorialGuidance;
   localized: Partial<Record<Locale, MediaHubLocalizedReport>>;
   model?: string;
   provider?: "openai";
@@ -69,9 +71,12 @@ export async function generateMediaHubLlmReports(input: {
     tenant: input.tenant,
   });
   const cortexContextPack = await augmentReportContextWithCortexMemory(input, deterministicContextPack);
+  const editorialGuidance = input.tenant === "spike"
+    ? await getCortexEditorialGuidance({ kind: input.kind }).catch(() => undefined)
+    : undefined;
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    return { cortexContextPack, localized: {}, skippedReason: "openai_api_key_missing" };
+    return { cortexContextPack, editorialGuidance, localized: {}, skippedReason: "openai_api_key_missing" };
   }
 
   const locales: Locale[] = input.tenant === "spike" ? ["uk", "en"] : ["en"];
@@ -84,6 +89,7 @@ export async function generateMediaHubLlmReports(input: {
       ...input,
       apiKey,
       cortexContextPack,
+      editorialGuidance,
       locale,
       model,
     });
@@ -97,6 +103,7 @@ export async function generateMediaHubLlmReports(input: {
 
   return {
     cortexContextPack,
+    editorialGuidance,
     localized,
     model,
     provider: "openai",
@@ -109,6 +116,7 @@ export async function generateMediaHubLlmReports(input: {
 async function generateOneLocale(input: {
   apiKey: string;
   cortexContextPack: CortexContextPack;
+  editorialGuidance?: CortexEditorialGuidance;
   kind: MediaHubReportKind;
   latestData: PublicLatestItem[];
   manualMaterials?: MediaHubManualMaterialDigest[];
@@ -236,6 +244,7 @@ function openAiHeaders(apiKey: string) {
 function buildPrompt(input: {
   avoidPhrases?: string[];
   cortexContextPack: CortexContextPack;
+  editorialGuidance?: CortexEditorialGuidance;
   kind: MediaHubReportKind;
   latestData: PublicLatestItem[];
   locale: Locale;

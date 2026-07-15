@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { vi } from "vitest";
-import { buildCortexEditorialShadowObservation, normalizeCortexEditorialShadowListLimit } from "./cortex-editorial-shadow";
+import {
+  buildCortexEditorialGuidance,
+  buildCortexEditorialShadowObservation,
+  normalizeCortexEditorialShadowListLimit,
+} from "./cortex-editorial-shadow";
 
 vi.mock("server-only", () => ({}));
 
@@ -42,5 +46,32 @@ describe("Cortex editorial shadow", () => {
     expect(normalizeCortexEditorialShadowListLimit(undefined)).toBe(14);
     expect(normalizeCortexEditorialShadowListLimit(0)).toBe(1);
     expect(normalizeCortexEditorialShadowListLimit(100)).toBe(60);
+  });
+
+  it("activates daily style guidance only after a bounded matched corpus exists", () => {
+    const example = buildCortexEditorialShadowObservation({
+      posts: [{ id: "post", publishedAt: "2026-07-15T18:00:00.000Z", text: "Wheat CPT Odesa 210 USD/t demand stable.", url: "https://t.me/spike_brokers/1" }],
+      report: { createdAt: "2026-07-15T17:00:00.000Z", draftText: "Wheat CPT Odesa 210 USD/t demand stable and market context.", id: "profile-base", kind: "daily" },
+    });
+    const observations = Array.from({ length: 10 }, (_, index) => ({ ...example, id: `sample-${index}` }));
+    const guidance = buildCortexEditorialGuidance({ kind: "daily", observations });
+
+    expect(guidance.active).toBe(true);
+    expect(guidance.targetWordRange).toEqual({ max: 8, min: 8 });
+    expect(guidance.version).toHaveLength(16);
+  });
+
+  it("uses the weekly corpus as the monthly structural benchmark", () => {
+    const example = buildCortexEditorialShadowObservation({
+      posts: [{ id: "post", publishedAt: "2026-07-15T18:00:00.000Z", text: "Wheat CPT Odesa 210 USD/t demand stable.", url: "https://t.me/spike_brokers/1" }],
+      report: { createdAt: "2026-07-15T17:00:00.000Z", draftText: "Wheat CPT Odesa 210 USD/t demand stable and market context.", id: "weekly-profile", kind: "weekly" },
+    });
+    const guidance = buildCortexEditorialGuidance({
+      kind: "monthly",
+      observations: Array.from({ length: 6 }, (_, index) => ({ ...example, id: `weekly-${index}` })),
+    });
+
+    expect(guidance).toMatchObject({ active: true, benchmarkKind: "weekly" });
+    expect(guidance.reason).toContain("monthly structure");
   });
 });

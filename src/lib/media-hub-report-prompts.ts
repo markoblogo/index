@@ -1,5 +1,6 @@
 import type { Locale } from "@/lib/i18n";
 import type { CortexContextPack } from "@/lib/commodity-intelligence-layer";
+import type { CortexEditorialGuidance } from "@/lib/cortex-editorial-shadow";
 import type { MediaHubWindowSnapshot } from "@/lib/media-hub";
 import type { MediaHubManualMaterialDigest } from "@/lib/media-hub-manual-materials";
 import type { PublicLatestItem } from "@/lib/public-api-data";
@@ -10,6 +11,7 @@ type Tenant = "spike" | "platform";
 export function buildMediaHubReportPrompt(input: {
   avoidPhrases?: string[];
   cortexContextPack?: CortexContextPack;
+  editorialGuidance?: CortexEditorialGuidance;
   kind: ReportKind;
   latestData: PublicLatestItem[];
   locale: Locale;
@@ -252,6 +254,7 @@ export function build1d3xWeeklyMonthlyPrompt(input: {
 }
 
 function commonJsonRules(input: {
+  editorialGuidance?: CortexEditorialGuidance;
   kind: ReportKind;
   periodEndDate: string;
   periodStartDate: string;
@@ -264,7 +267,22 @@ function commonJsonRules(input: {
       : input.kind === "weekly"
         ? "Use substantial sectioned summary items. Target 25-45 summary array items. Omit empty sections completely."
         : "Use a full monthly report, not a digest. Target 45-80 summary array items. Omit empty sections completely.",
+    renderEditorialGuidance(input.editorialGuidance, input.kind),
     "Paraphrase source materials. Do not copy long copyrighted text. If data is missing, omit that item or section completely.",
+  ].join("\n");
+}
+
+function renderEditorialGuidance(guidance: CortexEditorialGuidance | undefined, reportKind: ReportKind) {
+  if (!guidance?.active || !guidance.targetWordRange || !guidance.targetSentenceRange) {
+    return "Editorial benchmark guidance: inactive until a sufficient matched corpus exists.";
+  }
+  const scope = reportKind === "monthly"
+    ? "Use the weekly benchmark as a structural and density reference within each monthly section; keep the full monthly scope and do not reduce it to weekly length."
+    : `Aim for ${guidance.targetWordRange.min}-${guidance.targetWordRange.max} words and ${guidance.targetSentenceRange.min}-${guidance.targetSentenceRange.max} sentences in the generated market/news text.`;
+  return [
+    `Editorial benchmark guidance (profile ${guidance.version}; ${guidance.sampleCount} matched human-edited ${guidance.benchmarkKind} reports):`,
+    scope,
+    "Use this only for editorial density and concision. Do not copy benchmark text, transfer facts, change citations, or override the evidence and no-hallucination rules above.",
   ].join("\n");
 }
 

@@ -12,6 +12,7 @@ import {
   type MediaHubLocalizedReport,
 } from "@/lib/media-hub-llm-report";
 import type { CortexContextPack } from "@/lib/commodity-intelligence-layer";
+import type { CortexEditorialGuidance } from "@/lib/cortex-editorial-shadow";
 import { persistMediaHubReportCortexContextPack } from "@/lib/commodity-intelligence-ledger";
 import { get1d3xRssWindows } from "@/lib/media-hub-rss";
 import {
@@ -78,6 +79,7 @@ type MediaHubReportContentJson = {
   kind: Exclude<MediaHubPublicationKind, "none">;
   llm?: {
     cortexContextPack?: CortexContextPack;
+    editorialGuidance?: CortexEditorialGuidance;
     model?: string;
     provider?: string;
     skippedReason?: string;
@@ -2120,6 +2122,7 @@ function parseMediaHubReportContent(value: unknown): MediaHubReportContentJson |
           cortexContextPack: parseCortexContextPack(
             (candidate.llm as { cortexContextPack?: unknown }).cortexContextPack,
           ),
+          editorialGuidance: (candidate.llm as { editorialGuidance?: CortexEditorialGuidance }).editorialGuidance,
           model: String((candidate.llm as { model?: unknown }).model ?? ""),
           provider: String((candidate.llm as { provider?: unknown }).provider ?? ""),
           skippedReason: String((candidate.llm as { skippedReason?: unknown }).skippedReason ?? ""),

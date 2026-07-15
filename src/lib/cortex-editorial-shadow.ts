@@ -35,6 +35,16 @@ export type CortexEditorialShadowObservation = {
   visibility: "protected";
 };
 
+export type CortexEditorialGuidance = {
+  active: boolean;
+  benchmarkKind: "daily" | "weekly";
+  reason: string;
+  sampleCount: number;
+  targetSentenceRange: { max: number; min: number } | null;
+  targetWordRange: { max: number; min: number } | null;
+  version: string | null;
+};
+
 type ShadowReport = {
   createdAt: string;
   draftText: string;
@@ -54,6 +64,7 @@ type MediaHubReportRow = {
 };
 
 type TelegramPostRow = { externalPostId: string; id: string; postUrl: string; publishedAt: Date; text: string };
+type EditorialShadowLedgerRow = { observationJson: CortexEditorialShadowObservation };
 
 let storageReady: Promise<void> | null = null;
 
@@ -132,6 +143,54 @@ export function normalizeCortexEditorialShadowListLimit(value: number | null | u
   return Math.max(1, Math.min(60, Math.trunc(value as number)));
 }
 
+export function buildCortexEditorialGuidance(input: {
+  kind: "daily" | "weekly" | "monthly";
+  observations: CortexEditorialShadowObservation[];
+}): CortexEditorialGuidance {
+  const benchmarkKind = input.kind === "monthly" ? "weekly" : input.kind;
+  const samples = input.observations.filter((item) => item.status === "matched" && item.metrics !== null);
+  const minimumSamples = benchmarkKind === "daily" ? 10 : 6;
+  if (samples.length < minimumSamples) {
+    return inactiveGuidance(benchmarkKind, `Need ${minimumSamples} matched ${benchmarkKind} editorial outcomes; found ${samples.length}.`, samples.length);
+  }
+
+  const wordCounts = samples.map((item) => item.metrics!.editorialWordCount);
+  const sentenceCounts = samples.map((item) => item.metrics!.editorialSentenceCount);
+  const version = createHash("sha256")
+    .update(JSON.stringify(samples.map((item) => ({ id: item.id, metrics: item.metrics }))))
+    .digest("hex")
+    .slice(0, 16);
+  return {
+    active: true,
+    benchmarkKind,
+    reason: input.kind === "monthly"
+      ? `Derived from ${samples.length} matched weekly editorial outcomes; apply as a monthly structure and density reference only.`
+      : `Derived from ${samples.length} matched public editorial outcomes; style guidance only.`,
+    sampleCount: samples.length,
+    targetSentenceRange: percentileRange(sentenceCounts),
+    targetWordRange: percentileRange(wordCounts),
+    version,
+  };
+}
+
+export async function getCortexEditorialGuidance(input: {
+  kind: "daily" | "weekly" | "monthly";
+  tenantId?: string;
+}) {
+  if (!hasDatabaseUrl()) return inactiveGuidance(
+    input.kind === "monthly" ? "weekly" : input.kind,
+    "Editorial shadow database is not configured.",
+  );
+
+  await ensureStorage();
+  const rows = await db.$queryRawUnsafe<EditorialShadowLedgerRow[]>(
+    `SELECT "observationJson" FROM "CortexEditorialShadowLedger" WHERE "tenantId" = $1 AND "kind" = $2 AND "status" = 'matched' ORDER BY "updatedAt" DESC LIMIT 60`,
+    input.tenantId ?? getActiveIndexConfig().id,
+    input.kind === "monthly" ? "weekly" : input.kind,
+  );
+  return buildCortexEditorialGuidance({ kind: input.kind, observations: rows.map((row) => row.observationJson) });
+}
+
 function getMatchStatus(bestScore?: number, runnerUpScore?: number): CortexEditorialShadowStatus {
   if (bestScore === undefined) return "awaiting_editorial";
   if (bestScore >= 0.16 && (runnerUpScore === undefined || bestScore - runnerUpScore >= 0.05)) return "matched";
@@ -195,6 +254,30 @@ function validDate(value: string) {
 
 function editorialWindowHours(kind: "daily" | "weekly") {
   return kind === "daily" ? 48 : 240;
+}
+
+function inactiveGuidance(
+  benchmarkKind: "daily" | "weekly",
+  reason: string,
+  sampleCount = 0,
+): CortexEditorialGuidance {
+  return {
+    active: false,
+    benchmarkKind,
+    reason,
+    sampleCount,
+    targetSentenceRange: null,
+    targetWordRange: null,
+    version: null,
+  };
+}
+
+function percentileRange(values: number[]) {
+  const sorted = [...values].sort((left, right) => left - right);
+  return {
+    max: sorted[Math.ceil((sorted.length - 1) * 0.75)] ?? 0,
+    min: sorted[Math.floor((sorted.length - 1) * 0.25)] ?? 0,
+  };
 }
 
 async function listReports(input: { kind?: "daily" | "weekly"; limit?: number; periodEndDate?: string; tenantId: string }) {
