@@ -35,13 +35,14 @@ export async function GET(request: Request) {
   const backfillRequested = url.searchParams.get("backfill") === "1";
   const backfillLimit = normalizeCortexEditorialCorpusBackfillLimit(Number(url.searchParams.get("backfill_limit")) || undefined);
   const backfillPages = normalizeBackfillPageLimit(Number(url.searchParams.get("backfill_pages")) || undefined);
+  const skippedSync = { channels: 0, posts: 0, skippedReason: "skipped_for_editorial_backfill" };
 
   if (reportKind === "monthly") {
-    const sync = await syncTelegramWorkspaceResources("weekly");
-    const editorialShadow = month
+    const sync = backfillRequested ? skippedSync : await syncTelegramWorkspaceResources("weekly");
+    const editorialShadow = !backfillRequested && month
       ? await runEditorialShadow({ kind: "monthly", periodEndDate: month })
       : null;
-    const editorialPromotion = await runEditorialPromotion("monthly");
+    const editorialPromotion = backfillRequested ? null : await runEditorialPromotion("monthly");
     const editorialBackfill = backfillRequested ? await runEditorialCorpusBackfill({ limitPerKind: backfillLimit, maxPages: backfillPages }) : null;
     const autonomyReadiness = editorialBackfill?.readiness ?? await runCortexAutonomyReadiness();
     const benchmarkDiagnostics = editorialBackfill?.diagnostics ?? await runCortexBenchmarkDiagnostics("monthly");
@@ -58,12 +59,12 @@ export async function GET(request: Request) {
   }
 
   if (reportKind === "weekly") {
-    const sync = await syncTelegramWorkspaceResources("weekly");
-    const digest = week ? await getWeeklyTelegramDigest(week) : null;
-    const editorialShadow = week
+    const sync = backfillRequested ? skippedSync : await syncTelegramWorkspaceResources("weekly");
+    const digest = !backfillRequested && week ? await getWeeklyTelegramDigest(week) : null;
+    const editorialShadow = !backfillRequested && week
       ? await runEditorialShadow({ kind: "weekly", periodEndDate: week })
       : null;
-    const editorialPromotion = await runEditorialPromotion("weekly");
+    const editorialPromotion = backfillRequested ? null : await runEditorialPromotion("weekly");
     const editorialBackfill = backfillRequested ? await runEditorialCorpusBackfill({ limitPerKind: backfillLimit, maxPages: backfillPages }) : null;
     const autonomyReadiness = editorialBackfill?.readiness ?? await runCortexAutonomyReadiness();
     const benchmarkDiagnostics = editorialBackfill?.diagnostics ?? await runCortexBenchmarkDiagnostics("weekly");
@@ -80,12 +81,12 @@ export async function GET(request: Request) {
     });
   }
 
-  const sync = await syncTelegramWorkspaceResources("daily");
-  const digest = date ? await getDailyTelegramDigest(date) : null;
-  const editorialShadow = date
+  const sync = backfillRequested ? skippedSync : await syncTelegramWorkspaceResources("daily");
+  const digest = !backfillRequested && date ? await getDailyTelegramDigest(date) : null;
+  const editorialShadow = !backfillRequested && date
     ? await runEditorialShadow({ kind: "daily", periodEndDate: date })
     : null;
-  const editorialPromotion = await runEditorialPromotion("daily");
+  const editorialPromotion = backfillRequested ? null : await runEditorialPromotion("daily");
   const editorialBackfill = backfillRequested ? await runEditorialCorpusBackfill({ limitPerKind: backfillLimit, maxPages: backfillPages }) : null;
   const autonomyReadiness = editorialBackfill?.readiness ?? await runCortexAutonomyReadiness();
   const benchmarkDiagnostics = editorialBackfill?.diagnostics ?? await runCortexBenchmarkDiagnostics("daily");
