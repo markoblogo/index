@@ -12,6 +12,7 @@ export type CortexSsiIntegrityFinding = {
   code: string;
   message: string;
   positionKey?: string;
+  respondentId?: string;
   severity: CortexSsiIntegritySeverity;
 };
 
@@ -52,6 +53,14 @@ export type CortexSsiIntegrityDailyReport = {
   status: "clear" | "warning" | "critical";
   summary: CortexSsiIntegrityObservation["summary"];
   tenantId: string;
+};
+
+export type CortexSsiIntegrityStatistics = {
+  byPosition: Array<{ count: number; positionKey: string }>;
+  byRespondent: Array<{ count: number; respondentId: string }>;
+  bySeverity: Record<CortexSsiIntegritySeverity, number>;
+  byType: Array<{ code: string; count: number }>;
+  observationCount: number;
 };
 
 export function evaluateCortexSsiIntegrity(input: {
@@ -175,6 +184,46 @@ export async function getCortexSsiIntegrityDailyReport(input: {
   };
 }
 
+export async function getCortexSsiIntegrityStatistics(input: {
+  days?: number;
+  endDate: string;
+  tenantId: string;
+}): Promise<CortexSsiIntegrityStatistics> {
+  if (!hasDatabaseUrl()) return buildCortexSsiIntegrityStatistics([]);
+  await ensureStorage();
+  const days = Math.max(1, Math.min(90, input.days ?? 14));
+  const startDate = shiftIsoDate(input.endDate, -(days - 1));
+  const rows = await db.$queryRawUnsafe<Array<{ recordJson: unknown }>>(
+    `SELECT DISTINCT ON ("date", "stage") "recordJson" FROM "CortexSsiIntegrityLedger" WHERE "tenantId" = $1 AND "date" BETWEEN $2::date AND $3::date ORDER BY "date" DESC, "stage", "createdAt" DESC`,
+    input.tenantId,
+    startDate,
+    input.endDate,
+  );
+  return buildCortexSsiIntegrityStatistics(rows.map((row) => row.recordJson as CortexSsiIntegrityObservation));
+}
+
+export function buildCortexSsiIntegrityStatistics(observations: CortexSsiIntegrityObservation[]): CortexSsiIntegrityStatistics {
+  const byPosition = new Map<string, number>();
+  const byRespondent = new Map<string, number>();
+  const byType = new Map<string, number>();
+  const bySeverity: Record<CortexSsiIntegritySeverity, number> = { critical: 0, info: 0, warning: 0 };
+
+  for (const finding of observations.flatMap((observation) => observation.findings)) {
+    bySeverity[finding.severity] += 1;
+    byType.set(finding.code, (byType.get(finding.code) ?? 0) + 1);
+    if (finding.positionKey) byPosition.set(finding.positionKey, (byPosition.get(finding.positionKey) ?? 0) + 1);
+    if (finding.respondentId) byRespondent.set(finding.respondentId, (byRespondent.get(finding.respondentId) ?? 0) + 1);
+  }
+
+  return {
+    byPosition: toRankedEntries(byPosition, "positionKey"),
+    byRespondent: toRankedEntries(byRespondent, "respondentId"),
+    bySeverity,
+    byType: toRankedEntries(byType, "code"),
+    observationCount: observations.length,
+  };
+}
+
 export function buildCortexSsiSnapshotsFromPublicData(input: {
   history: PublicHistoryItem[];
   latest: PublicLatestItem[];
@@ -216,14 +265,14 @@ function evaluateInputRelevance(
     const previous = previousByPosition.get(positionKey) ?? null;
     for (const row of rows) {
       if (respondentIds.has(row.respondentId)) {
-        findings.push({ code: "duplicate_respondent_input", message: `Duplicate respondent input for ${row.respondentId}.`, positionKey, severity: "warning" });
+        findings.push({ code: "duplicate_respondent_input", message: `Duplicate respondent input for ${row.respondentId}.`, positionKey, respondentId: row.respondentId, severity: "warning" });
       }
       respondentIds.add(row.respondentId);
       if (previous !== null && percentDifference(row.price, previous) > INPUT_DIVERGENCE_PCT) {
-        findings.push({ code: "input_vs_previous_divergence", message: `Respondent value differs from the prior published value by more than ${INPUT_DIVERGENCE_PCT}%.`, positionKey, severity: "warning" });
+        findings.push({ code: "input_vs_previous_divergence", message: `Respondent value differs from the prior published value by more than ${INPUT_DIVERGENCE_PCT}%.`, positionKey, respondentId: row.respondentId, severity: "warning" });
       }
       if (median !== null && percentDifference(row.price, median) > INPUT_DIVERGENCE_PCT) {
-        findings.push({ code: "input_vs_cohort_divergence", message: `Respondent value differs from the cohort median by more than ${INPUT_DIVERGENCE_PCT}%.`, positionKey, severity: "warning" });
+        findings.push({ code: "input_vs_cohort_divergence", message: `Respondent value differs from the cohort median by more than ${INPUT_DIVERGENCE_PCT}%.`, positionKey, respondentId: row.respondentId, severity: "warning" });
       }
     }
   }
@@ -285,6 +334,21 @@ function medianOf(values: number[]) {
 
 function percentDifference(value: number, reference: number) {
   return reference === 0 ? 0 : Math.abs(value - reference) / Math.abs(reference) * 100;
+}
+
+function toRankedEntries<Key extends "code" | "positionKey" | "respondentId">(
+  values: Map<string, number>,
+  key: Key,
+): Array<{ count: number } & Record<Key, string>> {
+  return [...values.entries()]
+    .map(([value, count]) => ({ count, [key]: value }) as { count: number } & Record<Key, string>)
+    .sort((left, right) => right.count - left.count || left[key].localeCompare(right[key]));
+}
+
+function shiftIsoDate(date: string, days: number) {
+  const value = new Date(`${date}T00:00:00.000Z`);
+  value.setUTCDate(value.getUTCDate() + days);
+  return value.toISOString().slice(0, 10);
 }
 
 async function ensureStorage() {

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildCortexSsiIntegrityObservation,
   buildCortexSsiSnapshotsFromPublicData,
+  buildCortexSsiIntegrityStatistics,
   evaluateCortexSsiIntegrity,
 } from "@/lib/cortex-ssi-integrity";
 
@@ -92,5 +93,23 @@ describe("Cortex SSI integrity shadow gate", () => {
     });
 
     expect(snapshots[0]).toMatchObject({ previousValue: 211, storedChangeAbs: 0 });
+  });
+
+  it("aggregates shadow findings by respondent and market position", () => {
+    const observation = buildCortexSsiIntegrityObservation({
+      date: "2026-07-15",
+      inputs: [
+        { positionKey: "CORN:CPT_ODESSA", price: 211, respondentId: "broker-1" },
+        { positionKey: "CORN:CPT_ODESSA", price: 235, respondentId: "broker-2" },
+      ],
+      snapshots: [{ currentValue: 211, positionKey: "CORN:CPT_ODESSA", previousValue: 211, storedChangeAbs: 0 }],
+      stage: "index_snapshot",
+      tenantId: "spike-ua",
+    });
+    const statistics = buildCortexSsiIntegrityStatistics([observation]);
+
+    expect(statistics.byRespondent[0]).toMatchObject({ respondentId: "broker-2", count: 2 });
+    expect(statistics.byPosition[0]).toMatchObject({ positionKey: "CORN:CPT_ODESSA", count: 3 });
+    expect(statistics.bySeverity.warning).toBe(3);
   });
 });

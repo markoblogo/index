@@ -17,6 +17,7 @@ const baseNavByRole = {
     { href: "/admin/daily-inputs", label: "Daily input" },
     { href: "/admin/respondents", label: "Respondents" },
     { href: "/admin/calculate", label: "Publish index" },
+    { href: "/admin/integrity", label: "Integrity" },
     { href: "/admin/media-hub", label: "Context" },
     { href: "/admin/manual", label: "Manual" },
     { href: "/admin/embed", label: "Website embed" },
