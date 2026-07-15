@@ -52,6 +52,21 @@ import {
   renderSsiDailyIndexTelegramSection,
   type MediaHubDailyReportView,
 } from "@/lib/media-hub-daily-report";
+import {
+  getIsoWeekday,
+  getMediaHubLocalDate,
+  getMediaHubLocalTimeParts,
+  getMediaHubReportTime as getConfiguredMediaHubReportTime,
+  getMediaHubTimezone,
+  getSaturdayOrdinalInMonth,
+  shiftIsoDate,
+} from "@/lib/media-hub-schedule";
+import {
+  escapeHtml,
+  isId3xMediaHubTelegramPaused,
+  isSsiDailyIndexDataCurrent,
+  parseJsonNumberArray,
+} from "@/lib/media-hub-publication-utils";
 import type { TelegramSourceDigest } from "@/lib/telegram-source-collector";
 
 export type MediaHubPublicationKind = "daily" | "weekly" | "monthly" | "none";
@@ -146,10 +161,6 @@ export type MediaHubReportSummary = {
   summaryTitle: string;
 };
 
-const DEFAULT_MEDIA_HUB_TIMEZONE = "Europe/Kyiv";
-const DEFAULT_SPIKE_MEDIA_HUB_DAILY_REPORT_TIME = "19:10";
-const DEFAULT_PLATFORM_MEDIA_HUB_DAILY_REPORT_TIME = "19:15";
-const DEFAULT_MEDIA_HUB_WEEKLY_REPORT_TIME = "15:00";
 const TELEGRAM_DELIVERY_TIMEOUT_MS = 15_000;
 const WHATSAPP_WEBHOOK_TIMEOUT_MS = 15_000;
 
@@ -206,7 +217,7 @@ export function getMediaHubMonitoringPlan(now: Date = new Date()): MediaHubMonit
 }
 
 export function isMediaHubPublicationDue(now: Date = new Date()) {
-  const parts = getParisLocalTimeParts(now);
+  const parts = getMediaHubLocalTimeParts(now, getMediaHubTimezone());
   const plan = getMediaHubPublicationPlan(parts.date);
   const [hour, minute] = getMediaHubReportTime(plan.kind).split(":").map(Number);
   return plan.kind !== "none" && parts.hour === hour && parts.minute === minute;
@@ -228,7 +239,7 @@ export function isMediaHubPublicationCatchupDue(
     return false;
   }
 
-  const parts = getParisLocalTimeParts(now);
+  const parts = getMediaHubLocalTimeParts(now, getMediaHubTimezone());
   if (parts.date !== plan.date) {
     return false;
   }
@@ -2749,10 +2760,6 @@ export async function isSsiDailyReportReadyForPublication(periodEndDate: string)
   return isSsiDailyIndexDataCurrent(await getPublicLatestData(), periodEndDate);
 }
 
-function isSsiDailyIndexDataCurrent(latestData: PublicLatestItem[], periodEndDate: string) {
-  return latestData.length > 0 && latestData.every((item) => item.date === periodEndDate);
-}
-
 async function claimMediaHubTelegramDelivery(input: {
   force?: boolean;
   kind: Exclude<MediaHubPublicationKind, "none">;
@@ -2969,65 +2976,12 @@ async function sendMonthlyMediaHubTelegram(content: ReturnType<typeof buildMonth
   return [payload.result?.message_id ?? 0].filter(Boolean);
 }
 
-export function getMediaHubTimezone() {
-  const configured = process.env.MEDIA_HUB_SCHEDULE_TIMEZONE?.trim();
-  return configured || DEFAULT_MEDIA_HUB_TIMEZONE;
-}
-
 export function getMediaHubReportTime(kind: MediaHubPublicationKind = "daily") {
-  const configured =
-    kind === "daily"
-      ? (
-        isPlatformSite()
-          ? process.env.ID3X_MEDIA_HUB_DAILY_REPORT_TIME?.trim()
-          : process.env.SPIKE_MEDIA_HUB_DAILY_REPORT_TIME?.trim()
-      ) ?? process.env.MEDIA_HUB_DAILY_REPORT_TIME?.trim()
-      : process.env.MEDIA_HUB_WEEKLY_REPORT_TIME?.trim();
-  const fallback =
-    kind === "daily"
-      ? isPlatformSite()
-        ? DEFAULT_PLATFORM_MEDIA_HUB_DAILY_REPORT_TIME
-        : DEFAULT_SPIKE_MEDIA_HUB_DAILY_REPORT_TIME
-      : DEFAULT_MEDIA_HUB_WEEKLY_REPORT_TIME;
-  return configured && /^\d{2}:\d{2}$/.test(configured)
-    ? configured
-    : fallback;
+  return getConfiguredMediaHubReportTime(kind, isPlatformSite());
 }
 
 export function getParisLocalDate(now: Date = new Date()) {
-  const formatter = new Intl.DateTimeFormat("en-CA", {
-    day: "2-digit",
-    month: "2-digit",
-    timeZone: getMediaHubTimezone(),
-    year: "numeric",
-  });
-  const parts = formatter.formatToParts(now);
-  const year = parts.find((part) => part.type === "year")?.value ?? "1970";
-  const month = parts.find((part) => part.type === "month")?.value ?? "01";
-  const day = parts.find((part) => part.type === "day")?.value ?? "01";
-  return `${year}-${month}-${day}`;
-}
-
-function getParisLocalTimeParts(now: Date) {
-  const formatter = new Intl.DateTimeFormat("en-GB", {
-    day: "2-digit",
-    hour: "2-digit",
-    hourCycle: "h23",
-    minute: "2-digit",
-    month: "2-digit",
-    timeZone: getMediaHubTimezone(),
-    year: "numeric",
-  });
-  const parts = formatter.formatToParts(now);
-  const year = parts.find((part) => part.type === "year")?.value ?? "1970";
-  const month = parts.find((part) => part.type === "month")?.value ?? "01";
-  const day = parts.find((part) => part.type === "day")?.value ?? "01";
-
-  return {
-    date: `${year}-${month}-${day}`,
-    hour: Number(parts.find((part) => part.type === "hour")?.value ?? "0"),
-    minute: Number(parts.find((part) => part.type === "minute")?.value ?? "0"),
-  };
+  return getMediaHubLocalDate(now, getMediaHubTimezone());
 }
 
 export function normalizeMediaHubTelegramChatId(value: string) {
@@ -3037,48 +2991,4 @@ export function normalizeMediaHubTelegramChatId(value: string) {
   }
 
   return trimmed;
-}
-
-function isId3xMediaHubTelegramPaused() {
-  return /^(1|true|yes)$/i.test(
-    process.env.ID3X_MEDIA_HUB_TELEGRAM_PAUSED?.trim() ?? "",
-  );
-}
-
-function getIsoWeekday(date: string) {
-  const weekday = new Date(`${date}T00:00:00.000Z`).getUTCDay();
-  return weekday === 0 ? 7 : weekday;
-}
-
-function getSaturdayOrdinalInMonth(date: string) {
-  const current = new Date(`${date}T00:00:00.000Z`);
-  let ordinal = 0;
-
-  for (let day = 1; day <= current.getUTCDate(); day += 1) {
-    const candidate = new Date(Date.UTC(current.getUTCFullYear(), current.getUTCMonth(), day));
-    if (candidate.getUTCDay() === 6) {
-      ordinal += 1;
-    }
-  }
-
-  return ordinal;
-}
-
-function shiftIsoDate(date: string, days: number) {
-  const utcDate = new Date(`${date}T00:00:00.000Z`);
-  utcDate.setUTCDate(utcDate.getUTCDate() + days);
-  return utcDate.toISOString().slice(0, 10);
-}
-
-function parseJsonNumberArray(value: unknown) {
-  return Array.isArray(value)
-    ? value.filter((item): item is number => typeof item === "number")
-    : [];
-}
-
-function escapeHtml(value: string) {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
 }
