@@ -221,6 +221,24 @@ structure and per-section density reference, never as a total-length cap: a
 monthly report must retain its broader period coverage and its existing monthly
 evidence requirements.
 
+### Editorial Quality Gate
+
+Before delivery, Cortex now evaluates the generated report for empty or
+duplicated summary items and benchmark fit. The existing claim validator is
+also applied to both candidates against the same current evidence ledger. A
+candidate with unsupported high-risk claims is marked `blocked`; it is never
+rewritten into an apparently better text.
+
+When the original fails only editorial checks, Cortex may create exactly one
+`revised` candidate using the same report prompt and context pack. The rewrite
+instruction explicitly forbids new or altered facts, figures, dates, sources
+or claims. Both `original` and `revised` are stored in the protected
+`CortexEditorialQualityLedger`, and both can be compared with the later human
+publication through separate shadow records. Delivery always selects
+`original` in this phase. A later evaluation gate, based on accumulated
+original/revised versus human-outcome data, is required before revised output
+can become selectable for publication.
+
 The first ingestion artifact is available through `npm run cortex:source-scan`.
 It scans approved local repository roots into `.cortex/source-manifest.json`
 with source kind, owner project, visibility, size, SHA-256 hash and stable

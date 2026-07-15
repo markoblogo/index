@@ -21,6 +21,7 @@ export type CortexEditorialShadowMetrics = {
 };
 
 export type CortexEditorialShadowObservation = {
+  candidate: "original" | "revised";
   candidateCount: number;
   editorialPost: { id: string; publishedAt: string; url: string } | null;
   generatedAt: string;
@@ -46,6 +47,7 @@ export type CortexEditorialGuidance = {
 };
 
 type ShadowReport = {
+  candidate: "original" | "revised";
   createdAt: string;
   draftText: string;
   id: string;
@@ -88,10 +90,11 @@ export function buildCortexEditorialShadowObservation(input: {
   const selected = status === "awaiting_editorial" ? null : best;
 
   return {
+    candidate: input.report.candidate,
     candidateCount: candidates.length,
     editorialPost: selected ? { id: selected.post.id, publishedAt: selected.post.publishedAt, url: selected.post.url } : null,
     generatedAt,
-    id: `cortex-editorial-shadow:${input.report.id}`,
+    id: `cortex-editorial-shadow:${input.report.id}:${input.report.candidate}`,
     kind: input.report.kind,
     matchScore: selected ? round(selected.score) : null,
     matchingReason: getMatchingReason(status, best?.score, runnerUp?.score),
@@ -115,25 +118,26 @@ export async function syncCortexEditorialShadowObservations(input: {
   const reports = await listReports({ ...input, tenantId });
   const observations: CortexEditorialShadowObservation[] = [];
   for (const row of reports) {
-    const report = toShadowReport(row);
-    const posts = await listEditorialPosts({
-      endAt: new Date(new Date(report.createdAt).getTime() + editorialWindowHours(report.kind) * 3_600_000),
-      startAt: new Date(report.createdAt),
-      tenantId,
-    });
-    const observation = buildCortexEditorialShadowObservation({ posts, report });
-    const editorialText = observation.editorialPost
-      ? posts.find((post) => post.id === observation.editorialPost?.id)?.text ?? null
-      : null;
-    await persistObservation({
-      draftText: report.draftText,
-      editorialText,
-      observation,
-      periodEnd: row.periodEnd,
-      periodStart: row.periodStart,
-      tenantId,
-    });
-    observations.push(observation);
+    for (const report of toShadowReports(row)) {
+      const posts = await listEditorialPosts({
+        endAt: new Date(new Date(report.createdAt).getTime() + editorialWindowHours(report.kind) * 3_600_000),
+        startAt: new Date(report.createdAt),
+        tenantId,
+      });
+      const observation = buildCortexEditorialShadowObservation({ posts, report });
+      const editorialText = observation.editorialPost
+        ? posts.find((post) => post.id === observation.editorialPost?.id)?.text ?? null
+        : null;
+      await persistObservation({
+        draftText: report.draftText,
+        editorialText,
+        observation,
+        periodEnd: row.periodEnd,
+        periodStart: row.periodStart,
+        tenantId,
+      });
+      observations.push(observation);
+    }
   }
   return { observations, skippedReason: null };
 }
@@ -184,7 +188,7 @@ export async function getCortexEditorialGuidance(input: {
 
   await ensureStorage();
   const rows = await db.$queryRawUnsafe<EditorialShadowLedgerRow[]>(
-    `SELECT "observationJson" FROM "CortexEditorialShadowLedger" WHERE "tenantId" = $1 AND "kind" = $2 AND "status" = 'matched' ORDER BY "updatedAt" DESC LIMIT 60`,
+    `SELECT "observationJson" FROM "CortexEditorialShadowLedger" WHERE "tenantId" = $1 AND "kind" = $2 AND "status" = 'matched' AND ("observationJson"->>'candidate' IS NULL OR "observationJson"->>'candidate' = 'original') ORDER BY "updatedAt" DESC LIMIT 60`,
     input.tenantId ?? getActiveIndexConfig().id,
     input.kind === "monthly" ? "weekly" : input.kind,
   );
@@ -309,12 +313,37 @@ async function listEditorialPosts(input: { endAt: Date; startAt: Date; tenantId:
   return rows.map((row) => ({ id: row.id || row.externalPostId, publishedAt: row.publishedAt.toISOString(), text: row.text, url: row.postUrl }));
 }
 
-function toShadowReport(row: MediaHubReportRow): ShadowReport {
+function toShadowReports(row: MediaHubReportRow): ShadowReport[] {
   const content = row.contentJson && typeof row.contentJson === "object"
-    ? row.contentJson as { generatedAt?: unknown; dailyReports?: unknown; localized?: unknown; summary?: string[]; title?: string }
+    ? row.contentJson as {
+      generatedAt?: unknown;
+      dailyReports?: unknown;
+      llm?: { qualityCandidates?: Partial<Record<"uk" | "en", { revised?: { summary?: unknown; title?: unknown } | null }>> };
+      localized?: unknown;
+      summary?: string[];
+      title?: string;
+    }
     : {};
   const generatedAt = typeof content.generatedAt === "string" && validDate(content.generatedAt) ? content.generatedAt : row.createdAt.toISOString();
-  return { createdAt: generatedAt, draftText: getMediaHubReportTextForValidation(content), id: row.id, kind: row.kind };
+  const original: ShadowReport = {
+    candidate: "original",
+    createdAt: generatedAt,
+    draftText: getMediaHubReportTextForValidation(content),
+    id: row.id,
+    kind: row.kind,
+  };
+  const revised = content.llm?.qualityCandidates?.uk?.revised ?? content.llm?.qualityCandidates?.en?.revised;
+  if (!revised || !Array.isArray(revised.summary) || typeof revised.title !== "string") return [original];
+  return [
+    original,
+    {
+      candidate: "revised",
+      createdAt: generatedAt,
+      draftText: getMediaHubReportTextForValidation({ localized: { uk: revised }, title: revised.title }),
+      id: row.id,
+      kind: row.kind,
+    },
+  ];
 }
 
 async function persistObservation(input: {

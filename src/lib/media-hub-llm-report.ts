@@ -12,6 +12,11 @@ import { loadCortexRuntimeChunkManifest } from "@/lib/cortex-runtime-chunk-manif
 import { buildCortexIndexDbEvidence } from "@/lib/cortex-index-db-evidence";
 import { hasDatabaseUrl } from "@/lib/db";
 import { getCortexEditorialGuidance, type CortexEditorialGuidance } from "@/lib/cortex-editorial-shadow";
+import {
+  assessCortexEditorialDraft,
+  shouldAttemptCortexEditorialRewrite,
+  type CortexEditorialQualityCandidate,
+} from "@/lib/cortex-editorial-quality-gate";
 import { buildCortexMediaHubMonitoringLedgerEvidence } from "@/lib/media-hub-monitoring-ledger";
 import type { MediaHubWindowSnapshot } from "@/lib/media-hub";
 import type { MediaHubManualMaterialDigest } from "@/lib/media-hub-manual-materials";
@@ -33,6 +38,7 @@ type GeneratedPayload = {
 
 type GenerationResult = {
   error?: string;
+  qualityCandidate?: CortexEditorialQualityCandidate;
   report?: MediaHubLocalizedReport;
 };
 
@@ -52,6 +58,7 @@ export async function generateMediaHubLlmReports(input: {
   cortexContextPack: CortexContextPack;
   editorialGuidance?: CortexEditorialGuidance;
   localized: Partial<Record<Locale, MediaHubLocalizedReport>>;
+  qualityCandidates?: Partial<Record<Locale, CortexEditorialQualityCandidate>>;
   model?: string;
   provider?: "openai";
   skippedReason?: string;
@@ -76,12 +83,13 @@ export async function generateMediaHubLlmReports(input: {
     : undefined;
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    return { cortexContextPack, editorialGuidance, localized: {}, skippedReason: "openai_api_key_missing" };
+    return { cortexContextPack, editorialGuidance, localized: {}, qualityCandidates: {}, skippedReason: "openai_api_key_missing" };
   }
 
   const locales: Locale[] = input.tenant === "spike" ? ["uk", "en"] : ["en"];
   const model = getMediaHubModel(input.kind);
   const localized: Partial<Record<Locale, MediaHubLocalizedReport>> = {};
+  const qualityCandidates: Partial<Record<Locale, CortexEditorialQualityCandidate>> = {};
   const errors: string[] = [];
 
   for (const locale of locales) {
@@ -96,6 +104,9 @@ export async function generateMediaHubLlmReports(input: {
     if (generated.report) {
       localized[locale] = generated.report;
     }
+    if (generated.qualityCandidate) {
+      qualityCandidates[locale] = generated.qualityCandidate;
+    }
     if (generated.error) {
       errors.push(`${locale}:${generated.error}`);
     }
@@ -105,6 +116,7 @@ export async function generateMediaHubLlmReports(input: {
     cortexContextPack,
     editorialGuidance,
     localized,
+    qualityCandidates,
     model,
     provider: "openai",
     skippedReason: Object.keys(localized).length > 0
@@ -138,13 +150,13 @@ async function generateOneLocale(input: {
     for (const model of attempts) {
       const responses = await callResponsesApi({ ...input, model, prompt });
       if (responses.report) {
-        return responses;
+        return buildShadowQualityCandidate({ input, prompt, report: responses.report });
       }
       lastError = responses.error || lastError;
 
       const chat = await callChatCompletionsApi({ ...input, model, prompt });
       if (chat.report) {
-        return chat;
+        return buildShadowQualityCandidate({ input, prompt, report: chat.report });
       }
       lastError = chat.error || lastError;
     }
@@ -153,6 +165,57 @@ async function generateOneLocale(input: {
   } catch (error) {
     return { error: sanitizeOpenAiError(error) };
   }
+}
+
+async function buildShadowQualityCandidate(input: {
+  input: {
+    apiKey: string;
+    editorialGuidance?: CortexEditorialGuidance;
+    kind: MediaHubReportKind;
+    model: string;
+  };
+  prompt: string;
+  report: MediaHubLocalizedReport;
+}): Promise<GenerationResult> {
+  const originalAssessment = assessCortexEditorialDraft({
+    draft: input.report,
+    guidance: input.input.editorialGuidance,
+    kind: input.input.kind,
+  });
+  let revised: MediaHubLocalizedReport | null = null;
+  let revisedAssessment: CortexEditorialQualityCandidate["revisedAssessment"] = null;
+  const rewriteAttempted = Boolean(input.input.editorialGuidance?.active && shouldAttemptCortexEditorialRewrite(originalAssessment));
+
+  if (rewriteAttempted) {
+    const result = await callBoundedEditorialRewrite({
+      apiKey: input.input.apiKey,
+      kind: input.input.kind,
+      model: input.input.model,
+      original: input.report,
+      prompt: input.prompt,
+      reasons: originalAssessment.reasons,
+    });
+    if (result.report) {
+      revised = result.report;
+      revisedAssessment = assessCortexEditorialDraft({
+        draft: revised,
+        guidance: input.input.editorialGuidance,
+        kind: input.input.kind,
+      });
+    }
+  }
+
+  return {
+    qualityCandidate: {
+      original: input.report,
+      originalAssessment,
+      revised,
+      revisedAssessment,
+      rewriteAttempted,
+      selected: "original",
+    },
+    report: input.report,
+  };
 }
 
 async function callResponsesApi(input: {
@@ -232,6 +295,37 @@ async function callChatCompletionsApi(input: {
   const payload = await response.json();
   const report = parseGeneratedJson(extractChatCompletionText(payload), input.kind);
   return report ? { report } : { error: "chat_parse_empty" };
+}
+
+async function callBoundedEditorialRewrite(input: {
+  apiKey: string;
+  kind: MediaHubReportKind;
+  model: string;
+  original: MediaHubLocalizedReport;
+  prompt: string;
+  reasons: string[];
+}): Promise<GenerationResult> {
+  const response = await fetchWithTimeout("https://api.openai.com/v1/responses", {
+    body: JSON.stringify({
+      input: [
+        input.prompt,
+        "\n\nEDITORIAL QUALITY REWRITE (shadow candidate only):",
+        "Rewrite the JSON draft below once. Keep the same factual scope and do not add, remove or alter facts, numbers, dates, sources, citations, or claims.",
+        `Fix only these observable editorial issues: ${input.reasons.join("; ")}.`,
+        "Return strict JSON only with keys title and summary.",
+        JSON.stringify(input.original),
+      ].join("\n"),
+      max_output_tokens: getMaxOutputTokens(input.kind),
+      model: input.model,
+      temperature: 0.1,
+    }),
+    headers: openAiHeaders(input.apiKey),
+    method: "POST",
+  }, OPENAI_REPORT_TIMEOUT_MS);
+  if (!response.ok) return { error: await safeOpenAiResponseError(response) };
+  const payload = await response.json();
+  const report = parseGeneratedJson(extractResponseText(payload), input.kind);
+  return report ? { report } : { error: "editorial_rewrite_parse_empty" };
 }
 
 function openAiHeaders(apiKey: string) {

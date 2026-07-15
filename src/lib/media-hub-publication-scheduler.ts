@@ -13,6 +13,11 @@ import {
 } from "@/lib/media-hub-llm-report";
 import type { CortexContextPack } from "@/lib/commodity-intelligence-layer";
 import type { CortexEditorialGuidance } from "@/lib/cortex-editorial-shadow";
+import {
+  finalizeCortexEditorialQualityCandidates,
+  persistCortexEditorialQualityLedgerRecord,
+  type CortexEditorialQualityCandidate,
+} from "@/lib/cortex-editorial-quality-gate";
 import { persistMediaHubReportCortexContextPack } from "@/lib/commodity-intelligence-ledger";
 import { get1d3xRssWindows } from "@/lib/media-hub-rss";
 import {
@@ -80,6 +85,7 @@ type MediaHubReportContentJson = {
   llm?: {
     cortexContextPack?: CortexContextPack;
     editorialGuidance?: CortexEditorialGuidance;
+    qualityCandidates?: Partial<Record<Locale, CortexEditorialQualityCandidate>>;
     model?: string;
     provider?: string;
     skippedReason?: string;
@@ -829,6 +835,14 @@ export async function publishMediaHubSnapshotReport(
       reportStatus,
     );
     await persistMediaHubReportCortexContextPack({ content, id, kind, periodEndDate, periodStartDate, tenantId });
+    await persistCortexEditorialQualityLedgerRecord({
+      kind,
+      qualityCandidates: content.llm?.qualityCandidates ?? {},
+      reportId: id,
+      tenantId,
+    }).catch((error: unknown) => {
+      console.warn("Skipping Cortex editorial quality ledger persistence.", safeErrorMessage(error));
+    });
 
     revalidateMediaHubPublicViews();
 
@@ -1269,6 +1283,11 @@ function buildSnapshotReportContent(input: {
     periodEndDate: input.periodEndDate,
     snapshots: input.snapshots,
   });
+  const qualityCandidates = finalizeCortexEditorialQualityCandidates({
+    evidence,
+    kind: input.kind,
+    qualityCandidates: input.llm?.qualityCandidates ?? {},
+  });
   const primaryMergedLocalized = getPrimaryLocalizedReport(localizedReports);
   let summary = primaryMergedLocalized?.summary?.length
     ? primaryMergedLocalized.summary
@@ -1315,8 +1334,10 @@ function buildSnapshotReportContent(input: {
     llm: input.llm
       ? {
           cortexContextPack: input.llm.cortexContextPack,
+          editorialGuidance: input.llm.editorialGuidance,
           model: input.llm.model,
           provider: input.llm.provider,
+          qualityCandidates,
           skippedReason: input.llm.skippedReason,
         }
       : undefined,
@@ -2125,6 +2146,7 @@ function parseMediaHubReportContent(value: unknown): MediaHubReportContentJson |
           editorialGuidance: (candidate.llm as { editorialGuidance?: CortexEditorialGuidance }).editorialGuidance,
           model: String((candidate.llm as { model?: unknown }).model ?? ""),
           provider: String((candidate.llm as { provider?: unknown }).provider ?? ""),
+          qualityCandidates: (candidate.llm as { qualityCandidates?: Partial<Record<Locale, CortexEditorialQualityCandidate>> }).qualityCandidates,
           skippedReason: String((candidate.llm as { skippedReason?: unknown }).skippedReason ?? ""),
         }
       : undefined,

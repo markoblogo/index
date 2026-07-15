@@ -12,7 +12,7 @@ describe("Cortex editorial shadow", () => {
   it("matches a later editorial post and records observable edits", () => {
     const observation = buildCortexEditorialShadowObservation({
       posts: [{ id: "telegram:1198567788:42", publishedAt: "2026-07-15T18:30:00.000Z", text: "SSI Daily. Wheat CPT Odesa is 210 USD/t. Demand remains stable.", url: "https://t.me/spike_brokers/42" }],
-      report: { createdAt: "2026-07-15T17:00:00.000Z", draftText: "SSI Daily report. Wheat CPT Odesa is 210 USD/t. Demand remains stable. Additional market context.", id: "report-daily-1", kind: "daily" },
+      report: { candidate: "original", createdAt: "2026-07-15T17:00:00.000Z", draftText: "SSI Daily report. Wheat CPT Odesa is 210 USD/t. Demand remains stable. Additional market context.", id: "report-daily-1", kind: "daily" },
     });
     expect(observation.status).toBe("matched");
     expect(observation.editorialPost?.url).toBe("https://t.me/spike_brokers/42");
@@ -24,7 +24,7 @@ describe("Cortex editorial shadow", () => {
   it("keeps a report pending when no later editorial post exists", () => {
     const observation = buildCortexEditorialShadowObservation({
       posts: [],
-      report: { createdAt: "2026-07-15T17:00:00.000Z", draftText: "Daily report draft.", id: "report-daily-2", kind: "daily" },
+      report: { candidate: "original", createdAt: "2026-07-15T17:00:00.000Z", draftText: "Daily report draft.", id: "report-daily-2", kind: "daily" },
     });
     expect(observation.status).toBe("awaiting_editorial");
     expect(observation.editorialPost).toBeNull();
@@ -37,7 +37,7 @@ describe("Cortex editorial shadow", () => {
         { id: "one", publishedAt: "2026-07-15T18:00:00.000Z", text: "Wheat CPT Odesa 210 USD/t demand stable", url: "https://t.me/spike_brokers/1" },
         { id: "two", publishedAt: "2026-07-15T18:10:00.000Z", text: "Wheat CPT Odesa 210 USD/t demand stable", url: "https://t.me/spike_brokers/2" },
       ],
-      report: { createdAt: "2026-07-15T17:00:00.000Z", draftText: "Wheat CPT Odesa 210 USD/t demand remains stable.", id: "report-daily-3", kind: "daily" },
+      report: { candidate: "original", createdAt: "2026-07-15T17:00:00.000Z", draftText: "Wheat CPT Odesa 210 USD/t demand remains stable.", id: "report-daily-3", kind: "daily" },
     });
     expect(observation.status).toBe("ambiguous");
   });
@@ -51,7 +51,7 @@ describe("Cortex editorial shadow", () => {
   it("activates daily style guidance only after a bounded matched corpus exists", () => {
     const example = buildCortexEditorialShadowObservation({
       posts: [{ id: "post", publishedAt: "2026-07-15T18:00:00.000Z", text: "Wheat CPT Odesa 210 USD/t demand stable.", url: "https://t.me/spike_brokers/1" }],
-      report: { createdAt: "2026-07-15T17:00:00.000Z", draftText: "Wheat CPT Odesa 210 USD/t demand stable and market context.", id: "profile-base", kind: "daily" },
+      report: { candidate: "original", createdAt: "2026-07-15T17:00:00.000Z", draftText: "Wheat CPT Odesa 210 USD/t demand stable and market context.", id: "profile-base", kind: "daily" },
     });
     const observations = Array.from({ length: 10 }, (_, index) => ({ ...example, id: `sample-${index}` }));
     const guidance = buildCortexEditorialGuidance({ kind: "daily", observations });
@@ -64,7 +64,7 @@ describe("Cortex editorial shadow", () => {
   it("uses the weekly corpus as the monthly structural benchmark", () => {
     const example = buildCortexEditorialShadowObservation({
       posts: [{ id: "post", publishedAt: "2026-07-15T18:00:00.000Z", text: "Wheat CPT Odesa 210 USD/t demand stable.", url: "https://t.me/spike_brokers/1" }],
-      report: { createdAt: "2026-07-15T17:00:00.000Z", draftText: "Wheat CPT Odesa 210 USD/t demand stable and market context.", id: "weekly-profile", kind: "weekly" },
+      report: { candidate: "original", createdAt: "2026-07-15T17:00:00.000Z", draftText: "Wheat CPT Odesa 210 USD/t demand stable and market context.", id: "weekly-profile", kind: "weekly" },
     });
     const guidance = buildCortexEditorialGuidance({
       kind: "monthly",
