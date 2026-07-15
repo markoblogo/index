@@ -41,9 +41,18 @@ export type CortexEditorialGuidance = {
   benchmarkKind: "daily" | "weekly";
   reason: string;
   sampleCount: number;
+  structureProfile?: CortexEditorialStructureProfile | null;
   targetSentenceRange: { max: number; min: number } | null;
   targetWordRange: { max: number; min: number } | null;
   version: string | null;
+};
+
+export type CortexEditorialStructureProfile = {
+  active: boolean;
+  emojiHeadingRate: number;
+  headingCountRange: { max: number; min: number } | null;
+  sectionFamilies: Array<"signals" | "logistics" | "grains" | "oilseeds" | "processing" | "international">;
+  version: string;
 };
 
 type ShadowReport = {
@@ -66,7 +75,7 @@ type MediaHubReportRow = {
 };
 
 type TelegramPostRow = { externalPostId: string; id: string; postUrl: string; publishedAt: Date; text: string };
-type EditorialShadowLedgerRow = { observationJson: CortexEditorialShadowObservation };
+type EditorialGuidanceRow = { editorialText: string | null; observationJson: CortexEditorialShadowObservation };
 
 let storageReady: Promise<void> | null = null;
 
@@ -149,6 +158,7 @@ export function normalizeCortexEditorialShadowListLimit(value: number | null | u
 }
 
 export function buildCortexEditorialGuidance(input: {
+  editorialTexts?: string[];
   kind: "daily" | "weekly" | "monthly";
   observations: CortexEditorialShadowObservation[];
 }): CortexEditorialGuidance {
@@ -165,6 +175,10 @@ export function buildCortexEditorialGuidance(input: {
     .update(JSON.stringify(samples.map((item) => ({ id: item.id, metrics: item.metrics }))))
     .digest("hex")
     .slice(0, 16);
+  const structureProfile = buildCortexEditorialStructureProfile({
+    editorialTexts: input.editorialTexts ?? [],
+    minimumSamples,
+  });
   return {
     active: true,
     benchmarkKind,
@@ -172,6 +186,7 @@ export function buildCortexEditorialGuidance(input: {
       ? `Derived from ${samples.length} matched weekly editorial outcomes; apply as a monthly structure and density reference only.`
       : `Derived from ${samples.length} matched public editorial outcomes; style guidance only.`,
     sampleCount: samples.length,
+    structureProfile,
     targetSentenceRange: percentileRange(sentenceCounts),
     targetWordRange: percentileRange(wordCounts),
     version,
@@ -188,12 +203,57 @@ export async function getCortexEditorialGuidance(input: {
   );
 
   await ensureStorage();
-  const rows = await db.$queryRawUnsafe<EditorialShadowLedgerRow[]>(
-    `SELECT "observationJson" FROM "CortexEditorialShadowLedger" WHERE "tenantId" = $1 AND "kind" = $2 AND "status" = 'matched' AND ("observationJson"->>'candidate' IS NULL OR "observationJson"->>'candidate' = 'original') ORDER BY "updatedAt" DESC LIMIT 60`,
+  const rows = await db.$queryRawUnsafe<EditorialGuidanceRow[]>(
+    `SELECT ledger."observationJson", post."text" AS "editorialText" FROM "CortexEditorialShadowLedger" AS ledger LEFT JOIN "TelegramCollectedPost" AS post ON post."id" = ledger."editorialPostId" WHERE ledger."tenantId" = $1 AND ledger."kind" = $2 AND ledger."status" = 'matched' AND (ledger."observationJson"->>'candidate' IS NULL OR ledger."observationJson"->>'candidate' = 'original') ORDER BY ledger."updatedAt" DESC LIMIT 60`,
     input.tenantId ?? getActiveIndexConfig().id,
     input.kind === "monthly" ? "weekly" : input.kind,
   );
-  return buildCortexEditorialGuidance({ kind: input.kind, observations: rows.map((row) => row.observationJson) });
+  return buildCortexEditorialGuidance({
+    editorialTexts: rows.map((row) => row.editorialText).filter((text): text is string => Boolean(text)),
+    kind: input.kind,
+    observations: rows.map((row) => row.observationJson),
+  });
+}
+
+export function buildCortexEditorialStructureProfile(input: {
+  editorialTexts: string[];
+  minimumSamples: number;
+}): CortexEditorialStructureProfile | null {
+  if (input.editorialTexts.length < input.minimumSamples) return null;
+  const familyPositions = new Map<CortexEditorialStructureProfile["sectionFamilies"][number], number[]>();
+  const headingCounts: number[] = [];
+  let emojiHeadingReports = 0;
+
+  for (const text of input.editorialTexts) {
+    const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+    const headings = lines.filter(isLikelyHeading);
+    headingCounts.push(headings.length);
+    if (headings.some((line) => /^\p{Extended_Pictographic}/u.test(line))) emojiHeadingReports += 1;
+    for (const family of SECTION_FAMILIES) {
+      const index = lines.findIndex((line) => family.pattern.test(line));
+      if (index >= 0) {
+        const positions = familyPositions.get(family.id) ?? [];
+        positions.push(index);
+        familyPositions.set(family.id, positions);
+      }
+    }
+  }
+
+  const sectionFamilies = SECTION_FAMILIES
+    .filter((family) => (familyPositions.get(family.id)?.length ?? 0) / input.editorialTexts.length >= 0.5)
+    .sort((left, right) => average(familyPositions.get(left.id) ?? []) - average(familyPositions.get(right.id) ?? []))
+    .map((family) => family.id);
+  const profileData = {
+    emojiHeadingRate: round(emojiHeadingReports / input.editorialTexts.length),
+    headingCountRange: percentileRange(headingCounts),
+    sectionFamilies,
+  };
+
+  return {
+    active: sectionFamilies.length > 0,
+    ...profileData,
+    version: createHash("sha256").update(JSON.stringify(profileData)).digest("hex").slice(0, 16),
+  };
 }
 
 function getMatchStatus(bestScore?: number, runnerUpScore?: number): CortexEditorialShadowStatus {
@@ -271,10 +331,34 @@ function inactiveGuidance(
     benchmarkKind,
     reason,
     sampleCount,
+    structureProfile: null,
     targetSentenceRange: null,
     targetWordRange: null,
     version: null,
   };
+}
+
+const SECTION_FAMILIES: Array<{
+  id: CortexEditorialStructureProfile["sectionFamilies"][number];
+  pattern: RegExp;
+}> = [
+  { id: "signals", pattern: /головн|ключов|key signals|highlights/i },
+  { id: "logistics", pattern: /логіст|перевез|logistics|road|rail|порт|port|border/i },
+  { id: "grains", pattern: /зернов|пшениц|кукуруд|grains|wheat|corn/i },
+  { id: "oilseeds", pattern: /олій|соняш|ріпак|соя|oilseeds|sunflower|rapeseed|soy/i },
+  { id: "processing", pattern: /перероб|внутрішн|processing|domestic/i },
+  { id: "international", pattern: /міжнарод|global|international|світов/i },
+];
+
+function isLikelyHeading(line: string) {
+  return line.length <= 100 && (
+    /^\p{Extended_Pictographic}/u.test(line) ||
+    /^[A-ZА-ЯІЇЄҐ][A-ZА-ЯІЇЄҐ\s\d.:-]{4,}$/u.test(line)
+  );
+}
+
+function average(values: number[]) {
+  return values.length === 0 ? Number.POSITIVE_INFINITY : values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
 function percentileRange(values: number[]) {

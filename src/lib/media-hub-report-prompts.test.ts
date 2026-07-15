@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { buildCortexMarketReportContextPack } from "@/lib/commodity-intelligence-layer";
-import { buildMediaHubReportPrompt } from "@/lib/media-hub-report-prompts";
+import {
+  buildMediaHubReportPrompt,
+  renderCortexEditorialStructureProfile,
+} from "@/lib/media-hub-report-prompts";
 import type { MediaHubManualMaterialDigest } from "@/lib/media-hub-manual-materials";
 
 describe("Context report prompts", () => {
@@ -75,5 +78,19 @@ describe("Context report prompts", () => {
     expect(prompt).toContain("profile-test-0001");
     expect(prompt).toContain("weekly benchmark as a structural and density reference");
     expect(prompt).toContain("Do not copy benchmark text, transfer facts");
+  });
+
+  it("renders v2 structure as a generic shadow-only instruction", () => {
+    const instruction = renderCortexEditorialStructureProfile({
+      active: true,
+      emojiHeadingRate: 1,
+      headingCountRange: { max: 5, min: 3 },
+      sectionFamilies: ["signals", "logistics", "grains"],
+      version: "structure-v2-test",
+    });
+
+    expect(instruction).toContain("structure-v2-test");
+    expect(instruction).toContain("key signals -> logistics -> grains");
+    expect(instruction).toContain("Do not copy benchmark wording");
   });
 });

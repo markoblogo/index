@@ -1,6 +1,6 @@
 import type { Locale } from "@/lib/i18n";
 import type { CortexContextPack } from "@/lib/commodity-intelligence-layer";
-import type { CortexEditorialGuidance } from "@/lib/cortex-editorial-shadow";
+import type { CortexEditorialGuidance, CortexEditorialStructureProfile } from "@/lib/cortex-editorial-shadow";
 import type { MediaHubWindowSnapshot } from "@/lib/media-hub";
 import type { MediaHubManualMaterialDigest } from "@/lib/media-hub-manual-materials";
 import type { PublicLatestItem } from "@/lib/public-api-data";
@@ -283,6 +283,24 @@ function renderEditorialGuidance(guidance: CortexEditorialGuidance | undefined, 
     `Editorial benchmark guidance (profile ${guidance.version}; ${guidance.sampleCount} matched human-edited ${guidance.benchmarkKind} reports):`,
     scope,
     "Use this only for editorial density and concision. Do not copy benchmark text, transfer facts, change citations, or override the evidence and no-hallucination rules above.",
+  ].join("\n");
+}
+
+export function renderCortexEditorialStructureProfile(profile: CortexEditorialStructureProfile | null | undefined) {
+  if (!profile?.active || !profile.headingCountRange || profile.sectionFamilies.length === 0) return "";
+  const labels: Record<CortexEditorialStructureProfile["sectionFamilies"][number], string> = {
+    grains: "grains",
+    international: "international context",
+    logistics: "logistics",
+    oilseeds: "oilseeds",
+    processing: "processing/domestic market",
+    signals: "key signals",
+  };
+  return [
+    `Benchmark structure profile v2 (${profile.version}):`,
+    `Use ${profile.headingCountRange.min}-${profile.headingCountRange.max} concise ${profile.emojiHeadingRate >= 0.6 ? "emoji-led " : ""}section headings when evidence supports them.`,
+    `Preferred evidence-backed section flow: ${profile.sectionFamilies.map((family) => labels[family]).join(" -> ")}.`,
+    "This is a derived structure pattern only. Do not copy benchmark wording, transfer facts, invent empty sections, or override evidence, citations or claim rules.",
   ].join("\n");
 }
 

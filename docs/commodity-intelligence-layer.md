@@ -314,6 +314,20 @@ npm run cortex:editorial-match-diagnostics
 npm run cortex:editorial-match-diagnostics -- --kind=daily
 ```
 
+### Benchmark Prompt Profile V2
+
+Once the existing matched-corpus threshold is met, Cortex additionally derives
+a versioned, generic structure profile from the human-edited post archive:
+common evidence-backed section families, their usual order, heading-count range
+and whether concise emoji-led headings are typical. It does not preserve or
+reuse benchmark prose.
+
+V2 is shadow-only. The normal generated report and delivery path stay
+unchanged; the profile is appended only to the bounded `revised` candidate
+prompt. That candidate uses the same evidence and claim rules, passes the same
+quality gate and is compared with the later human-edited publication before it
+can affect any delivery decision.
+
 The first ingestion artifact is available through `npm run cortex:source-scan`.
 It scans approved local repository roots into `.cortex/source-manifest.json`
 with source kind, owner project, visibility, size, SHA-256 hash and stable

@@ -20,7 +20,10 @@ import {
 import { buildCortexMediaHubMonitoringLedgerEvidence } from "@/lib/media-hub-monitoring-ledger";
 import type { MediaHubWindowSnapshot } from "@/lib/media-hub";
 import type { MediaHubManualMaterialDigest } from "@/lib/media-hub-manual-materials";
-import { buildMediaHubReportPrompt } from "@/lib/media-hub-report-prompts";
+import {
+  buildMediaHubReportPrompt,
+  renderCortexEditorialStructureProfile,
+} from "@/lib/media-hub-report-prompts";
 import type { PublicLatestItem } from "@/lib/public-api-data";
 
 type MediaHubReportKind = "daily" | "weekly" | "monthly";
@@ -184,7 +187,10 @@ async function buildShadowQualityCandidate(input: {
   });
   let revised: MediaHubLocalizedReport | null = null;
   let revisedAssessment: CortexEditorialQualityCandidate["revisedAssessment"] = null;
-  const rewriteAttempted = Boolean(input.input.editorialGuidance?.active && shouldAttemptCortexEditorialRewrite(originalAssessment));
+  const structureProfile = input.input.editorialGuidance?.structureProfile;
+  const rewriteAttempted = Boolean(
+    input.input.editorialGuidance?.active && (shouldAttemptCortexEditorialRewrite(originalAssessment) || structureProfile?.active),
+  );
 
   if (rewriteAttempted) {
     const result = await callBoundedEditorialRewrite({
@@ -192,7 +198,7 @@ async function buildShadowQualityCandidate(input: {
       kind: input.input.kind,
       model: input.input.model,
       original: input.report,
-      prompt: input.prompt,
+      prompt: [input.prompt, renderCortexEditorialStructureProfile(structureProfile)].filter(Boolean).join("\n\n"),
       reasons: originalAssessment.reasons,
     });
     if (result.report) {

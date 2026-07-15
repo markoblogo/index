@@ -61,6 +61,24 @@ describe("Cortex editorial shadow", () => {
     expect(guidance.version).toHaveLength(16);
   });
 
+  it("derives a generic structural profile without retaining benchmark wording", () => {
+    const example = buildCortexEditorialShadowObservation({
+      posts: [{ id: "post", publishedAt: "2026-07-15T18:00:00.000Z", text: "Wheat CPT Odesa 210 USD/t demand stable.", url: "https://t.me/spike_brokers/1" }],
+      report: { candidate: "original", createdAt: "2026-07-15T17:00:00.000Z", draftText: "Wheat CPT Odesa 210 USD/t demand stable and market context.", id: "structure-base", kind: "daily" },
+    });
+    const guidance = buildCortexEditorialGuidance({
+      editorialTexts: Array.from({ length: 10 }, () => "🔎 Головні сигнали\nДеталь.\n🚚 Логістика\nДеталь.\n🌾 Зернові\nДеталь."),
+      kind: "daily",
+      observations: Array.from({ length: 10 }, (_, index) => ({ ...example, id: `structure-${index}` })),
+    });
+
+    expect(guidance.structureProfile).toMatchObject({
+      active: true,
+      emojiHeadingRate: 1,
+      sectionFamilies: ["signals", "logistics", "grains"],
+    });
+  });
+
   it("uses the weekly corpus as the monthly structural benchmark", () => {
     const example = buildCortexEditorialShadowObservation({
       posts: [{ id: "post", publishedAt: "2026-07-15T18:00:00.000Z", text: "Wheat CPT Odesa 210 USD/t demand stable.", url: "https://t.me/spike_brokers/1" }],
