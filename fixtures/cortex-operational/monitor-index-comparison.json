@@ -1,6 +1,6 @@
 {
   "id": "monitor-index-basic",
-  "expected": { "minCandidates": 1, "requireApprovalGate": true, "requireKnownGaps": true },
+  "expected": { "allowedVisibilities": ["protected"], "minCandidates": 1, "requireApprovalGate": true, "requireKnownGaps": true },
   "contextPack": {
     "createdAt": "2026-07-15T08:00:00.000Z",
     "product": "1D3X Cortex",

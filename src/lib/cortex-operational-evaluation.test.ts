@@ -20,7 +20,12 @@ const fixture: CortexOperationalEvalFixture = {
     query: "wheat CPT comparison",
     sourceIds: ["mn7r-market-monitor"],
   },
-  expected: { minCandidates: 1, requireApprovalGate: true, requireKnownGaps: true },
+  expected: {
+    allowedVisibilities: ["protected"],
+    minCandidates: 1,
+    requireApprovalGate: true,
+    requireKnownGaps: true,
+  },
   id: "monitor-index-basic",
   packet: {
     assumed: ["unresolved gap: index methodology timestamp is not available"],
@@ -69,5 +74,13 @@ describe("Cortex operational evaluation", () => {
     expect(result.ok).toBe(false);
     expect(result.failures).toContain("claim cites unavailable evidence: missing-evidence");
     expect(result.failures).toContain("packet: executed or published packets require approved humanApproval");
+  });
+
+  it("rejects evidence outside the declared visibility scope", () => {
+    const invalid = structuredClone(fixture);
+    invalid.contextPack.evidence[0].visibility = "public";
+    const result = evaluateCortexOperationalFixture(invalid);
+
+    expect(result.failures).toContain("evidence visibility is outside fixture scope: monitor-offer-1 (public)");
   });
 });

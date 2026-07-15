@@ -1,4 +1,5 @@
 import type { CortexContextPack } from "@/lib/commodity-intelligence-layer";
+import type { CortexVisibility } from "@/lib/commodity-intelligence-layer";
 import {
   validateCortexMarketWorkforcePacket,
   type CortexMarketWorkforcePacket,
@@ -12,6 +13,7 @@ export type CortexOperationalSynthesis = {
 export type CortexOperationalEvalFixture = {
   contextPack: CortexContextPack;
   expected: {
+    allowedVisibilities?: CortexVisibility[];
     minCandidates?: number;
     requireApprovalGate?: boolean;
     requireKnownGaps?: boolean;
@@ -36,6 +38,14 @@ export function evaluateCortexOperationalFixture(
   failures.push(...packetValidation.errors.map((error) => `packet: ${error}`));
 
   const evidenceIds = new Set(fixture.contextPack.evidence.map((item) => item.id));
+  const allowedVisibilities = fixture.expected.allowedVisibilities;
+  if (allowedVisibilities) {
+    for (const evidence of fixture.contextPack.evidence) {
+      if (!allowedVisibilities.includes(evidence.visibility)) {
+        failures.push(`evidence visibility is outside fixture scope: ${evidence.id} (${evidence.visibility})`);
+      }
+    }
+  }
   for (const claim of fixture.synthesis.claims) {
     if (!claim.text.trim()) failures.push("synthesis contains an empty claim");
     if (!claim.evidenceIds.length) failures.push(`claim has no citations: ${claim.text}`);
