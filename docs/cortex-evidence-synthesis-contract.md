@@ -1,11 +1,17 @@
 # Cortex Evidence Synthesis Contract
 
-Status: future contract, not a GBrain integration
-Updated: 2026-07-14
+Status: active Cortex contract; GBrain remains a reference only
+Updated: 2026-07-15
 
 This contract adapts the useful evidence and gap-analysis pattern from
 [garrytan/gbrain](https://github.com/garrytan/gbrain) without installing or
 embedding GBrain in the agro-commodity runtime.
+
+The current implementation now has the required first substrate:
+`CortexEcosystemEvidenceLedger` records registered SSI, MediaHub and MN7R
+observations with provenance, visibility and known gaps; the context-pack
+builder merges eligible events with repository retrieval. Cited synthesis,
+claim-level gap analysis and approval-gated proposals remain later layers.
 
 ## Required Flow
 

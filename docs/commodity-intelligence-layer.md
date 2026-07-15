@@ -1,7 +1,7 @@
 # 1D3X Cortex
 
 Status: active internal product, staged observe/learn rollout
-Updated: 2026-07-14
+Updated: 2026-07-15
 
 ## Purpose
 
@@ -473,9 +473,10 @@ Use separate stores for separate responsibilities:
 Current implementation note: Context report context packs are persisted twice:
 inside the generated `MediaHubReport.contentJson` artifact and in
 `CortexContextPackLedger`, a separate DB-backed audit ledger keyed by tenant,
-entity, purpose, source IDs, visibility and pack hash. A broader retrieval and
-corrections API can build on that ledger when non-report actions need stable
-cross-product memory.
+entity, purpose, source IDs, visibility and pack hash. `CortexEcosystemEvidenceLedger`
+now provides the append-only cross-product observation layer for registered
+SSI, MediaHub and MN7R sources. The context-pack builder merges eligible events
+with artifact retrieval; corrections and broader entity APIs remain future work.
 
 Fine-tuning can be considered later only after there are stable examples,
 evaluations and repeated task formats. It is not required for the first useful

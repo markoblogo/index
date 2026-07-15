@@ -1,11 +1,13 @@
 # 1D3X Cortex Artifact Pipeline
 
 Status: operational runbook
-Updated: 2026-07-14
+Updated: 2026-07-15
 
 This runbook turns the current agro-commodity ecosystem sources into a bounded
 Cortex memory artifact that Index can use through
-`POST /api/internal/cortex/context-pack`.
+`POST /api/internal/cortex/context-pack`. The builder also merges eligible
+append-only Ecosystem Evidence events; this file-based artifact remains the
+repository/document retrieval layer rather than a replacement for that ledger.
 
 The pipeline is intentionally file-based for the current phase. It proves source
 coverage, visibility gates and repeatable context-pack generation before a

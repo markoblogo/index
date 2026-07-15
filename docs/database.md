@@ -47,6 +47,10 @@ Set `UGA_INDEX_RUNTIME_MODE=production` in production. In that mode, database-ba
 - `CortexContextPackLedger`: DB-backed 1D3X Cortex audit ledger for generated
   context packs, keyed by tenant/entity/purpose with source IDs, visibility,
   metrics, hash and full pack JSON.
+- `CortexEcosystemEvidenceLedger`: append-only cross-product observation ledger
+  for registered SSI, MediaHub and MN7R sources. It preserves source/project
+  provenance, visibility, event time and the full bounded event record; it is
+  not a product-state or action table.
 
 ## Dates And Values
 

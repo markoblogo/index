@@ -60,10 +60,11 @@ Shared capabilities:
   extraction and keeps Playwright/Chromium for e2e, screenshots and fallback;
 - 1D3X Cortex layer for evidence-backed internal AI context, assistant tools
   and governed OpenAI API handoff across Index, MN7R Monitor, Cr0pto and related
-  agro-commodity resources, starting in observe/learn mode with Context report
-  context packs persisted into both report artifacts and the Cortex ledger. The
-  Cortex source contract covers site content, dynamic product data, archives,
-  manuals/books, codebases, development plans and approved action/event logs;
+  agro-commodity resources. The active observe/learn layer combines saved
+  report context packs with an append-only Ecosystem Evidence Ledger for SSI,
+  MediaHub and MN7R observations. The Cortex source contract covers site
+  content, dynamic product data, archives, manuals/books, codebases,
+  development plans and approved action/event logs;
 - Cortex is the owner of the shared AI layer. Index, MN7R EXE Assistant and
   Cropto assistant surfaces are domain interfaces and adapters, while Cortex
   owns cross-product context, memory, model routing, workforce packets and
@@ -276,9 +277,11 @@ src/lib/constants.ts               active site config
 src/lib/commodity-intelligence-layer.ts  1D3X Cortex registry/context contract
 src/lib/cortex-source-scanner.ts  1D3X Cortex local source-manifest scanner
 src/lib/commodity-intelligence-ledger.ts  1D3X Cortex context-pack audit ledger
+src/lib/cortex-ecosystem-evidence.ts  append-only cross-product evidence ledger
 src/lib/media-hub-llm-report.ts  OpenAI report path with Cortex context pack
 src/lib/media-hub-publication-scheduler.ts  Context report persistence with Cortex audit snapshot
 src/app/api/internal/cortex/context-packs/route.ts  internal Cortex ledger read API
+src/app/api/internal/cortex/ecosystem-evidence/route.ts  internal ecosystem evidence API
 src/lib/public-index-data.ts       public homepage and analytics data
 src/lib/admin-daily-inputs.ts      admin daily matrix data/actions
 src/lib/admin-calculate.ts         calculation and publication workflow
@@ -469,6 +472,12 @@ Internal agents and related ecosystem products can read saved Cortex context
 packs through `GET /api/internal/cortex/context-packs` with
 `CORTEX_INTERNAL_API_SECRET` or `CRON_SECRET`; use `includePack=1` only for
 authorized internal context assembly.
+They can read the shared source registry, freshness and bounded operational
+events through `GET /api/internal/cortex/ecosystem-evidence`. The existing
+`POST /api/internal/cortex/context-pack` builder merges eligible ecosystem
+events with artifact-backed retrieval before an assistant or external model
+receives context; protected events remain excluded unless an approved caller
+sets `allowProtected`.
 For the repeatable local artifact flow across Index, MN7R and Cr0pto, use
 [`docs/cortex-artifact-pipeline.md`](docs/cortex-artifact-pipeline.md).
 Run `npm run cortex:source-scan` to write `.cortex/source-manifest.json`, the
