@@ -9,6 +9,7 @@ import { getActiveIndexConfig } from "@/lib/index-platform";
 import { computePublishedChange } from "@/lib/index-publish";
 import {
   normalizeMediaHubTelegramChatId,
+  isSsiDailyReportReadyForPublication,
   publishMediaHubSnapshotReport,
   sendMediaHubReportTelegram,
 } from "@/lib/media-hub-publication-scheduler";
@@ -422,6 +423,12 @@ export async function autoPublishSpikeDailyIndices(
 
 async function ensureDailyMediaHubPublication(date: string) {
   try {
+    if (!(await isSsiDailyReportReadyForPublication(date))) {
+      return {
+        skippedReason: "daily_index_not_current",
+        status: "skipped" as const,
+      };
+    }
     const report = await publishMediaHubSnapshotReport("daily", date);
     const telegram = await sendMediaHubReportTelegram("daily", date, {
       audience: "spike",

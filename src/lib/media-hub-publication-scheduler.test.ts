@@ -110,6 +110,52 @@ describe("media hub publication scheduler", () => {
     expect(isMediaHubPublicationDue(new Date("2026-06-22T16:09:00.000Z"))).toBe(false);
   });
 
+  it("blocks a daily SSI report when latest index data is from an earlier date", () => {
+    expect(__mediaHubPublicationSchedulerTestHooks.isSsiDailyIndexDataCurrent([
+      {
+        basis: "CPT Odesa, Ukraine (export)",
+        changeAbs: 2,
+        changePct: 0.96,
+        commodityCode: "CORN",
+        commodityId: "corn",
+        commodityNameEn: "Corn",
+        commodityNameUk: "Кукурудза",
+        date: "2026-07-14",
+        respondents: 19,
+        valueUsdPerMt: 211,
+      },
+    ], "2026-07-15")).toBe(false);
+  });
+
+  it("allows a daily SSI report only when every latest index is current", () => {
+    expect(__mediaHubPublicationSchedulerTestHooks.isSsiDailyIndexDataCurrent([
+      {
+        basis: "CPT Odesa, Ukraine (export)",
+        changeAbs: 0,
+        changePct: 0,
+        commodityCode: "CORN",
+        commodityId: "corn",
+        commodityNameEn: "Corn",
+        commodityNameUk: "Кукурудза",
+        date: "2026-07-15",
+        respondents: 19,
+        valueUsdPerMt: 211,
+      },
+      {
+        basis: "CPT Odesa, Ukraine (export)",
+        changeAbs: 0,
+        changePct: 0,
+        commodityCode: "WHT_115",
+        commodityId: "milling-wheat",
+        commodityNameEn: "Milling Wheat",
+        commodityNameUk: "Продовольча пшениця",
+        date: "2026-07-15",
+        respondents: 19,
+        valueUsdPerMt: 209,
+      },
+    ], "2026-07-15")).toBe(true);
+  });
+
   it("runs 1D3X weekday daily reports at 19:15 Kyiv", () => {
     platformSite = true;
     expect(isMediaHubPublicationDue(new Date("2026-06-22T16:15:00.000Z"))).toBe(true);

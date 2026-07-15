@@ -256,6 +256,15 @@ export async function runDueMediaHubPublication(options: {
   const publishTelegram = options.publishTelegram !== false;
 
   if (kind === "daily") {
+    if (!isPlatformSite() && !(await isSsiDailyReportReadyForPublication(plan.date))) {
+      return {
+        plan: { ...plan, kind },
+        result: {
+          skippedReason: "daily_index_not_current",
+          status: "skipped" as const,
+        },
+      };
+    }
     const telegramCleanup = publishTelegram && options.deletePreviousTelegram
       ? await deletePreviousMediaHubTelegramMessages("daily", plan.date, {
         audience: isPlatformSite() ? "platform" : "spike",
@@ -961,6 +970,13 @@ export async function sendMediaHubReportTelegram(
     options.audience === "spike" && kind === "daily"
       ? await getPublicLatestData()
       : [];
+  if (
+    options.audience === "spike" &&
+    kind === "daily" &&
+    !isSsiDailyIndexDataCurrent(latestData, periodEndDate)
+  ) {
+    return { skippedReason: "daily_index_not_current", status: "skipped" as const };
+  }
   const historyData =
     options.audience === "spike" && kind === "daily"
       ? await getPublicHistoryData()
@@ -974,8 +990,25 @@ export async function sendMediaHubReportTelegram(
     periodEndDate,
     tenant: options.audience,
   });
-  const sent = await sendTelegramMessages(botToken, normalizeMediaHubTelegramChatId(chatId), messages);
+  const deliveryClaim = await claimMediaHubTelegramDelivery({
+    force: options.force,
+    kind,
+    periodEndDate,
+    tenantId,
+  });
+  if (deliveryClaim.status !== "claimed") {
+    return deliveryClaim;
+  }
+
+  let sent: Awaited<ReturnType<typeof sendTelegramMessages>>;
+  try {
+    sent = await sendTelegramMessages(botToken, normalizeMediaHubTelegramChatId(chatId), messages);
+  } catch (error) {
+    await releaseMediaHubTelegramDeliveryClaim({ kind, periodEndDate, tenantId });
+    throw error;
+  }
   if (sent.status === "failed") {
+    await releaseMediaHubTelegramDeliveryClaim({ kind, periodEndDate, tenantId });
     return sent;
   }
 
@@ -991,6 +1024,7 @@ export async function sendMediaHubReportTelegram(
       UPDATE "MediaHubReport"
       SET "telegramSentAt" = NOW(),
           "telegramMessageIds" = $4::jsonb,
+          "telegramDeliveryClaimedAt" = NULL,
           "updatedAt" = NOW()
       WHERE "tenantId" = $1
         AND "kind" = $2
@@ -1946,6 +1980,7 @@ export const __mediaHubPublicationSchedulerTestHooks = {
   buildSsiDailyWhatsAppText,
   buildSsiNonDailyWhatsAppMessages,
   convertTelegramHtmlToWhatsAppText,
+  isSsiDailyIndexDataCurrent,
   sendMediaHubReportWhatsApp,
 };
 
@@ -2685,11 +2720,16 @@ async function ensureMediaHubReportStorageUncached() {
       "contentJson" JSONB NOT NULL,
       "sourceDigest" JSONB NOT NULL,
       "telegramSentAt" TIMESTAMP(3),
+      "telegramDeliveryClaimedAt" TIMESTAMP(3),
       "telegramMessageIds" JSONB,
       "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
       "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
       CONSTRAINT "MediaHubReport_pkey" PRIMARY KEY ("id")
     )
+  `);
+  await db.$executeRawUnsafe(`
+    ALTER TABLE "MediaHubReport"
+    ADD COLUMN IF NOT EXISTS "telegramDeliveryClaimedAt" TIMESTAMP(3)
   `);
   await db.$executeRawUnsafe(`
     CREATE UNIQUE INDEX IF NOT EXISTS "MediaHubReport_tenant_kind_periodEnd_key"
@@ -2703,6 +2743,76 @@ async function ensureMediaHubReportStorageUncached() {
     CREATE INDEX IF NOT EXISTS "MediaHubReport_tenant_periodEnd_idx"
     ON "MediaHubReport"("tenantId", "periodEnd" DESC)
   `);
+}
+
+export async function isSsiDailyReportReadyForPublication(periodEndDate: string) {
+  return isSsiDailyIndexDataCurrent(await getPublicLatestData(), periodEndDate);
+}
+
+function isSsiDailyIndexDataCurrent(latestData: PublicLatestItem[], periodEndDate: string) {
+  return latestData.length > 0 && latestData.every((item) => item.date === periodEndDate);
+}
+
+async function claimMediaHubTelegramDelivery(input: {
+  force?: boolean;
+  kind: Exclude<MediaHubPublicationKind, "none">;
+  periodEndDate: string;
+  tenantId: string;
+}) {
+  const claimed = await db.$queryRawUnsafe<Array<{ telegramSentAt: Date | null }>>(
+    `
+      UPDATE "MediaHubReport"
+      SET "telegramDeliveryClaimedAt" = NOW(),
+          "updatedAt" = NOW()
+      WHERE "tenantId" = $1
+        AND "kind" = $2
+        AND "periodEnd" = $3::date
+        AND (
+          $4 = TRUE
+          OR (
+            "telegramSentAt" IS NULL
+            AND (
+              "telegramDeliveryClaimedAt" IS NULL
+              OR "telegramDeliveryClaimedAt" < NOW() - INTERVAL '10 minutes'
+            )
+          )
+        )
+      RETURNING "telegramSentAt"
+    `,
+    input.tenantId,
+    input.kind,
+    input.periodEndDate,
+    Boolean(input.force),
+  );
+  if (claimed.length > 0) {
+    return { status: "claimed" as const };
+  }
+
+  const existing = await getMediaHubReport(input.kind, input.periodEndDate, input.tenantId);
+  return existing?.telegramSentAt
+    ? { skippedReason: "already_sent", status: "skipped" as const }
+    : { skippedReason: "delivery_in_progress", status: "skipped" as const };
+}
+
+async function releaseMediaHubTelegramDeliveryClaim(input: {
+  kind: Exclude<MediaHubPublicationKind, "none">;
+  periodEndDate: string;
+  tenantId: string;
+}) {
+  await db.$executeRawUnsafe(
+    `
+      UPDATE "MediaHubReport"
+      SET "telegramDeliveryClaimedAt" = NULL,
+          "updatedAt" = NOW()
+      WHERE "tenantId" = $1
+        AND "kind" = $2
+        AND "periodEnd" = $3::date
+        AND "telegramSentAt" IS NULL
+    `,
+    input.tenantId,
+    input.kind,
+    input.periodEndDate,
+  );
 }
 
 export async function getMediaHubReport(
