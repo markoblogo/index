@@ -1,0 +1,53 @@
+{
+  "id": "monitor-index-basic",
+  "expected": { "minCandidates": 1, "requireApprovalGate": true, "requireKnownGaps": true },
+  "contextPack": {
+    "createdAt": "2026-07-15T08:00:00.000Z",
+    "product": "1D3X Cortex",
+    "purpose": "monitor-index-comparison",
+    "query": "wheat CPT comparison",
+    "sourceIds": ["mn7r-market-monitor"],
+    "excluded": [],
+    "knownGaps": ["index methodology timestamp is not available"],
+    "evidence": [{
+      "extractedAt": "2026-07-15T08:00:00.000Z",
+      "id": "monitor-offer-1",
+      "sourceId": "mn7r-market-monitor",
+      "summary": "Observed CPT offer moved to 210 USD/t.",
+      "title": "Monitor offer",
+      "urlOrPath": "mn7r://monitor/offer-1",
+      "visibility": "protected"
+    }]
+  },
+  "packet": {
+    "packetType": "market-workforce",
+    "taskId": "task-monitor-index-basic",
+    "correlationId": "corr-monitor-index-basic",
+    "trigger": "monitor-index-comparison",
+    "roles": ["market-data-broker", "risk-compliance-officer"],
+    "diversityMode": "research",
+    "candidates": [{
+      "candidateId": "basis-gap",
+      "hypothesis": "The apparent spread may be a basis mismatch.",
+      "verbalizedProbability": 0.55,
+      "probabilityUse": "ranking_hint_only",
+      "evidenceChecklist": ["verify matching basis"],
+      "evidence": [{ "capturedAt": "2026-07-15T08:00:00.000Z", "id": "monitor-offer-1", "sourceId": "mn7r-market-monitor" }],
+      "counterevidence": [],
+      "missingData": ["index methodology timestamp"],
+      "confidence": "medium",
+      "officerReview": "pending"
+    }],
+    "observed": [{ "capturedAt": "2026-07-15T08:00:00.000Z", "id": "monitor-offer-1", "sourceId": "mn7r-market-monitor" }],
+    "derived": ["monitor offer differs from index reference"],
+    "assumed": ["unresolved gap: index methodology timestamp is not available"],
+    "recommended": ["Review the basis before publishing a comparison."],
+    "blockedBy": ["officer review required"],
+    "humanApproval": { "required": true, "status": "pending" },
+    "outcome": "pending"
+  },
+  "synthesis": {
+    "claims": [{ "text": "The monitored offer is 210 USD/t.", "evidenceIds": ["monitor-offer-1"] }],
+    "knownGaps": ["index methodology timestamp is not available"]
+  }
+}

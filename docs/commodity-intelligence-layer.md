@@ -166,6 +166,27 @@ append-only by task, correlation ID and packet hash. The protected endpoint
 versions for internal review. It does not execute, publish or approve actions;
 it records the packet and its human/officer state for later bounded workflows.
 
+## Cortex Operational Loop
+
+The next live layer turns retrieval into governed operational memory:
+
+```text
+market event -> bounded Monitor/Index context -> hypotheses and counterevidence
+  -> officer review -> human approval -> recorded outcome
+```
+
+MN7R's EXE Assistant can create and review `monitor-index-comparison` packets
+through the protected workforce endpoint. Packets remain proposal-only:
+`verbalizedProbability` is a ranking hint, never a pricing, risk or execution
+input; `executed` and `published` outcomes require recorded human approval.
+
+`npm run cortex:operational-eval` runs the offline fixture gate for citations,
+known gaps, packet shape, candidate diversity and approval compliance. It does
+not call OpenAI, mutate the ledger or grant a tool permission. The first fixture
+is `fixtures/cortex-operational/monitor-index-comparison.json`; saved report and
+EXE fixtures should join it only after their source packs and approved outcomes
+are available.
+
 The first ingestion artifact is available through `npm run cortex:source-scan`.
 It scans approved local repository roots into `.cortex/source-manifest.json`
 with source kind, owner project, visibility, size, SHA-256 hash and stable

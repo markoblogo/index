@@ -4,6 +4,7 @@ import {
   listCortexMarketWorkforceRecords,
   normalizeCortexMarketWorkforceListLimit,
   persistCortexMarketWorkforcePacket,
+  validateCortexMarketWorkforcePacket,
   type CortexMarketWorkforcePacket,
 } from "@/lib/cortex-market-workforce-ledger";
 import type { CortexVisibility } from "@/lib/commodity-intelligence-layer";
@@ -27,12 +28,16 @@ export async function POST(request: Request) {
   if (!isAuthorized(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await readBody(request);
-  if (!isPacket(body.packet) || typeof body.tenantId !== "string" || body.tenantId.trim().length === 0) {
-    return NextResponse.json({ error: "tenantId and a valid market-workforce packet are required" }, { status: 400 });
+  const validation = validateCortexMarketWorkforcePacket(body.packet);
+  if (!validation.ok || typeof body.tenantId !== "string" || body.tenantId.trim().length === 0) {
+    return NextResponse.json({
+      error: "tenantId and a valid market-workforce packet are required",
+      validationErrors: validation.errors,
+    }, { status: 400 });
   }
 
   const record = await persistCortexMarketWorkforcePacket({
-    packet: body.packet,
+    packet: body.packet as CortexMarketWorkforcePacket,
     tenantId: body.tenantId.trim(),
     visibility: parseVisibility(body.visibility),
   });
@@ -53,24 +58,6 @@ async function readBody(request: Request): Promise<{ packet?: unknown; tenantId?
   } catch {
     return {};
   }
-}
-
-function isPacket(value: unknown): value is CortexMarketWorkforcePacket {
-  if (!value || typeof value !== "object") return false;
-  const packet = value as Partial<CortexMarketWorkforcePacket>;
-  return packet.packetType === "market-workforce" &&
-    typeof packet.taskId === "string" &&
-    typeof packet.correlationId === "string" &&
-    (packet.diversityMode === "off" || packet.diversityMode === "research" || packet.diversityMode === "adversarial") &&
-    Array.isArray(packet.candidates) &&
-    Array.isArray(packet.observed) &&
-    Array.isArray(packet.derived) &&
-    Array.isArray(packet.assumed) &&
-    Array.isArray(packet.recommended) &&
-    Array.isArray(packet.blockedBy) &&
-    Array.isArray(packet.roles) &&
-    Boolean(packet.humanApproval) &&
-    typeof packet.trigger === "string";
 }
 
 function parseVisibility(value: unknown): CortexVisibility {

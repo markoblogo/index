@@ -70,6 +70,11 @@ export type CortexMarketWorkforceLedgerFilters = {
   tenantId?: string | null;
 };
 
+export type CortexMarketWorkforcePacketValidation = {
+  errors: string[];
+  ok: boolean;
+};
+
 let storageReady: Promise<void> | null = null;
 
 export function buildCortexMarketWorkforceLedgerRecord(input: {
@@ -141,6 +146,94 @@ export async function listCortexMarketWorkforceRecords(
 export function normalizeCortexMarketWorkforceListLimit(value: number | null | undefined) {
   if (!Number.isFinite(value ?? NaN)) return 25;
   return Math.max(1, Math.min(100, Math.trunc(value as number)));
+}
+
+/**
+ * Workforce packets are durable evidence records. Keep this validation local
+ * and deterministic so a malformed or prematurely-approved packet cannot be
+ * treated as an operational outcome later.
+ */
+export function validateCortexMarketWorkforcePacket(value: unknown): CortexMarketWorkforcePacketValidation {
+  const errors: string[] = [];
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return { errors: ["packet must be an object"], ok: false };
+  }
+
+  const packet = value as Partial<CortexMarketWorkforcePacket>;
+  if (packet.packetType !== "market-workforce") errors.push("packetType must be market-workforce");
+  for (const key of ["taskId", "correlationId", "trigger"] as const) {
+    if (typeof packet[key] !== "string" || packet[key].trim().length === 0) errors.push(`${key} is required`);
+  }
+  if (!isDiversityMode(packet.diversityMode)) errors.push("diversityMode is invalid");
+  for (const key of ["candidates", "observed", "derived", "assumed", "recommended", "blockedBy", "roles"] as const) {
+    if (!Array.isArray(packet[key])) errors.push(`${key} must be an array`);
+  }
+  if (!isHumanApproval(packet.humanApproval)) errors.push("humanApproval is invalid");
+  if (!isOutcome(packet.outcome)) errors.push("outcome is invalid");
+
+  const candidateIds = new Set<string>();
+  for (const candidate of Array.isArray(packet.candidates) ? packet.candidates : []) {
+    if (!candidate || typeof candidate !== "object") {
+      errors.push("candidate must be an object");
+      continue;
+    }
+    const item = candidate as Partial<CortexWorkforceCandidate>;
+    if (typeof item.candidateId !== "string" || item.candidateId.trim().length === 0) {
+      errors.push("candidateId is required");
+    } else if (candidateIds.has(item.candidateId)) {
+      errors.push(`candidateId ${item.candidateId} is duplicated`);
+    } else {
+      candidateIds.add(item.candidateId);
+    }
+    if (typeof item.hypothesis !== "string" || item.hypothesis.trim().length === 0) errors.push("candidate hypothesis is required");
+    if (item.probabilityUse !== "ranking_hint_only") errors.push("candidate probabilityUse must be ranking_hint_only");
+    if (item.verbalizedProbability !== undefined && (!Number.isFinite(item.verbalizedProbability) || item.verbalizedProbability < 0 || item.verbalizedProbability > 1)) {
+      errors.push("candidate verbalizedProbability must be between 0 and 1");
+    }
+    if (!isOfficerReview(item.officerReview)) errors.push("candidate officerReview is invalid");
+    for (const key of ["evidence", "counterevidence", "evidenceChecklist", "missingData"] as const) {
+      if (!Array.isArray(item[key])) errors.push(`candidate ${key} must be an array`);
+    }
+    for (const ref of [...(item.evidence ?? []), ...(item.counterevidence ?? [])]) {
+      if (!isEvidenceRef(ref)) errors.push("candidate evidence reference is invalid");
+    }
+  }
+
+  for (const ref of Array.isArray(packet.observed) ? packet.observed : []) {
+    if (!isEvidenceRef(ref)) errors.push("observed evidence reference is invalid");
+  }
+  if ((packet.outcome === "executed" || packet.outcome === "published") && packet.humanApproval?.status !== "approved") {
+    errors.push("executed or published packets require approved humanApproval");
+  }
+
+  return { errors, ok: errors.length === 0 };
+}
+
+function isDiversityMode(value: unknown): value is CortexWorkforceDiversityMode {
+  return value === "off" || value === "research" || value === "adversarial";
+}
+
+function isOutcome(value: unknown): value is CortexMarketWorkforcePacket["outcome"] {
+  return value === "pending" || value === "executed" || value === "published" || value === "deferred" || value === "rejected" || value === "superseded";
+}
+
+function isOfficerReview(value: unknown): value is CortexWorkforceCandidate["officerReview"] {
+  return value === "pending" || value === "accepted" || value === "rejected" || value === "blocked";
+}
+
+function isHumanApproval(value: unknown): value is CortexMarketWorkforcePacket["humanApproval"] {
+  if (!value || typeof value !== "object") return false;
+  const approval = value as Partial<CortexMarketWorkforcePacket["humanApproval"]>;
+  return typeof approval.required === "boolean" &&
+    (approval.status === "pending" || approval.status === "approved" || approval.status === "rejected" || approval.status === "not_required");
+}
+
+function isEvidenceRef(value: unknown): value is CortexWorkforceEvidenceRef {
+  if (!value || typeof value !== "object") return false;
+  const ref = value as Partial<CortexWorkforceEvidenceRef>;
+  return typeof ref.id === "string" && ref.id.trim().length > 0 &&
+    typeof ref.sourceId === "string" && ref.sourceId.trim().length > 0 &&
+    typeof ref.capturedAt === "string" && !Number.isNaN(Date.parse(ref.capturedAt));
 }
 
 async function ensureCortexMarketWorkforceLedgerStorage() {
