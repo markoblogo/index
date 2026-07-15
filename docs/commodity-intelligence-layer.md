@@ -291,12 +291,14 @@ The default scans the latest 30 reports per kind; the hard upper bound is 60.
 The standalone command works from the collected archive. To hydrate the public
 archive and backfill in one protected server-side operation, call the existing
 source collector with `backfill=1`; this fetches only `@spike_brokers` before
-the replay.
+the replay. `backfill_limit` controls saved reports per kind (maximum 60),
+while `backfill_pages` controls the public Telegram archive scan separately
+(default 3, maximum 12) to keep one protected function run bounded.
 
 ```bash
 npm run cortex:editorial-corpus-backfill
 npm run cortex:editorial-corpus-backfill -- --kind=daily --limit=60
-# Protected cron request: /api/cron/report-source-collector?kind=daily&backfill=1&backfill_limit=60
+# Protected cron request: /api/cron/report-source-collector?kind=daily&backfill=1&backfill_limit=60&backfill_pages=3
 ```
 
 ### Benchmark Coverage And Match Diagnostics
