@@ -149,18 +149,6 @@ export async function autoPublishSpikeDailyIndices(
       ? [{ basketId: basket.id, commodityId: commodity.id, deliveryBasisId: basis.id }]
       : [];
   });
-  let inputDiagnostics: SsiPublishInputDiagnostics | undefined;
-  const withReceipt = async (result: AutoPublishResult): Promise<AutoPublishResult> => ({
-    ...result,
-    inputDiagnostics,
-    receipt: await getSsiPublishSiteReceipt({
-      date,
-      expectedPositions,
-      published: result.published,
-      skippedReason: result.skippedReason,
-    }),
-  });
-
   if (basisIds.length === 0 || basketByCommodityId.size === 0) {
     return { date, published: 0, skippedReason: "missing_basis_or_basket" };
   }
@@ -180,10 +168,6 @@ export async function autoPublishSpikeDailyIndices(
     existingPublishedRows.map((row) => row.commodityId),
   );
 
-  if (options.existingPublishedOnly && existingPublishedCount === 0) {
-    return withReceipt({ date, published: 0, skippedReason: "not_yet_published" });
-  }
-
   const allSubmissions = await db.priceSubmission.findMany({
     where: {
       deliveryBasisId: { in: basisIds },
@@ -202,7 +186,7 @@ export async function autoPublishSpikeDailyIndices(
       submission.respondent.status === "active" &&
       publishableStatuses.has(submission.status),
   );
-  inputDiagnostics = {
+  const inputDiagnostics: SsiPublishInputDiagnostics = {
     respondentDrafts: allSubmissions.filter(
       (submission) => submission.status === "draft" && submission.source !== "admin",
     ).length,
@@ -220,6 +204,20 @@ export async function autoPublishSpikeDailyIndices(
     spikeSource: allSubmissions.filter((submission) => submission.source === "spike").length,
     totalForDateAndConfiguredBases: allSubmissions.length,
   };
+  const withReceipt = async (result: AutoPublishResult): Promise<AutoPublishResult> => ({
+    ...result,
+    inputDiagnostics,
+    receipt: await getSsiPublishSiteReceipt({
+      date,
+      expectedPositions,
+      published: result.published,
+      skippedReason: result.skippedReason,
+    }),
+  });
+
+  if (options.existingPublishedOnly && existingPublishedCount === 0) {
+    return withReceipt({ date, published: 0, skippedReason: "not_yet_published" });
+  }
   const previousPublishedByCommodityId = await getPreviousPublishedValuesByCommodityId({
     basketIds,
     basisIds,
@@ -1045,8 +1043,4 @@ function shouldReplaceSubmission(
 
 function dateToUtcDate(date: string) {
   return new Date(`${date}T00:00:00.000Z`);
-}
-
-function roundToOneDecimal(value: number) {
-  return Math.round(value * 10) / 10;
 }
