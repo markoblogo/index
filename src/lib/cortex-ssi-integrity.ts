@@ -1,5 +1,9 @@
 import { createHash } from "node:crypto";
 import { db, hasDatabaseUrl } from "@/lib/db";
+import {
+  buildCortexSsiEcosystemEvidenceEvents,
+  persistCortexEcosystemEvidenceEvents,
+} from "@/lib/cortex-ecosystem-evidence";
 import { computePublishedChange } from "@/lib/index-publish";
 import type { PublicHistoryItem, PublicLatestItem } from "@/lib/public-api-data";
 
@@ -137,6 +141,7 @@ export async function persistCortexSsiIntegrityObservation(input: {
     JSON.stringify(record),
     record.createdAt,
   );
+  await persistCortexEcosystemEvidenceEvents(buildCortexSsiEcosystemEvidenceEvents(record));
   return record;
 }
 

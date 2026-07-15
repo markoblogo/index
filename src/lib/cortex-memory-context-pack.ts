@@ -1,6 +1,7 @@
 import {
   buildCortexContextPack,
   COMMODITY_INTELLIGENCE_PRODUCT_NAME,
+  mergeCortexContextPacks,
   type CortexContextPack,
 } from "@/lib/commodity-intelligence-layer";
 import { searchCortexMemory, type CortexMemorySearchFilters } from "@/lib/cortex-memory-search";
@@ -87,6 +88,15 @@ export function buildCortexMemoryContextPack(input: {
       searchedChunks: search.totals.searchedChunks,
     },
   };
+}
+
+export function mergeCortexMemoryContextPackArtifact(input: {
+  primary: CortexMemoryContextPackArtifact;
+  secondary?: CortexContextPack;
+}): CortexMemoryContextPackArtifact {
+  if (!input.secondary) return input.primary;
+  const pack = mergeCortexContextPacks({ primary: input.primary.pack, secondary: input.secondary });
+  return { ...input.primary, modelContextText: renderModelContextText(pack), pack };
 }
 
 function buildKnownGaps(matchedResults: number, selectedResults: number) {

@@ -2,6 +2,12 @@ import { createHash } from "node:crypto";
 import { db, hasDatabaseUrl } from "@/lib/db";
 import type { CortexContextPack, CortexVisibility } from "@/lib/commodity-intelligence-layer";
 import {
+  buildCortexMediaHubEcosystemEvidenceEvents,
+  buildCortexMediaHubPublicationEvidenceEvent,
+  persistCortexEcosystemEvidenceEvent,
+  persistCortexEcosystemEvidenceEvents,
+} from "@/lib/cortex-ecosystem-evidence";
+import {
   buildCortexMediaHubReportProposalPacket,
   persistCortexMarketWorkforcePacket,
 } from "@/lib/cortex-market-workforce-ledger";
@@ -183,7 +189,25 @@ export async function persistMediaHubReportCortexContextPack(input: {
     tenantId: input.tenantId,
     visibility: "protected",
   });
+  await persistCortexEcosystemEvidenceEvents(buildCortexMediaHubEcosystemEvidenceEvents({
+    contextPack: pack,
+    kind: input.kind,
+    periodEndDate: input.periodEndDate,
+    periodStartDate: input.periodStartDate,
+    reportId: input.id,
+    tenantId: input.tenantId,
+  }));
   return contextRecord;
+}
+
+export async function persistCortexMediaHubPublicationEvent(input: {
+  kind: "daily" | "weekly" | "monthly";
+  messageCount: number;
+  periodEndDate: string;
+  reportId: string;
+  tenantId: string;
+}) {
+  return persistCortexEcosystemEvidenceEvent(buildCortexMediaHubPublicationEvidenceEvent(input));
 }
 
 export async function getCortexContextPackRecord(id: string) {

@@ -18,7 +18,7 @@ import {
   persistCortexEditorialQualityLedgerRecord,
   type CortexEditorialQualityCandidate,
 } from "@/lib/cortex-editorial-quality-gate";
-import { persistMediaHubReportCortexContextPack } from "@/lib/commodity-intelligence-ledger";
+import { persistCortexMediaHubPublicationEvent, persistMediaHubReportCortexContextPack } from "@/lib/commodity-intelligence-ledger";
 import { observeCortexSsiTelegramDraft } from "@/lib/cortex-ssi-integrity";
 import { get1d3xRssWindows } from "@/lib/media-hub-rss";
 import {
@@ -1055,6 +1055,7 @@ export async function sendMediaHubReportTelegram(
     periodEndDate,
     JSON.stringify(sent.messageIds),
   );
+  await persistCortexMediaHubPublicationEvent({ kind, messageCount: sent.messageIds.length, periodEndDate, reportId: report.id, tenantId }).catch((error: unknown) => console.warn("Skipping Cortex MediaHub publication evidence.", safeErrorMessage(error)));
 
   return { messageIds: sent.messageIds, status: "sent" as const };
 }

@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
-import { buildCortexMemoryContextPack } from "@/lib/cortex-memory-context-pack";
+import { buildCortexMemoryContextPack, mergeCortexMemoryContextPackArtifact } from "@/lib/cortex-memory-context-pack";
+import {
+  buildCortexEcosystemEvidenceContextPack,
+  renderCortexEcosystemEvidenceAsContextPack,
+  type CortexEcosystemProject,
+} from "@/lib/cortex-ecosystem-evidence";
 import type { CortexMemorySearchFilters } from "@/lib/cortex-memory-search";
 import { loadCortexRuntimeChunkManifest } from "@/lib/cortex-runtime-chunk-manifest";
 import type { CortexContextPack, CortexVisibility } from "@/lib/commodity-intelligence-layer";
@@ -56,7 +61,20 @@ export async function POST(request: Request) {
     query: parsed.value.query,
   });
 
-  return NextResponse.json(artifact);
+  const ecosystemEvidence = await buildCortexEcosystemEvidenceContextPack({
+    includeProtected: parsed.value.allowProtected,
+    projects: toEcosystemProjects(parsed.value.filters.ownerProject),
+    tenantId: "ecosystem",
+  });
+  return NextResponse.json(mergeCortexMemoryContextPackArtifact({
+    primary: artifact,
+    secondary: renderCortexEcosystemEvidenceAsContextPack({
+      allowProtected: parsed.value.allowProtected,
+      context: ecosystemEvidence,
+      purpose: parsed.value.purpose,
+      query: parsed.value.query,
+    }),
+  }));
 }
 
 function isAuthorized(request: Request) {
@@ -208,4 +226,13 @@ function normalizeInteger(value: unknown, fallback: number, min: number, max: nu
   const numeric = typeof value === "number" ? value : Number(value);
   if (!Number.isFinite(numeric)) return fallback;
   return Math.max(min, Math.min(max, Math.trunc(numeric)));
+}
+
+function toEcosystemProjects(owners: CortexScanRoot["ownerProject"][] | undefined): CortexEcosystemProject[] | undefined {
+  if (!owners?.length) return undefined;
+  return Array.from(new Set(owners.flatMap((owner): CortexEcosystemProject[] => {
+    if (owner === "index") return ["index", "mediahub"];
+    if (owner === "mn7r" || owner === "cropto") return [owner];
+    return ["ecosystem"];
+  })));
 }

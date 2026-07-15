@@ -166,6 +166,17 @@ append-only by task, correlation ID and packet hash. The protected endpoint
 versions for internal review. It does not execute, publish or approve actions;
 it records the packet and its human/officer state for later bounded workflows.
 
+The Ecosystem Evidence Layer is the shared, append-only operational record
+above the individual report and workforce ledgers. Its first source registry
+covers SSI respondent inputs, index snapshots and Telegram drafts; MediaHub
+source snapshots, drafts and confirmed Telegram deliveries; and protected MN7R
+monitor observations. Each event carries project/source provenance, event time,
+schema version, visibility, freshness expectations and explicit known gaps.
+`GET /api/internal/cortex/ecosystem-evidence` returns a bounded read-only pack;
+protected evidence is excluded unless an authorized caller explicitly requests
+it. Writing an evidence event records observation only: it cannot mutate an
+index, report, Monitor state or delivery.
+
 ## Cortex Operational Loop
 
 The next live layer turns retrieval into governed operational memory:
@@ -543,6 +554,17 @@ Current read surface:
 - default response: ledger metadata, source IDs, metrics, target and pack hash
 - `includePack=1`: includes full context-pack JSON for authorized internal
   agent/product reads
+
+The ecosystem event read surface is `GET /api/internal/cortex/ecosystem-evidence`.
+It returns the source registry plus a bounded pack of provenance-aware events,
+freshness state and known gaps. `POST` is internal bridge-only and append-only;
+it validates the registered source/project/type/visibility contract before an
+MN7R or future product adapter may record an observation.
+
+The existing `POST /api/internal/cortex/context-pack` builder merges the
+artifact-backed repository context with this event pack before an assistant or
+external model receives it. The same `allowProtected` gate applies to both
+parts, so protected raw-operation summaries remain absent by default.
 
 This endpoint is the first stable read surface for 1D3X Cortex memory. It is
 internal-only and should be used by MN7R/Cr0pto/assistant integrations as a
