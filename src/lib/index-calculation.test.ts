@@ -39,6 +39,23 @@ describe("calculateIndexValue", () => {
     expect(result.excluded).toEqual([]);
   });
 
+  it("publishes the raw median with any non-empty SSI-style sample", () => {
+    const result = calculateIndexValue({
+      ...baseInput,
+      calculationMethod: "median_all",
+      submissions: [
+        submission("r1", 210),
+        submission("r2", 220),
+      ],
+    });
+
+    expect(result.status).toBe("publishable");
+    expect(result.median).toBe(215);
+    expect(result.value).toBe(215);
+    expect(result.usedCount).toBe(2);
+    expect(result.excluded).toEqual([]);
+  });
+
   it("excludes one high outlier beyond two percent of the median", () => {
     const result = calculateIndexValue({
       ...baseInput,

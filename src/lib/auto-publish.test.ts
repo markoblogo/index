@@ -7,7 +7,7 @@ import {
 } from "@/lib/auto-publish";
 
 describe("buildAutoPublishPlan", () => {
-  it("does not publish an insufficient respondent sample", () => {
+  it("publishes a saved respondent draft using the SSI median rule", () => {
     const plan = buildAutoPublishPlan({
       basisByCommodityId: new Map([["corn", "basis-corn"]]),
       submissions: [
@@ -18,16 +18,22 @@ describe("buildAutoPublishPlan", () => {
           price: 233.5,
           respondentId: "MN7R_MONITOR",
           source: "respondent",
-          status: "submitted",
+          status: "draft",
           updatedAt: new Date("2026-05-25T14:05:00.000Z"),
         },
       ],
     });
 
-    expect(plan.has("corn")).toBe(false);
+    expect(plan.get("corn")).toMatchObject({
+      median: 233.5,
+      rawCount: 1,
+      rawValue: 233.5,
+      usedCount: 1,
+      value: 233.5,
+    });
   });
 
-  it("uses the cleaned arithmetic average, not the median, for a publishable basket", () => {
+  it("uses the respondent median, not a cleaned arithmetic average", () => {
     const plan = buildAutoPublishPlan({
       basisByCommodityId: new Map([["corn", "basis-corn"]]),
       submissions: [
@@ -87,9 +93,9 @@ describe("buildAutoPublishPlan", () => {
     expect(plan.get("corn")).toMatchObject({
       median: 209,
       rawCount: 5,
-      rawValue: 209.2,
+      rawValue: 209,
       usedCount: 5,
-      value: 209.2,
+      value: 209,
     });
   });
 

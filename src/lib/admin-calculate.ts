@@ -252,6 +252,7 @@ async function getMockCalculationData(date: string): Promise<AdminCalculationDat
     commodities: inputData.commodities.map((commodity) => {
       const cells = cellsByCommodity.get(commodity.id) ?? [];
       const result = calculateIndexValue({
+        calculationMethod: "median_all",
         date,
         commodityId: commodity.id,
         deliveryBasisId: MOCK_BASIS_ID,
@@ -377,6 +378,7 @@ async function getDatabaseCalculationData(date: string): Promise<AdminCalculatio
 
       const calculationInput = buildDatabaseCalculationInput(context, commodity.id);
       const result = calculateIndexValue({
+        calculationMethod: "median_all",
         date,
         commodityId: commodity.id,
         deliveryBasisId: basis.id,
@@ -441,6 +443,7 @@ async function persistDatabaseCalculations(
     }
 
     const result = calculateIndexValue({
+      calculationMethod: "median_all",
       date,
       commodityId: commodity.id,
       deliveryBasisId: basis.id,

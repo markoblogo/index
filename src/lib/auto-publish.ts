@@ -51,9 +51,26 @@ export type AutoPublishPlanItem = {
 export type AutoPublishResult = {
   aiBrief?: Awaited<ReturnType<typeof generateAndStoreDailyAiMarketBriefs>> | null;
   date: string;
+  inputDiagnostics?: SsiPublishInputDiagnostics;
   mediaHub?: Awaited<ReturnType<typeof ensureDailyMediaHubPublication>> | null;
   published: number;
+  receipt?: SsiPublishSiteReceipt;
   skippedReason: string | null;
+};
+
+export type SsiPublishSiteReceipt = {
+  expectedPositions: number;
+  missingPositionKeys: string[];
+  status: "current" | "missing";
+};
+
+export type SsiPublishInputDiagnostics = {
+  eligibleForCalculation: number;
+  inactiveOrNonActiveRespondent: number;
+  nonPublishableStatus: number;
+  respondentDrafts: number;
+  spikeSource: number;
+  totalForDateAndConfiguredBases: number;
 };
 
 export async function autoPublishSpikeDailyIndices(
@@ -125,6 +142,24 @@ export async function autoPublishSpikeDailyIndices(
   const basketIds = [
     ...new Set([...basketByCommodityId.values()].map((basket) => basket.id)),
   ];
+  const expectedPositions = dbCommodities.flatMap((commodity) => {
+    const basis = basisByCommodityId.get(commodity.id);
+    const basket = basketByCommodityId.get(commodity.id);
+    return basis && basket
+      ? [{ basketId: basket.id, commodityId: commodity.id, deliveryBasisId: basis.id }]
+      : [];
+  });
+  let inputDiagnostics: SsiPublishInputDiagnostics | undefined;
+  const withReceipt = async (result: AutoPublishResult): Promise<AutoPublishResult> => ({
+    ...result,
+    inputDiagnostics,
+    receipt: await getSsiPublishSiteReceipt({
+      date,
+      expectedPositions,
+      published: result.published,
+      skippedReason: result.skippedReason,
+    }),
+  });
 
   if (basisIds.length === 0 || basketByCommodityId.size === 0) {
     return { date, published: 0, skippedReason: "missing_basis_or_basket" };
@@ -146,20 +181,45 @@ export async function autoPublishSpikeDailyIndices(
   );
 
   if (options.existingPublishedOnly && existingPublishedCount === 0) {
-    return { date, published: 0, skippedReason: "not_yet_published" };
+    return withReceipt({ date, published: 0, skippedReason: "not_yet_published" });
   }
 
-  const submissions = await db.priceSubmission.findMany({
+  const allSubmissions = await db.priceSubmission.findMany({
     where: {
       deliveryBasisId: { in: basisIds },
-      respondent: {
-        active: true,
-        status: "active",
-      },
-      status: { in: ["draft", "submitted", "verified", "published"] },
       tradeDate,
     },
+    include: {
+      respondent: {
+        select: { active: true, status: true },
+      },
+    },
   });
+  const publishableStatuses = new Set(["draft", "submitted", "verified", "published"]);
+  const submissions = allSubmissions.filter(
+    (submission) =>
+      submission.respondent.active &&
+      submission.respondent.status === "active" &&
+      publishableStatuses.has(submission.status),
+  );
+  inputDiagnostics = {
+    respondentDrafts: allSubmissions.filter(
+      (submission) => submission.status === "draft" && submission.source !== "admin",
+    ).length,
+    eligibleForCalculation: submissions.filter(
+      (submission) =>
+        submission.source !== "spike" &&
+        submission.priceUsdPerMt.gt(0),
+    ).length,
+    inactiveOrNonActiveRespondent: allSubmissions.filter(
+      (submission) => !submission.respondent.active || submission.respondent.status !== "active",
+    ).length,
+    nonPublishableStatus: allSubmissions.filter(
+      (submission) => !publishableStatuses.has(submission.status),
+    ).length,
+    spikeSource: allSubmissions.filter((submission) => submission.source === "spike").length,
+    totalForDateAndConfiguredBases: allSubmissions.length,
+  };
   const previousPublishedByCommodityId = await getPreviousPublishedValuesByCommodityId({
     basketIds,
     basisIds,
@@ -191,12 +251,15 @@ export async function autoPublishSpikeDailyIndices(
     if (existingPublishedCount > 0 && options.publishMediaHub !== false) {
       mediaHub = await ensureDailyMediaHubPublication(date);
     }
-    return {
+    if (existingPublishedCount > 0) {
+      revalidateSsiPublicIndexViews();
+    }
+    return withReceipt({
       date,
       mediaHub,
       published: 0,
       skippedReason: existingPublishedCount > 0 ? "already_published" : "no_submissions",
-    };
+    });
   }
 
   const commodityIdsToPublish = selectAutoPublishCommodityIds({
@@ -210,7 +273,8 @@ export async function autoPublishSpikeDailyIndices(
     if (options.publishMediaHub !== false) {
       mediaHub = await ensureDailyMediaHubPublication(date);
     }
-    return { date, mediaHub, published: 0, skippedReason: "already_published" };
+    revalidateSsiPublicIndexViews();
+    return withReceipt({ date, mediaHub, published: 0, skippedReason: "already_published" });
   }
 
   const commodityIdsToPublishSet = new Set(commodityIdsToPublish);
@@ -422,13 +486,7 @@ export async function autoPublishSpikeDailyIndices(
     });
   }
 
-  revalidatePath("/uk");
-  revalidatePath("/en");
-  revalidatePath("/uk/analytics");
-  revalidatePath("/en/analytics");
-  revalidatePath("/api/public/latest");
-  revalidatePath("/api/public/history");
-  revalidateTag("public-index-data", "max");
+  revalidateSsiPublicIndexViews();
 
   const aiBrief =
     published > 0 && options.generateAiBrief !== false
@@ -443,13 +501,101 @@ export async function autoPublishSpikeDailyIndices(
     mediaHub = await ensureDailyMediaHubPublication(date);
   }
 
-  return {
+  return withReceipt({
     aiBrief,
     date,
     mediaHub,
     published,
     skippedReason: published > 0 ? null : "no_publishable_positions",
+  });
+}
+
+function revalidateSsiPublicIndexViews() {
+  revalidatePath("/uk");
+  revalidatePath("/en");
+  revalidatePath("/uk/analytics");
+  revalidatePath("/en/analytics");
+  revalidatePath("/api/public/latest");
+  revalidatePath("/api/public/history");
+  revalidateTag("public-index-data", "max");
+}
+
+async function getSsiPublishSiteReceipt(input: {
+  date: string;
+  expectedPositions: Array<{
+    basketId: string;
+    commodityId: string;
+    deliveryBasisId: string;
+  }>;
+  published: number;
+  skippedReason: string | null;
+}): Promise<SsiPublishSiteReceipt> {
+  const expectedPositionKeys = input.expectedPositions.map(
+    (position) => `${position.commodityId}:${position.deliveryBasisId}:${position.basketId}`,
+  );
+  const rows = input.expectedPositions.length === 0
+    ? []
+    : await db.publishedIndex.findMany({
+      select: { basketId: true, commodityId: true, deliveryBasisId: true, tradeDate: true },
+      where: {
+        OR: input.expectedPositions.map((position) => ({
+          basketId: position.basketId,
+          commodityId: position.commodityId,
+          deliveryBasisId: position.deliveryBasisId,
+          locked: true,
+          status: "published",
+        })),
+      },
+      orderBy: { tradeDate: "desc" },
+    });
+  const latestDateByPosition = new Map<string, string>();
+  for (const row of rows) {
+    const key = `${row.commodityId}:${row.deliveryBasisId}:${row.basketId}`;
+    if (!latestDateByPosition.has(key)) {
+      latestDateByPosition.set(key, row.tradeDate.toISOString().slice(0, 10));
+    }
+  }
+  const missingPositionKeys = expectedPositionKeys.filter(
+    (key) => latestDateByPosition.get(key) !== input.date,
+  );
+  const receipt: SsiPublishSiteReceipt = {
+    expectedPositions: expectedPositionKeys.length,
+    missingPositionKeys,
+    status: missingPositionKeys.length === 0 && expectedPositionKeys.length > 0
+      ? "current"
+      : "missing",
   };
+
+  if (receipt.status === "missing") {
+    const entityId = `spike-ua:${input.date}`;
+    const existing = await db.auditLog.findFirst({
+      select: { id: true },
+      where: {
+        action: "index.publish_site_missing_snapshot",
+        entityId,
+        entityType: "SsiPublishSiteReceipt",
+      },
+    });
+    if (!existing) {
+      await db.auditLog.create({
+        data: {
+          action: "index.publish_site_missing_snapshot",
+          afterJson: {
+            date: input.date,
+            expectedPositions: receipt.expectedPositions,
+            missingPositionKeys: receipt.missingPositionKeys,
+            published: input.published,
+            skippedReason: input.skippedReason,
+          },
+          entityId,
+          entityType: "SsiPublishSiteReceipt",
+          summary: `SSI publish-site did not create a current snapshot for ${input.date}.`,
+        },
+      });
+    }
+  }
+
+  return receipt;
 }
 
 async function ensureDailyMediaHubPublication(date: string) {
@@ -716,7 +862,6 @@ export function buildAutoPublishPlan({
       !basisId ||
       submission.deliveryBasisId !== basisId ||
       submission.source === "spike" ||
-      (submission.status === "draft" && submission.source !== "admin") ||
       !Number.isFinite(submission.price) ||
       submission.price <= 0
     ) {
@@ -757,6 +902,7 @@ export function buildAutoPublishPlan({
         return null;
       }
       const calculation = calculateIndexValue({
+        calculationMethod: "median_all",
         date,
         commodityId,
         deliveryBasisId: basisByCommodityId.get(commodityId) ?? "",

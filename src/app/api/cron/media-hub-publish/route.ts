@@ -101,6 +101,18 @@ export async function GET(request: Request) {
       })
     : null;
 
+  if (shouldEnsureSsiDailyIndices && ssiAutoPublish?.receipt?.status !== "current") {
+    return NextResponse.json({
+      plan,
+      result: {
+        skippedReason: "daily_index_not_current",
+        status: "blocked_missing_publish_site_snapshot",
+      },
+      ssiAutoPublish,
+      triggeredAt: new Date().toISOString(),
+    });
+  }
+
   const publication = await runDueMediaHubPublication({
     date: plan.date,
     forceKind,

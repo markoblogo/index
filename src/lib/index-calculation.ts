@@ -16,6 +16,7 @@ export type ExcludedPrice = {
 };
 
 export type CalculateIndexInput = {
+  calculationMethod?: "cleaned_average" | "median_all";
   date: string;
   commodityId: string;
   deliveryBasisId: string;
@@ -50,6 +51,7 @@ const MINIMUM_PUBLISHABLE_COUNT = 5;
 const DEFAULT_BASKET_WEIGHT = 1;
 
 export function calculateIndexValue({
+  calculationMethod = "cleaned_average",
   date,
   commodityId,
   deliveryBasisId,
@@ -78,6 +80,25 @@ export function calculateIndexValue({
   }
 
   const median = calculateMedian(validSubmissions.map(({ price }) => price));
+  if (calculationMethod === "median_all") {
+    const rawValue = median;
+    const weightedRawValue = rawValue * basketWeight;
+
+    return {
+      date,
+      commodityId,
+      deliveryBasisId,
+      basketWeight,
+      status: "publishable",
+      median,
+      value: roundToOneDecimal(weightedRawValue),
+      rawValue,
+      weightedRawValue,
+      rawCount,
+      usedCount: rawCount,
+      excluded: [],
+    };
+  }
   const shouldApplyOutlierFilter =
     validSubmissions.length >= MINIMUM_PUBLISHABLE_COUNT;
   const included: ValidSubmission[] = [];
