@@ -239,6 +239,27 @@ publication through separate shadow records. Delivery always selects
 original/revised versus human-outcome data, is required before revised output
 can become selectable for publication.
 
+### Candidate Promotion Evaluation
+
+`CortexEditorialPromotionLedger` compares the protected original/revised pair
+with the later human-edited publication for each report kind independently.
+Its deterministic score combines factual safety, lexical alignment with the
+human post, duplicate/empty-item structure and relative text density. A score
+is not a financial confidence measure and cannot override evidence validation.
+
+The policy starts in `shadow` mode. It needs 20 factual-safe daily pairs or 8
+weekly/monthly pairs, at least 65% revised wins and at least 0.03 average score
+lift before it emits `recommended_candidate`. A second equally strong cohort
+can mark the kind `promotion_eligible`; this is still not a delivery switch.
+Publication continues to use original until a separate, explicit cutover and
+rollback contract is approved per report kind.
+
+```bash
+npm run cortex:editorial-promotion -- --kind=daily
+npm run cortex:editorial-promotion -- --kind=weekly
+npm run cortex:editorial-promotion -- --kind=monthly
+```
+
 The first ingestion artifact is available through `npm run cortex:source-scan`.
 It scans approved local repository roots into `.cortex/source-manifest.json`
 with source kind, owner project, visibility, size, SHA-256 hash and stable

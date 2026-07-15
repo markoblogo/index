@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isCronRequestAuthorized } from "@/lib/cron-auth";
 import { syncCortexEditorialShadowObservations } from "@/lib/cortex-editorial-shadow";
+import { evaluateCortexEditorialPromotion } from "@/lib/cortex-editorial-promotion";
 import {
   getDailyTelegramDigest,
   getWeeklyTelegramDigest,
@@ -20,10 +21,26 @@ export async function GET(request: Request) {
   }
 
   const url = new URL(request.url);
-  const reportKind =
-    url.searchParams.get("kind") === "weekly" ? "weekly" : "daily";
+  const requestedKind = url.searchParams.get("kind");
+  const reportKind = requestedKind === "weekly" || requestedKind === "monthly" ? requestedKind : "daily";
   const date = url.searchParams.get("date");
   const week = url.searchParams.get("week");
+  const month = url.searchParams.get("month") ?? date;
+
+  if (reportKind === "monthly") {
+    const sync = await syncTelegramWorkspaceResources("weekly");
+    const editorialShadow = month
+      ? await runEditorialShadow({ kind: "monthly", periodEndDate: month })
+      : null;
+    const editorialPromotion = await runEditorialPromotion("monthly");
+    return NextResponse.json({
+      editorialPromotion,
+      editorialShadow,
+      kind: "monthly",
+      sync,
+      triggeredAt: new Date().toISOString(),
+    });
+  }
 
   if (reportKind === "weekly") {
     const sync = await syncTelegramWorkspaceResources("weekly");
@@ -31,8 +48,10 @@ export async function GET(request: Request) {
     const editorialShadow = week
       ? await runEditorialShadow({ kind: "weekly", periodEndDate: week })
       : null;
+    const editorialPromotion = await runEditorialPromotion("weekly");
     return NextResponse.json({
       digest,
+      editorialPromotion,
       editorialShadow,
       kind: "weekly",
       sync,
@@ -45,9 +64,11 @@ export async function GET(request: Request) {
   const editorialShadow = date
     ? await runEditorialShadow({ kind: "daily", periodEndDate: date })
     : null;
+  const editorialPromotion = await runEditorialPromotion("daily");
   return NextResponse.json({
     date: date ?? null,
     digest,
+    editorialPromotion,
     editorialShadow,
     kind: "daily",
     sync,
@@ -55,10 +76,18 @@ export async function GET(request: Request) {
   });
 }
 
-async function runEditorialShadow(input: { kind: "daily" | "weekly"; periodEndDate: string }) {
+async function runEditorialShadow(input: { kind: "daily" | "weekly" | "monthly"; periodEndDate: string }) {
   try {
     return await syncCortexEditorialShadowObservations(input);
   } catch {
     return { observations: [], skippedReason: "editorial_shadow_failed" };
+  }
+}
+
+async function runEditorialPromotion(kind: "daily" | "weekly" | "monthly") {
+  try {
+    return await evaluateCortexEditorialPromotion({ kind });
+  } catch {
+    return { evaluations: [], policy: null, skippedReason: "editorial_promotion_failed" };
   }
 }

@@ -26,7 +26,7 @@ export type CortexEditorialShadowObservation = {
   editorialPost: { id: string; publishedAt: string; url: string } | null;
   generatedAt: string;
   id: string;
-  kind: "daily" | "weekly";
+  kind: "daily" | "weekly" | "monthly";
   matchScore: number | null;
   matchingReason: string;
   metrics: CortexEditorialShadowMetrics | null;
@@ -51,7 +51,7 @@ type ShadowReport = {
   createdAt: string;
   draftText: string;
   id: string;
-  kind: "daily" | "weekly";
+  kind: "daily" | "weekly" | "monthly";
 };
 
 type ShadowPost = { id: string; publishedAt: string; text: string; url: string };
@@ -60,7 +60,7 @@ type MediaHubReportRow = {
   contentJson: unknown;
   createdAt: Date;
   id: string;
-  kind: "daily" | "weekly";
+  kind: "daily" | "weekly" | "monthly";
   periodEnd: Date;
   periodStart: Date;
 };
@@ -107,7 +107,7 @@ export function buildCortexEditorialShadowObservation(input: {
 }
 
 export async function syncCortexEditorialShadowObservations(input: {
-  kind?: "daily" | "weekly";
+  kind?: "daily" | "weekly" | "monthly";
   limit?: number;
   periodEndDate?: string;
 } = {}) {
@@ -256,7 +256,7 @@ function validDate(value: string) {
   return Number.isNaN(Date.parse(value)) ? null : new Date(value).toISOString();
 }
 
-function editorialWindowHours(kind: "daily" | "weekly") {
+function editorialWindowHours(kind: "daily" | "weekly" | "monthly") {
   return kind === "daily" ? 48 : 240;
 }
 
@@ -284,9 +284,9 @@ function percentileRange(values: number[]) {
   };
 }
 
-async function listReports(input: { kind?: "daily" | "weekly"; limit?: number; periodEndDate?: string; tenantId: string }) {
+async function listReports(input: { kind?: "daily" | "weekly" | "monthly"; limit?: number; periodEndDate?: string; tenantId: string }) {
   const params: unknown[] = [input.tenantId];
-  const conditions = ['"tenantId" = $1', '"status" = \'published\'', '"kind" IN (\'daily\', \'weekly\')'];
+  const conditions = ['"tenantId" = $1', '"status" = \'published\'', '"kind" IN (\'daily\', \'weekly\', \'monthly\')'];
   if (input.kind) {
     params.push(input.kind);
     conditions.push(`"kind" = $${params.length}`);

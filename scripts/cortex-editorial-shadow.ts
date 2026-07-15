@@ -3,7 +3,7 @@ import { syncCortexEditorialShadowObservations } from "@/lib/cortex-editorial-sh
 async function main() {
   const kind = pickArg("--kind");
   const date = pickArg("--date");
-  if (kind !== "daily" && kind !== "weekly") throw new Error("Use --kind=daily or --kind=weekly.");
+  if (kind !== "daily" && kind !== "weekly" && kind !== "monthly") throw new Error("Use --kind=daily, --kind=weekly or --kind=monthly.");
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("Use --date=YYYY-MM-DD for the report period end.");
   console.log(JSON.stringify(await syncCortexEditorialShadowObservations({ kind, periodEndDate: date }), null, 2));
 }
