@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { isCronRequestAuthorized } from "@/lib/cron-auth";
 import { runCortexAutonomyReadinessMonitor } from "@/lib/cortex-autonomy-readiness";
+import {
+  backfillCortexEditorialEvaluationCorpus,
+  normalizeCortexEditorialCorpusBackfillLimit,
+} from "@/lib/cortex-editorial-corpus-backfill";
 import { syncCortexEditorialShadowObservations } from "@/lib/cortex-editorial-shadow";
 import { evaluateCortexEditorialPromotion } from "@/lib/cortex-editorial-promotion";
 import {
@@ -27,6 +31,8 @@ export async function GET(request: Request) {
   const date = url.searchParams.get("date");
   const week = url.searchParams.get("week");
   const month = url.searchParams.get("month") ?? date;
+  const backfillRequested = url.searchParams.get("backfill") === "1";
+  const backfillLimit = normalizeCortexEditorialCorpusBackfillLimit(Number(url.searchParams.get("backfill_limit")) || undefined);
 
   if (reportKind === "monthly") {
     const sync = await syncTelegramWorkspaceResources("weekly");
@@ -34,9 +40,11 @@ export async function GET(request: Request) {
       ? await runEditorialShadow({ kind: "monthly", periodEndDate: month })
       : null;
     const editorialPromotion = await runEditorialPromotion("monthly");
-    const autonomyReadiness = await runCortexAutonomyReadiness();
+    const editorialBackfill = backfillRequested ? await runEditorialCorpusBackfill(backfillLimit) : null;
+    const autonomyReadiness = editorialBackfill?.readiness ?? await runCortexAutonomyReadiness();
     return NextResponse.json({
       autonomyReadiness,
+      editorialBackfill,
       editorialPromotion,
       editorialShadow,
       kind: "monthly",
@@ -52,9 +60,11 @@ export async function GET(request: Request) {
       ? await runEditorialShadow({ kind: "weekly", periodEndDate: week })
       : null;
     const editorialPromotion = await runEditorialPromotion("weekly");
-    const autonomyReadiness = await runCortexAutonomyReadiness();
+    const editorialBackfill = backfillRequested ? await runEditorialCorpusBackfill(backfillLimit) : null;
+    const autonomyReadiness = editorialBackfill?.readiness ?? await runCortexAutonomyReadiness();
     return NextResponse.json({
       autonomyReadiness,
+      editorialBackfill,
       digest,
       editorialPromotion,
       editorialShadow,
@@ -70,10 +80,12 @@ export async function GET(request: Request) {
     ? await runEditorialShadow({ kind: "daily", periodEndDate: date })
     : null;
   const editorialPromotion = await runEditorialPromotion("daily");
-  const autonomyReadiness = await runCortexAutonomyReadiness();
+  const editorialBackfill = backfillRequested ? await runEditorialCorpusBackfill(backfillLimit) : null;
+  const autonomyReadiness = editorialBackfill?.readiness ?? await runCortexAutonomyReadiness();
   return NextResponse.json({
     autonomyReadiness,
     date: date ?? null,
+    editorialBackfill,
     digest,
     editorialPromotion,
     editorialShadow,
@@ -104,5 +116,17 @@ async function runCortexAutonomyReadiness() {
     return await runCortexAutonomyReadinessMonitor();
   } catch {
     return { skippedReason: "cortex_autonomy_readiness_failed", snapshot: null };
+  }
+}
+
+async function runEditorialCorpusBackfill(limitPerKind: number) {
+  try {
+    const archiveSync = await syncTelegramWorkspaceResources("weekly", {
+      channelHandles: ["@spike_brokers"],
+      maxPagesPerChannel: limitPerKind,
+    });
+    return { archiveSync, ...await backfillCortexEditorialEvaluationCorpus({ limitPerKind }) };
+  } catch {
+    return { archiveSync: null, readiness: null, skippedReason: "editorial_corpus_backfill_failed", tracks: [] };
   }
 }

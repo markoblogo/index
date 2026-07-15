@@ -74,6 +74,7 @@ let storageReady: Promise<void> | null = null;
 export async function syncTelegramWorkspaceResources(
   reportKind: ReportKind,
   options: {
+    channelHandles?: string[];
     maxPagesPerChannel?: number;
     reportId?: string | null;
     until?: Date;
@@ -88,7 +89,15 @@ export async function syncTelegramWorkspaceResources(
     reportId: options.reportId ?? null,
     reportKind,
   });
-  const telegramSources = dedupeTelegramResources(resources);
+  const requestedHandles = new Set(
+    (options.channelHandles ?? [])
+      .map(normalizeTelegramHandle)
+      .filter((handle): handle is string => handle !== null)
+      .map((handle) => handle.toLocaleLowerCase()),
+  );
+  const telegramSources = dedupeTelegramResources(resources).filter((source) =>
+    requestedHandles.size === 0 || requestedHandles.has(source.handle.toLocaleLowerCase()),
+  );
   let posts = 0;
 
   for (const source of telegramSources) {

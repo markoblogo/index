@@ -110,11 +110,12 @@ export async function syncCortexEditorialShadowObservations(input: {
   kind?: "daily" | "weekly" | "monthly";
   limit?: number;
   periodEndDate?: string;
+  tenantId?: string;
 } = {}) {
   if (!hasDatabaseUrl()) return { observations: [] as CortexEditorialShadowObservation[], skippedReason: "database_not_configured" };
 
   await ensureStorage();
-  const tenantId = getActiveIndexConfig().id;
+  const tenantId = input.tenantId ?? getActiveIndexConfig().id;
   const reports = await listReports({ ...input, tenantId });
   const observations: CortexEditorialShadowObservation[] = [];
   for (const row of reports) {

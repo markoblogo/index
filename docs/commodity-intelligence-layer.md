@@ -277,6 +277,28 @@ snapshot can also be collected manually:
 npm run cortex:autonomy-readiness
 ```
 
+### Editorial Evaluation Corpus Backfill
+
+`cortex:editorial-corpus-backfill` replays a bounded part of the stored
+MediaHub archive against the collected `@spike_brokers` archive. It updates the
+same protected shadow records by stable ID, reruns the promotion evaluation and
+refreshes the readiness snapshot. It is deliberately not a content-generation
+job: it does not fetch Telegram, create a missing revised candidate, send a
+report or modify a delivery artifact. A legacy original-only report can improve
+the style benchmark, but cannot count as an original/revised promotion pair.
+
+The default scans the latest 30 reports per kind; the hard upper bound is 60.
+The standalone command works from the collected archive. To hydrate the public
+archive and backfill in one protected server-side operation, call the existing
+source collector with `backfill=1`; this fetches only `@spike_brokers` before
+the replay.
+
+```bash
+npm run cortex:editorial-corpus-backfill
+npm run cortex:editorial-corpus-backfill -- --kind=daily --limit=60
+# Protected cron request: /api/cron/report-source-collector?kind=daily&backfill=1&backfill_limit=60
+```
+
 The first ingestion artifact is available through `npm run cortex:source-scan`.
 It scans approved local repository roots into `.cortex/source-manifest.json`
 with source kind, owner project, visibility, size, SHA-256 hash and stable

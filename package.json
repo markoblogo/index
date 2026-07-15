@@ -31,6 +31,7 @@
     "cortex:artifact-publish": "node scripts/cortex-artifact-publish.mjs",
     "cortex:context-pack": "tsx scripts/cortex-context-pack.ts",
     "cortex:editorial-shadow": "tsx scripts/cortex-editorial-shadow.ts",
+    "cortex:editorial-corpus-backfill": "tsx scripts/cortex-editorial-corpus-backfill.ts",
     "cortex:editorial-promotion": "tsx scripts/cortex-editorial-promotion.ts",
     "cortex:autonomy-readiness": "tsx scripts/cortex-autonomy-readiness.ts",
     "cortex:operational-eval": "tsx scripts/cortex-operational-eval.ts",
