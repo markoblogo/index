@@ -14,6 +14,7 @@ export type CortexAgentGovernanceActionKind =
 export type CortexAgentGovernanceDecision = "allow" | "deny" | "require_approval";
 export type CortexAgentGovernanceStop = "continue" | "abstain" | "request_review";
 export type CortexAgentGovernanceVisibility = "public" | "internal" | "protected";
+export type CortexAgentGovernanceConsumerSurface = "internal" | "mn7r-exe-assistant" | "mn7r-manual-assistant" | "mn7r-public-assistant";
 
 export type CortexAgentGovernanceTelemetry = {
   estimatedCost: number | null;
@@ -26,6 +27,7 @@ export type CortexAgentGovernanceDecisionInput = {
   actionKind: CortexAgentGovernanceActionKind;
   actionPayload: Record<string, unknown>;
   correlationId: string;
+  consumerSurface?: CortexAgentGovernanceConsumerSurface;
   evidence: {
     knownGapCount: number;
     protectedEvidenceCount: number;
@@ -39,6 +41,7 @@ export type CortexAgentGovernanceReceipt = {
   actionFingerprint: string;
   actionKind: CortexAgentGovernanceActionKind;
   correlationId: string;
+  consumerSurface: CortexAgentGovernanceConsumerSurface;
   createdAt: string;
   decision: CortexAgentGovernanceDecision;
   evidence: CortexAgentGovernanceDecisionInput["evidence"];
@@ -107,6 +110,7 @@ export function buildCortexAgentGovernanceReceipt(input: CortexAgentGovernanceDe
     actionFingerprint,
     actionKind: input.actionKind,
     correlationId: compactId(input.correlationId),
+    consumerSurface: input.consumerSurface ?? "internal",
     createdAt,
     decision: policy.decision,
     evidence: normalizeEvidence(input.evidence),
@@ -135,6 +139,7 @@ export function validateCortexAgentGovernanceReceipt(value: unknown): CortexAgen
   if (receipt.product !== "1D3X Cortex") errors.push("product must be 1D3X Cortex");
   if (receipt.version !== 1) errors.push("version must be 1");
   if (!isActionKind(receipt.actionKind)) errors.push("actionKind is invalid");
+  if (!isConsumerSurface(receipt.consumerSurface)) errors.push("consumerSurface is invalid");
   if (!isDecision(receipt.decision)) errors.push("decision is invalid");
   if (!isStop(receipt.stop)) errors.push("stop is invalid");
   if (!isVisibility(receipt.sourceVisibility)) errors.push("sourceVisibility is invalid");
@@ -336,6 +341,10 @@ function isStop(value: unknown): value is CortexAgentGovernanceStop {
 
 function isVisibility(value: unknown): value is CortexAgentGovernanceVisibility {
   return value === "public" || value === "internal" || value === "protected";
+}
+
+function isConsumerSurface(value: unknown): value is CortexAgentGovernanceConsumerSurface {
+  return value === "internal" || value === "mn7r-exe-assistant" || value === "mn7r-manual-assistant" || value === "mn7r-public-assistant";
 }
 
 function isEvidence(value: unknown): value is CortexAgentGovernanceDecisionInput["evidence"] {

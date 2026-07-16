@@ -79,6 +79,8 @@ Shared capabilities:
   shadow receipts before external model handoffs. They are internal-only,
   fingerprint-based and non-enforcing; `npm run cortex:agent-governance-eval`
   runs its 12-fixture baseline-versus-proposed evaluation.
+  `npm run cortex:agent-governance-readiness` accumulates per-surface shadow
+  readiness snapshots without enabling advisory output or enforcement.
   GBrain is a reference only, not an installed dependency.
 - The protected MN7R EXE Assistant, role-scoped Manual AI chat and public-safe
   landing chat use the Cortex-owned `/api/internal/cortex/assistant` gateway

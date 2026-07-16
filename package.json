@@ -35,6 +35,7 @@
     "cortex:editorial-match-diagnostics": "tsx scripts/cortex-editorial-match-diagnostics.ts",
     "cortex:editorial-promotion": "tsx scripts/cortex-editorial-promotion.ts",
     "cortex:agent-governance-eval": "tsx scripts/cortex-agent-governance-eval.ts",
+    "cortex:agent-governance-readiness": "tsx scripts/cortex-agent-governance-readiness.ts",
     "cortex:autonomy-readiness": "tsx scripts/cortex-autonomy-readiness.ts",
     "cortex:operational-eval": "tsx scripts/cortex-operational-eval.ts",
     "cortex:sgr-lite-shadow-eval": "tsx scripts/cortex-sgr-lite-shadow-eval.ts",

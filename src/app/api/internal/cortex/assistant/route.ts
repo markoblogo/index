@@ -260,6 +260,11 @@ async function recordShadowGovernanceReceipt(input: {
       surface: input.parsed.surface,
     },
     correlationId: `cortex-assistant:${contextHash}`,
+    consumerSurface: input.parsed.surface === "exe-assistant"
+      ? "mn7r-exe-assistant"
+      : input.parsed.surface === "manual-assistant"
+        ? "mn7r-manual-assistant"
+        : "mn7r-public-assistant",
     evidence: {
       knownGapCount: input.contextPack.knownGaps.length,
       protectedEvidenceCount: input.contextPack.evidence.filter((item) => item.visibility === "protected").length,

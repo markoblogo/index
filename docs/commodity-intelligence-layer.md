@@ -215,6 +215,16 @@ baseline-versus-proposed measurements where available. It intentionally marks
 unavailable cost, full-action latency and redundant tool calls as unavailable;
 it does not claim a live governance gain or switch any output.
 
+New receipts label the safe consumer surface (`mn7r-exe-assistant`,
+`mn7r-manual-assistant`, `mn7r-public-assistant`).
+`npm run cortex:agent-governance-readiness` writes an append-only internal
+snapshot of real receipt count, decision/stopping distribution, completion and
+token/cost coverage, failure count, public/protected boundary failures and
+latency. Each surface needs 30 receipts, 95% completion telemetry, zero
+recorded failures and zero unsafe privacy-boundary decisions before it becomes
+`ready_for_human_review`. The snapshot always remains `promotionEligible=false`:
+the next step is a separate human-approved advisory gate, never enforcement.
+
 The Ecosystem Evidence Layer is the shared, append-only operational record
 above the individual report and workforce ledgers. Its first source registry
 covers SSI respondent inputs, index snapshots and Telegram drafts; MediaHub
