@@ -225,6 +225,20 @@ recorded failures and zero unsafe privacy-boundary decisions before it becomes
 `ready_for_human_review`. The snapshot always remains `promotionEligible=false`:
 the next step is a separate human-approved advisory gate, never enforcement.
 
+### Evaluation Artifact Packets
+
+`CortexEvaluationArtifactPacketLedger` is a report-only offline/shadow layer
+over existing governance evaluation and receipt IDs. Each packet has five typed
+artifacts: scenario, read-only trace, measurements report, candidate playbook
+and verifier result. Candidates are explicitly `proposed` or `rejected`; they
+target `none`, never runtime. A verifier `pass` requires a named verifier,
+named review and rollback notes, but no packet can promote or apply anything.
+
+`npm run cortex:evaluation-artifact-packets` maps the 12 existing governance
+replay tasks to packets and prints one complete example. Packets only link to
+existing ledger/correlation IDs and do not duplicate raw evidence, prompt text,
+secrets or delivery history.
+
 The Ecosystem Evidence Layer is the shared, append-only operational record
 above the individual report and workforce ledgers. Its first source registry
 covers SSI respondent inputs, index snapshots and Telegram drafts; MediaHub

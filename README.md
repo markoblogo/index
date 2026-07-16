@@ -81,6 +81,11 @@ Shared capabilities:
   runs its 12-fixture baseline-versus-proposed evaluation.
   `npm run cortex:agent-governance-readiness` accumulates per-surface shadow
   readiness snapshots without enabling advisory output or enforcement.
+- `CortexEvaluationArtifactPacketLedger` adds a report-only five-artifact
+  offline evaluation packet (scenario, trace, report, candidate playbook and
+  verifier result) linked to existing governance ledger IDs. Rejected
+  candidates remain explicit; `npm run cortex:evaluation-artifact-packets`
+  maps the 12 saved governance tasks without applying or promoting anything.
   GBrain is a reference only, not an installed dependency.
 - The protected MN7R EXE Assistant, role-scoped Manual AI chat and public-safe
   landing chat use the Cortex-owned `/api/internal/cortex/assistant` gateway
