@@ -36,6 +36,7 @@
     "cortex:editorial-promotion": "tsx scripts/cortex-editorial-promotion.ts",
     "cortex:autonomy-readiness": "tsx scripts/cortex-autonomy-readiness.ts",
     "cortex:operational-eval": "tsx scripts/cortex-operational-eval.ts",
+    "cortex:sgr-lite-shadow-eval": "tsx scripts/cortex-sgr-lite-shadow-eval.ts",
     "cortex:artifact-smoke": "tsx scripts/cortex-artifact-smoke.ts",
     "cortex:cropto-source-chunk": "tsx scripts/cortex-cropto-source-chunk.ts",
     "cortex:memory-search": "tsx scripts/cortex-memory-search.ts",

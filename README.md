@@ -71,6 +71,10 @@ Shared capabilities:
   evaluation gates. See [`docs/commodity-intelligence-layer.md`](docs/commodity-intelligence-layer.md).
 - Future cross-source synthesis rules are recorded in
   [`docs/cortex-evidence-synthesis-contract.md`](docs/cortex-evidence-synthesis-contract.md);
+  its SGR-lite checkpoint layer adds append-only, typed shadow state review
+  (`retrieve`/`compare`/`request_review`/`finalize`/`abstain`) without changing
+  delivery, publication or execution. Run `npm run cortex:sgr-lite-shadow-eval`
+  for the offline 12-fixture contract gate.
   GBrain is a reference only, not an installed dependency.
 - The protected MN7R EXE Assistant, role-scoped Manual AI chat and public-safe
   landing chat use the Cortex-owned `/api/internal/cortex/assistant` gateway

@@ -2,6 +2,10 @@ import { createHash } from "node:crypto";
 import { db, hasDatabaseUrl } from "@/lib/db";
 import type { CortexVisibility } from "@/lib/commodity-intelligence-layer";
 import type { CortexContextPack } from "@/lib/commodity-intelligence-layer";
+import {
+  buildCortexSgrLiteCheckpointFromWorkforcePacket,
+  persistCortexSgrLiteCheckpoint,
+} from "@/lib/cortex-sgr-lite";
 
 export type CortexWorkforceDiversityMode = "off" | "research" | "adversarial";
 
@@ -172,6 +176,24 @@ export async function persistCortexMarketWorkforcePacket(input: {
     record.createdAt,
   );
 
+  // Shadow-only operational checkpoint. It must never affect a workforce
+  // packet's persistence result, publication path, or external delivery.
+  try {
+    await persistCortexSgrLiteCheckpoint({
+      checkpoint: buildCortexSgrLiteCheckpointFromWorkforcePacket({
+        createdAt: record.createdAt,
+        packet: input.packet,
+        sourceVisibility: toSgrLiteVisibility(record.visibility),
+      }),
+      tenantId: input.tenantId,
+    });
+  } catch (error) {
+    console.warn(
+      "Cortex SGR-lite shadow checkpoint was not persisted.",
+      error instanceof Error ? error.message : "unknown error",
+    );
+  }
+
   return record;
 }
 
@@ -254,6 +276,10 @@ export function validateCortexMarketWorkforcePacket(value: unknown): CortexMarke
 
 function isDiversityMode(value: unknown): value is CortexWorkforceDiversityMode {
   return value === "off" || value === "research" || value === "adversarial";
+}
+
+function toSgrLiteVisibility(visibility: CortexVisibility): Exclude<CortexVisibility, "secret"> {
+  return visibility === "secret" ? "protected" : visibility;
 }
 
 function isOutcome(value: unknown): value is CortexMarketWorkforcePacket["outcome"] {

@@ -166,6 +166,31 @@ append-only by task, correlation ID and packet hash. The protected endpoint
 versions for internal review. It does not execute, publish or approve actions;
 it records the packet and its human/officer state for later bounded workflows.
 
+### SGR-lite Checkpoints
+
+The first SGR-lite slice is active as a deterministic, shadow-only checkpoint
+layer above workforce packets. It adapts schema-guided state review without
+adopting a separate agent runtime. Every persisted workforce packet attempts to
+append one `CortexSgrLiteCheckpointLedger` record with task/correlation IDs,
+iteration and tool-call limits, evidence gaps, separated observed/derived/
+assumed/recommended counts, stop reason and a typed next action:
+`retrieve`, `compare`, `request_review`, `finalize` or `abstain`.
+
+The checkpoint contains no chain-of-thought, raw protected evidence or public
+delivery instruction. Its rationale is a compact operational status only.
+Validation rejects complete finalization without sufficient evidence, a public
+checkpoint retrieving a product adapter, inconsistent terminal states, and
+iteration/tool-call limit violations. Checkpoint persistence is best-effort and
+cannot alter the workforce packet, report delivery, routing or any product
+action. `GET /api/internal/cortex/sgr-lite-checkpoints` is internal read-only.
+
+`npm run cortex:sgr-lite-shadow-eval` replays 12 saved task-family fixtures
+(SSI, MediaHub and MN7R) through the checkpoint contract. It records factual
+validation, expected/proposed stop decisions, baseline fields when available
+and explicit measurement gaps. It calls no model or tool and makes no live
+publication, output-selection or routing change. Promotion requires a separate
+review of real replay evidence; this slice is not a cutover mechanism.
+
 The Ecosystem Evidence Layer is the shared, append-only operational record
 above the individual report and workforce ledgers. Its first source registry
 covers SSI respondent inputs, index snapshots and Telegram drafts; MediaHub
