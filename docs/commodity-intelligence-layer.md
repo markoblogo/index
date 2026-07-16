@@ -925,6 +925,33 @@ Entry criteria before testing DSPy:
 - winning prompts/programs are promoted only after deterministic regression
   checks, not by ad hoc manual inspection.
 
+## Deferred Workflow Reference: Mastra
+
+[Mastra](https://github.com/mastra-ai/mastra) is a deferred workflow
+orchestration reference, not a Cortex dependency. Cortex currently expresses
+its governed work through typed packets, append-only ledgers, correlation IDs
+and shadow-mode contracts. That remains the preferred model while it cleanly
+captures the required work.
+
+Do not add a Mastra runtime, agent loops or observational memory, and do not
+migrate existing Cortex contracts. Revisit Mastra only when production evidence
+shows that a long typed workflow needs durable pause/resume and approval gates
+that cannot be expressed cleanly by the current packet-and-ledger model.
+
+If that threshold is reached, start with one isolated POC only:
+
+- one workflow on synthetic or shadow data;
+- explicitly allowlisted tools;
+- an explicit storage and retention policy separating public from protected
+  evidence;
+- a named verifier and verifier-first promotion review; and
+- rollback or discard notes recorded with the POC outcome.
+
+The POC must not change production delivery, enable auto-promotion, migrate
+current Cortex state or become an alternative ledger. It is discarded or
+promoted only through a separate, evidence-backed decision after verifier
+review.
+
 ## Future Research: Local Small Model
 
 MiniMind and similar tiny open-source LLM training projects are a possible

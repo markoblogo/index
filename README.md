@@ -86,7 +86,10 @@ Shared capabilities:
   verifier result) linked to existing governance ledger IDs. Rejected
   candidates remain explicit; `npm run cortex:evaluation-artifact-packets`
   maps the 12 saved governance tasks without applying or promoting anything.
-  GBrain is a reference only, not an installed dependency.
+  GBrain is a reference only, not an installed dependency. Mastra is likewise
+  deferred: it is considered only for a future isolated, verifier-first
+  pause/resume workflow POC when the existing packet-and-ledger contracts no
+  longer express the required workflow cleanly.
 - The protected MN7R EXE Assistant, role-scoped Manual AI chat and public-safe
   landing chat use the Cortex-owned `/api/internal/cortex/assistant` gateway
   for retrieval, model routing and OpenAI handoff; public requests remain
