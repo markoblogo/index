@@ -268,7 +268,10 @@ const spikeCommodities: IndexCommodityConfig[] = [
     detailMetrics: [
       {
         label: { uk: "Якість", en: "Quality" },
-        value: { uk: "37 протеїн, ГМО", en: "37 pro, GMO" },
+        value: {
+          uk: "37% білка, ГМО, на суху речовину",
+          en: "37% protein, GMO, dry matter",
+        },
       },
       {
         label: { uk: "Базис", en: "Basis" },
@@ -295,7 +298,10 @@ const spikeCommodities: IndexCommodityConfig[] = [
     detailMetrics: [
       {
         label: { uk: "Якість", en: "Quality" },
-        value: { uk: "48% сухої олії", en: "48% dry oil" },
+        value: {
+          uk: "48% олії, на суху речовину",
+          en: "48% oil, dry matter",
+        },
       },
       {
         label: { uk: "Базис", en: "Basis" },
@@ -322,7 +328,10 @@ const spikeCommodities: IndexCommodityConfig[] = [
     detailMetrics: [
       {
         label: { uk: "Якість", en: "Quality" },
-        value: { uk: "48% сухої олії, не ГМО", en: "48% dry oil, NON-GMO" },
+        value: {
+          uk: "48% олії, не ГМО, на суху речовину",
+          en: "48% oil, NON-GMO, dry matter",
+        },
       },
       {
         label: { uk: "Базис", en: "Basis" },
@@ -348,7 +357,10 @@ const spikeCommodities: IndexCommodityConfig[] = [
     detailMetrics: [
       {
         label: { uk: "Якість", en: "Quality" },
-        value: { uk: "37% протеїну, ГМО", en: "37% protein, GMO" },
+        value: {
+          uk: "33% білка, ГМО, на сиру речовину",
+          en: "33% protein, GMO, as is",
+        },
       },
       { label: { uk: "Базис", en: "Basis" }, value: { uk: "CPT Port", en: "CPT Port" } },
       { label: { uk: "Напрямок", en: "Direction" }, value: { uk: "порт експорт", en: "port export" } },
@@ -372,7 +384,10 @@ const spikeCommodities: IndexCommodityConfig[] = [
     detailMetrics: [
       {
         label: { uk: "Якість", en: "Quality" },
-        value: { uk: "37% протеїну, ГМО", en: "37% protein, GMO" },
+        value: {
+          uk: "33% білка, ГМО, на сиру речовину",
+          en: "33% protein, GMO, as is",
+        },
       },
       { label: { uk: "Базис", en: "Basis" }, value: { uk: "FCA Чоп", en: "FCA Chop" } },
       { label: { uk: "Напрямок", en: "Direction" }, value: { uk: "кордон експорт", en: "border export" } },
@@ -395,7 +410,10 @@ const spikeCommodities: IndexCommodityConfig[] = [
     detailMetrics: [
       {
         label: { uk: "Якість", en: "Quality" },
-        value: { uk: "37% протеїну, не ГМО", en: "37% protein, NON-GMO" },
+        value: {
+          uk: "33% білка, не ГМО, на сиру речовину",
+          en: "33% protein, NON-GMO, as is",
+        },
       },
       { label: { uk: "Базис", en: "Basis" }, value: { uk: "CPT Port", en: "CPT Port" } },
       { label: { uk: "Напрямок", en: "Direction" }, value: { uk: "порт експорт", en: "port export" } },
@@ -419,7 +437,10 @@ const spikeCommodities: IndexCommodityConfig[] = [
     detailMetrics: [
       {
         label: { uk: "Якість", en: "Quality" },
-        value: { uk: "37% протеїну, не ГМО", en: "37% protein, NON-GMO" },
+        value: {
+          uk: "33% білка, не ГМО, на сиру речовину",
+          en: "33% protein, NON-GMO, as is",
+        },
       },
       { label: { uk: "Базис", en: "Basis" }, value: { uk: "FCA Чоп", en: "FCA Chop" } },
       { label: { uk: "Напрямок", en: "Direction" }, value: { uk: "кордон експорт", en: "border export" } },
@@ -442,7 +463,10 @@ const spikeCommodities: IndexCommodityConfig[] = [
     detailMetrics: [
       {
         label: { uk: "Якість", en: "Quality" },
-        value: { uk: "48% сухої олії, не ГМО", en: "48% dry oil, NON-GMO" },
+        value: {
+          uk: "42% олії, не ГМО, на сиру речовину",
+          en: "42% oil, NON-GMO, as is",
+        },
       },
       { label: { uk: "Базис", en: "Basis" }, value: { uk: "CPT Port", en: "CPT Port" } },
       { label: { uk: "Напрямок", en: "Direction" }, value: { uk: "порт експорт", en: "port export" } },
@@ -466,7 +490,10 @@ const spikeCommodities: IndexCommodityConfig[] = [
     detailMetrics: [
       {
         label: { uk: "Якість", en: "Quality" },
-        value: { uk: "48% сухої олії, не ГМО", en: "48% dry oil, NON-GMO" },
+        value: {
+          uk: "42% олії, не ГМО, на сиру речовину",
+          en: "42% oil, NON-GMO, as is",
+        },
       },
       { label: { uk: "Базис", en: "Basis" }, value: { uk: "FCA Чоп", en: "FCA Chop" } },
       { label: { uk: "Напрямок", en: "Direction" }, value: { uk: "кордон експорт", en: "border export" } },
