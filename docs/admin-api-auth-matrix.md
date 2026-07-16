@@ -16,6 +16,7 @@ is missing. Secrets are never logged or returned.
 | `/api/internal/cortex/context-pack` | `POST` | Bearer `CORTEX_INTERNAL_API_SECRET` or `CRON_SECRET` |
 | `/api/internal/cortex/context-packs` | `GET` | Bearer `CORTEX_INTERNAL_API_SECRET` or `CRON_SECRET` |
 | `/api/internal/cortex/ecosystem-evidence` | `GET`, `POST` | Bearer `CORTEX_INTERNAL_API_SECRET` or `CRON_SECRET` |
+| `/api/internal/cortex/governance-receipts` | `GET` | Bearer `CORTEX_INTERNAL_API_SECRET` or `CRON_SECRET` |
 | `/api/internal/cortex/sgr-lite-checkpoints` | `GET` | Bearer `CORTEX_INTERNAL_API_SECRET` or `CRON_SECRET` |
 | `/api/internal/spike-setup` | `POST` | Bearer `RESPONDENT_TELEGRAM_CRON_SECRET` or `CRON_SECRET` |
 

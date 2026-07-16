@@ -191,6 +191,30 @@ and explicit measurement gaps. It calls no model or tool and makes no live
 publication, output-selection or routing change. Promotion requires a separate
 review of real replay evidence; this slice is not a cutover mechanism.
 
+### Agent Governance Capability
+
+`agent_governance_capability` is the next consumer-side shadow layer. Before
+the Index-owned Cortex assistant gateway calls the external OpenAI provider, it
+creates an append-only policy receipt with a hashed exact-action fingerprint,
+task/correlation IDs, decision (`allow`, `deny`, `require_approval`), compact
+operational reason and proposed stop (`continue`, `abstain`, `request_review`).
+The receipt contains counts and telemetry only: no query text, context-pack
+content, protected evidence, secret or hidden reasoning is written to it.
+
+The gateway then follows its existing behavior unchanged. Its completion writes
+a separate append-only, shadow-only telemetry record when available (one
+external handoff, OpenAI token count, latency and unknown cost). Receipts are
+visible only through internal `GET /api/internal/cortex/governance-receipts`.
+This is the first real Index consumer and covers MN7R only through its existing
+Cortex assistant boundary. It does not add an MN7R runtime or expand Cropto.
+
+Exact-action approvals have a typed, expiry-bound, one-shot storage contract,
+but no consumer calls it and no decision is enforced. The deterministic
+`npm run cortex:agent-governance-eval` replays 12 saved task families and saves
+baseline-versus-proposed measurements where available. It intentionally marks
+unavailable cost, full-action latency and redundant tool calls as unavailable;
+it does not claim a live governance gain or switch any output.
+
 The Ecosystem Evidence Layer is the shared, append-only operational record
 above the individual report and workforce ledgers. Its first source registry
 covers SSI respondent inputs, index snapshots and Telegram drafts; MediaHub

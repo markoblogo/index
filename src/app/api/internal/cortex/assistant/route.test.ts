@@ -57,6 +57,7 @@ describe("internal Cortex assistant gateway", () => {
       requestId: expect.stringContaining("cortex-assistant:"),
     });
     expect(body.routing).toEqual({ handoff: "cortex-owned", model: "gpt-test", provider: "openai" });
+    expect(body.governance).toBeUndefined();
     expect(body.contextPack.sourceIds).toContain("mn7r-exe-runtime-context");
     expect(fetchMock).toHaveBeenCalledWith("https://api.openai.com/v1/responses", expect.objectContaining({
       method: "POST",

@@ -75,6 +75,10 @@ Shared capabilities:
   (`retrieve`/`compare`/`request_review`/`finalize`/`abstain`) without changing
   delivery, publication or execution. Run `npm run cortex:sgr-lite-shadow-eval`
   for the offline 12-fixture contract gate.
+- The Index-owned Cortex assistant gateway also writes `agent_governance_capability`
+  shadow receipts before external model handoffs. They are internal-only,
+  fingerprint-based and non-enforcing; `npm run cortex:agent-governance-eval`
+  runs its 12-fixture baseline-versus-proposed evaluation.
   GBrain is a reference only, not an installed dependency.
 - The protected MN7R EXE Assistant, role-scoped Manual AI chat and public-safe
   landing chat use the Cortex-owned `/api/internal/cortex/assistant` gateway

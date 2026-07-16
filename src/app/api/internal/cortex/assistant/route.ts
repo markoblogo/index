@@ -11,6 +11,11 @@ import {
   buildCortexAssistantAuditRecord,
   persistCortexAssistantAuditRecord,
 } from "@/lib/cortex-assistant-audit-ledger";
+import {
+  buildCortexAgentGovernanceReceipt,
+  recordCortexAgentGovernanceActionTelemetry,
+  recordCortexAgentGovernanceShadowReceipt,
+} from "@/lib/cortex-agent-governance-capability";
 import { isBearerTokenAuthorized } from "@/lib/cron-auth";
 
 export const dynamic = "force-dynamic";
@@ -75,9 +80,11 @@ export async function POST(request: Request) {
     query: parsed.value.query,
   });
   const contextPack = mergeCortexContextPacks({ primary: localPack, secondary: memory.pack });
+  const governanceReceipt = await recordShadowGovernanceReceipt({ contextPack, parsed: parsed.value, purpose });
+  const callStartedAt = Date.now();
   let answer: string;
   try {
-    answer = await callOpenAi({
+    const result = await callOpenAi({
       apiKey,
       contextPack,
       language: parsed.value.language,
@@ -85,7 +92,20 @@ export async function POST(request: Request) {
       roleMode: parsed.value.roleMode,
       surface: parsed.value.surface,
     });
+    answer = result.answer;
+    await recordShadowGovernanceTelemetry({
+      latencyMs: Date.now() - callStartedAt,
+      outcome: "succeeded",
+      receipt: governanceReceipt,
+      tokens: result.tokens,
+    });
   } catch (error) {
+    await recordShadowGovernanceTelemetry({
+      latencyMs: Date.now() - callStartedAt,
+      outcome: "failed",
+      receipt: governanceReceipt,
+      tokens: null,
+    });
     return NextResponse.json({
       error: error instanceof Error ? error.message : "Cortex external model handoff failed",
     }, { status: 502 });
@@ -218,7 +238,60 @@ async function callOpenAi(input: {
   const payload = await response.json();
   const answer = extractResponseText(payload);
   if (!answer) throw new Error("Cortex did not receive a usable external-model answer");
-  return answer;
+  return { answer, tokens: extractResponseTokens(payload) };
+}
+
+async function recordShadowGovernanceReceipt(input: {
+  contextPack: CortexContextPack;
+  parsed: ParsedAssistantRequest;
+  purpose: "execution-context" | "source-review";
+}) {
+  const contextHash = hashText(JSON.stringify({ query: input.parsed.query, sourceIds: input.contextPack.sourceIds }));
+  const taskId = `cortex-assistant:${input.parsed.surface}:${contextHash.slice(0, 16)}`;
+  const receipt = buildCortexAgentGovernanceReceipt({
+    actionKind: "external_model_handoff",
+    actionPayload: {
+      contextHash,
+      maxOutputTokens: resolveOutputTokenLimit(input.parsed.surface),
+      model: resolveModel(),
+      project: "mn7r",
+      provider: "openai",
+      purpose: input.purpose,
+      surface: input.parsed.surface,
+    },
+    correlationId: `cortex-assistant:${contextHash}`,
+    evidence: {
+      knownGapCount: input.contextPack.knownGaps.length,
+      protectedEvidenceCount: input.contextPack.evidence.filter((item) => item.visibility === "protected").length,
+      totalCount: input.contextPack.evidence.length,
+    },
+    sourceVisibility: input.parsed.surface === "public-assistant" ? "public" : "protected",
+    taskId,
+  });
+  try {
+    await recordCortexAgentGovernanceShadowReceipt({ receipt, tenantId: "spike-ua" });
+  } catch (error) {
+    console.warn("Cortex governance shadow receipt was not persisted.", error instanceof Error ? error.message : "unknown error");
+  }
+  return receipt;
+}
+
+async function recordShadowGovernanceTelemetry(input: {
+  latencyMs: number;
+  outcome: "failed" | "succeeded";
+  receipt: ReturnType<typeof buildCortexAgentGovernanceReceipt>;
+  tokens: number | null;
+}) {
+  try {
+    await recordCortexAgentGovernanceActionTelemetry({
+      actionFingerprint: input.receipt.actionFingerprint,
+      outcome: input.outcome,
+      receiptId: input.receipt.id,
+      telemetry: { estimatedCost: null, latencyMs: Math.max(0, input.latencyMs), tokens: input.tokens, toolCalls: 1 },
+    });
+  } catch (error) {
+    console.warn("Cortex governance shadow telemetry was not persisted.", error instanceof Error ? error.message : "unknown error");
+  }
 }
 
 function buildSystemPrompt(
@@ -284,6 +357,16 @@ function extractResponseText(payload: unknown) {
   return Array.isArray(output)
     ? output.flatMap((item) => item.content || []).map((part) => part.text || "").filter(Boolean).join("\n").trim()
     : "";
+}
+
+function extractResponseTokens(payload: unknown) {
+  if (!payload || typeof payload !== "object") return null;
+  const usage = (payload as { usage?: { input_tokens?: unknown; output_tokens?: unknown; total_tokens?: unknown } }).usage;
+  if (!usage || typeof usage !== "object") return null;
+  if (typeof usage.total_tokens === "number" && Number.isFinite(usage.total_tokens) && usage.total_tokens >= 0) return usage.total_tokens;
+  const inputTokens = typeof usage.input_tokens === "number" && Number.isFinite(usage.input_tokens) ? usage.input_tokens : 0;
+  const outputTokens = typeof usage.output_tokens === "number" && Number.isFinite(usage.output_tokens) ? usage.output_tokens : 0;
+  return inputTokens || outputTokens ? inputTokens + outputTokens : null;
 }
 
 function hashText(value: string) {
