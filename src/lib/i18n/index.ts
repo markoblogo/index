@@ -106,6 +106,7 @@ type Dictionary = {
       pdfOpen: string;
       epubDownload: string;
       epubOpen: string;
+      moreBooks: string;
     };
   };
   methodology: {
