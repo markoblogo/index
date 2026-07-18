@@ -745,6 +745,14 @@ export function PlatformLanding() {
                 construction and the infrastructure behind trusted commodity
                 indices.
               </p>
+              <a
+                className="mt-6 inline-flex items-center rounded-full border border-[#d6ff58] px-5 py-3 text-xs font-black uppercase tracking-[0.12em] text-[#d6ff58] transition hover:bg-[#d6ff58] hover:text-black"
+                href="https://books.1d3x.com/"
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                More books
+              </a>
             </div>
 
             <article className="grid gap-5 rounded-[1.5rem] border border-white/12 bg-[#f3f0e8] p-5 text-black sm:p-6 lg:grid-cols-[13rem_1fr]">

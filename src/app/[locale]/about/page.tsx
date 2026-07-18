@@ -330,6 +330,14 @@ function SpikeAboutPage({
               <p className="mt-4 max-w-xl text-sm leading-6 text-white/58">
                 {dict.about.resources.description}
               </p>
+              <a
+                className="mt-6 inline-flex items-center rounded-full border border-[var(--spike-accent)] px-5 py-3 text-xs font-black uppercase tracking-[0.12em] text-[var(--spike-accent)] transition hover:bg-[var(--spike-accent)] hover:text-[#050505]"
+                href="https://books.1d3x.com/"
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                {dict.about.resources.moreBooks}
+              </a>
             </div>
             <article className="grid gap-4 rounded-[1.5rem] border border-white/12 bg-[#f8f8f2] p-4 text-[#050505] sm:p-5">
               <div className="grid gap-4 sm:grid-cols-[12rem_1fr]">

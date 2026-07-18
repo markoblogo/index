@@ -296,6 +296,7 @@ const dictionaries: Record<Locale, Dictionary> = {
         pdfOpen: "Відкрити PDF",
         epubDownload: "Завантажити EPUB",
         epubOpen: "Відкрити EPUB",
+        moreBooks: "Більше книг",
       },
     },
     methodology: {
@@ -600,6 +601,7 @@ const dictionaries: Record<Locale, Dictionary> = {
         pdfOpen: "Open PDF",
         epubDownload: "Download EPUB",
         epubOpen: "Open EPUB",
+        moreBooks: "More books",
       },
     },
     methodology: {
