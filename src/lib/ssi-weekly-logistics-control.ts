@@ -111,6 +111,24 @@ export async function sendSsiWeeklyLogisticsMissingNotice(gate: SsiWeeklyLogisti
   return sent;
 }
 
+export async function getSsiWeeklyLogisticsPublicationBlock(input: {
+  periodEndDate: string;
+  publishTelegram: boolean;
+}) {
+  const logisticsGate = await getSsiWeeklyLogisticsGate(input.periodEndDate);
+  if (logisticsGate.status === "ready") return null;
+
+  const missingInputsNotice = input.publishTelegram
+    ? await sendSsiWeeklyLogisticsMissingNotice(logisticsGate)
+    : { skippedReason: "site_only", status: "skipped" as const };
+  return {
+    logisticsGate,
+    missingInputsNotice,
+    skippedReason: "ssi_weekly_logistics_inputs_missing",
+    status: "blocked_missing_required_materials" as const,
+  };
+}
+
 export function buildSsiWeeklyLogisticsRequestText(periodEndDate: string) {
   return [
     `Доброго дня! Для щотижневого SSI звіту за тиждень до ${formatUkDate(periodEndDate)} потрібен логістичний пакет.`,

@@ -1,5 +1,4 @@
 import "server-only";
-
 import { createHash, randomUUID } from "node:crypto";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { db, hasDatabaseUrl } from "@/lib/db";
@@ -7,10 +6,7 @@ import { fetchWithTimeout } from "@/lib/fetch-timeout";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import type { Locale } from "@/lib/i18n";
 import { runMediaHubApiMonitoring } from "@/lib/media-hub-api-monitoring";
-import {
-  generateMediaHubLlmReports,
-  type MediaHubLocalizedReport,
-} from "@/lib/media-hub-llm-report";
+import { generateMediaHubLlmReports, type MediaHubLocalizedReport } from "@/lib/media-hub-llm-report";
 import type { CortexContextPack } from "@/lib/commodity-intelligence-layer";
 import type { CortexEditorialGuidance } from "@/lib/cortex-editorial-shadow";
 import {
@@ -21,15 +17,9 @@ import {
 import { persistCortexMediaHubPublicationEvent, persistMediaHubReportCortexContextPack } from "@/lib/commodity-intelligence-ledger";
 import { observeCortexSsiTelegramDraft } from "@/lib/cortex-ssi-integrity";
 import { get1d3xRssWindows } from "@/lib/media-hub-rss";
-import {
-  getMonthlyMediaHubDigest,
-  getSpikeMediaHubLiveWindows,
-} from "@/lib/media-hub-monitoring";
+import { getMonthlyMediaHubDigest, getSpikeMediaHubLiveWindows } from "@/lib/media-hub-monitoring";
 import type { MediaHubWindowKey, MediaHubWindowSnapshot } from "@/lib/media-hub";
-import {
-  getManualMaterialsForPeriod,
-  type MediaHubManualMaterialDigest,
-} from "@/lib/media-hub-manual-materials";
+import { getManualMaterialsForPeriod, type MediaHubManualMaterialDigest } from "@/lib/media-hub-manual-materials";
 import {
   buildMediaHubEvidenceLedger,
   getMediaHubReportTextForValidation,
@@ -39,10 +29,7 @@ import {
 } from "@/lib/media-hub-evidence";
 import { isPlatformSite } from "@/lib/platform-site";
 import { buildSsiNonDailyStructuredMessages } from "@/lib/ssi-non-daily-channel-report";
-import {
-  getSsiWeeklyLogisticsGate,
-  sendSsiWeeklyLogisticsMissingNotice,
-} from "@/lib/ssi-weekly-logistics-control";
+import { getSsiWeeklyLogisticsPublicationBlock } from "@/lib/ssi-weekly-logistics-control";
 import {
   getPublicLatestData,
   getPublicHistoryData,
@@ -313,23 +300,10 @@ export async function runDueMediaHubPublication(options: {
   }
 
   if (kind === "weekly") {
-    if (!isPlatformSite() && getActiveIndexConfig().id === "spike-ua") {
-      const logisticsGate = await getSsiWeeklyLogisticsGate(plan.date);
-      if (logisticsGate.status !== "ready") {
-        const missingInputsNotice = publishTelegram
-          ? await sendSsiWeeklyLogisticsMissingNotice(logisticsGate)
-          : { skippedReason: "site_only", status: "skipped" as const };
-        return {
-          plan: { ...plan, kind },
-          result: {
-            logisticsGate,
-            missingInputsNotice,
-            skippedReason: "ssi_weekly_logistics_inputs_missing",
-            status: "blocked_missing_required_materials" as const,
-          },
-        };
-      }
-    }
+    const ssiWeeklyBlock = !isPlatformSite() && getActiveIndexConfig().id === "spike-ua"
+      ? await getSsiWeeklyLogisticsPublicationBlock({ periodEndDate: plan.date, publishTelegram })
+      : null;
+    if (ssiWeeklyBlock) return { plan: { ...plan, kind }, result: ssiWeeklyBlock };
     const telegramCleanup = publishTelegram && options.deletePreviousTelegram
       ? await deletePreviousMediaHubTelegramMessages("weekly", plan.date, {
         audience: isPlatformSite() ? "platform" : "spike",
