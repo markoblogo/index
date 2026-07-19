@@ -46,6 +46,10 @@ export function buildMediaHubMaterialHelpText() {
     "Приклади:",
     "#ssi #weekly текст або цитата з ринку",
     "#ssi #weekly https://example.com/report.pdf",
+    "#ssi #weekly #agro_ex_im <файл експорту>",
+    "#ssi #weekly #checkpoints <файл пунктів пропуску>",
+    "#ssi #weekly #operational_wagons <оперативні вагони>",
+    "#ssi #weekly #uz_statistics <статистика УЗ>",
     "#1d3x #weekly https://example.com/grain-market-update",
     "#ssi #monthly логістика, файл у вкладенні",
     "#ssi #1d3x #weekly https://example.com/global-wheat-report",
@@ -55,6 +59,8 @@ export function buildMediaHubMaterialHelpText() {
     "Скріншоти краще не надсилати: OCR не увімкнено. Надсилайте PDF або таблицю.",
     "",
     "Після відправки бот відповість: прийнято, оброблено, дублікат, або формат не підтримується.",
+    "",
+    "Для обов'язкового логістичного пакета SSI використовуйте один з тегів: #agro_ex_im, #checkpoints, #operational_wagons, #uz_statistics.",
   ].join("\n");
 }
 
@@ -76,6 +82,7 @@ export function buildMediaHubMaterialsText(adminMaterialsUrl = "/admin/media-hub
     "Приклади:",
     "#ssi #weekly <текст або цитата>",
     "#ssi #weekly <посилання>",
+    "#ssi #weekly #agro_ex_im <файл експорту>",
     "#1d3x #weekly <посилання>",
     "#ssi #monthly <файл PDF або XLSX>",
     "#ssi #1d3x #weekly <посилання, корисне для обох проєктів>",
@@ -108,6 +115,7 @@ export function buildMediaHubTagsText() {
     "- тег типу звіту необов’язковий",
     "- без #weekly/#monthly/#daily матеріал піде у #weekly",
     "- можна вказати #ssi і #1d3x разом, якщо матеріал корисний для обох проєктів",
+    "- для обов'язкового weekly logistics pack SSI: #agro_ex_im, #checkpoints, #operational_wagons або #uz_statistics",
   ].join("\n");
 }
 

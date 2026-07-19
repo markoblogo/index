@@ -25,6 +25,10 @@
       "schedule": "45 15 * * 1-5"
     },
     {
+      "path": "/api/cron/ssi-weekly-logistics-request",
+      "schedule": "0 7 * * 5"
+    },
+    {
       "path": "/api/cron/mn7r-monitor-prices-window-14",
       "schedule": "0 14 * * 1-5"
     },

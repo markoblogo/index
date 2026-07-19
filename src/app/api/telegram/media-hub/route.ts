@@ -258,6 +258,7 @@ export async function POST(request: Request) {
   for (const tenantId of tenantIds) {
     for (const url of urls) {
       const result = await ingestMediaHubLinkMaterial({
+        hashtags: routed.hashtags,
         kind: routed.kind,
         receivedFrom: "telegram",
         sourceType: "telegram_link",
@@ -287,6 +288,7 @@ export async function POST(request: Request) {
         ? await ingestMediaHubFileMaterial({
             bytes: file,
             filename: message.document.file_name ?? "telegram-upload",
+            hashtags: routed.hashtags,
             kind: routed.kind,
             mimeType: message.document.mime_type ?? "application/octet-stream",
             receivedFrom: "telegram",
@@ -319,6 +321,7 @@ export async function POST(request: Request) {
   if (urls.length === 0 && !message.document && hasTextMaterial) {
     for (const tenantId of tenantIds) {
       const result = await ingestMediaHubTextMaterial({
+        hashtags: routed.hashtags,
         kind: routed.kind,
         receivedFrom: "telegram",
         sourceType: isCorporateGroupMessage ? "corporate_telegram_group" : "telegram_text",
@@ -344,6 +347,7 @@ export async function POST(request: Request) {
   if (isCorporateGroupMessage && results.length === 0 && text.trim()) {
     for (const tenantId of tenantIds) {
       const result = await ingestMediaHubTextMaterial({
+        hashtags: routed.hashtags,
         kind: routed.kind,
         receivedFrom: "telegram",
         sourceType: "corporate_telegram_group",

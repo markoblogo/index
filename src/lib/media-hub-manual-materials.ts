@@ -102,6 +102,7 @@ export type MediaHubManualMaterialDigest = {
   extractedTables: unknown;
   extractedText: string;
   extractionStatus: string;
+  hashtags: string[];
   id: string;
   kind: string;
   receivedAt: Date;
@@ -111,6 +112,7 @@ export type MediaHubManualMaterialDigest = {
   sourceRegistrationStatus: string;
   sourceType: string;
   summary: string;
+  telegramFromId: string | null;
   tenantId: string;
   usedInReportId: string | null;
 };
@@ -250,6 +252,7 @@ export function getMediaHubManualMaterialPeriod(
 }
 
 export async function ingestMediaHubLinkMaterial(input: {
+  hashtags?: string[];
   kind: MediaHubManualMaterialKind;
   notes?: string;
   receivedFrom: "telegram" | "admin" | "scheduler";
@@ -298,6 +301,7 @@ export async function ingestMediaHubLinkMaterial(input: {
 export async function ingestMediaHubFileMaterial(input: {
   bytes: Buffer;
   filename: string;
+  hashtags?: string[];
   kind: MediaHubManualMaterialKind;
   mimeType: string;
   receivedFrom: "telegram" | "admin";
@@ -321,6 +325,7 @@ export async function ingestMediaHubFileMaterial(input: {
 }
 
 export async function ingestMediaHubTextMaterial(input: {
+  hashtags?: string[];
   kind: MediaHubManualMaterialKind;
   originalUrl?: string;
   receivedFrom: "telegram" | "admin" | "scheduler";
@@ -477,6 +482,7 @@ function toMaterialDigest(row: MaterialRowWithAssets, textLimit = MAX_EXTRACTED_
     extractedTables: row.extractedTablesJson,
     extractedText: (row.extractedText ?? "").slice(0, textLimit),
     extractionStatus: row.extractionStatus,
+    hashtags: parseStoredHashtags(row.hashtagsJson),
     id: row.id,
     kind: row.kind,
     originalFilename: row.originalFilename,
@@ -486,9 +492,15 @@ function toMaterialDigest(row: MaterialRowWithAssets, textLimit = MAX_EXTRACTED_
     sourceRegistrationStatus: row.sourceRegistrationStatus,
     sourceType: row.sourceType,
     summary: row.summary ?? "",
+    telegramFromId: row.telegramFromId,
     tenantId: row.tenantId,
     usedInReportId: row.usedInReportId,
   };
+}
+
+function parseStoredHashtags(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value.filter((tag): tag is string => typeof tag === "string");
 }
 
 async function attachMaterialAssets(rows: MaterialRow[]): Promise<MaterialRowWithAssets[]> {
@@ -535,6 +547,7 @@ async function storeManualMaterial(input: {
   canonicalUrl?: string;
   contentBytes: Buffer;
   extraction: ExtractedMaterialContent;
+  hashtags?: string[];
   kind: MediaHubManualMaterialKind;
   mimeType?: string;
   originalFilename?: string;
@@ -620,7 +633,7 @@ async function storeManualMaterial(input: {
     input.telegramChatId ?? null,
     input.telegramMessageId ?? null,
     input.telegramFromId ?? null,
-    JSON.stringify([]),
+    JSON.stringify(input.hashtags ?? []),
     input.extraction.extractedText,
     JSON.stringify(input.extraction.extractedTables),
     JSON.stringify(input.extraction.extractedFacts),

@@ -40,6 +40,10 @@ import {
 import { isPlatformSite } from "@/lib/platform-site";
 import { buildSsiNonDailyStructuredMessages } from "@/lib/ssi-non-daily-channel-report";
 import {
+  getSsiWeeklyLogisticsGate,
+  sendSsiWeeklyLogisticsMissingNotice,
+} from "@/lib/ssi-weekly-logistics-control";
+import {
   getPublicLatestData,
   getPublicHistoryData,
   type PublicHistoryItem,
@@ -309,6 +313,23 @@ export async function runDueMediaHubPublication(options: {
   }
 
   if (kind === "weekly") {
+    if (!isPlatformSite() && getActiveIndexConfig().id === "spike-ua") {
+      const logisticsGate = await getSsiWeeklyLogisticsGate(plan.date);
+      if (logisticsGate.status !== "ready") {
+        const missingInputsNotice = publishTelegram
+          ? await sendSsiWeeklyLogisticsMissingNotice(logisticsGate)
+          : { skippedReason: "site_only", status: "skipped" as const };
+        return {
+          plan: { ...plan, kind },
+          result: {
+            logisticsGate,
+            missingInputsNotice,
+            skippedReason: "ssi_weekly_logistics_inputs_missing",
+            status: "blocked_missing_required_materials" as const,
+          },
+        };
+      }
+    }
     const telegramCleanup = publishTelegram && options.deletePreviousTelegram
       ? await deletePreviousMediaHubTelegramMessages("weekly", plan.date, {
         audience: isPlatformSite() ? "platform" : "spike",
