@@ -741,6 +741,22 @@ docs/auth.md
 
 ## Validation
 
+Local runner note:
+
+```bash
+# one-time in a clean checkout
+npm ci
+
+# run test suite through local tooling
+npm exec -- vitest run
+
+# run TypeScript typecheck through local tsconfig
+npm exec -- tsc --noEmit -p tsconfig.json
+```
+
+If you still see `vitest/config`/`vite` resolver issues, it usually means
+`node_modules` was not installed in that session.
+
 Run before committing code changes:
 
 ```bash

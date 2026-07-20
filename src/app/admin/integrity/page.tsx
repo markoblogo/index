@@ -219,12 +219,11 @@ function ReasonCard({
 }) {
   const currentCount = current.reasons.find((item) => item.reason === reason)?.count ?? 0;
   const previousCount = previous ? previous.reasons.find((item) => item.reason === reason)?.count ?? 0 : null;
-  const delta = previousCount === null ? null : currentCount - previousCount;
   return (
     <div className="border border-black/15 bg-uga-mist px-3 py-3">
       <p className="text-xs font-bold uppercase tracking-[0.12em] text-black/55">{label}</p>
       <p className="mt-1 text-xl font-black text-black">{currentCount}</p>
-      <p className="mt-1 text-xs text-black/60">{previousCount === null ? "No history yet" : `Δ ${formatSignedDelta(delta)}`}</p>
+      <p className="mt-1 text-xs text-black/60">{previousCount === null ? "No history yet" : `Δ ${formatSignedDelta(currentCount - previousCount)}`}</p>
     </div>
   );
 }
