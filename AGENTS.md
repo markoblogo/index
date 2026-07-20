@@ -41,3 +41,12 @@ review using [`docs/media-hub-review-checklist.md`](docs/media-hub-review-checkl
 
 Use TDD/red-green-refactor only for risky workflow changes. Do not add new local
 skills or process files unless the repo lacks a durable place for the rule.
+
+## Motion review for frontend animation
+
+For any UI work touching animations/transitions/scroll effects:
+- prefer transform properties (`x`, `y`, `scale`, `rotation`, `opacity`, `autoAlpha`) over layout properties (`top`, `left`, `width`, `height`) where possible;
+- add `prefers-reduced-motion: reduce` fallback and verify motion can be reduced or skipped;
+- ensure cleanup on unmount/re-render (`ctx.revert()`, `kill()`, clear callbacks/timers);
+- avoid global selectors; scope animations to component roots;
+- keep motion intent explicit (`initial -> animate -> exit`) and skip decorative motion without purpose.
