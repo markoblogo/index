@@ -84,7 +84,7 @@ export default async function IntegrityPage({ searchParams }: IntegrityPageProps
         </div>
         <div className="grid gap-2">
           {matchDiagnostics.length ? (
-            <MatchDiagnosticsTable points={matchDiagnostics} />
+            <MatchDiagnosticsPanel points={matchDiagnostics} />
           ) : (
             <p className="text-sm text-black/70">No editorials diagnostics yet for {kind} surface. Run daily backfill/cron to start collecting.</p>
           )}
@@ -133,21 +133,36 @@ export default async function IntegrityPage({ searchParams }: IntegrityPageProps
   );
 }
 
-function MatchDiagnosticsTable({ points }: { points: CortexEditorialMatchDiagnosticsHistoryPoint[] }) {
-  const header = points[0];
-  const latest = header;
-  const totalUnknown = latest.reasons.find((item) => item.reason === "unknown_reason")?.count ?? 0;
-  const totalLowOverlapSingle = latest.reasons.find((item) => item.reason === "low_overlap_single_candidate")?.count ?? 0;
-  const totalAmbiguous = latest.reasons.find((item) => item.reason === "ambiguous_competing_posts")?.count ?? 0;
-  const totalLowLexical = latest.reasons.find((item) => item.reason === "low_lexical_overlap")?.count ?? 0;
+type ReasonKey = CortexEditorialMatchDiagnosticsHistoryPoint["reasons"][number]["reason"];
+
+const reasonCardsConfig: Array<{ label: string; reason: ReasonKey }> = [
+  { label: "Unknown reason", reason: "unknown_reason" },
+  { label: "Ambiguous competing posts", reason: "ambiguous_competing_posts" },
+  { label: "Low lexical overlap", reason: "low_lexical_overlap" },
+  { label: "Low-overlap single candidate", reason: "low_overlap_single_candidate" },
+  { label: "Awaiting editorial", reason: "awaiting_editorial" },
+];
+
+function MatchDiagnosticsPanel({ points }: { points: CortexEditorialMatchDiagnosticsHistoryPoint[] }) {
+  const latest = points[0];
+  const previous = points[1] ?? null;
+  const matchedDelta = (latest?.matchedPairs ?? 0) - (previous?.matchedPairs ?? 0);
 
   return (
     <div className="grid gap-4">
       <div className="grid gap-2 text-sm md:grid-cols-4">
         <SummaryPill label="Latest coverage" value={latest.coverageRate === null ? "n/a" : `${Math.round(latest.coverageRate * 100)}%`} />
         <SummaryPill label="Latest matchedPairs" value={`${latest.matchedPairs}/${latest.reportsWithCandidatePair}`} />
+        <SummaryPill
+          label="MatchedPairs Δ"
+          value={formatSignedDelta(matchedDelta)}
+        />
         <SummaryPill label="Latest scanned reports" value={latest.scannedReports} />
-        <SummaryPill label="Reason: unknown / overlap / low overlap" value={`${totalUnknown} / ${totalAmbiguous} / ${totalLowOverlapSingle + totalLowLexical}`} />
+      </div>
+      <div className="grid gap-2 text-sm md:grid-cols-3">
+        {reasonCardsConfig.map((item) => (
+          <ReasonCard key={item.reason} current={latest} previous={previous} reason={item.reason} label={item.label} />
+        ))}
       </div>
       <div className="overflow-hidden rounded-[1rem] border border-black/10">
         <table className="w-full table-auto text-sm">
@@ -182,6 +197,34 @@ function MatchDiagnosticsTable({ points }: { points: CortexEditorialMatchDiagnos
           </tbody>
         </table>
       </div>
+      <div className="rounded-lg border border-black/10 bg-[#f8f8f8] px-4 py-3 text-xs text-black/65">
+        {previous === null
+          ? "No previous row for matchedPairs delta yet."
+          : `Latest matchedPairs ${matchedDelta >= 0 ? "improved" : "worsened"} by ${Math.abs(matchedDelta)} compared to previous run.`}
+      </div>
+    </div>
+  );
+}
+
+function ReasonCard({
+  current,
+  label,
+  previous,
+  reason,
+}: {
+  current: CortexEditorialMatchDiagnosticsHistoryPoint;
+  label: string;
+  previous: CortexEditorialMatchDiagnosticsHistoryPoint | null;
+  reason: ReasonKey;
+}) {
+  const currentCount = current.reasons.find((item) => item.reason === reason)?.count ?? 0;
+  const previousCount = previous ? previous.reasons.find((item) => item.reason === reason)?.count ?? 0 : null;
+  const delta = previousCount === null ? null : currentCount - previousCount;
+  return (
+    <div className="border border-black/15 bg-uga-mist px-3 py-3">
+      <p className="text-xs font-bold uppercase tracking-[0.12em] text-black/55">{label}</p>
+      <p className="mt-1 text-xl font-black text-black">{currentCount}</p>
+      <p className="mt-1 text-xs text-black/60">{previousCount === null ? "No history yet" : `Δ ${formatSignedDelta(delta)}`}</p>
     </div>
   );
 }
@@ -193,6 +236,11 @@ function SummaryPill({ label, value }: { label: string; value: string | number }
       <p className="mt-1 text-lg font-black text-black">{value}</p>
     </div>
   );
+}
+
+function formatSignedDelta(value: number) {
+  const sign = value > 0 ? "+" : "";
+  return `${sign}${value}`;
 }
 
 function Metric({ label, tone, value }: { label: string; tone: "critical" | "warning" | "info" | "neutral"; value: number }) {
