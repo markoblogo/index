@@ -86,3 +86,5 @@ If high-risk impact is confirmed, run one focused owner review before changing d
 - No auto-routing from this list to production traffic.
 
 Session check-list: `docs/fallback-provider-pool.md`
+
+Edge-agent baseline for local pilot runs: `docs/edge-agent.md`
