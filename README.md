@@ -1,7 +1,6 @@
 # Index Platform
 
 ![1d3x logo](public/brand/1d3x-logo.webp)
-<img src="public/brand/1d3x-cortex.png" alt="1D3X Cortex" width="160">
 
 Index Platform is a shared Next.js/TypeScript platform for Ukrainian commodity
 market indices. The codebase is intentionally organized as one index engine with
@@ -59,47 +58,25 @@ Shared capabilities:
   SPIKE;
 - Context browser extraction policy that prefers Obscura for DOM/text/assets
   extraction and keeps Playwright/Chromium for e2e, screenshots and fallback;
-- 1D3X Cortex layer for evidence-backed internal AI context, assistant tools
-  and governed OpenAI API handoff across Index, MN7R Monitor, Cr0pto and related
-  agro-commodity resources. The active observe/learn layer combines saved
-  report context packs with an append-only Ecosystem Evidence Ledger for SSI,
-  MediaHub and MN7R observations. The Cortex source contract covers site
-  content, dynamic product data, archives, manuals/books, codebases,
-  development plans and approved action/event logs;
-- Cortex is the owner of the shared AI layer. Index, MN7R EXE Assistant and
-  Cropto assistant surfaces are domain interfaces and adapters, while Cortex
-  owns cross-product context, memory, model routing, workforce packets and
-  evaluation gates. See [`docs/commodity-intelligence-layer.md`](docs/commodity-intelligence-layer.md).
-- Future cross-source synthesis rules are recorded in
-  [`docs/cortex-evidence-synthesis-contract.md`](docs/cortex-evidence-synthesis-contract.md);
-  its SGR-lite checkpoint layer adds append-only, typed shadow state review
-  (`retrieve`/`compare`/`request_review`/`finalize`/`abstain`) without changing
-  delivery, publication or execution. Run `npm run cortex:sgr-lite-shadow-eval`
-  for the offline 12-fixture contract gate.
-- The Index-owned Cortex assistant gateway also writes `agent_governance_capability`
-  shadow receipts before external model handoffs. They are internal-only,
-  fingerprint-based and non-enforcing; `npm run cortex:agent-governance-eval`
-  runs its 12-fixture baseline-versus-proposed evaluation.
-  `npm run cortex:agent-governance-readiness` accumulates per-surface shadow
-  readiness snapshots without enabling advisory output or enforcement.
-- `CortexEvaluationArtifactPacketLedger` adds a report-only five-artifact
-  offline evaluation packet (scenario, trace, report, candidate playbook and
-  verifier result) linked to existing governance ledger IDs. Rejected
-  candidates remain explicit; `npm run cortex:evaluation-artifact-packets`
-  maps the 12 saved governance tasks without applying or promoting anything.
-  GBrain is a reference only, not an installed dependency. Mastra is likewise
-  deferred: it is considered only for a future isolated, verifier-first
-  pause/resume workflow POC when the existing packet-and-ledger contracts no
-  longer express the required workflow cleanly.
-- The protected MN7R EXE Assistant, role-scoped Manual AI chat and public-safe
-  landing chat use the Cortex-owned `/api/internal/cortex/assistant` gateway
-  for retrieval, model routing and OpenAI handoff; public requests remain
-  public-only and product-side role/action gates remain in MN7R.
-- The protected `/api/internal/cortex/health` route is the post-deploy
-  readiness probe for the Cortex manifest and OpenAI provider.
-- `npm run check:cortex-runtime` performs the authenticated post-deploy smoke
-  check without printing secrets or runtime evidence.
 - Vercel cron endpoints for scheduled imports, notifications and publication.
+
+## 1D3X Cortex
+
+<img src="public/brand/1d3x-cortex.png" alt="1D3X Cortex" width="260">
+
+`1D3X Cortex` is the cross-product AI layer for this ecosystem:
+
+- Collects and curates evidence from Index, Spike, MN7R, MediaHub and related
+  product workflows.
+- Unifies raw/derived data, publications, files, code changes and manuals into
+  append-only evidence packs with source/version metadata.
+- Runs OpenAI handoff through governed packet contracts and does not change
+  existing production delivery in default mode.
+- Keeps risky decisions and quality gates in shadow-first workflows: governances,
+  integrity checks, artifact evaluation and promotion readiness.
+- Stores operationally constrained runtime contracts in docs:
+  [`docs/commodity-intelligence-layer.md`](docs/commodity-intelligence-layer.md),
+  [`docs/cortex-evidence-synthesis-contract.md`](docs/cortex-evidence-synthesis-contract.md).
 
 UGA-specific features:
 
