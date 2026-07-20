@@ -62,7 +62,7 @@ Shared capabilities:
 
 ## 1D3X Cortex
 
-<img src="public/brand/1d3x-cortex.png" alt="1D3X Cortex" width="260">
+<img src="public/brand/1d3x-cortex.png" alt="1D3X Cortex" width="2140">
 
 `1D3X Cortex` is the cross-product AI layer for this ecosystem:
 
