@@ -9,6 +9,7 @@ async function main() {
   const kind = pickArg("--kind");
   const limit = parseIntArg("--limit", 60);
   const unknownLimit = parseIntArg("--unknown-limit", 20);
+  const tenantId = pickArg("--tenant");
   if (kind && kind !== "daily" && kind !== "weekly" && kind !== "monthly") {
     throw new Error("Use --kind=daily, --kind=weekly or --kind=monthly.");
   }
@@ -16,13 +17,14 @@ async function main() {
     console.log(
       JSON.stringify(await runCortexEditorialUnknownReasonDebug({
         kind: kind as CortexEditorialPromotionKind | undefined,
+        tenantId,
         limit,
         sampleLimit: unknownLimit,
       }), null, 2),
     );
     return;
   }
-  console.log(JSON.stringify(await runCortexEditorialMatchDiagnostics({ kind: kind as CortexEditorialPromotionKind | undefined, limit }), null, 2));
+  console.log(JSON.stringify(await runCortexEditorialMatchDiagnostics({ kind: kind as CortexEditorialPromotionKind | undefined, tenantId, limit }), null, 2));
 }
 
 function pickArg(key: string) {
