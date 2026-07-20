@@ -1,6 +1,7 @@
 # Index Platform
 
 ![1d3x logo](public/brand/1d3x-logo.webp)
+<img src="public/brand/1d3x-cortex.png" alt="1D3X Cortex" width="160">
 
 Index Platform is a shared Next.js/TypeScript platform for Ukrainian commodity
 market indices. The codebase is intentionally organized as one index engine with
