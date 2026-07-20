@@ -76,3 +76,11 @@ If high-risk impact is confirmed, run one focused owner review before changing d
 - Before proposing/reviewing UI micro-decisions, prefer canonical terms (e.g., card, popover, tooltip, modal, segmented control) and avoid vague placeholders.
 - If a structure is unclear, use the local reference workflow first (`NameThatUI` concept) before hard-coding new component naming rules.
 - Keep this rule optional: apply it when UI semantics, reuse, or prompt quality matters.
+
+## Optional fallback-provider pool (execution only)
+
+- Use only as a local reference list for provider selection when workflow stalls on model choice.
+- Prefer registered providers from local runtime contracts; treat external free-provider lists as `potential` until confirmed.
+- Before using a fallback: check region/signup, rate limits, quotas, retention/privacy terms, and last-tested state.
+- Record in task evidence: `provider_candidate`, `selection_rationale`, `fallback_reason`, `tested_at`, `approval_gate` (if production-bound).
+- No auto-routing from this list to production traffic.
