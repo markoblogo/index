@@ -62,3 +62,10 @@ If high-risk impact is confirmed, run one focused owner review before changing d
 - For code search/lookup tasks, use `ast-index search/symbol/usages/callers/deps/call-tree` first.
 - Use grep only if `ast-index` returns empty or for regex/string-literal search.
 - Keep searches compact and dependency-aware; avoid broad file dumps when a symbol-level target exists.
+
+## Optional frontend design contract (VibeCurb)
+
+- Use `awwwards-hero` only for hero/front-matter UI tasks requiring strict design fidelity.
+- Use `visual-redesign` only for existing React/HTML/CSS surfaces where logic preservation is required.
+- This is optional: when the task is UX/branding-critical.
+- If not needed, proceed with existing `frontend-taste-layer` and `anti-slop-review` constraints.
