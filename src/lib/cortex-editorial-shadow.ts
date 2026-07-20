@@ -100,7 +100,7 @@ export function buildCortexEditorialShadowObservation(input: {
     .sort((left, right) => right.score - left.score || left.post.publishedAt.localeCompare(right.post.publishedAt));
   const best = candidates[0];
   const runnerUp = candidates[1];
-  const status = getMatchStatus(best?.score, runnerUp?.score);
+  const status = getMatchStatus(candidates.length, best?.score, runnerUp?.score);
   const selected = status === "awaiting_editorial" ? null : best;
 
   return {
@@ -113,6 +113,7 @@ export function buildCortexEditorialShadowObservation(input: {
     matchScore: selected ? round(selected.score) : null,
     matchingReason: getMatchingReason({
       bestScore: best?.score,
+      candidateCount: candidates.length,
       postLookupContext: input.postLookupContext,
       runnerUpScore: runnerUp?.score,
       status,
@@ -270,19 +271,24 @@ export function buildCortexEditorialStructureProfile(input: {
   };
 }
 
-function getMatchStatus(bestScore?: number, runnerUpScore?: number): CortexEditorialShadowStatus {
+const MIN_MATCH_SCORE = 0.16;
+const MIN_SCORE_GAP = 0.05;
+
+function getMatchStatus(candidateCount: number, bestScore?: number, runnerUpScore?: number): CortexEditorialShadowStatus {
   if (bestScore === undefined) return "awaiting_editorial";
-  if (bestScore >= 0.16 && (runnerUpScore === undefined || bestScore - runnerUpScore >= 0.05)) return "matched";
+  if (bestScore >= MIN_MATCH_SCORE && (runnerUpScore === undefined || bestScore - runnerUpScore >= MIN_SCORE_GAP)) return "matched";
+  if (candidateCount === 1) return "ambiguous";
   return "ambiguous";
 }
 
 function getMatchingReason(input: {
   bestScore?: number;
+  candidateCount: number;
   postLookupContext?: EditorialPostLookupContext;
   runnerUpScore?: number;
   status: CortexEditorialShadowStatus;
 }) {
-  const { bestScore, postLookupContext, runnerUpScore, status } = input;
+  const { bestScore, candidateCount, postLookupContext, runnerUpScore, status } = input;
   if (status === "awaiting_editorial") {
     if (!postLookupContext?.hasAnyPosts) {
       return "No posts found for spike_brokers in the collector table.";
@@ -293,9 +299,12 @@ function getMatchingReason(input: {
     return "Posts exist for spike_brokers, but none passed lexical matching.";
   }
   if (status === "matched") return `Best lexical overlap ${round(bestScore ?? 0)} is distinct from the next candidate.`;
-  return runnerUpScore === undefined
-    ? `One later post exists, but lexical overlap ${round(bestScore ?? 0)} is below the automatic-match threshold.`
-    : `Candidate overlap is too close (${round(bestScore ?? 0)} vs ${round(runnerUpScore)}); retain for later review.`;
+  if (bestScore === undefined) return "No lexical overlap candidates in the candidate window.";
+  if (candidateCount === 1) return `Single candidate with low lexical overlap (${round(bestScore)}), no tie check possible.`;
+  if (bestScore - (runnerUpScore ?? 0) < MIN_SCORE_GAP) {
+    return `Candidate overlap is too close (${round(bestScore)} vs ${round(runnerUpScore)}).`;
+  }
+  return `Low lexical overlap for multiple candidates (best: ${round(bestScore)}; runner-up: ${round(runnerUpScore ?? 0)}).`;
 }
 
 function buildMetrics(draft: string, editorial: string): CortexEditorialShadowMetrics {

@@ -42,6 +42,29 @@ describe("Cortex editorial shadow", () => {
     expect(observation.status).toBe("ambiguous");
   });
 
+  it("classifies single-candidate lexical ambiguity separately", () => {
+    const observation = buildCortexEditorialShadowObservation({
+      posts: [
+        { id: "one", publishedAt: "2026-07-15T18:00:00.000Z", text: "Wheat 210", url: "https://t.me/spike_brokers/1" },
+      ],
+      report: { candidate: "original", createdAt: "2026-07-15T17:00:00.000Z", draftText: "Unrelated draft text that cannot be matched by any post content.", id: "report-daily-4", kind: "daily" },
+    });
+    expect(observation.status).toBe("ambiguous");
+    expect(observation.matchingReason).toContain("Single candidate with low lexical overlap");
+  });
+
+  it("labels multi-candidate close scores as ambiguous_competing_posts", () => {
+    const observation = buildCortexEditorialShadowObservation({
+      posts: [
+        { id: "one", publishedAt: "2026-07-15T18:00:00.000Z", text: "Wheat CPT Odesa 210 USD per ton with stable demand", url: "https://t.me/spike_brokers/1" },
+        { id: "two", publishedAt: "2026-07-15T18:10:00.000Z", text: "Wheat CPT Odesa 210 USD per ton with stable demand and no change", url: "https://t.me/spike_brokers/2" },
+      ],
+      report: { candidate: "original", createdAt: "2026-07-15T17:00:00.000Z", draftText: "Wheat CPT Odesa 210 USD per ton stable demand", id: "report-daily-5", kind: "daily" },
+    });
+    expect(observation.status).toBe("ambiguous");
+    expect(observation.matchingReason).toContain("Candidate overlap is too close");
+  });
+
   it("clamps bounded internal scans", () => {
     expect(normalizeCortexEditorialShadowListLimit(undefined)).toBe(14);
     expect(normalizeCortexEditorialShadowListLimit(0)).toBe(1);
