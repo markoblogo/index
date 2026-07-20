@@ -69,3 +69,10 @@ If high-risk impact is confirmed, run one focused owner review before changing d
 - Use `visual-redesign` only for existing React/HTML/CSS surfaces where logic preservation is required.
 - This is optional: when the task is UX/branding-critical.
 - If not needed, proceed with existing `frontend-taste-layer` and `anti-slop-review` constraints.
+
+## Optional design-language contract (NameThatUI)
+
+- Use NameThatUI naming when reviewing or describing UI surfaces: element intent + part name + possible API symbol.
+- Before proposing/reviewing UI micro-decisions, prefer canonical terms (e.g., card, popover, tooltip, modal, segmented control) and avoid vague placeholders.
+- If a structure is unclear, use the local reference workflow first (`NameThatUI` concept) before hard-coding new component naming rules.
+- Keep this rule optional: apply it when UI semantics, reuse, or prompt quality matters.
