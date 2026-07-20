@@ -19,7 +19,10 @@ export type CortexEditorialMatchDiagnostics = {
   matchedPairs: number;
   product: "1D3X Cortex";
   promotionQualifiedPairs: number;
-  reasonCounts: Array<{ count: number; reason: "ambiguous_competing_posts" | "awaiting_editorial" | "low_lexical_overlap" }>;
+  reasonCounts: Array<{
+    count: number;
+    reason: "ambiguous_competing_posts" | "awaiting_editorial" | "low_lexical_overlap" | "low_overlap_single_candidate";
+  }>;
   reportsWithCandidatePair: number;
   scannedReports: number;
   statusCounts: Record<CortexEditorialShadowStatus, number>;
@@ -120,9 +123,10 @@ export async function runCortexEditorialMatchDiagnostics(input: {
 
 function classifyGap(observation: CortexEditorialShadowObservation) {
   if (observation.status === "awaiting_editorial") return "awaiting_editorial" as const;
-  return observation.matchingReason.includes("too close")
-    ? "ambiguous_competing_posts" as const
-    : "low_lexical_overlap" as const;
+  const matchingReason = observation.matchingReason.toLowerCase();
+  if (matchingReason.includes("too close")) return "ambiguous_competing_posts" as const;
+  if (matchingReason.includes("single candidate")) return "low_overlap_single_candidate" as const;
+  return "low_lexical_overlap" as const;
 }
 
 function emptyPolicy(kind: CortexEditorialPromotionKind): CortexEditorialPromotionPolicy {

@@ -43,4 +43,24 @@ describe("Cortex editorial match diagnostics", () => {
       { count: 1, reason: "awaiting_editorial" },
     ]);
   });
+
+  it("separates single-candidate low-overlap mismatches", () => {
+    const diagnostics = buildCortexEditorialMatchDiagnostics({
+      kind: "daily",
+      observations: [
+        observation("single", "original", "ambiguous", "Single candidate with too few tokens, not confident for matching"),
+        observation("single", "original", "ambiguous", "Candidate overlap is too close to top source"),
+      ],
+      policy,
+      tenantId: "spike-ua",
+    });
+
+    expect(diagnostics.reasonCounts).toEqual([
+      { count: 1, reason: "ambiguous_competing_posts" },
+      { count: 1, reason: "low_overlap_single_candidate" },
+    ]);
+    expect(diagnostics.scannedReports).toBe(1);
+    expect(diagnostics.reportsWithCandidatePair).toBe(0);
+    expect(diagnostics.matchedPairs).toBe(0);
+  });
 });
