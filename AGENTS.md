@@ -56,3 +56,9 @@ For any UI work touching animations/transitions/scroll effects:
 When touching a file, first check lightweight blast radius and top owners (who changes it and who owns it).
 Use Codeflow as optional support only; do not make it a hard gate.
 If high-risk impact is confirmed, run one focused owner review before changing dependent areas.
+
+## Code search optional rule (ast-index)
+
+- For code search/lookup tasks, use `ast-index search/symbol/usages/callers/deps/call-tree` first.
+- Use grep only if `ast-index` returns empty or for regex/string-literal search.
+- Keep searches compact and dependency-aware; avoid broad file dumps when a symbol-level target exists.
