@@ -88,3 +88,5 @@ If high-risk impact is confirmed, run one focused owner review before changing d
 Session check-list: `docs/fallback-provider-pool.md`
 
 Edge-agent baseline for local pilot runs: `docs/edge-agent.md`
+
+Research pilot (find-partners, non-production): `docs/pilots/find-partners/mock-run-protocol.md`
