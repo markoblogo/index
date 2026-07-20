@@ -74,7 +74,7 @@ describe("Cortex editorial match diagnostics", () => {
     const diagnostics = buildCortexEditorialMatchDiagnostics({
       kind: "daily",
       observations: [
-        observation("single", "original", "ambiguous", "  "),
+        observation("single", "original", "ambiguous", "  ", 3),
       ],
       policy,
       tenantId: "spike-ua",

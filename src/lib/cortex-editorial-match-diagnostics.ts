@@ -165,9 +165,10 @@ function classifyGap(observation: CortexEditorialShadowObservation) {
   const candidateCount = observation.candidateCount;
   if (!matchingReason) {
     if (candidateCount === 1) return "low_overlap_single_candidate" as const;
-    if (matchScore !== null && matchScore < 0.16) return "low_lexical_overlap" as const;
+    if (matchScore === null) return "unknown_reason" as const;
+    if (matchScore < 0.16) return "low_lexical_overlap" as const;
     if (candidateCount > 1) return "ambiguous_competing_posts" as const;
-    return "unknown_reason" as const;
+    return "low_lexical_overlap" as const;
   }
   if (matchingReason.includes("too close")) return "ambiguous_competing_posts" as const;
   if (matchingReason.includes("no lexical")) return "low_lexical_overlap" as const;
