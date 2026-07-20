@@ -63,4 +63,19 @@ describe("Cortex editorial match diagnostics", () => {
     expect(diagnostics.reportsWithCandidatePair).toBe(0);
     expect(diagnostics.matchedPairs).toBe(0);
   });
+
+  it("classifies unknown matching reason into unknown_reason", () => {
+    const diagnostics = buildCortexEditorialMatchDiagnostics({
+      kind: "daily",
+      observations: [
+        observation("single", "original", "ambiguous", "  "),
+      ],
+      policy,
+      tenantId: "spike-ua",
+    });
+
+    expect(diagnostics.reasonCounts).toEqual([
+      { count: 1, reason: "unknown_reason" },
+    ]);
+  });
 });

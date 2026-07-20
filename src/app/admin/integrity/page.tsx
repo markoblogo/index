@@ -5,11 +5,16 @@ import {
   getCortexSsiIntegrityDailyReport,
   getCortexSsiIntegrityStatistics,
 } from "@/lib/cortex-ssi-integrity";
+import {
+  getCortexEditorialMatchDiagnosticsHistory,
+  type CortexEditorialMatchDiagnosticsHistoryPoint,
+} from "@/lib/cortex-editorial-match-diagnostics";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 
 type IntegrityPageProps = {
-  searchParams: Promise<{ date?: string }>;
+  searchParams: Promise<{ date?: string; kind?: string }>;
 };
+type MatchTrackKind = "daily" | "weekly" | "monthly";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -18,11 +23,17 @@ export default async function IntegrityPage({ searchParams }: IntegrityPageProps
   await requireDemoRole("admin");
   const params = await searchParams;
   const date = params.date ?? todayInputDate();
+  const kind = (params.kind === "weekly" || params.kind === "monthly" ? params.kind : "daily") as MatchTrackKind;
   const tenantId = getActiveIndexConfig().id;
   const [report, statistics] = await Promise.all([
     getCortexSsiIntegrityDailyReport({ date, tenantId }),
     getCortexSsiIntegrityStatistics({ endDate: date, tenantId }),
   ]);
+  const matchDiagnostics = await getCortexEditorialMatchDiagnosticsHistory({
+    kind,
+    tenantId,
+    limit: 14,
+  });
 
   return (
     <section className="grid gap-6">
@@ -52,6 +63,33 @@ export default async function IntegrityPage({ searchParams }: IntegrityPageProps
           </form>
         </div>
       </div>
+
+      <section className="border border-black bg-white p-5">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-lg font-bold uppercase tracking-[0.12em]">Cortex match diagnostics</h2>
+          <form className="flex items-end gap-2" method="get">
+            <input name="date" type="hidden" defaultValue={date} />
+            <label className="grid gap-1 text-xs font-semibold uppercase tracking-[0.12em] text-black/60">
+              Track
+              <select className="border border-black px-2 py-2 text-sm" defaultValue={kind} name="kind">
+                <option value="daily">daily</option>
+                <option value="weekly">weekly</option>
+                <option value="monthly">monthly</option>
+              </select>
+            </label>
+            <button className="rounded-full border border-black px-3 py-2 text-xs font-semibold hover:border-uga-green hover:text-uga-green" type="submit">
+              Filter
+            </button>
+          </form>
+        </div>
+        <div className="grid gap-2">
+          {matchDiagnostics.length ? (
+            <MatchDiagnosticsTable points={matchDiagnostics} />
+          ) : (
+            <p className="text-sm text-black/70">No editorials diagnostics yet for {kind} surface. Run daily backfill/cron to start collecting.</p>
+          )}
+        </div>
+      </section>
 
       <div className="grid gap-3 md:grid-cols-4">
         <Metric label="Critical" value={report?.summary.critical ?? 0} tone="critical" />
@@ -92,6 +130,68 @@ export default async function IntegrityPage({ searchParams }: IntegrityPageProps
         </aside>
       </div>
     </section>
+  );
+}
+
+function MatchDiagnosticsTable({ points }: { points: CortexEditorialMatchDiagnosticsHistoryPoint[] }) {
+  const header = points[0];
+  const latest = header;
+  const totalUnknown = latest.reasons.find((item) => item.reason === "unknown_reason")?.count ?? 0;
+  const totalLowOverlapSingle = latest.reasons.find((item) => item.reason === "low_overlap_single_candidate")?.count ?? 0;
+  const totalAmbiguous = latest.reasons.find((item) => item.reason === "ambiguous_competing_posts")?.count ?? 0;
+  const totalLowLexical = latest.reasons.find((item) => item.reason === "low_lexical_overlap")?.count ?? 0;
+
+  return (
+    <div className="grid gap-4">
+      <div className="grid gap-2 text-sm md:grid-cols-4">
+        <SummaryPill label="Latest coverage" value={latest.coverageRate === null ? "n/a" : `${Math.round(latest.coverageRate * 100)}%`} />
+        <SummaryPill label="Latest matchedPairs" value={`${latest.matchedPairs}/${latest.reportsWithCandidatePair}`} />
+        <SummaryPill label="Latest scanned reports" value={latest.scannedReports} />
+        <SummaryPill label="Reason: unknown / overlap / low overlap" value={`${totalUnknown} / ${totalAmbiguous} / ${totalLowOverlapSingle + totalLowLexical}`} />
+      </div>
+      <div className="overflow-hidden rounded-[1rem] border border-black/10">
+        <table className="w-full table-auto text-sm">
+          <thead className="bg-[#f4f4f1] text-left">
+            <tr>
+              <th className="px-3 py-2 font-semibold">Date</th>
+              <th className="px-3 py-2 font-semibold">Matched</th>
+              <th className="px-3 py-2 font-semibold">Coverage</th>
+              <th className="px-3 py-2 font-semibold">Scanned / Pair</th>
+              <th className="px-3 py-2 font-semibold">Reason split</th>
+            </tr>
+          </thead>
+          <tbody>
+            {points.map((item) => {
+              const rowUnknown = item.reasons.find((reason) => reason.reason === "unknown_reason")?.count ?? 0;
+              const rowLowLexical = item.reasons.find((reason) => reason.reason === "low_lexical_overlap")?.count ?? 0;
+              const rowSingle = item.reasons.find((reason) => reason.reason === "low_overlap_single_candidate")?.count ?? 0;
+              const rowAmbiguous = item.reasons.find((reason) => reason.reason === "ambiguous_competing_posts")?.count ?? 0;
+              const rowAwaiting = item.reasons.find((reason) => reason.reason === "awaiting_editorial")?.count ?? 0;
+              return (
+                <tr className="border-t border-black/10" key={`${item.generatedAt}:${item.kind}`}>
+                  <td className="px-3 py-2">{new Date(item.generatedAt).toISOString().slice(0, 10)}</td>
+                  <td className="px-3 py-2">{item.matchedPairs}</td>
+                  <td className="px-3 py-2">{item.coverageRate === null ? "n/a" : `${Math.round(item.coverageRate * 100)}%`}</td>
+                  <td className="px-3 py-2">{item.scannedReports} / {item.reportsWithCandidatePair}</td>
+                  <td className="px-3 py-2 text-xs leading-6">
+                    A:{rowAwaiting} · AM:{rowAmbiguous} · U:{rowUnknown} · LO:{rowLowLexical + rowSingle}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function SummaryPill({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="border border-black/15 bg-uga-mist px-3 py-3">
+      <p className="text-xs font-bold uppercase tracking-[0.12em] text-black/55">{label}</p>
+      <p className="mt-1 text-lg font-black text-black">{value}</p>
+    </div>
   );
 }
 

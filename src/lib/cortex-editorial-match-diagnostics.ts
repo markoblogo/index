@@ -21,13 +21,23 @@ export type CortexEditorialMatchDiagnostics = {
   promotionQualifiedPairs: number;
   reasonCounts: Array<{
     count: number;
-    reason: "ambiguous_competing_posts" | "awaiting_editorial" | "low_lexical_overlap" | "low_overlap_single_candidate";
+    reason: "ambiguous_competing_posts" | "awaiting_editorial" | "low_lexical_overlap" | "low_overlap_single_candidate" | "unknown_reason";
   }>;
   reportsWithCandidatePair: number;
   scannedReports: number;
   statusCounts: Record<CortexEditorialShadowStatus, number>;
   tenantId: string;
   visibility: "protected";
+};
+
+export type CortexEditorialMatchDiagnosticsHistoryPoint = {
+  coverageRate: number | null;
+  generatedAt: string;
+  kind: CortexEditorialPromotionKind;
+  matchedPairs: number;
+  reasons: Array<{ count: number; reason: CortexEditorialMatchDiagnostics["reasonCounts"][number]["reason"] }>;
+  reportsWithCandidatePair: number;
+  scannedReports: number;
 };
 
 type ShadowLedgerRow = { observationJson: CortexEditorialShadowObservation };
@@ -121,12 +131,41 @@ export async function runCortexEditorialMatchDiagnostics(input: {
   return { diagnostics, skippedReason: null };
 }
 
+export async function getCortexEditorialMatchDiagnosticsHistory(input: {
+  kind?: CortexEditorialPromotionKind;
+  limit?: number;
+  tenantId?: string;
+} = {}): Promise<CortexEditorialMatchDiagnosticsHistoryPoint[]> {
+  const tenantId = input.tenantId ?? getActiveIndexConfig().id;
+  const kind = input.kind ?? "daily";
+  if (!hasDatabaseUrl()) return [];
+
+  await ensureStorage();
+  const rows = await db.$queryRawUnsafe<Array<{ recordJson: CortexEditorialMatchDiagnostics }>>(
+    `SELECT "recordJson" FROM "CortexEditorialMatchDiagnosticsLedger" WHERE "tenantId" = $1 AND "kind" = $2 ORDER BY "updatedAt" DESC LIMIT $3`,
+    tenantId,
+    kind,
+    Math.max(1, Math.min(30, Math.trunc(input.limit ?? 14))),
+  );
+  return rows.map((row) => ({
+    coverageRate: row.recordJson.coverageRate,
+    generatedAt: row.recordJson.generatedAt,
+    kind: row.recordJson.kind,
+    matchedPairs: row.recordJson.matchedPairs,
+    reasons: row.recordJson.reasonCounts,
+    reportsWithCandidatePair: row.recordJson.reportsWithCandidatePair,
+    scannedReports: row.recordJson.scannedReports,
+  }));
+}
+
 function classifyGap(observation: CortexEditorialShadowObservation) {
   if (observation.status === "awaiting_editorial") return "awaiting_editorial" as const;
-  const matchingReason = observation.matchingReason.toLowerCase();
+  const matchingReason = observation.matchingReason.trim().toLowerCase();
+  if (!matchingReason) return "unknown_reason" as const;
   if (matchingReason.includes("too close")) return "ambiguous_competing_posts" as const;
   if (matchingReason.includes("single candidate")) return "low_overlap_single_candidate" as const;
-  return "low_lexical_overlap" as const;
+  if (matchingReason.includes("low overlap")) return "low_lexical_overlap" as const;
+  return "unknown_reason" as const;
 }
 
 function emptyPolicy(kind: CortexEditorialPromotionKind): CortexEditorialPromotionPolicy {
