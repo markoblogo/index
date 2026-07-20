@@ -30,6 +30,28 @@ export type CortexEditorialMatchDiagnostics = {
   visibility: "protected";
 };
 
+export type CortexEditorialUnknownReasonSample = {
+  candidate: CortexEditorialShadowObservation["candidate"];
+  candidateCount: number;
+  generatedAt: string;
+  id: string;
+  kind: CortexEditorialPromotionKind;
+  matchingReason: string;
+  matchScore: number | null;
+  reportId: string;
+  status: CortexEditorialShadowObservation["status"];
+};
+
+export type CortexEditorialMatchUnknownReasonDebug = {
+  generatedAt: string;
+  kind: CortexEditorialPromotionKind;
+  samples: CortexEditorialUnknownReasonSample[];
+  tenantId: string;
+  totalScanned: number;
+  totalUnknownReason: number;
+  visibility: "protected";
+};
+
 export type CortexEditorialMatchDiagnosticsHistoryPoint = {
   coverageRate: number | null;
   generatedAt: string;
@@ -129,6 +151,70 @@ export async function runCortexEditorialMatchDiagnostics(input: {
   }));
 
   return { diagnostics, skippedReason: null };
+}
+
+export async function runCortexEditorialUnknownReasonDebug(input: {
+  kind?: CortexEditorialPromotionKind;
+  limit?: number;
+  sampleLimit?: number;
+  tenantId?: string;
+}): Promise<CortexEditorialMatchUnknownReasonDebug> {
+  const tenantId = input?.tenantId ?? getActiveIndexConfig().id;
+  const kind = input?.kind ?? "daily";
+  const debugLimit = Math.max(1, Math.min(240, Math.trunc(input?.limit ?? 60)));
+  const sampleLimit = Math.max(1, Math.min(200, Math.trunc(input?.sampleLimit ?? 20)));
+  if (!hasDatabaseUrl()) {
+    return {
+      generatedAt: new Date().toISOString(),
+      kind,
+      samples: [],
+      tenantId,
+      totalScanned: 0,
+      totalUnknownReason: 0,
+      visibility: "protected",
+    };
+  }
+
+  await ensureStorage();
+  const rows = await db.$queryRawUnsafe<ShadowLedgerRow[]>(
+    `SELECT "observationJson" FROM "CortexEditorialShadowLedger" WHERE "tenantId" = $1 AND "kind" = $2 ORDER BY "updatedAt" DESC LIMIT $3`,
+    tenantId,
+    kind,
+    debugLimit,
+  );
+  const observations = rows.map((row) => row.observationJson);
+  const unknownSamples = collectUnknownReasonSamples({ kind, observations, limit: sampleLimit });
+
+  return {
+    generatedAt: new Date().toISOString(),
+    kind,
+    samples: unknownSamples,
+    tenantId,
+    totalScanned: observations.length,
+    totalUnknownReason: observations.filter((observation) => classifyGap(observation) === "unknown_reason").length,
+    visibility: "protected",
+  };
+}
+
+function collectUnknownReasonSamples(input: {
+  kind: CortexEditorialPromotionKind;
+  observations: CortexEditorialShadowObservation[];
+  limit: number;
+}): CortexEditorialUnknownReasonSample[] {
+  return observations
+    .filter((observation) => classifyGap(observation) === "unknown_reason")
+    .slice(0, input.limit)
+    .map((observation) => ({
+      candidate: observation.candidate,
+      candidateCount: observation.candidateCount,
+      generatedAt: observation.generatedAt,
+      id: observation.id,
+      kind: input.kind,
+      matchingReason: observation.matchingReason,
+      matchScore: observation.matchScore,
+      reportId: observation.reportId,
+      status: observation.status,
+    }));
 }
 
 export async function getCortexEditorialMatchDiagnosticsHistory(input: {
