@@ -50,3 +50,9 @@ For any UI work touching animations/transitions/scroll effects:
 - ensure cleanup on unmount/re-render (`ctx.revert()`, `kill()`, clear callbacks/timers);
 - avoid global selectors; scope animations to component roots;
 - keep motion intent explicit (`initial -> animate -> exit`) and skip decorative motion without purpose.
+
+## Code change optional review helper (Codeflow)
+
+When touching a file, first check lightweight blast radius and top owners (who changes it and who owns it).
+Use Codeflow as optional support only; do not make it a hard gate.
+If high-risk impact is confirmed, run one focused owner review before changing dependent areas.
