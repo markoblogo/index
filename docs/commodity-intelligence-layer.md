@@ -20,6 +20,22 @@ and project-specific facts. External models are used for reasoning, drafting,
 summarization and transformations only when the internal layer has assembled a
 bounded context pack.
 
+## Reference Pattern: Cabinet (CabinetAI)
+
+`cabinetai/cabinet` is treated as an operating pattern only:
+
+- `local markdown memory contract` — file-based, auditable memory with explicit
+  history and versioned edits;
+- `job/mission cadence` — scheduled recurring work cycles, review states and
+  operator-facing progress discipline;
+- `BYOAI + local control` — explicit local context ownership and provider
+  swappability.
+
+This is a reference implementation pattern, not a replacement runtime for Cortex.
+No new runtime dependency is introduced from Cabinet at this stage. Cortex keeps
+its existing append-only ledger, contracted assistant gateway, evidence packs and
+shadow-only governance/eval layers as the primary operating path.
+
 ## Ownership Boundary
 
 1D3X Cortex is the owner of the shared AI layer for the agro-commodity

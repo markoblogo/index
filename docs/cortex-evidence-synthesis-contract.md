@@ -47,6 +47,9 @@ creation. OpenAI/API calls receive only the resulting bounded context.
   MN7R/Cortex.
 - Do not add a second memory runtime while the current Cortex artifact and
   ledger path remains sufficient.
+- Keep CabinetAI as a reference pattern only for local markdown memory + missions;
+  do not add a Cabinet runtime dependency unless Cortex contracts are later found
+  insufficient for local recall, scheduling and task cadence.
 
 ## Future Evaluation Harness
 
