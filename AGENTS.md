@@ -84,3 +84,5 @@ If high-risk impact is confirmed, run one focused owner review before changing d
 - Before using a fallback: check region/signup, rate limits, quotas, retention/privacy terms, and last-tested state.
 - Record in task evidence: `provider_candidate`, `selection_rationale`, `fallback_reason`, `tested_at`, `approval_gate` (if production-bound).
 - No auto-routing from this list to production traffic.
+
+Session check-list: `docs/fallback-provider-pool.md`
