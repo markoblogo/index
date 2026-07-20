@@ -3,7 +3,7 @@ import { db, hasDatabaseUrl } from "@/lib/db";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import { getMediaHubReportTextForValidation } from "@/lib/media-hub-evidence";
 
-const EDITORIAL_CHANNEL_HANDLE = "@spike_brokers";
+const EDITORIAL_CHANNEL_HANDLE = normalizeEditorialChannelHandle("@spike_brokers");
 const DEFAULT_LIST_LIMIT = 14;
 
 export type CortexEditorialShadowStatus = "awaiting_editorial" | "ambiguous" | "matched";
@@ -76,6 +76,10 @@ type MediaHubReportRow = {
 
 type TelegramPostRow = { externalPostId: string; id: string; postUrl: string; publishedAt: Date; text: string };
 type EditorialGuidanceRow = { editorialText: string | null; observationJson: CortexEditorialShadowObservation };
+type EditorialPostLookupContext = {
+  hasAnyPosts: boolean;
+  hasAnyPostsInWindow: boolean;
+};
 
 let storageReady: Promise<void> | null = null;
 
@@ -83,6 +87,7 @@ let storageReady: Promise<void> | null = null;
 export function buildCortexEditorialShadowObservation(input: {
   posts: ShadowPost[];
   report: ShadowReport;
+  postLookupContext?: EditorialPostLookupContext;
 }): CortexEditorialShadowObservation {
   const generatedAt = validDate(input.report.createdAt) ?? new Date().toISOString();
   const endAt = new Date(new Date(generatedAt).getTime() + editorialWindowHours(input.report.kind) * 3_600_000);
@@ -106,7 +111,12 @@ export function buildCortexEditorialShadowObservation(input: {
     id: `cortex-editorial-shadow:${input.report.id}:${input.report.candidate}`,
     kind: input.report.kind,
     matchScore: selected ? round(selected.score) : null,
-    matchingReason: getMatchingReason(status, best?.score, runnerUp?.score),
+    matchingReason: getMatchingReason({
+      bestScore: best?.score,
+      postLookupContext: input.postLookupContext,
+      runnerUpScore: runnerUp?.score,
+      status,
+    }),
     metrics: selected ? buildMetrics(input.report.draftText, selected.post.text) : null,
     product: "1D3X Cortex",
     reportId: input.report.id,
@@ -134,9 +144,13 @@ export async function syncCortexEditorialShadowObservations(input: {
         startAt: new Date(report.createdAt),
         tenantId,
       });
-      const observation = buildCortexEditorialShadowObservation({ posts, report });
+      const observation = buildCortexEditorialShadowObservation({
+        posts: posts.posts,
+        postLookupContext: posts.context,
+        report,
+      });
       const editorialText = observation.editorialPost
-        ? posts.find((post) => post.id === observation.editorialPost?.id)?.text ?? null
+        ? posts.posts.find((post) => post.id === observation.editorialPost?.id)?.text ?? null
         : null;
       await persistObservation({
         draftText: report.draftText,
@@ -262,8 +276,22 @@ function getMatchStatus(bestScore?: number, runnerUpScore?: number): CortexEdito
   return "ambiguous";
 }
 
-function getMatchingReason(status: CortexEditorialShadowStatus, bestScore?: number, runnerUpScore?: number) {
-  if (status === "awaiting_editorial") return "No later @spike_brokers post is available in the editorial window.";
+function getMatchingReason(input: {
+  bestScore?: number;
+  postLookupContext?: EditorialPostLookupContext;
+  runnerUpScore?: number;
+  status: CortexEditorialShadowStatus;
+}) {
+  const { bestScore, postLookupContext, runnerUpScore, status } = input;
+  if (status === "awaiting_editorial") {
+    if (!postLookupContext?.hasAnyPosts) {
+      return "No posts found for spike_brokers in the collector table.";
+    }
+    if (!postLookupContext.hasAnyPostsInWindow) {
+      return "Posts exist for spike_brokers, but none are in the editorial window.";
+    }
+    return "Posts exist for spike_brokers, but none passed lexical matching.";
+  }
   if (status === "matched") return `Best lexical overlap ${round(bestScore ?? 0)} is distinct from the next candidate.`;
   return runnerUpScore === undefined
     ? `One later post exists, but lexical overlap ${round(bestScore ?? 0)} is below the automatic-match threshold.`
@@ -319,6 +347,15 @@ function validDate(value: string) {
 
 function editorialWindowHours(kind: "daily" | "weekly" | "monthly") {
   return kind === "daily" ? 48 : 240;
+}
+
+function normalizeEditorialChannelHandle(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  if (trimmed.startsWith("@")) {
+    return trimmed.slice(1).toLocaleLowerCase();
+  }
+  return trimmed.toLocaleLowerCase();
 }
 
 function inactiveGuidance(
@@ -388,14 +425,33 @@ async function listReports(input: { kind?: "daily" | "weekly" | "monthly"; limit
 }
 
 async function listEditorialPosts(input: { endAt: Date; startAt: Date; tenantId: string }) {
-  const rows = await db.$queryRawUnsafe<TelegramPostRow[]>(
-    `SELECT "id", "externalPostId", "postUrl", "publishedAt", "text" FROM "TelegramCollectedPost" WHERE "tenantId" = $1 AND "channelHandle" = $2 AND "publishedAt" >= $3 AND "publishedAt" <= $4 ORDER BY "publishedAt" ASC`,
-    input.tenantId,
+  const rows = await db.$queryRawUnsafe<TelegramPostRow[]>(`
+    SELECT "id", "externalPostId", "postUrl", "publishedAt", "text"
+    FROM "TelegramCollectedPost"
+    WHERE "tenantId" = $1
+      AND lower("channelHandle") = lower($2)
+      AND "publishedAt" >= $3
+      AND "publishedAt" <= $4
+    ORDER BY "publishedAt" ASC
+  `, input.tenantId,
     EDITORIAL_CHANNEL_HANDLE,
     input.startAt.toISOString(),
     input.endAt.toISOString(),
   );
-  return rows.map((row) => ({ id: row.id || row.externalPostId, publishedAt: row.publishedAt.toISOString(), text: row.text, url: row.postUrl }));
+  const anyPostsResult = await db.$queryRawUnsafe<{ count: bigint }[]>(`
+    SELECT COUNT(*)::bigint AS "count"
+    FROM "TelegramCollectedPost"
+    WHERE "tenantId" = $1
+      AND lower("channelHandle") = lower($2)
+  `, input.tenantId, EDITORIAL_CHANNEL_HANDLE);
+  const hasAnyPosts = Number(anyPostsResult[0]?.count ?? 0) > 0;
+  return {
+    context: {
+      hasAnyPosts,
+      hasAnyPostsInWindow: rows.length > 0,
+    },
+    posts: rows.map((row) => ({ id: row.id || row.externalPostId, publishedAt: row.publishedAt.toISOString(), text: row.text, url: row.postUrl })),
+  };
 }
 
 function toShadowReports(row: MediaHubReportRow): ShadowReport[] {
