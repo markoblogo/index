@@ -8,8 +8,14 @@ const policy: CortexEditorialPromotionPolicy = {
   mode: "shadow", qualifiedPairs: 1, reason: "test", revisedWinRate: null, revisedWins: 0,
 };
 
-const observation = (reportId: string, candidate: "original" | "revised", status: CortexEditorialShadowObservation["status"], matchingReason: string): CortexEditorialShadowObservation => ({
-  candidate, candidateCount: 1, editorialPost: null, generatedAt: "2026-07-15T10:00:00.000Z", id: `${reportId}:${candidate}`,
+const observation = (
+  reportId: string,
+  candidate: "original" | "revised",
+  status: CortexEditorialShadowObservation["status"],
+  matchingReason: string,
+  candidateCount = 1,
+): CortexEditorialShadowObservation => ({
+  candidate, candidateCount, editorialPost: null, generatedAt: "2026-07-15T10:00:00.000Z", id: `${reportId}:${candidate}`,
   kind: "daily", matchScore: null, matchingReason, metrics: null, product: "1D3X Cortex", reportId, status, visibility: "protected",
 });
 
@@ -76,6 +82,23 @@ describe("Cortex editorial match diagnostics", () => {
 
     expect(diagnostics.reasonCounts).toEqual([
       { count: 1, reason: "unknown_reason" },
+    ]);
+  });
+
+  it("falls back to structured heuristic when matching reason is empty", () => {
+    const diagnostics = buildCortexEditorialMatchDiagnostics({
+      kind: "daily",
+      observations: [
+        observation("single", "original", "ambiguous", "   ", 1),
+        observation("multi", "original", "ambiguous", "   ", 2),
+      ],
+      policy,
+      tenantId: "spike-ua",
+    });
+
+    expect(diagnostics.reasonCounts).toEqual([
+      { count: 1, reason: "ambiguous_competing_posts" },
+      { count: 1, reason: "low_overlap_single_candidate" },
     ]);
   });
 });

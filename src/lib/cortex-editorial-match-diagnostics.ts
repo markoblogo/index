@@ -161,7 +161,14 @@ export async function getCortexEditorialMatchDiagnosticsHistory(input: {
 function classifyGap(observation: CortexEditorialShadowObservation) {
   if (observation.status === "awaiting_editorial") return "awaiting_editorial" as const;
   const matchingReason = observation.matchingReason.trim().toLowerCase();
-  if (!matchingReason) return "unknown_reason" as const;
+  const matchScore = observation.matchScore;
+  const candidateCount = observation.candidateCount;
+  if (!matchingReason) {
+    if (candidateCount === 1) return "low_overlap_single_candidate" as const;
+    if (matchScore !== null && matchScore < 0.16) return "low_lexical_overlap" as const;
+    if (candidateCount > 1) return "ambiguous_competing_posts" as const;
+    return "unknown_reason" as const;
+  }
   if (matchingReason.includes("too close")) return "ambiguous_competing_posts" as const;
   if (matchingReason.includes("no lexical")) return "low_lexical_overlap" as const;
   if (matchingReason.includes("below the automatic-match threshold")) return "low_lexical_overlap" as const;
