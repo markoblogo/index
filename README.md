@@ -23,6 +23,9 @@ This is not a mixed "UGA plus Spike" app. It is a multi-brand index platform
 where UGA and Spike are two clients running on the same calculation,
 publication, respondent and analytics foundation.
 
+SPIKE publishes public benchmark snapshots for Ukrainian grain and oilseed spot
+conditions to keep pricing visibility consistent across partner and operator updates.
+
 For agent-facing public positioning, partnership language, evidence surfaces, and claim boundaries, read [`docs/product-context.md`](docs/product-context.md) before marketing, analytics, SEO, or recurring review work.
 
 UGA Index is also available on the 1d3x mirror domain
