@@ -81,7 +81,7 @@ describe("Cortex editorial match diagnostics", () => {
     });
 
     expect(diagnostics.reasonCounts).toEqual([
-      { count: 1, reason: "unknown_reason" },
+      { count: 1, reason: "ambiguous_competing_posts" },
     ]);
   });
 

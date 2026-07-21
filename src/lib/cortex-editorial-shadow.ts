@@ -302,7 +302,7 @@ function getMatchingReason(input: {
   if (bestScore === undefined) return "No lexical overlap candidates in the candidate window.";
   if (candidateCount === 1) return `Single candidate with low lexical overlap (${round(bestScore)}), no tie check possible.`;
   if (bestScore - (runnerUpScore ?? 0) < MIN_SCORE_GAP) {
-    return `Candidate overlap is too close (${round(bestScore)} vs ${round(runnerUpScore)}).`;
+    return `Candidate overlap is too close (${round(bestScore)} vs ${round(runnerUpScore ?? 0)}).`;
   }
   return `Low lexical overlap for multiple candidates (best: ${round(bestScore)}; runner-up: ${round(runnerUpScore ?? 0)}).`;
 }

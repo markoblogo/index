@@ -56,8 +56,8 @@ describe("Cortex editorial shadow", () => {
   it("labels multi-candidate close scores as ambiguous_competing_posts", () => {
     const observation = buildCortexEditorialShadowObservation({
       posts: [
-        { id: "one", publishedAt: "2026-07-15T18:00:00.000Z", text: "Wheat CPT Odesa 210 USD per ton with stable demand", url: "https://t.me/spike_brokers/1" },
-        { id: "two", publishedAt: "2026-07-15T18:10:00.000Z", text: "Wheat CPT Odesa 210 USD per ton with stable demand and no change", url: "https://t.me/spike_brokers/2" },
+        { id: "one", publishedAt: "2026-07-15T18:00:00.000Z", text: "Wheat CPT Odesa 210 USD per ton stable demand", url: "https://t.me/spike_brokers/1" },
+        { id: "two", publishedAt: "2026-07-15T18:10:00.000Z", text: "Wheat CPT Odesa 210 USD per ton stable demand", url: "https://t.me/spike_brokers/2" },
       ],
       report: { candidate: "original", createdAt: "2026-07-15T17:00:00.000Z", draftText: "Wheat CPT Odesa 210 USD per ton stable demand", id: "report-daily-5", kind: "daily" },
     });
