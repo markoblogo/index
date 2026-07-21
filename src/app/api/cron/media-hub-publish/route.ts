@@ -117,6 +117,7 @@ export async function GET(request: Request) {
     date: plan.date,
     forceKind,
     forceTelegram,
+    skipSsiDailyIndexFreshnessCheck: shouldEnsureSsiDailyIndices && ssiAutoPublish?.receipt?.status === "current",
   });
 
   return NextResponse.json({

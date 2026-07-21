@@ -56,6 +56,7 @@ export async function POST(request: Request) {
     forceKind: kind,
     forceTelegram: resend,
     publishTelegram: sendTelegram,
+    skipSsiDailyIndexFreshnessCheck: resend,
   });
 
   return NextResponse.json({

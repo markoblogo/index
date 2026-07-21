@@ -253,6 +253,7 @@ export async function runDueMediaHubPublication(options: {
   forceKind?: MediaHubPublicationKind;
   forceTelegram?: boolean;
   publishTelegram?: boolean;
+  skipSsiDailyIndexFreshnessCheck?: boolean;
 } = {}) {
   const plan = getMediaHubPublicationPlan(options.date);
   const kind = options.forceKind && options.forceKind !== "none"
@@ -261,7 +262,11 @@ export async function runDueMediaHubPublication(options: {
   const publishTelegram = options.publishTelegram !== false;
 
   if (kind === "daily") {
-    if (!isPlatformSite() && !(await isSsiDailyReportReadyForPublication(plan.date))) {
+    if (
+      !isPlatformSite() &&
+      !options.skipSsiDailyIndexFreshnessCheck &&
+      !(await isSsiDailyReportReadyForPublication(plan.date))
+    ) {
       return {
         plan: { ...plan, kind },
         result: {
@@ -278,10 +283,11 @@ export async function runDueMediaHubPublication(options: {
     const report = await publishMediaHubSnapshotReport("daily", plan.date);
     const telegram = publishTelegram
       ? await sendMediaHubReportTelegram("daily", plan.date, {
-      audience: isPlatformSite() ? "platform" : "spike",
-      force: options.forceTelegram,
-      locale: isPlatformSite() ? "en" : "uk",
-      })
+          audience: isPlatformSite() ? "platform" : "spike",
+          force: options.forceTelegram,
+          locale: isPlatformSite() ? "en" : "uk",
+          skipIndexFreshnessCheck: options.skipSsiDailyIndexFreshnessCheck,
+        })
       : { skippedReason: "site_only", status: "skipped" as const };
     const whatsapp = !isPlatformSite()
       ? await sendMediaHubReportWhatsAppForKind("daily", plan.date)
@@ -896,6 +902,7 @@ export async function sendMediaHubReportTelegram(
     audience: "spike" | "platform";
     force?: boolean;
     locale: Locale;
+    skipIndexFreshnessCheck?: boolean;
   },
 ) {
   if (!hasDatabaseUrl() && options.audience !== "platform") {
@@ -976,6 +983,7 @@ export async function sendMediaHubReportTelegram(
       ? await getPublicHistoryData()
       : [];
   if (
+    !options.skipIndexFreshnessCheck &&
     options.audience === "spike" &&
     kind === "daily" &&
     !isSsiDailyIndexDataCurrent(latestData, periodEndDate)
