@@ -26,6 +26,9 @@ publication, respondent and analytics foundation.
 SPIKE publishes public benchmark snapshots for Ukrainian grain and oilseed spot
 conditions to keep pricing visibility consistent across partner and operator updates.
 
+The Spike public pages now publish daily reference snapshots for selected CPT and
+FCA spot benchmarks from supported respondents.
+
 For agent-facing public positioning, partnership language, evidence surfaces, and claim boundaries, read [`docs/product-context.md`](docs/product-context.md) before marketing, analytics, SEO, or recurring review work.
 
 UGA Index is also available on the 1d3x mirror domain
