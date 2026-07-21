@@ -96,6 +96,7 @@ UGA-specific features:
 Spike-specific features:
 
 - SPIKE SPOT INDEX brand and visual system;
+- Weekly public market-commentary snapshots now track changes in local grain and oilseed spot context alongside benchmark values;
 - 13 public positions grouped into `Grains Export`, `Oilseeds Export`, and
   `Oilseeds Crush`;
 - Grains Export: corn CPT Port, corn FCA Chop, wheat 11.5% CPT Port, feed wheat
