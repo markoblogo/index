@@ -1014,7 +1014,6 @@ export async function sendMediaHubReportTelegram(
     });
   }
   const deliveryClaim = await claimMediaHubTelegramDelivery({
-    force: options.force,
     kind,
     periodEndDate,
     tenantId,
@@ -2769,7 +2768,6 @@ export async function isSsiDailyReportReadyForPublication(periodEndDate: string)
 }
 
 async function claimMediaHubTelegramDelivery(input: {
-  force?: boolean;
   kind: Exclude<MediaHubPublicationKind, "none">;
   periodEndDate: string;
   tenantId: string;
@@ -2782,22 +2780,16 @@ async function claimMediaHubTelegramDelivery(input: {
       WHERE "tenantId" = $1
         AND "kind" = $2
         AND "periodEnd" = $3::date
+        AND "telegramSentAt" IS NULL
         AND (
-          $4 = TRUE
-          OR (
-            "telegramSentAt" IS NULL
-            AND (
-              "telegramDeliveryClaimedAt" IS NULL
-              OR "telegramDeliveryClaimedAt" < NOW() - INTERVAL '10 minutes'
-            )
-          )
+          "telegramDeliveryClaimedAt" IS NULL
+          OR "telegramDeliveryClaimedAt" < NOW() - INTERVAL '10 minutes'
         )
       RETURNING "telegramSentAt"
     `,
     input.tenantId,
     input.kind,
     input.periodEndDate,
-    Boolean(input.force),
   );
   if (claimed.length > 0) {
     return { status: "claimed" as const };
