@@ -49,7 +49,9 @@
     "cortex:source-ingest": "tsx scripts/cortex-source-ingest.ts",
     "cortex:source-scan": "tsx scripts/cortex-source-scan.ts",
     "monitor:respondent-telegram": "tsx scripts/respondent-telegram-healthcheck.ts",
-    "whatsapp:worker": "node scripts/whatsapp-worker.mjs"
+    "whatsapp:worker": "node scripts/whatsapp-worker.mjs",
+    "pilot:validate-run-notes": "node scripts/validate-pilot-run-notes.mjs",
+    "pilot:validate-all": "node scripts/validate-pilot-run-notes.mjs --all"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

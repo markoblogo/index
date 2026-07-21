@@ -74,6 +74,12 @@ Use this as a short runnable checklist in sessions where you need ranked, eviden
 
 ## Session start commands (manual)
 
+- Validate notes before/after each run:
+
+```bash
+npm run pilot:validate-run-notes -- docs/pilots/find-partners/run-notes.md
+```
+
 - Create run packet from above and fill query.
 - Produce candidate list in local notes.
 - Validate schema and checks.
