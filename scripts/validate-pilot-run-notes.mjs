@@ -22,7 +22,7 @@ function isBlank(value) {
 }
 
 function normalizeLine(line) {
-  return line.trim();
+  return line.trimEnd();
 }
 
 async function validateRunNotes(file) {
@@ -40,6 +40,12 @@ async function validateRunNotes(file) {
         map[key] = line.slice(prefix.length).trim();
       }
     }
+    const checkMatch = line.match(/^\s*-\s*([^:]+):\s*(.*)$/);
+    if (checkMatch && requiredChecks.includes(checkMatch[1].trim())) {
+      checks[checkMatch[1].trim()] = checkMatch[2].trim();
+      continue;
+    }
+
     const checkPrefix = '  - ';
     if (line.startsWith(checkPrefix)) {
       const [rawKey, ...rest] = line.slice(checkPrefix.length).split(':');
