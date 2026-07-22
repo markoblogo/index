@@ -83,6 +83,8 @@ Shared capabilities:
 - Stores operationally constrained runtime contracts in docs:
   [`docs/commodity-intelligence-layer.md`](docs/commodity-intelligence-layer.md),
   [`docs/cortex-evidence-synthesis-contract.md`](docs/cortex-evidence-synthesis-contract.md).
+- Uses an optional local skill-quality pipeline for Cortex/operator protocols:
+  [`docs/skill-quality-pipeline.md`](docs/skill-quality-pipeline.md).
 
 UGA-specific features:
 

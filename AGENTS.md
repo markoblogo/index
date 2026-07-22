@@ -90,3 +90,10 @@ Session check-list: `docs/fallback-provider-pool.md`
 Edge-agent baseline for local pilot runs: `docs/edge-agent.md`
 
 Research pilot (find-partners, non-production): `docs/pilots/find-partners/mock-run-protocol.md`
+
+## Optional skill quality pipeline
+
+- Use `docs/skill-quality-pipeline.md` when improving local Cortex/operator prompts or protocols from repeated run evidence.
+- Treat skill/protocol files as versioned artifacts with measurable quality: seed -> rollout evidence -> bounded candidate edit -> held-out validation -> owner acceptance -> `best_skill.md`.
+- Keep rejected edits with reasons so weak, duplicate, overfit, or boundary-reducing changes are not retried.
+- This is staged review only; no automatic skill mutation, no production routing, and no outbound action authority.
