@@ -154,9 +154,9 @@ export function AnalyticsTrendChart({
             </g>
           ) : null}
         </svg>
-        <div className="pointer-events-none absolute right-0 top-1 text-right text-[0.65rem] font-black uppercase leading-4 text-white/58">
-          <p>{paddedRange.max.toFixed(0)} USD/t</p>
-          <p className="mt-[13.9rem]">{paddedRange.min.toFixed(0)} USD/t</p>
+        <div className="pointer-events-none absolute inset-0 top-1 text-[0.65rem] font-black uppercase leading-4 text-white/58">
+          <p className="text-right">{paddedRange.max.toFixed(0)} USD/t</p>
+          <p className="absolute left-0 top-[14rem] text-left">{paddedRange.min.toFixed(0)} USD/t</p>
         </div>
       </div>
       {hoverPoint ? (
