@@ -43,7 +43,9 @@ export function AnalyticsTrendChart({
     return commodities
       .filter((commodity) => selectedIds.includes(commodity.id))
       .map((commodity) => {
-        const fullHistory = history.filter((point) => point.commodityId === commodity.id);
+        const fullHistory = history
+          .filter((point) => point.commodityId === commodity.id)
+          .sort((left, right) => left.date.localeCompare(right.date));
         const points = fullHistory.slice(-CHART_WINDOW_DAYS);
         const colorIndex = commodities.findIndex((item) => item.id === commodity.id);
 
