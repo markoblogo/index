@@ -528,6 +528,8 @@ export function getMediaHubLocalePolicy(locale: Locale) {
 
 export function getMediaHubProfile(locale: Locale, selectedWindow: MediaHubWindowKey): MediaHubSiteProfile {
   if (isPlatformSite()) {
+    const windows = withCurrentProgressLabels(platformWindows);
+
     return {
       id: "1d3x",
       brand: "1D3X Context",
@@ -547,12 +549,12 @@ export function getMediaHubProfile(locale: Locale, selectedWindow: MediaHubWindo
         sourceLanguage: "en",
         summaryLanguage: "en",
       },
-      windows: rotateWindows(platformWindows, selectedWindow),
+      windows: rotateWindows(windows, selectedWindow),
     };
   }
 
   const policy = getMediaHubLocalePolicy(locale);
-  const windows = locale === "uk" ? spikeUkWindows : spikeEnWindows;
+  const windows = withCurrentProgressLabels(locale === "uk" ? spikeUkWindows : spikeEnWindows);
 
   return {
     id: "spike",
@@ -574,6 +576,13 @@ export function getMediaHubProfile(locale: Locale, selectedWindow: MediaHubWindo
     localePolicy: policy,
     windows: rotateWindows(windows, selectedWindow),
   };
+}
+
+function withCurrentProgressLabels(windows: MediaHubWindowSnapshot[]) {
+  return windows.map((window) => ({
+    ...window,
+    progressLabel: getMediaHubWindowProgressLabel(window.window),
+  }));
 }
 
 function rotateWindows(
