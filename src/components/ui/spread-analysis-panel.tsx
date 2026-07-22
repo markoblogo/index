@@ -172,19 +172,21 @@ export function SpreadAnalysisPanel({
                   style={{ left: `${hoveredPosition.x}%` }}
                 />
                 <div
-                  className="pointer-events-none absolute z-10 -translate-x-1/2 rounded-full border px-2.5 py-1 text-xs font-black shadow-lg"
+                  className="pointer-events-none absolute z-10 min-w-[5.5rem] -translate-x-1/2 -translate-y-1/2 rounded-full border px-3 py-2 text-center text-xs font-black leading-tight shadow-lg"
                   style={{
                     backgroundColor: "#f8f8f2",
                     borderColor: "var(--color-green)",
                     boxShadow: "0 10px 24px rgba(0, 0, 0, 0.45)",
                     color: "#07100c",
-                    left: `${Math.min(Math.max(hoveredPosition.x, 8), 92)}%`,
-                    top: `${Math.max(hoveredPosition.y - 13, 2)}%`,
+                    left: `${Math.min(Math.max(hoveredPosition.x, 10), 90)}%`,
+                    top: "82%",
                   }}
                 >
-                  <span className="block">{formatSigned(hoveredPoint.value)} USD/t</span>
-                  <span className="mt-0.5 block text-[0.62rem] text-black/55">
-                    {formatDate(hoveredPoint.date, locale)}
+                  <span className="block whitespace-nowrap">
+                    {formatSigned(hoveredPoint.value)} USD/t
+                  </span>
+                  <span className="mt-1 block whitespace-nowrap text-[0.65rem] text-black/60">
+                    {formatCompactDate(hoveredPoint.date)}
                   </span>
                 </div>
               </>
@@ -406,5 +408,18 @@ function formatDate(date: string | undefined, locale: Locale) {
     day: "numeric",
     month: "short",
     year: "numeric",
+  }).format(new Date(`${date}T00:00:00Z`));
+}
+
+function formatCompactDate(date: string | undefined) {
+  if (!date) {
+    return "";
+  }
+
+  return new Intl.DateTimeFormat("uk-UA", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    timeZone: "UTC",
   }).format(new Date(`${date}T00:00:00Z`));
 }
