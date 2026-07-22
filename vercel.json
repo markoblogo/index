@@ -92,31 +92,5 @@
       "path": "/api/cron/scenario-market-read-refresh",
       "schedule": "0 1 * * *"
     }
-  ],
-  "services": {
-    "web": {
-      "root": ".",
-      "framework": "nextjs"
-    },
-    "cortex-runtime": {
-      "root": "services/cortex-runtime",
-      "entrypoint": "server.mjs"
-    }
-  },
-  "rewrites": [
-    {
-      "source": "/api/cortex-runtime(/.*)?",
-      "destination": {
-        "type": "service",
-        "service": "cortex-runtime"
-      }
-    },
-    {
-      "source": "/(.*)",
-      "destination": {
-        "type": "service",
-        "service": "web"
-      }
-    }
   ]
 }
