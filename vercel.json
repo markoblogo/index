@@ -99,7 +99,8 @@
       "framework": "nextjs"
     },
     "cortex-runtime": {
-      "root": "services/cortex-runtime"
+      "root": "services/cortex-runtime",
+      "entrypoint": "server.mjs"
     }
   },
   "rewrites": [
