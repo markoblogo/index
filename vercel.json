@@ -41,6 +41,14 @@
       "schedule": "0 16 * * 1-5"
     },
     {
+      "path": "/api/cron/spike-auto-publish-window-16-retry",
+      "schedule": "5 16 * * 1-5"
+    },
+    {
+      "path": "/api/cron/spike-auto-publish-window-16-retry",
+      "schedule": "10 16 * * 1-5"
+    },
+    {
       "path": "/api/cron/spike-auto-publish-window-17",
       "schedule": "0 17 * * 1-5"
     },
