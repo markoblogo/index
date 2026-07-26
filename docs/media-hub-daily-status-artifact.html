@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MediaHub Daily Status Artifact</title>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.55; margin: 0 auto; max-width: 56rem; padding: 1.25rem; }
+    table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    th, td { border: 1px solid #999; padding: 0.45rem; text-align: left; vertical-align: top; }
+    .muted { color: #555; }
+  </style>
+</head>
+<body>
+  <header>
+    <p class="muted">Single-file MediaHub operational artifact</p>
+    <h1>MediaHub Daily Status</h1>
+    <p>Use this artifact for one daily window review: source intake, summary generation, publication readiness, and the smallest next action. It is intentionally simple enough to open locally or send as a bounded review page.</p>
+  </header>
+
+  <main>
+    <section>
+      <h2>Identity</h2>
+      <ul>
+        <li><strong>Window:</strong> Day</li>
+        <li><strong>Tenant:</strong> 1d3x or spike</li>
+        <li><strong>Date reviewed:</strong> YYYY-MM-DD</li>
+        <li><strong>Status:</strong> green / yellow / red</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Current Read</h2>
+      <p>Lead with the actual state: whether source collection worked, whether editorial synthesis or AI drafting is usable, and whether the page/report is ready, held, or blocked.</p>
+    </section>
+
+    <section>
+      <h2>Operational Checks</h2>
+      <table>
+        <thead>
+          <tr><th>Check</th><th>Result</th><th>Evidence</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Source collection</td><td>ok / partial / failed</td><td>count, run id, or note</td></tr>
+          <tr><td>Monitoring review</td><td>ok / partial / failed</td><td>coverage or exclusion note</td></tr>
+          <tr><td>Summary generation</td><td>ok / partial / failed</td><td>model/fallback note</td></tr>
+          <tr><td>Publication readiness</td><td>ready / hold / blocked</td><td>why</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Known Gaps</h2>
+      <ul>
+        <li>missing source or stale source;</li>
+        <li>editorial issue still requiring manual review;</li>
+        <li>publication blocker or policy hold.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Next Action</h2>
+      <ol>
+        <li>smallest corrective step;</li>
+        <li>verification step;</li>
+        <li>decision to publish, hold, or regenerate.</li>
+      </ol>
+    </section>
+  </main>
+</body>
+</html>

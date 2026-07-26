@@ -115,6 +115,8 @@ Shared capabilities:
   [`docs/skill-quality-pipeline.md`](docs/skill-quality-pipeline.md).
 - Uses a lightweight HTML artifact contract for standalone reports/review pages:
   [`docs/html-artifact-contract.md`](docs/html-artifact-contract.md).
+- Includes a real MediaHub daily review artifact:
+  [`docs/media-hub-daily-status-artifact.html`](docs/media-hub-daily-status-artifact.html).
 
 UGA-specific features:
 
