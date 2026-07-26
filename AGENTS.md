@@ -97,3 +97,10 @@ Research pilot (find-partners, non-production): `docs/pilots/find-partners/mock-
 - Treat skill/protocol files as versioned artifacts with measurable quality: seed -> rollout evidence -> bounded candidate edit -> held-out validation -> owner acceptance -> `best_skill.md`.
 - Keep rejected edits with reasons so weak, duplicate, overfit, or boundary-reducing changes are not retried.
 - This is staged review only; no automatic skill mutation, no production routing, and no outbound action authority.
+
+## Optional continuous review
+
+- This repo is one of the few allowed places for optional continuous code review because workflow/auth/runtime changes can compound quickly.
+- Allowed: manual runs, pre-push review, and optional post-commit local review.
+- Not allowed as default policy: global daemon requirement, automatic PR comments, or auto-fix as a substitute for checklist/tests/router review.
+- Reference: `docs/continuous-review-boundary.md`.
