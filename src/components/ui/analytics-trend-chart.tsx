@@ -169,14 +169,14 @@ export function AnalyticsTrendChart({
           <div className="mt-1.5 grid gap-1">
             {hoverPoint.entries.map((entry) => (
               <div
-                className="grid grid-cols-[0.55rem_minmax(8rem,1fr)_7rem] items-center gap-1.5 text-[0.58rem] font-black uppercase leading-tight"
+                className="grid grid-cols-[0.55rem_minmax(0,1fr)_7rem] items-center gap-1.5 text-[0.58rem] font-black uppercase leading-tight"
                 key={entry.commodity.id}
               >
                 <span
                   className="h-2 w-2 rounded-full ring-1 ring-white/35"
                   style={{ backgroundColor: entry.color }}
                 />
-                <span className="max-w-36 truncate text-white/74">
+                <span className="min-w-0 break-words text-white/74">
                   {getCommodityLegendLabel(entry.commodity, locale)}
                 </span>
                 <span className="text-left tabular-nums text-white">
@@ -218,7 +218,7 @@ export function AnalyticsTrendChart({
                       : undefined
                   }
                 />
-                <span className="max-w-36 truncate">
+                <span className="whitespace-nowrap">
                   {getCommodityLegendLabel(commodity, locale)}
                 </span>
               </button>
@@ -247,8 +247,21 @@ export function AnalyticsTrendChart({
 
 function getCommodityLegendLabel(commodity: Commodity, locale: Locale) {
   const name = commodity.shortName?.[locale] ?? commodity.name[locale];
-  const basis = getDeliveryBasisConfigForCommodityId(commodity.id).name;
-  return `${name} · ${basis}`;
+  const basis = getDeliveryBasisConfigForCommodityId(commodity.id);
+  return `${name} · ${getTrendBasisLabel(basis.code, basis.name)}`;
+}
+
+function getTrendBasisLabel(code: string, fallbackName: string) {
+  switch (code) {
+    case "CPT_ODESA_EXPORT":
+      return "CPT ODESA";
+    case "FCA_CHOP_EXPORT":
+      return "FCA CHOP";
+    case "CPT_PARITY_ODESA_PROCESSING":
+      return "CPT CRUSH";
+    default:
+      return fallbackName.toUpperCase();
+  }
 }
 
 type TrendSeries = {
