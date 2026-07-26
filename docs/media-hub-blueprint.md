@@ -134,6 +134,8 @@ e2e, screenshots, visual/layout work and fallback. See
 8. Publication controls
 9. Automation / schedule controls
 
+Daily operator handoff should use `docs/media-hub-daily-status-artifact.html` as the standard single-file review page for the `day` window.
+
 ### Admin blocks
 
 #### Run status row
