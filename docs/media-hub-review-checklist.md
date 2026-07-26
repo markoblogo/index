@@ -4,6 +4,8 @@ Use this checklist before merging or deploying changes to ingestion,
 calculation, report generation, site publication, Telegram/WhatsApp delivery,
 cron repair or manual catch-up endpoints.
 
+For day-window operator handoff, use [`docs/media-hub-daily-status-artifact.html`](./media-hub-daily-status-artifact.html) as the standard single-file review page. It should summarize source intake, summary generation, publication readiness, known gaps, and the smallest next action.
+
 ## Spec check
 
 - Which workflow states are touched: `collect`, `normalize`, `generate`,

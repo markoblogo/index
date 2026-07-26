@@ -117,6 +117,7 @@ Shared capabilities:
   [`docs/html-artifact-contract.md`](docs/html-artifact-contract.md).
 - Includes a real MediaHub daily review artifact:
   [`docs/media-hub-daily-status-artifact.html`](docs/media-hub-daily-status-artifact.html).
+  Treat it as the standard day-window handoff page for MediaHub operator/review flows.
 
 UGA-specific features:
 
