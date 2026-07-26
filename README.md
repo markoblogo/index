@@ -29,6 +29,33 @@ conditions to keep pricing visibility consistent across partner and operator upd
 The Spike public pages now publish daily reference snapshots for selected CPT and
 FCA spot benchmarks from supported respondents.
 
+## System Map
+
+```mermaid
+flowchart LR
+  P["Public tenants: 1d3x / UGA / SPIKE"]
+  N["Shared Next.js platform"]
+  E["Index engine and publication workflow"]
+  R["Respondents and admin inputs"]
+  U["UGA database"]
+  S["SPIKE database"]
+  C["1D3X Cortex artifact and context-pack layer"]
+  M["MN7R / MediaHub / Cr0pto source artifacts"]
+  D["Delivery surfaces: site, embeds, APIs, analytics, context"]
+
+  R --> E
+  U --> E
+  S --> E
+  E --> N
+  N --> P
+  N --> D
+  M --> C
+  N --> C
+  C -. "bounded evidence and context packs" .-> N
+```
+
+Keep this diagram updated when tenant boundaries, publication flow, storage surfaces, or Cortex artifact routing change.
+
 For agent-facing public positioning, partnership language, evidence surfaces, and claim boundaries, read [`docs/product-context.md`](docs/product-context.md) before marketing, analytics, SEO, or recurring review work.
 
 UGA Index is also available on the 1d3x mirror domain
