@@ -17,6 +17,9 @@ channel delivery.
 | `report` | Persisted `MediaHubReport` content shown on the site. | Telegram/WhatsApp send event. |
 | `publish-site` | Write/update report or index state that is visible on the public site. | Sending to Telegram/WhatsApp. |
 | `send-channel` | Deliver already prepared content to Telegram, WhatsApp or another external channel. | Generating or saving a report. |
+| `situational-monitor` | Read-only operator or Cortex view over a bounded window, layers, signals, freshness and provenance. | A scheduler, publisher, sender or new ingestion source. |
+| `variant-monitor` | Tenant/product-specific view over a shared situational-monitor contract. | A separate runtime or copied dashboard product. |
+| `layer` | Named view over approved data, such as index snapshot, source freshness, publication readiness, logistics or claim support. | Permission to collect new data. |
 | `approval-sensitive` | Any action that changes production-visible state or sends content externally. | Local render/test only. |
 
 ## Workflow states
@@ -47,9 +50,13 @@ Expected boundaries:
 - Evidence and source freshness matter more than source volume.
 - Duplicate channel sends require explicit force/manual intent and idempotency
   checks.
+- Situational monitors are read-only by default. They may show readiness,
+  freshness, provenance and gaps, but they do not publish site content, send
+  Telegram/WhatsApp messages or expand ingestion rights.
 
 ## Related docs
 
 - Browser/source extraction policy: [`media-hub-browser-runtime.md`](media-hub-browser-runtime.md)
+- Situational monitoring contract: [`situational-monitoring-contract.md`](situational-monitoring-contract.md)
 - Admin/internal authorization matrix: [`admin-api-auth-matrix.md`](admin-api-auth-matrix.md)
 - Manual material intake: [`media-hub-manual-materials.md`](media-hub-manual-materials.md)

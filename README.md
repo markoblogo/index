@@ -91,6 +91,8 @@ Shared capabilities:
   SPIKE;
 - Context browser extraction policy that prefers Obscura for DOM/text/assets
   extraction and keeps Playwright/Chromium for e2e, screenshots and fallback;
+- bounded situational-monitoring contracts for Context, SSI, 1D3X and Cortex
+  review surfaces without adopting a heavy map-first runtime;
 - Vercel cron endpoints for scheduled imports, notifications and publication.
 
 ## 1D3X Cortex
@@ -120,6 +122,9 @@ Shared capabilities:
   Treat it as the standard day-window handoff page for MediaHub operator/review flows.
 - Uses a compact front-door routing contract for engineering work:
   [`docs/ship-router-contract.md`](docs/ship-router-contract.md).
+- Uses a bounded situational-monitoring contract for signal, freshness,
+  provenance and variant-review surfaces:
+  [`docs/situational-monitoring-contract.md`](docs/situational-monitoring-contract.md).
 
 UGA-specific features:
 

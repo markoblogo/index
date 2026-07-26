@@ -4,6 +4,12 @@ Use this checklist before merging or deploying changes to ingestion,
 calculation, report generation, site publication, Telegram/WhatsApp delivery,
 cron repair or manual catch-up endpoints.
 
+For situational-monitor, variant-monitor, layer registry, freshness receipt or
+signal-fusion work, use
+[`docs/situational-monitoring-contract.md`](./situational-monitoring-contract.md)
+and keep monitor views read-only unless a separate publication/send workflow is
+explicitly approved.
+
 For day-window operator handoff, use [`docs/media-hub-daily-status-artifact.html`](./media-hub-daily-status-artifact.html) as the standard single-file review page. It should summarize source intake, summary generation, publication readiness, known gaps, and the smallest next action.
 
 ## Router intake
@@ -44,6 +50,8 @@ Expected route outcomes for MediaHub/Context intake:
 - Telegram daily reports fit one message; weekly/monthly parts fit one message
   per part.
 - WhatsApp daily SSI reports stay English and Ukraine-focused.
+- Situational monitors and variant monitors do not trigger `publish-site` or
+  `send-channel`; they only expose receipts, readiness, gaps and next actions.
 
 ## Data and evidence check
 
@@ -56,6 +64,8 @@ Expected route outcomes for MediaHub/Context intake:
 - Old monthly facts are excluded from daily overview unless they became
   market-moving in the report window.
 - Unsupported numeric/forecast claims are omitted or marked for review.
+- Freshness, provenance and signal-fusion receipts distinguish observed,
+  derived, stale, unsupported and conflicting signals.
 
 ## Test discipline
 
