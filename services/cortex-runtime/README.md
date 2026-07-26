@@ -36,6 +36,37 @@ Keep this map updated when publish/auth flow, storage location, gateway contract
 - the manifest is stored under `CORTEX_RUNTIME_DATA_DIR` (Railway volume:
   `/data`), never in the container layer.
 
+## Router intake
+
+Runtime-service work should start with
+[`../../docs/ship-router-contract.md`](../../docs/ship-router-contract.md)
+before implementation or deploy prep.
+
+Default routing for this workflow:
+
+- endpoint, manifest-shape, or storage-flow changes -> `evolve`;
+- incorrect readiness/auth/upload behavior -> `fix`;
+- operator-readability-only README or health-output polish -> `polish`;
+- new runtime endpoint or publish path -> `create`.
+
+Use `production` depth by default for any task touching bearer auth, manifest
+promotion, runtime URL changes, persistent-volume behavior, or Index gateway
+integration.
+
+Minimum reviewer set here is usually:
+
+- `security/authz` for bearer-token and route exposure changes;
+- `contracts` for manifest schema or gateway-contract drift;
+- `concurrency/idempotency` for atomic replacement and repeated upload safety;
+- `performance/runtime` for storage, readiness, or runtime-cost issues.
+
+Preferred terminal states for this service workflow:
+
+- `locally verified candidate ready` for code/config fixes;
+- `diagnosed with exact blocker` when deploy/runtime proof is unavailable;
+- `partial with explicit unresolved risk` if publish-path validation is not yet
+  complete.
+
 ## Railway setup
 
 The first deployed instance is
