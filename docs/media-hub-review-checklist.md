@@ -6,6 +6,25 @@ cron repair or manual catch-up endpoints.
 
 For day-window operator handoff, use [`docs/media-hub-daily-status-artifact.html`](./media-hub-daily-status-artifact.html) as the standard single-file review page. It should summarize source intake, summary generation, publication readiness, known gaps, and the smallest next action.
 
+## Router intake
+
+Before implementation or review, classify the task with
+[`docs/ship-router-contract.md`](./ship-router-contract.md):
+
+- route kind: `create`, `evolve`, `fix`, `polish`, `remove`, or `audit`;
+- route depth: `fast`, `balanced`, or `production`;
+- route reviewers: only the smallest relevant set for this workflow.
+
+Use `production` depth by default when the task can change publication state,
+external-model handoff, artifact promotion, schedule repair behavior, or
+protected/public data boundaries.
+
+Expected route outcomes for MediaHub/Context intake:
+
+- day-window review -> `review-ready artifact prepared`;
+- code/docs fix -> `change verified locally`;
+- blocked operational issue -> explicit blocker with the smallest next action.
+
 ## Spec check
 
 - Which workflow states are touched: `collect`, `normalize`, `generate`,

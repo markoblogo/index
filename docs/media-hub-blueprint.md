@@ -136,6 +136,17 @@ e2e, screenshots, visual/layout work and fallback. See
 
 Daily operator handoff should use `docs/media-hub-daily-status-artifact.html` as the standard single-file review page for the `day` window.
 
+MediaHub/Cortex work intake should start with
+`docs/ship-router-contract.md`: classify the change first, choose explicit
+depth, then stop at the smallest valid outcome. In practice:
+
+- operator/report workflow changes usually route to `evolve` or `fix`;
+- review-page/copy clarity changes usually route to `polish`;
+- schedule, publication, artifact-promotion, or external-model-boundary
+  changes default to `production` depth;
+- the preferred terminal state for daily work is a bounded review artifact, not
+  free-form status prose.
+
 ### Admin blocks
 
 #### Run status row
