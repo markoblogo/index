@@ -118,6 +118,8 @@ Shared capabilities:
 - Includes a real MediaHub daily review artifact:
   [`docs/media-hub-daily-status-artifact.html`](docs/media-hub-daily-status-artifact.html).
   Treat it as the standard day-window handoff page for MediaHub operator/review flows.
+- Uses a compact front-door routing contract for engineering work:
+  [`docs/ship-router-contract.md`](docs/ship-router-contract.md).
 
 UGA-specific features:
 
