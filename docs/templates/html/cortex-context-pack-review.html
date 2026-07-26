@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cortex Context Pack Review Template</title>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.55; margin: 0 auto; max-width: 56rem; padding: 1.25rem; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #999; padding: 0.45rem; text-align: left; vertical-align: top; }
+    code, pre { font-family: "SFMono-Regular", monospace; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Cortex Context Pack Review</h1>
+    <p>Use this for bounded review of a context pack or artifact-derived evidence bundle before it feeds a higher-level assistant or report flow.</p>
+  </header>
+
+  <main>
+    <section>
+      <h2>Pack Identity</h2>
+      <ul>
+        <li><strong>Purpose:</strong> monitor-index-comparison / source-review / other</li>
+        <li><strong>Visibility:</strong> public / internal / protected</li>
+        <li><strong>Query:</strong> short source query</li>
+        <li><strong>Artifact version:</strong> id or timestamp</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Evidence Review</h2>
+      <table>
+        <thead>
+          <tr><th>Question</th><th>Result</th><th>Note</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Expected project coverage present</td><td>yes / no / partial</td><td>projects included</td></tr>
+          <tr><td>Protected data handling correct</td><td>yes / no / n/a</td><td>allowlist or exclusion note</td></tr>
+          <tr><td>Freshness acceptable</td><td>yes / no / unclear</td><td>timestamp or caveat</td></tr>
+          <tr><td>Approval boundary preserved</td><td>yes / no</td><td>why</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Excluded Or Missing Evidence</h2>
+      <ul>
+        <li>missing source or stale source</li>
+        <li>protected evidence intentionally excluded</li>
+        <li>known retrieval gap</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Decision</h2>
+      <p>Mark the pack as ready, hold, or needs rebuild, and state the smallest required correction.</p>
+    </section>
+  </main>
+</body>
+</html>

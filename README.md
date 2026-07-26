@@ -113,6 +113,8 @@ Shared capabilities:
   [`docs/cortex-agent-flow-contract.md`](docs/cortex-agent-flow-contract.md).
 - Uses an optional local skill-quality pipeline for Cortex/operator protocols:
   [`docs/skill-quality-pipeline.md`](docs/skill-quality-pipeline.md).
+- Uses a lightweight HTML artifact contract for standalone reports/review pages:
+  [`docs/html-artifact-contract.md`](docs/html-artifact-contract.md).
 
 UGA-specific features:
 

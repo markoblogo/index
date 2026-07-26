@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MediaHub Status Report Template</title>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.5; margin: 0 auto; max-width: 56rem; padding: 1.25rem; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #999; padding: 0.45rem; text-align: left; vertical-align: top; }
+    .muted { color: #555; }
+  </style>
+</head>
+<body>
+  <header>
+    <p class="muted">Single-file MediaHub artifact template</p>
+    <h1>MediaHub Status Report</h1>
+    <p>Summarize the current editorial/runtime state in one paragraph: source coverage, generation status, publication state, and the main risk.</p>
+  </header>
+
+  <main>
+    <section>
+      <h2>Run Summary</h2>
+      <ul>
+        <li><strong>Window:</strong> day / week / month</li>
+        <li><strong>Tenant:</strong> 1d3x / spike</li>
+        <li><strong>Status:</strong> green / yellow / red</li>
+        <li><strong>Generated at:</strong> timestamp</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Coverage</h2>
+      <table>
+        <thead>
+          <tr><th>Area</th><th>State</th><th>Evidence</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Sources collected</td><td>ok / partial / failed</td><td>count or note</td></tr>
+          <tr><td>Summary generated</td><td>ok / partial / failed</td><td>model or fallback note</td></tr>
+          <tr><td>Publication readiness</td><td>ready / hold / blocked</td><td>reason</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Risks</h2>
+      <ul>
+        <li>Most important unresolved issue</li>
+        <li>Data gap or editorial gap</li>
+        <li>Approval still required</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Next Steps</h2>
+      <ol>
+        <li>bounded next action</li>
+        <li>verification step</li>
+        <li>publish or hold decision</li>
+      </ol>
+    </section>
+  </main>
+</body>
+</html>
