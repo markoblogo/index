@@ -5,6 +5,27 @@ It is intentionally not a model server or a second memory runtime. It stores
 the validated Cortex chunk manifest on a persistent volume and serves it to the
 Index-hosted Cortex gateway.
 
+## System Map
+
+```mermaid
+flowchart LR
+    Builder["Local Index artifact builder"]
+    Publish["Authenticated manifest publish"]
+    Runtime["Cortex Runtime service"]
+    Volume["Persistent volume<br/>CORTEX_RUNTIME_DATA_DIR"]
+    Gateway["Index-hosted Cortex gateway"]
+    Checks["Health and readiness checks"]
+
+    Builder --> Publish
+    Publish --> Runtime
+    Runtime --> Volume
+    Volume --> Runtime
+    Runtime --> Gateway
+    Runtime --> Checks
+```
+
+Keep this map updated when publish/auth flow, storage location, gateway contract, or readiness checks change.
+
 ## Contract
 
 - `GET /health` is public and returns service/artifact readiness metadata.
