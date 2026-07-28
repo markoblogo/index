@@ -137,6 +137,12 @@ Shared capabilities:
 - Uses a bounded extraction adapter contract for Context source normalization:
   [`docs/media-hub-extraction-adapters.md`](docs/media-hub-extraction-adapters.md).
 
+Cortex work should keep one compact loop vocabulary:
+`Discuss -> Plan -> Execute -> Verify -> Ship`.
+Heavy research/planning/execution belongs in bounded fresh packets while the
+main operator thread stays lean. No ship claim is valid without a verification
+artifact, receipt, or reviewed evidence page for the scoped change.
+
 UGA-specific features:
 
 - UGA Index brand and content;
