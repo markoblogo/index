@@ -54,6 +54,19 @@ Supported automatic extraction formats:
 - DOCX
 - TXT / HTML / MD
 
+Current pilot:
+
+- Manual and Telegram files pass through a shadow `manual_file ->
+  markitdown-style` normalization layer.
+- TXT, MD, HTML and CSV produce markdown/text evidence receipts immediately.
+- Accepted HTML source links also produce a shadow `web -> crawl4ai-style`
+  markdown receipt for operator review.
+- PDF still uses the existing PDF extraction adapter for text/previews; the
+  MarkItDown-style pass records only shadow normalization metadata.
+- DOCX/XLSX are accepted and stored, but exact binary text/table parsing remains
+  metadata-only until a separate dependency decision is approved.
+- Shadow normalization never publishes or sends content by itself.
+
 Images and screenshots are accepted as visual evidence. The MVP stores an
 original/preview asset and a visual-summary slot; full OCR/vision extraction can
 be added later without changing the material flow. Prefer PDF, table files, or

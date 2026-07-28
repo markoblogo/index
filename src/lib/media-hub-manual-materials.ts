@@ -1,6 +1,10 @@
 import "server-only";
 
 import { createHash, randomUUID } from "node:crypto";
+import {
+  extractAcceptedWebPageWithCrawl4AiStyle,
+  extractManualFileWithMarkitdownStyle,
+} from "@/lib/context-extraction-adapters";
 import { db, hasDatabaseUrl } from "@/lib/db";
 import { fetchWithTimeout as fetchExternalWithTimeout } from "@/lib/fetch-timeout";
 import type { MediaHubPublicationKind } from "@/lib/media-hub-publication-scheduler";
@@ -285,6 +289,7 @@ export async function ingestMediaHubLinkMaterial(input: {
     bytes,
     filename: getBasename(new URL(canonicalUrl).pathname) || undefined,
     mimeType: contentType,
+    sourceUrl: canonicalUrl,
   });
 
   return storeManualMaterial({
@@ -758,9 +763,17 @@ async function extractMaterialContent(input: {
   bytes: Buffer;
   filename?: string;
   mimeType: string;
+  sourceUrl?: string;
 }): Promise<ExtractedMaterialContent> {
   const mimeType = input.mimeType.toLowerCase();
   const filename = input.filename?.toLowerCase() ?? "";
+  const markdownShadow = extractManualFileWithMarkitdownStyle({
+    bytes: input.bytes,
+    contentType: input.mimeType,
+    filename: input.filename,
+    reason: "material_normalization",
+    tenantId: "shared",
+  });
   if (mimeType.startsWith("image/")) {
     return enhanceVisualAssets({
       assets: [
@@ -801,7 +814,10 @@ async function extractMaterialContent(input: {
   if (mimeType.includes("csv") || filename.endsWith(".csv")) {
     const text = decodeText(input.bytes);
     return {
-      assets: buildTextAssets(text, "CSV text/table extracted for Context evidence."),
+      assets: [
+        ...buildTextAssets(text, "CSV text/table extracted for Context evidence."),
+        ...buildMarkitdownShadowAssets(markdownShadow),
+      ],
       extractedFacts: extractFacts(text),
       extractedTables: [parseCsvTable(text)],
       extractedText: text.slice(0, MAX_EXTRACTED_TEXT_CHARS),
@@ -809,9 +825,22 @@ async function extractMaterialContent(input: {
     };
   }
   if (mimeType.includes("html") || filename.endsWith(".html") || filename.endsWith(".htm")) {
-    const text = stripHtml(decodeText(input.bytes));
+    const html = decodeText(input.bytes);
+    const text = stripHtml(html);
+    const crawl4aiShadow = input.sourceUrl
+      ? extractAcceptedWebPageWithCrawl4AiStyle({
+          html,
+          reason: "source_gap",
+          sourceUrl: input.sourceUrl,
+          tenantId: "shared",
+        })
+      : null;
     return {
-      assets: buildTextAssets(text, "HTML text extracted for Context evidence."),
+      assets: [
+        ...buildTextAssets(text, "HTML text extracted for Context evidence."),
+        ...buildMarkitdownShadowAssets(markdownShadow),
+        ...buildCrawl4AiShadowAssets(crawl4aiShadow),
+      ],
       extractedFacts: extractFacts(text),
       extractedTables: [],
       extractedText: text.slice(0, MAX_EXTRACTED_TEXT_CHARS),
@@ -829,6 +858,7 @@ async function extractMaterialContent(input: {
     return enhanceVisualAssets({
       assets: [
         ...buildTextAssets(text, pdf.parser === "pdftotext" ? "PDF text extracted with pdftotext." : "PDF text extracted with fallback parser."),
+        ...buildMarkitdownShadowAssets(markdownShadow),
         ...pdf.previewAssets,
       ],
       extractedFacts: extractFacts(text),
@@ -839,14 +869,17 @@ async function extractMaterialContent(input: {
   }
   if (filename.endsWith(".xlsx") || mimeType.includes("spreadsheetml")) {
     return {
-      assets: [{
-        assetType: "visual_summary",
-        confidence: 0.4,
-        metadata: { filename, parser: "xlsx-metadata" },
-        mimeType: "text/plain",
-        visualSummary: "XLSX received. Binary table parsing is pending; use uploaded file metadata as admin evidence.",
-      }],
-      extractedFacts: [{ type: "xlsx_metadata", filename }],
+      assets: [
+        {
+          assetType: "visual_summary",
+          confidence: 0.4,
+          metadata: { filename, parser: "xlsx-metadata" },
+          mimeType: "text/plain",
+          visualSummary: "XLSX received. Binary table parsing is pending; use uploaded file metadata as admin evidence.",
+        },
+        ...buildMarkitdownShadowAssets(markdownShadow),
+      ],
+      extractedFacts: [{ type: "xlsx_metadata", filename, normalizationWarnings: markdownShadow.warnings ?? [] }],
       extractedTables: [{
         header: [],
         inferredTopic: inferTopic(filename),
@@ -860,14 +893,17 @@ async function extractMaterialContent(input: {
   }
   if (filename.endsWith(".docx") || mimeType.includes("wordprocessingml")) {
     return {
-      assets: [{
-        assetType: "visual_summary",
-        confidence: 0.4,
-        metadata: { filename, parser: "docx-metadata" },
-        mimeType: "text/plain",
-        visualSummary: "DOCX received. Text extraction is pending; use uploaded file metadata as admin evidence.",
-      }],
-      extractedFacts: [{ type: "docx_metadata", filename }],
+      assets: [
+        {
+          assetType: "visual_summary",
+          confidence: 0.4,
+          metadata: { filename, parser: "docx-metadata" },
+          mimeType: "text/plain",
+          visualSummary: "DOCX received. Text extraction is pending; use uploaded file metadata as admin evidence.",
+        },
+        ...buildMarkitdownShadowAssets(markdownShadow),
+      ],
+      extractedFacts: [{ type: "docx_metadata", filename, normalizationWarnings: markdownShadow.warnings ?? [] }],
       extractedTables: [],
       extractedText: `DOCX received: ${input.filename ?? "uploaded file"}`,
       extractionStatus: "partial",
@@ -876,12 +912,74 @@ async function extractMaterialContent(input: {
 
   const text = decodeText(input.bytes);
   return {
-    assets: buildTextAssets(text, "Text extracted for Context evidence."),
+    assets: [
+      ...buildTextAssets(text, "Text extracted for Context evidence."),
+      ...buildMarkitdownShadowAssets(markdownShadow),
+    ],
     extractedFacts: extractFacts(text),
     extractedTables: [],
     extractedText: text.slice(0, MAX_EXTRACTED_TEXT_CHARS),
     extractionStatus: text.trim() ? "extracted" : "unsupported",
   };
+}
+
+function buildMarkitdownShadowAssets(
+  result: ReturnType<typeof extractManualFileWithMarkitdownStyle>,
+): ExtractedMaterialAssetDraft[] {
+  const markdown = result.markdown?.trim();
+  if (!markdown) {
+    return [];
+  }
+  return [{
+    assetType: "extracted_text",
+    byteSize: Buffer.byteLength(markdown, "utf8"),
+    confidence: result.status === "ok" ? 0.82 : 0.45,
+    extractedText: markdown.slice(0, MAX_EXTRACTED_TEXT_CHARS),
+    metadata: {
+      adapter: "manual_file",
+      contentHash: result.provenance.contentHash,
+      parser: "markitdown-style",
+      rightsRobotsNote: result.rightsRobotsNote,
+      runtime: result.runtime,
+      shadowOnly: true,
+      status: result.status,
+      warnings: result.warnings ?? [],
+    },
+    mimeType: "text/markdown",
+    visualSummary: result.status === "ok"
+      ? "MarkItDown-style shadow normalization produced markdown for operator review."
+      : "MarkItDown-style shadow normalization produced metadata-only markdown; operator review may be required.",
+  }];
+}
+
+function buildCrawl4AiShadowAssets(
+  result: ReturnType<typeof extractAcceptedWebPageWithCrawl4AiStyle> | null,
+): ExtractedMaterialAssetDraft[] {
+  const markdown = result?.markdown?.trim();
+  if (!result || !markdown) {
+    return [];
+  }
+  return [{
+    assetType: "extracted_text",
+    byteSize: Buffer.byteLength(markdown, "utf8"),
+    confidence: result.status === "ok" ? 0.8 : 0.42,
+    extractedText: markdown.slice(0, MAX_EXTRACTED_TEXT_CHARS),
+    metadata: {
+      adapter: "web",
+      contentHash: result.provenance.contentHash,
+      parser: "crawl4ai-style",
+      rightsRobotsNote: result.rightsRobotsNote,
+      runtime: result.runtime,
+      shadowOnly: true,
+      sourceUrl: result.provenance.sourceUrl,
+      status: result.status,
+      warnings: result.warnings ?? [],
+    },
+    mimeType: "text/markdown",
+    visualSummary: result.status === "ok"
+      ? "Crawl4AI-style shadow extraction produced markdown for operator review."
+      : "Crawl4AI-style shadow extraction is thin; keep existing parser output and review source quality.",
+  }];
 }
 
 function buildTextAssets(text: string, visualSummary: string): ExtractedMaterialAssetDraft[] {

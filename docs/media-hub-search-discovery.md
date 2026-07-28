@@ -37,6 +37,11 @@ known sources / Telegram / RSS / APIs
 Search discovery returns candidates. The canonical report input remains the
 structured data produced by Context extraction and validation.
 
+Accepted candidate URLs must pass through the bounded extraction adapter layer
+defined in
+[`media-hub-extraction-adapters.md`](media-hub-extraction-adapters.md). Search
+results and snippets do not skip extraction, evidence or freshness validation.
+
 ## OpenSERP-style contract
 
 If an OpenSERP-like service is used, keep it optional and disabled by default.

@@ -20,6 +20,7 @@ channel delivery.
 | `situational-monitor` | Read-only operator or Cortex view over a bounded window, layers, signals, freshness and provenance. | A scheduler, publisher, sender or new ingestion source. |
 | `variant-monitor` | Tenant/product-specific view over a shared situational-monitor contract. | A separate runtime or copied dashboard product. |
 | `layer` | Named view over approved data, such as index snapshot, source freshness, publication readiness, logistics or claim support. | Permission to collect new data. |
+| `extraction adapter` | Bounded runtime adapter that turns an accepted material/source into normalized text, markdown, links, media and provenance. | A new source policy, crawler platform or publishing action. |
 | `approval-sensitive` | Any action that changes production-visible state or sends content externally. | Local render/test only. |
 
 ## Workflow states
@@ -57,6 +58,7 @@ Expected boundaries:
 ## Related docs
 
 - Browser/source extraction policy: [`media-hub-browser-runtime.md`](media-hub-browser-runtime.md)
+- Extraction adapter contract: [`media-hub-extraction-adapters.md`](media-hub-extraction-adapters.md)
 - Situational monitoring contract: [`situational-monitoring-contract.md`](situational-monitoring-contract.md)
 - Admin/internal authorization matrix: [`admin-api-auth-matrix.md`](admin-api-auth-matrix.md)
 - Manual material intake: [`media-hub-manual-materials.md`](media-hub-manual-materials.md)

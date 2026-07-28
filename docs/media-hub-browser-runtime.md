@@ -91,6 +91,11 @@ Search/SERP discovery is a separate candidate-finding layer and is documented in
 [`media-hub-search-discovery.md`](media-hub-search-discovery.md). Discovery
 finds candidate URLs; snapshot mode preserves accepted source evidence.
 
+Extraction adapter selection across RSS, Telegram, files, Obscura, Playwright
+and optional markdown/crawler pilots is documented in
+[`media-hub-extraction-adapters.md`](media-hub-extraction-adapters.md). This
+browser policy remains the runtime rule for web extraction and snapshots.
+
 Use source snapshots for:
 
 - public or permissioned source pages that may change after collection;

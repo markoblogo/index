@@ -91,6 +91,9 @@ Shared capabilities:
   SPIKE;
 - Context browser extraction policy that prefers Obscura for DOM/text/assets
   extraction and keeps Playwright/Chromium for e2e, screenshots and fallback;
+- bounded Context extraction adapter contract for Telegram/RSS/manual files,
+  Obscura/Playwright and shadow markdown extraction pilots without adopting a
+  heavy scraper platform or anti-bot runtime;
 - bounded situational-monitoring contracts for Context, SSI, 1D3X and Cortex
   review surfaces without adopting a heavy map-first runtime;
 - Vercel cron endpoints for scheduled imports, notifications and publication.
@@ -125,6 +128,8 @@ Shared capabilities:
 - Uses a bounded situational-monitoring contract for signal, freshness,
   provenance and variant-review surfaces:
   [`docs/situational-monitoring-contract.md`](docs/situational-monitoring-contract.md).
+- Uses a bounded extraction adapter contract for Context source normalization:
+  [`docs/media-hub-extraction-adapters.md`](docs/media-hub-extraction-adapters.md).
 
 UGA-specific features:
 

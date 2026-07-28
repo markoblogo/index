@@ -125,6 +125,82 @@ describe("media hub manual materials", () => {
     expect(extraction.assets.map((asset) => asset.assetType)).toContain("visual_summary");
   });
 
+  it("adds MarkItDown-style shadow markdown for manual CSV files", async () => {
+    const extraction = await extractMaterialContent({
+      bytes: Buffer.from("commodity;price\ncorn;210\nwheat;205"),
+      filename: "ssi-prices.csv",
+      mimeType: "text/csv",
+    });
+
+    const markdownAsset = extraction.assets.find((asset) =>
+      asset.mimeType === "text/markdown" &&
+      typeof asset.metadata === "object" &&
+      asset.metadata !== null &&
+      "parser" in asset.metadata,
+    );
+
+    expect(extraction.extractionStatus).toBe("extracted");
+    expect(markdownAsset?.extractedText).toContain("| commodity | price |");
+    expect(markdownAsset?.metadata).toMatchObject({
+      parser: "markitdown-style",
+      shadowOnly: true,
+      status: "ok",
+    });
+  });
+
+  it("keeps DOCX normalization shadow-only and metadata-bound without extra dependencies", async () => {
+    const extraction = await extractMaterialContent({
+      bytes: Buffer.from("fake-docx"),
+      filename: "weekly-comment.docx",
+      mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    });
+
+    const markdownAsset = extraction.assets.find((asset) => asset.mimeType === "text/markdown");
+
+    expect(extraction.extractionStatus).toBe("partial");
+    expect(markdownAsset?.extractedText).toContain("Binary Office parsing is not enabled");
+    expect(markdownAsset?.metadata).toMatchObject({
+      parser: "markitdown-style",
+      shadowOnly: true,
+      status: "thin",
+      warnings: ["office_binary_parsing_not_enabled"],
+    });
+  });
+
+  it("adds Crawl4AI-style shadow markdown for accepted HTML source links", async () => {
+    const extraction = await extractMaterialContent({
+      bytes: Buffer.from(`
+        <html>
+          <head><title>Ukraine corn market</title></head>
+          <body>
+            <h1>Ukraine corn exports</h1>
+            <p>Ukraine corn export bids moved higher this week as port demand improved and logistics stayed active.</p>
+            <p>Traders reported firmer CPT Odesa demand for nearby shipment windows.</p>
+          </body>
+        </html>
+      `),
+      filename: "market.html",
+      mimeType: "text/html",
+      sourceUrl: "https://example.com/market",
+    });
+
+    const crawlAsset = extraction.assets.find((asset) =>
+      asset.mimeType === "text/markdown" &&
+      typeof asset.metadata === "object" &&
+      asset.metadata !== null &&
+      "parser" in asset.metadata &&
+      asset.metadata.parser === "crawl4ai-style",
+    );
+
+    expect(extraction.extractionStatus).toBe("extracted");
+    expect(crawlAsset?.extractedText).toContain("# Ukraine corn exports");
+    expect(crawlAsset?.metadata).toMatchObject({
+      parser: "crawl4ai-style",
+      shadowOnly: true,
+      sourceUrl: "https://example.com/market",
+    });
+  });
+
   it("adds OpenAI vision summaries to visual assets when enabled", async () => {
     process.env.OPENAI_API_KEY = "sk-test";
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
@@ -270,6 +346,7 @@ describe("media hub report prompts", () => {
         extractedTables: [],
         extractedText: "Wheat export tender and corn weather update.",
         extractionStatus: "partial",
+        hashtags: ["weekly"],
         id: "material-1",
         kind: "weekly_material",
         originalFilename: "weekly.pdf",
@@ -279,6 +356,7 @@ describe("media hub report prompts", () => {
         sourceRegistrationStatus: "none",
         sourceType: "telegram_file",
         summary: "Wheat export tender and corn weather update.",
+        telegramFromId: null,
         tenantId: "1d3x",
         usedInReportId: null,
       }],
