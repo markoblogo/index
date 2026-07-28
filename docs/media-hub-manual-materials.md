@@ -137,6 +137,12 @@ First-party corporate sources are connected to the Context monitoring layer with
 - `mn7r_bluesky` - MN7R Bluesky, `https://bsky.app/profile/mn7r.bsky.social`, public AT Protocol AppView adapter.
 - `corporate_telegram_group_1865902381` - Corporate Telegram Group, raw peer id `1865902381`.
 
+Recurring public source families used by scheduled Context ingestion are kept in
+`src/lib/context-recurring-sources.ts`. The registry is intentionally small and
+allowlisted. It powers the admin source coverage/gap summary and source-family
+fixtures, while scheduled ingestion still reuses the existing Context material
+pipeline.
+
 Routing:
 
 - `#ssi` routes Telegram/manual material to SSI (`spike-ua`).

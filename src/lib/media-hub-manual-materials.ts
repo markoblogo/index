@@ -5,6 +5,7 @@ import {
   extractAcceptedWebPageWithCrawl4AiStyle,
   extractManualFileWithMarkitdownStyle,
 } from "@/lib/context-extraction-adapters";
+import { CONTEXT_RECURRING_SOURCE_FAMILIES } from "@/lib/context-recurring-sources";
 import { db, hasDatabaseUrl } from "@/lib/db";
 import { fetchWithTimeout as fetchExternalWithTimeout } from "@/lib/fetch-timeout";
 import type { MediaHubPublicationKind } from "@/lib/media-hub-publication-scheduler";
@@ -179,27 +180,6 @@ const ALLOWED_MIME_TYPES = new Set([
   "text/markdown",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ]);
-const SCHEDULED_SOURCES = [
-  {
-    id: "zaner_netags_grain_oilseed",
-    sourceType: "scheduled_html" as const,
-    tenantIds: ["1d3x", "spike-ua"] as const,
-    url: "https://www.zaner.com/3.0/market_information/ht_stream.asp?page=netags",
-  },
-  {
-    id: "zaner_netags_grain_oilseed_pdf",
-    sourceType: "scheduled_pdf" as const,
-    tenantIds: ["1d3x", "spike-ua"] as const,
-    url: "https://www.zaner.com/hightower/netags.pdf",
-  },
-  {
-    id: "tbc_edible_oils_daily",
-    sourceType: "scheduled_pdf" as const,
-    tenantIds: ["1d3x", "spike-ua"] as const,
-    url: "https://tbcingr.com/reports/archive/edible-oils/Edible%20oils%20daily.pdf",
-  },
-];
-
 export function parseMediaHubMaterialHashtags(text = "") {
   const tags = [...text.matchAll(/(^|\s)#([a-zA-Z0-9_]+)/g)].map((match) =>
     match[2].toLowerCase(),
@@ -391,7 +371,7 @@ export async function ingestScheduledMediaHubSources() {
   }
 
   const results: MaterialIngestResult[] = [];
-  for (const source of SCHEDULED_SOURCES) {
+  for (const source of CONTEXT_RECURRING_SOURCE_FAMILIES) {
     for (const tenantId of source.tenantIds) {
       try {
         results.push(await ingestMediaHubLinkMaterial({
@@ -409,7 +389,7 @@ export async function ingestScheduledMediaHubSources() {
 
   return {
     results,
-    sourceCount: SCHEDULED_SOURCES.length,
+    sourceCount: CONTEXT_RECURRING_SOURCE_FAMILIES.length,
     status: "processed" as const,
   };
 }

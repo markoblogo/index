@@ -1,4 +1,5 @@
 import { revalidatePath } from "next/cache";
+import { buildContextSourceOperatorSummary } from "@/lib/context-recurring-sources";
 import { requireDemoRole } from "@/lib/demo-auth";
 import {
   ingestMediaHubFileMaterial,
@@ -14,6 +15,7 @@ export const revalidate = 0;
 export default async function AdminMediaHubMaterialsPage() {
   await requireDemoRole("admin");
   const materials = await listRecentMediaHubManualMaterials();
+  const sourceSummary = buildContextSourceOperatorSummary(materials);
 
   async function ingestAction(formData: FormData) {
     "use server";
@@ -132,6 +134,35 @@ export default async function AdminMediaHubMaterialsPage() {
 
       <section className="rounded-[1.5rem] border border-white/12 bg-[#050505] p-5">
         <h2 className="text-xl font-semibold text-white">Recent materials</h2>
+        <div className="mt-4 grid gap-3 md:grid-cols-5">
+          <SummaryCard label="Expected" value={sourceSummary.totalExpected} />
+          <SummaryCard label="Ready" value={sourceSummary.readyCount} />
+          <SummaryCard label="Review" value={sourceSummary.reviewCount} />
+          <SummaryCard label="Missing" value={sourceSummary.missingCount} />
+          <SummaryCard label="OK markdown" value={sourceSummary.okMarkdownCount} />
+        </div>
+        <div className="mt-4 grid gap-2">
+          {sourceSummary.families.map((family) => (
+            <div className="rounded-xl border border-white/10 bg-white/[0.025] p-3" key={family.familyId}>
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-white/76">
+                {family.label}
+              </p>
+              <div className="mt-2 grid gap-2 md:grid-cols-2">
+                {family.rows.map((row) => (
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-white/56" key={row.tenantId}>
+                    <span className="font-bold uppercase tracking-[0.12em] text-white/76">{row.tenantId}</span>
+                    <span className={getSourceStatusBadgeClass(row.status)}>{row.status}</span>
+                    <span>markdown: {row.okMarkdown ? "yes" : "no"}</span>
+                    <span>{row.latestReceivedAt ? formatMaterialDate(row.latestReceivedAt) : "not received"}</span>
+                    {row.warnings.length > 0 ? (
+                      <span className="text-amber-200/78">{row.warnings.slice(0, 2).join(", ")}</span>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
         <div className="mt-4 grid gap-3">
           {materials.map((material) => (
             <article
@@ -262,6 +293,15 @@ function formatBytes(value: number) {
   return `${value} B`;
 }
 
+function SummaryCard({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/[0.025] p-3">
+      <p className="text-[0.65rem] font-bold uppercase tracking-[0.14em] text-white/42">{label}</p>
+      <p className="mt-1 text-2xl font-black text-white">{value}</p>
+    </div>
+  );
+}
+
 function getReceiptBadgeClass(status: "ready" | "review" | "blocked") {
   if (status === "ready") {
     return "rounded-full bg-uga-green px-2 py-0.5 text-black";
@@ -270,4 +310,17 @@ function getReceiptBadgeClass(status: "ready" | "review" | "blocked") {
     return "rounded-full bg-red-500/20 px-2 py-0.5 text-red-100";
   }
   return "rounded-full bg-amber-400/20 px-2 py-0.5 text-amber-100";
+}
+
+function getSourceStatusBadgeClass(status: "ready" | "review" | "blocked" | "missing") {
+  if (status === "ready") {
+    return "rounded-full bg-uga-green px-2 py-0.5 font-bold uppercase tracking-[0.12em] text-black";
+  }
+  if (status === "blocked") {
+    return "rounded-full bg-red-500/20 px-2 py-0.5 font-bold uppercase tracking-[0.12em] text-red-100";
+  }
+  if (status === "missing") {
+    return "rounded-full bg-white/10 px-2 py-0.5 font-bold uppercase tracking-[0.12em] text-white/52";
+  }
+  return "rounded-full bg-amber-400/20 px-2 py-0.5 font-bold uppercase tracking-[0.12em] text-amber-100";
 }

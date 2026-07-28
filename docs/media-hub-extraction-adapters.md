@@ -190,15 +190,22 @@ First-wave implementation status:
 
 ### Later wave
 
-- Crawlee-style TypeScript worker for recurring allowlisted public sources.
-- Source-specific extraction fixtures for recurring SSI/1D3X source families.
-- Dedicated operator view for source gaps and claim support beyond the current
-  manual-material receipts.
+- implemented: Crawlee-style bounded source-family registry for recurring
+  allowlisted public sources in `src/lib/context-recurring-sources.ts`. It
+  reuses existing Context ingestion instead of adding Crawlee as a dependency.
+- implemented: source-specific fixtures for the current SSI/1D3X recurring
+  source families.
+- implemented: operator source coverage/gap summary in
+  `/admin/media-hub/materials`.
 - AutoScraper-like pattern learning only for stable public tables after manual
   review proves the selector pattern.
 
-Later-wave work should start only after the shadow receipts show repeated value
-for SSI/1D3X reports. It requires a separate implementation decision and tests.
+Remaining later-wave work requires a separate implementation decision:
+
+- real Crawlee package/worker only if source volume exceeds the current bounded
+  registry;
+- AutoScraper-like pattern learning only for stable public tables after manual
+  review proves the selector pattern.
 
 ### Do not take
 
