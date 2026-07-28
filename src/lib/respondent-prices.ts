@@ -232,10 +232,22 @@ export function resolveCommodityConfig(
   commodities = getActiveIndexConfig().commodities,
 ) {
   const normalized = normalizeCode(indexCode);
+  const sortedCommodities = [...commodities].sort(
+    (first, second) => second.dbCode.length - first.dbCode.length,
+  );
+  const exactMatch = sortedCommodities.find((commodity) =>
+    [
+      commodity.dbCode,
+      commodity.code,
+      commodity.id,
+      ...getAdditionalAliases(commodity),
+    ]
+      .map(normalizeCode)
+      .some((alias) => normalized === alias),
+  );
 
-  return [...commodities]
-    .sort((first, second) => second.dbCode.length - first.dbCode.length)
-    .find((commodity) => {
+  return exactMatch ??
+    sortedCommodities.find((commodity) => {
       const aliases = [
         commodity.dbCode,
         commodity.code,
