@@ -91,6 +91,7 @@ export type MediaHubManualMaterialAssetDigest = {
   assetType: string;
   byteSize: number | null;
   confidence: number | null;
+  createdAt: Date;
   extractedText: string;
   id: string;
   metadata: unknown;
@@ -100,8 +101,24 @@ export type MediaHubManualMaterialAssetDigest = {
   visualSummary: string;
 };
 
+export type MediaHubMaterialExtractionReceipt = {
+  adapter: "manual_file" | "web" | "unknown";
+  contentHash?: string;
+  extractedAt: Date;
+  freshness: "current_window" | "recent" | "stale" | "unknown";
+  hasMarkdown: boolean;
+  materialId: string;
+  operatorReviewStatus: "ready" | "review" | "blocked";
+  runtime: string;
+  sourceId?: string;
+  sourceUrl?: string;
+  status: "ok" | "thin" | "blocked" | "unsupported" | "error" | "unknown";
+  warnings: string[];
+};
+
 export type MediaHubManualMaterialDigest = {
   assets: MediaHubManualMaterialAssetDigest[];
+  extractionReceipts: MediaHubMaterialExtractionReceipt[];
   extractedFacts: unknown;
   extractedTables: unknown;
   extractedText: string;
@@ -483,6 +500,7 @@ export async function listRecentMediaHubManualMaterialsForChat(chatId: string) {
 function toMaterialDigest(row: MaterialRowWithAssets, textLimit = MAX_EXTRACTED_TEXT_CHARS): MediaHubManualMaterialDigest {
   return {
     assets: row.assets,
+    extractionReceipts: buildExtractionReceipts(row),
     extractedFacts: row.extractedFactsJson,
     extractedTables: row.extractedTablesJson,
     extractedText: (row.extractedText ?? "").slice(0, textLimit),
@@ -501,6 +519,83 @@ function toMaterialDigest(row: MaterialRowWithAssets, textLimit = MAX_EXTRACTED_
     tenantId: row.tenantId,
     usedInReportId: row.usedInReportId,
   };
+}
+
+function buildExtractionReceipts(row: MaterialRowWithAssets): MediaHubMaterialExtractionReceipt[] {
+  const receipts = row.assets
+    .map((asset) => buildExtractionReceiptFromAsset(row, asset))
+    .filter((receipt): receipt is MediaHubMaterialExtractionReceipt => Boolean(receipt));
+  if (receipts.length > 0) {
+    return receipts;
+  }
+  return [{
+    adapter: "unknown",
+    extractedAt: row.updatedAt,
+    freshness: "unknown",
+    hasMarkdown: false,
+    materialId: row.id,
+    operatorReviewStatus: mapOperatorReviewStatus(row.extractionStatus),
+    runtime: row.sourceType,
+    status: normalizeExtractionReceiptStatus(row.extractionStatus),
+    warnings: [],
+  }];
+}
+
+function buildExtractionReceiptFromAsset(
+  row: MaterialRowWithAssets,
+  asset: MediaHubManualMaterialAssetDigest,
+): MediaHubMaterialExtractionReceipt | null {
+  const metadata = asRecord(asset.metadata);
+  const parser = getString(metadata.parser);
+  if (parser !== "markitdown-style" && parser !== "crawl4ai-style") {
+    return null;
+  }
+  const status = normalizeExtractionReceiptStatus(getString(metadata.status));
+  return {
+    adapter: getString(metadata.adapter) === "web" ? "web" : "manual_file",
+    contentHash: getString(metadata.contentHash),
+    extractedAt: asset.createdAt,
+    freshness: "unknown",
+    hasMarkdown: Boolean(asset.extractedText.trim()),
+    materialId: row.id,
+    operatorReviewStatus: mapOperatorReviewStatus(status),
+    runtime: getString(metadata.runtime) || parser,
+    sourceUrl: getString(metadata.sourceUrl) || row.originalUrl || undefined,
+    status,
+    warnings: getStringArray(metadata.warnings),
+  };
+}
+
+function normalizeExtractionReceiptStatus(value: string): MediaHubMaterialExtractionReceipt["status"] {
+  if (value === "ok" || value === "thin" || value === "blocked" || value === "unsupported" || value === "error") {
+    return value;
+  }
+  if (value === "extracted" || value === "partial" || value === "partial_visual_pending") {
+    return value === "extracted" ? "ok" : "thin";
+  }
+  return "unknown";
+}
+
+function mapOperatorReviewStatus(
+  status: string,
+): MediaHubMaterialExtractionReceipt["operatorReviewStatus"] {
+  if (status === "ok" || status === "extracted") return "ready";
+  if (status === "blocked" || status === "unsupported" || status === "failed") return "blocked";
+  return "review";
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+}
+
+function getString(value: unknown) {
+  return typeof value === "string" ? value : "";
+}
+
+function getStringArray(value: unknown) {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 }
 
 function parseStoredHashtags(value: unknown) {
@@ -531,6 +626,7 @@ async function attachMaterialAssets(rows: MaterialRow[]): Promise<MaterialRowWit
       assetType: asset.assetType,
       byteSize: asset.byteSize,
       confidence: asset.confidence,
+      createdAt: asset.createdAt,
       extractedText: asset.extractedText ?? "",
       id: asset.id,
       metadata: asset.metadataJson,

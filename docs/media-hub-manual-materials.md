@@ -65,6 +65,11 @@ Current pilot:
   MarkItDown-style pass records only shadow normalization metadata.
 - DOCX/XLSX are accepted and stored, but exact binary text/table parsing remains
   metadata-only until a separate dependency decision is approved.
+- The admin materials page shows extraction receipts: adapter, runtime, status,
+  markdown availability, freshness, operator review state and warnings.
+- Report generation may use structured markdown only from `ok` receipts.
+  `thin`, `unsupported`, `blocked` and `error` receipts remain review evidence
+  and are not treated as stronger report input.
 - Shadow normalization never publishes or sends content by itself.
 
 Images and screenshots are accepted as visual evidence. The MVP stores an

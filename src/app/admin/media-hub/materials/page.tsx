@@ -162,6 +162,43 @@ export default async function AdminMediaHubMaterialsPage() {
                   <dd>{material.sourceDomain || material.originalFilename || "n/a"}</dd>
                 </div>
               </dl>
+              {material.extractionReceipts.length > 0 ? (
+                <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                  {material.extractionReceipts.slice(0, 6).map((receipt, index) => (
+                    <div
+                      className="rounded-xl border border-white/10 bg-white/[0.025] p-3 text-xs text-white/56"
+                      key={`${receipt.runtime}-${receipt.adapter}-${index}`}
+                    >
+                      <div className="flex flex-wrap items-center gap-2 font-bold uppercase tracking-[0.12em]">
+                        <span className="text-white/78">{receipt.adapter}</span>
+                        <span className={getReceiptBadgeClass(receipt.operatorReviewStatus)}>
+                          {receipt.operatorReviewStatus}
+                        </span>
+                        <span className="text-white/42">{receipt.status}</span>
+                      </div>
+                      <dl className="mt-2 grid gap-1">
+                        <div className="flex justify-between gap-3">
+                          <dt>Runtime</dt>
+                          <dd className="text-white/76">{receipt.runtime}</dd>
+                        </div>
+                        <div className="flex justify-between gap-3">
+                          <dt>Markdown</dt>
+                          <dd className="text-white/76">{receipt.hasMarkdown ? "yes" : "no"}</dd>
+                        </div>
+                        <div className="flex justify-between gap-3">
+                          <dt>Freshness</dt>
+                          <dd className="text-white/76">{receipt.freshness}</dd>
+                        </div>
+                      </dl>
+                      {receipt.warnings.length > 0 ? (
+                        <p className="mt-2 line-clamp-2 text-[0.7rem] leading-4 text-amber-200/78">
+                          {receipt.warnings.join(", ")}
+                        </p>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              ) : null}
               <p className="mt-2 line-clamp-3 text-sm leading-6 text-white/62">
                 {material.summary || "No extracted summary yet."}
               </p>
@@ -223,4 +260,14 @@ function formatBytes(value: number) {
     return `${Math.round(value / 1024)} KB`;
   }
   return `${value} B`;
+}
+
+function getReceiptBadgeClass(status: "ready" | "review" | "blocked") {
+  if (status === "ready") {
+    return "rounded-full bg-uga-green px-2 py-0.5 text-black";
+  }
+  if (status === "blocked") {
+    return "rounded-full bg-red-500/20 px-2 py-0.5 text-red-100";
+  }
+  return "rounded-full bg-amber-400/20 px-2 py-0.5 text-amber-100";
 }

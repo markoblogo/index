@@ -11,6 +11,7 @@ describe("Context report prompts", () => {
     const manualMaterials: MediaHubManualMaterialDigest[] = [
       {
         assets: [],
+        extractionReceipts: [],
         extractedFacts: null,
         extractedTables: null,
         extractedText: "Telegram note about corn export demand.",
@@ -55,6 +56,118 @@ describe("Context report prompts", () => {
     expect(prompt).toContain("cortex:material:material-1");
     expect(prompt).toContain("mediahub-telegram-materials");
     expect(prompt).toContain("Use the approved Cortex evidence above as the primary context");
+  });
+
+  it("uses only ok structured markdown receipts as prompt evidence", () => {
+    const prompt = buildMediaHubReportPrompt({
+      kind: "weekly",
+      latestData: [],
+      locale: "en",
+      manualMaterials: [
+        {
+          assets: [{
+            assetType: "extracted_text",
+            byteSize: 120,
+            confidence: 0.82,
+            createdAt: new Date("2026-07-06T10:00:00.000Z"),
+            extractedText: "# Corn evidence\n\nUkraine corn CPT Odesa demand improved this week.",
+            id: "asset-ok",
+            metadata: {
+              parser: "markitdown-style",
+              shadowOnly: true,
+              status: "ok",
+            },
+            mimeType: "text/markdown",
+            pageNumber: null,
+            storagePath: null,
+            visualSummary: "",
+          }],
+          extractionReceipts: [{
+            adapter: "manual_file",
+            extractedAt: new Date("2026-07-06T10:00:00.000Z"),
+            freshness: "unknown",
+            hasMarkdown: true,
+            materialId: "material-ok",
+            operatorReviewStatus: "ready",
+            runtime: "markitdown",
+            status: "ok",
+            warnings: [],
+          }],
+          extractedFacts: null,
+          extractedTables: null,
+          extractedText: "Ukraine corn demand.",
+          extractionStatus: "extracted",
+          hashtags: ["weekly"],
+          id: "material-ok",
+          kind: "weekly_material",
+          originalFilename: "corn.md",
+          originalUrl: null,
+          receivedAt: new Date("2026-07-06T10:00:00.000Z"),
+          sourceDomain: null,
+          sourceRegistrationStatus: "material",
+          sourceType: "telegram_file",
+          summary: "Ukraine corn demand.",
+          telegramFromId: null,
+          tenantId: "spike-ua",
+          usedInReportId: null,
+        },
+        {
+          assets: [{
+            assetType: "extracted_text",
+            byteSize: 120,
+            confidence: 0.42,
+            createdAt: new Date("2026-07-06T10:00:00.000Z"),
+            extractedText: "# Thin evidence\n\nThis should not strengthen the prompt.",
+            id: "asset-thin",
+            metadata: {
+              parser: "markitdown-style",
+              shadowOnly: true,
+              status: "thin",
+            },
+            mimeType: "text/markdown",
+            pageNumber: null,
+            storagePath: null,
+            visualSummary: "",
+          }],
+          extractionReceipts: [{
+            adapter: "manual_file",
+            extractedAt: new Date("2026-07-06T10:00:00.000Z"),
+            freshness: "unknown",
+            hasMarkdown: true,
+            materialId: "material-thin",
+            operatorReviewStatus: "review",
+            runtime: "markitdown",
+            status: "thin",
+            warnings: ["office_binary_parsing_not_enabled"],
+          }],
+          extractedFacts: null,
+          extractedTables: null,
+          extractedText: "Thin source metadata.",
+          extractionStatus: "partial",
+          hashtags: ["weekly"],
+          id: "material-thin",
+          kind: "weekly_material",
+          originalFilename: "thin.docx",
+          originalUrl: null,
+          receivedAt: new Date("2026-07-06T10:00:00.000Z"),
+          sourceDomain: null,
+          sourceRegistrationStatus: "material",
+          sourceType: "telegram_file",
+          summary: "",
+          telegramFromId: null,
+          tenantId: "spike-ua",
+          usedInReportId: null,
+        },
+      ],
+      periodEndDate: "2026-07-06",
+      periodStartDate: "2026-06-30",
+      snapshots: [],
+      tenant: "spike",
+    });
+
+    expect(prompt).toContain("Structured markdown evidence from ok extraction receipts");
+    expect(prompt).toContain("Ukraine corn CPT Odesa demand improved this week");
+    expect(prompt).not.toContain("This should not strengthen the prompt");
   });
 
   it("uses an active editorial profile as style-only guidance", () => {

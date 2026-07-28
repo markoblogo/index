@@ -380,6 +380,7 @@ function renderManualMaterials(materials: MediaHubManualMaterialDigest[], kind: 
     ...ranked.slice(0, kind === "daily" ? 24 : kind === "weekly" ? 44 : 70).map(({ material }, index) =>
       `${index + 1}. ${material.sourceDomain || material.originalFilename || material.originalUrl || material.id} | ${formatMaterialEvidence(material)}`,
     ),
+    ...renderOkMarkdownEvidence(ranked.map(({ material }) => material), kind),
     ...renderVisualEvidence(ranked.map(({ material }) => material)),
   ].join("\n");
 }
@@ -420,6 +421,44 @@ function renderVisualEvidence(materials: MediaHubManualMaterialDigest[]) {
   return visualLines.length > 0
     ? ["Visual/file evidence for admin review and report grounding:", ...visualLines]
     : [];
+}
+
+function renderOkMarkdownEvidence(materials: MediaHubManualMaterialDigest[], kind: ReportKind) {
+  const limit = kind === "daily" ? 6 : kind === "weekly" ? 12 : 18;
+  const markdownLines = materials
+    .flatMap((material) =>
+      material.assets
+        .filter((asset) => asset.mimeType === "text/markdown")
+        .filter((asset) => isOkExtractionAsset(asset.metadata))
+        .filter((asset) => asset.extractedText.trim())
+        .map((asset) => {
+          const label = material.sourceDomain || material.originalFilename || material.originalUrl || material.id;
+          return {
+            line: `Structured markdown evidence: ${label} | ${asset.extractedText.replace(/\s+/g, " ").slice(0, 900)}`,
+            score: scoreEvidenceText(`${label} ${asset.extractedText}`),
+          };
+        }),
+    )
+    .filter((item) => item.score > 0)
+    .sort((first, second) => second.score - first.score)
+    .map((item) => item.line)
+    .slice(0, limit);
+
+  return markdownLines.length > 0
+    ? ["Structured markdown evidence from ok extraction receipts:", ...markdownLines]
+    : [];
+}
+
+function isOkExtractionAsset(metadata: unknown) {
+  return Boolean(
+    metadata &&
+    typeof metadata === "object" &&
+    !Array.isArray(metadata) &&
+    "status" in metadata &&
+    metadata.status === "ok" &&
+    "shadowOnly" in metadata &&
+    metadata.shadowOnly === true,
+  );
 }
 
 function renderHistoricalContext(items: string[]) {

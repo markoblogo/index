@@ -94,6 +94,8 @@ Shared capabilities:
 - bounded Context extraction adapter contract for Telegram/RSS/manual files,
   Obscura/Playwright and shadow markdown extraction pilots without adopting a
   heavy scraper platform or anti-bot runtime;
+- Context manual-material receipts for provenance, freshness, operator review
+  state and safe prompt use of only `ok` structured markdown evidence;
 - bounded situational-monitoring contracts for Context, SSI, 1D3X and Cortex
   review surfaces without adopting a heavy map-first runtime;
 - Vercel cron endpoints for scheduled imports, notifications and publication.

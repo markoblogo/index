@@ -180,14 +180,20 @@ First-wave implementation status:
   `src/lib/media-hub-manual-materials.ts`;
 - implemented: accepted HTML source-link shadow receipts in
   `src/lib/media-hub-manual-materials.ts`;
+- implemented: derived freshness/provenance/operator-review receipts in manual
+  material digests and `/admin/media-hub/materials`;
+- implemented: report prompts may use only `ok` structured markdown receipts;
+  `thin`, `blocked`, `unsupported` and `error` receipts stay visible for
+  operator review but do not strengthen report prompts;
 - not implemented by design: external MarkItDown/Crawl4AI packages, autonomous
   crawling, publishing integration or channel sending.
 
 ### Later wave
 
 - Crawlee-style TypeScript worker for recurring allowlisted public sources.
-- Source-specific extraction fixtures and freshness receipts.
-- Operator view showing extraction quality, source gaps and claim support.
+- Source-specific extraction fixtures for recurring SSI/1D3X source families.
+- Dedicated operator view for source gaps and claim support beyond the current
+  manual-material receipts.
 - AutoScraper-like pattern learning only for stable public tables after manual
   review proves the selector pattern.
 
