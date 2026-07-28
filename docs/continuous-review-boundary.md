@@ -45,6 +45,23 @@ Expected role:
 - fix-or-reject with reason;
 - still run `docs/media-hub-review-checklist.md`, tests, and router review.
 
+## Example local runbook
+
+Current diff:
+
+```bash
+ocr review --audience agent \
+  -b "Index/MediaHub/Cortex code. Check publish/send boundaries, scheduler and relay logic, auth/protected-public seams, and internal Cortex context-pack routes. Ignore docs-only wording."
+```
+
+Branch range:
+
+```bash
+ocr review --audience agent \
+  -b "Index/MediaHub/Cortex code. Check publish/send boundaries, scheduler and relay logic, auth/protected-public seams, and internal Cortex context-pack routes. Ignore docs-only wording." \
+  --from main --to <branch>
+```
+
 Skip it for:
 
 - docs-only edits;
