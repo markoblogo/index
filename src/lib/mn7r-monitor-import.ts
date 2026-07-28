@@ -507,7 +507,9 @@ function normalizePayload(payload: Mn7rPayload): NormalizedMn7rPayload {
       missingIndexCodes: diagnostics
         .filter(
           (diagnostic) =>
-            diagnostic.matchedIndexCode && !diagnostic.passedDeliveryWindow,
+            diagnostic.matchedIndexCode &&
+            resolveCommodityConfig(diagnostic.matchedIndexCode) &&
+            !diagnostic.passedDeliveryWindow,
         )
         .map((diagnostic) => diagnostic.matchedIndexCode!),
       positions: payload.positions.filter(

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { isCronRequestAuthorized } from "@/lib/cron-auth";
 import {
   formatDateKyiv,
+  getMn7rMonitorImportAudit,
   importMn7rMonitorRespondentPrices,
   isKyivMn7rImportHour,
 } from "@/lib/mn7r-monitor-import";
@@ -34,6 +35,16 @@ export async function GET(request: Request) {
 
   const date = url.searchParams.get("date") ?? formatDateKyiv();
   const result = await importMn7rMonitorRespondentPrices(date);
+  if (url.searchParams.get("diagnostics") === "1") {
+    const audit = await getMn7rMonitorImportAudit(date);
+
+    return NextResponse.json({
+      ...result,
+      diagnostics: audit?.diagnostics ?? [],
+      generatedAt: audit?.generatedAt ?? null,
+      rawCount: audit?.rawCount ?? null,
+    });
+  }
 
   return NextResponse.json(result);
 }
