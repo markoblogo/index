@@ -14,6 +14,14 @@ it is code-heavy and agent-written changes can compound across:
 - `pre-push` or `before-pr` branch review is allowed;
 - `post-commit optional` is allowed only as a local developer choice.
 
+Current local helper:
+
+- `Open Code Review` (`ocr`) may be used as the second reviewer on a diff
+  before push or PR;
+- default target is the current working diff or a branch range, not the whole
+  repository;
+- `scan` is reserved for unfamiliar or high-risk files only.
+
 ## Not allowed by default
 
 - no mandatory daemon for every contributor session;
@@ -30,6 +38,12 @@ Use it when touching:
 - scheduler, catch-up, idempotency, or relay logic;
 - internal Cortex artifact/context-pack routes;
 - auth or protected/public boundary code.
+
+Expected role:
+
+- precise local findings with file/line anchors;
+- fix-or-reject with reason;
+- still run `docs/media-hub-review-checklist.md`, tests, and router review.
 
 Skip it for:
 
