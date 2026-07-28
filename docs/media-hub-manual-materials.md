@@ -143,6 +143,11 @@ allowlisted. It powers the admin source coverage/gap summary and source-family
 fixtures, while scheduled ingestion still reuses the existing Context material
 pipeline.
 
+AutoScraper-like pattern profiles for stable allowlisted HTML/table sources are
+kept in `src/lib/context-pattern-learning.ts`. They are deterministic,
+candidate/operator-reviewed profiles, not a generic crawler and not a source
+permission expansion.
+
 Routing:
 
 - `#ssi` routes Telegram/manual material to SSI (`spike-ua`).

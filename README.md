@@ -98,6 +98,8 @@ Shared capabilities:
   state and safe prompt use of only `ok` structured markdown evidence;
 - Context recurring source-family registry for bounded scheduled ingestion,
   fixtures and operator source-gap/claim-support review;
+- candidate AutoScraper-like pattern profiles for stable allowlisted Context
+  tables without adding a generic scraping runtime;
 - bounded situational-monitoring contracts for Context, SSI, 1D3X and Cortex
   review surfaces without adopting a heavy map-first runtime;
 - Vercel cron endpoints for scheduled imports, notifications and publication.

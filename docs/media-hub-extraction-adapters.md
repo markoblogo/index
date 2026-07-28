@@ -203,9 +203,12 @@ First-wave implementation status:
 Remaining later-wave work requires a separate implementation decision:
 
 - real Crawlee package/worker only if source volume exceeds the current bounded
-  registry;
-- AutoScraper-like pattern learning only for stable public tables after manual
-  review proves the selector pattern.
+  registry. A trial install on 2026-07-28 increased production audit exposure
+  with high-severity transitive advisories, so the package is not adopted now;
+- implemented: AutoScraper-like deterministic pattern profiles for stable
+  allowlisted HTML/table sources in `src/lib/context-pattern-learning.ts`.
+  Profiles are candidate/operator-reviewed by default and do not bypass source
+  policy.
 
 ### Do not take
 
