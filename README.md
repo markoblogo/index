@@ -26,6 +26,10 @@ publication, respondent and analytics foundation.
 SPIKE publishes public benchmark snapshots for Ukrainian grain and oilseed spot
 conditions to keep pricing visibility consistent across partner and operator updates.
 
+SPIKE gives the Ukrainian grain and oilseed market a public reference layer that
+makes fragmented spot indications comparable across export, processing and
+border demand contexts.
+
 The Spike public pages now publish daily reference snapshots for selected CPT and
 FCA spot benchmarks from supported respondents.
 
