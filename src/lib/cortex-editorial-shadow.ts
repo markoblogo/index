@@ -119,12 +119,15 @@ type EditorialPostLookupContext = {
 
 type RankedEditorialCandidate = {
   metrics: {
+    hoursFromGeneratedAt: number;
     lexicalOverlap: number;
     numberOverlap: number;
     sentenceOverlap: number;
   };
   post: ShadowPost;
 };
+
+type TieBreakMode = "number_sentence" | "time_proximity" | null;
 
 let storageReady: Promise<void> | null = null;
 
@@ -439,12 +442,13 @@ export function buildCortexEditorialStructureProfile(input: {
 const MIN_MATCH_SCORE = 0.16;
 const MIN_SCORE_GAP = 0.05;
 const MIN_TIEBREAKER_SIGNAL_GAP = 0.15;
+const MIN_TIME_PROXIMITY_HOURS_GAP = 6;
 
 function getMatchStatus(input: {
   best?: RankedEditorialCandidate;
   candidateCount: number;
   runnerUp?: RankedEditorialCandidate;
-  tieBreakWinner: boolean;
+  tieBreakWinner: TieBreakMode;
 }): CortexEditorialShadowStatus {
   const bestScore = input.best?.metrics.lexicalOverlap;
   const runnerUpScore = input.runnerUp?.metrics.lexicalOverlap;
@@ -467,7 +471,7 @@ function getMatchingReason(input: {
   postLookupContext?: EditorialPostLookupContext;
   runnerUp?: RankedEditorialCandidate;
   status: CortexEditorialShadowStatus;
-  tieBreakWinner: boolean;
+  tieBreakWinner: TieBreakMode;
 }) {
   const { best, candidateCount, postLookupContext, runnerUp, status, tieBreakWinner } = input;
   const bestScore = best?.metrics.lexicalOverlap;
@@ -482,8 +486,11 @@ function getMatchingReason(input: {
     return "Posts exist for spike_brokers, but none passed lexical matching.";
   }
   if (status === "matched") {
-    if (tieBreakWinner && best && runnerUp) {
+    if (tieBreakWinner === "number_sentence" && best && runnerUp) {
       return `Close lexical overlap resolved by numeric/sentence tie-break (${round(best.metrics.lexicalOverlap)} vs ${round(runnerUp.metrics.lexicalOverlap)}; numbers ${round(best.metrics.numberOverlap)} vs ${round(runnerUp.metrics.numberOverlap)}).`;
+    }
+    if (tieBreakWinner === "time_proximity" && best && runnerUp) {
+      return `Close lexical overlap resolved by time-proximity tie-break (${round(best.metrics.lexicalOverlap)} vs ${round(runnerUp.metrics.lexicalOverlap)}; ${round(best.metrics.hoursFromGeneratedAt)}h vs ${round(runnerUp.metrics.hoursFromGeneratedAt)}h after generation).`;
     }
     return `Best lexical overlap ${round(bestScore ?? 0)} is distinct from the next candidate.`;
   }
@@ -518,6 +525,10 @@ function rankEditorialCandidates(input: {
     })
     .map((post) => ({
       metrics: {
+        hoursFromGeneratedAt:
+          (new Date(post.publishedAt).getTime() -
+            new Date(input.generatedAt).getTime()) /
+          3_600_000,
         lexicalOverlap: calculateLexicalOverlap(input.draftText, post.text),
         numberOverlap: calculateSequenceOverlap(
           draftNumbers,
@@ -601,10 +612,10 @@ function resolveCloseScoreWinner(
   best?: RankedEditorialCandidate,
   runnerUp?: RankedEditorialCandidate,
 ) {
-  if (!best || !runnerUp) return false;
-  if (best.metrics.lexicalOverlap < MIN_MATCH_SCORE) return false;
+  if (!best || !runnerUp) return null;
+  if (best.metrics.lexicalOverlap < MIN_MATCH_SCORE) return null;
   if (best.metrics.lexicalOverlap - runnerUp.metrics.lexicalOverlap >= MIN_SCORE_GAP) {
-    return false;
+    return null;
   }
   const numberGap = best.metrics.numberOverlap - runnerUp.metrics.numberOverlap;
   if (
@@ -612,9 +623,17 @@ function resolveCloseScoreWinner(
     numberGap >= MIN_TIEBREAKER_SIGNAL_GAP &&
     best.metrics.sentenceOverlap >= runnerUp.metrics.sentenceOverlap
   ) {
-    return true;
+    return "number_sentence";
   }
-  return false;
+  const timeGap =
+    runnerUp.metrics.hoursFromGeneratedAt - best.metrics.hoursFromGeneratedAt;
+  if (
+    best.metrics.lexicalOverlap > runnerUp.metrics.lexicalOverlap &&
+    timeGap >= MIN_TIME_PROXIMITY_HOURS_GAP
+  ) {
+    return "time_proximity";
+  }
+  return null;
 }
 
 function validDate(value: string) {

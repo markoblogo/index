@@ -122,6 +122,64 @@ describe("Cortex editorial shadow", () => {
     expect(observation.matchingReason).toContain("Candidate overlap is too close");
   });
 
+  it("resolves close lexical scores when best is meaningfully closer to generatedAt", () => {
+    const draftText = "wheat cpt odesa 210 usd per ton stable demand export basis logistics market commentary processing sunflower soy rapeseed corn freight border rail port crush margin protein harvest bid offer farmers domestic global trend signals risk spread weather stocks currency vessel terminal";
+    const observation = buildCortexEditorialShadowObservation({
+      posts: [
+        {
+          id: "one",
+          publishedAt: "2026-07-15T18:00:00.000Z",
+          text: "wheat cpt odesa 210 usd per ton stable demand export basis logistics market commentary processing sunflower soy rapeseed corn freight border rail port crush margin protein harvest bid offer farmers domestic global trend signals risk spread weather stocks currency vessel terminal",
+          url: "https://t.me/spike_brokers/1",
+        },
+        {
+          id: "two",
+          publishedAt: "2026-07-16T18:30:00.000Z",
+          text: "wheat cpt odesa 210 usd per ton stable demand export basis logistics market commentary processing sunflower soy rapeseed corn freight border rail port crush margin protein harvest bid offer farmers domestic global trend signals risk spread weather stocks currency vessel",
+          url: "https://t.me/spike_brokers/2",
+        },
+      ],
+      report: {
+        candidate: "original",
+        createdAt: "2026-07-15T17:00:00.000Z",
+        draftText,
+        id: "report-daily-8",
+        kind: "daily",
+      },
+    });
+    expect(observation.status).toBe("matched");
+    expect(observation.editorialPost?.url).toBe("https://t.me/spike_brokers/1");
+    expect(observation.matchingReason).toContain("time-proximity tie-break");
+  });
+
+  it("does not use time-proximity tie-break for near-duplicate minute-level posts", () => {
+    const observation = buildCortexEditorialShadowObservation({
+      posts: [
+        {
+          id: "one",
+          publishedAt: "2026-07-15T18:00:00.000Z",
+          text: "Wheat CPT Odesa 210 USD per ton stable demand export basis market",
+          url: "https://t.me/spike_brokers/1",
+        },
+        {
+          id: "two",
+          publishedAt: "2026-07-15T18:02:00.000Z",
+          text: "Wheat CPT Odesa 210 USD per ton stable demand export basis port",
+          url: "https://t.me/spike_brokers/2",
+        },
+      ],
+      report: {
+        candidate: "original",
+        createdAt: "2026-07-15T17:00:00.000Z",
+        draftText: "Wheat CPT Odesa 210 USD per ton stable demand export basis",
+        id: "report-daily-9",
+        kind: "daily",
+      },
+    });
+    expect(observation.status).toBe("ambiguous");
+    expect(observation.matchingReason).toContain("Candidate overlap is too close");
+  });
+
   it("clamps bounded internal scans", () => {
     expect(normalizeCortexEditorialShadowListLimit(undefined)).toBe(14);
     expect(normalizeCortexEditorialShadowListLimit(0)).toBe(1);
