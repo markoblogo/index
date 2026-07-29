@@ -117,7 +117,51 @@ describe("buildAutoPublishPlan", () => {
       ],
     });
 
-    expect(plan.has("corn-fca-chop")).toBe(false);
+    expect(plan.get("corn-fca-chop")).toMatchObject({
+      carriedForwardFromPreviousPublished: true,
+      excludedSubmissions: [{ id: "bad-submission", exclusionReason: "previous_day_5pct_deviation" }],
+      rawCount: 1,
+      usedCount: 0,
+      value: 222,
+    });
+  });
+
+  it("carries forward a previous published value when a configured position has no daily submissions", () => {
+    const plan = buildAutoPublishPlan({
+      basisByCommodityId: new Map([
+        ["corn-cpt-odesa", "basis-port"],
+        ["soy-fca-chop", "basis-chop"],
+      ]),
+      previousPublishedByCommodityId: new Map([
+        ["corn-cpt-odesa", 210],
+        ["soy-fca-chop", 470],
+      ]),
+      submissions: [
+        {
+          id: "submission-1",
+          commodityId: "corn-cpt-odesa",
+          deliveryBasisId: "basis-port",
+          price: 211,
+          respondentId: "partner-1",
+          source: "respondent",
+          status: "submitted",
+          updatedAt: new Date("2026-07-29T14:05:00.000Z"),
+        },
+      ],
+    });
+
+    expect(plan.get("corn-cpt-odesa")).toMatchObject({
+      rawCount: 1,
+      usedCount: 1,
+      value: 211,
+    });
+    expect(plan.get("corn-cpt-odesa")?.carriedForwardFromPreviousPublished).toBeUndefined();
+    expect(plan.get("soy-fca-chop")).toMatchObject({
+      carriedForwardFromPreviousPublished: true,
+      rawCount: 0,
+      usedCount: 0,
+      value: 470,
+    });
   });
 
   it("keeps valid values and records previous-day exclusions in the plan", () => {

@@ -34,6 +34,7 @@ export type AutoPublishSubmission = {
 const TELEGRAM_DELIVERY_TIMEOUT_MS = 15_000;
 
 export type AutoPublishPlanItem = {
+  carriedForwardFromPreviousPublished?: boolean;
   excludedSubmissions: Array<AutoPublishSubmission & {
     deviationPct: number;
     exclusionReason: "previous_day_5pct_deviation" | "outside_2pct_median_band";
@@ -844,7 +845,7 @@ export function buildAutoPublishPlan({
   date?: string;
   previousPublishedByCommodityId?: Map<string, number>;
   submissions: AutoPublishSubmission[];
-}) {
+}): Map<string, AutoPublishPlanItem> {
   const selectedByCommodityAndRespondent = new Map<string, AutoPublishSubmission>();
 
   for (const submission of submissions) {
@@ -876,8 +877,8 @@ export function buildAutoPublishPlan({
     byCommodity.set(submission.commodityId, current);
   }
 
-  return new Map(
-    [...byCommodity.entries()].map(([commodityId, commoditySubmissions]) => {
+  const planEntries = [...basisByCommodityId.keys()].map((commodityId): [string, AutoPublishPlanItem] | null => {
+      const commoditySubmissions = byCommodity.get(commodityId) ?? [];
       const previousPublished = previousPublishedByCommodityId.get(commodityId) ?? null;
       const previousDayExcludedSubmissions = commoditySubmissions
         .filter((submission) => isAutoPublishPreviousDayOutlier(submission.price, previousPublished))
@@ -891,7 +892,13 @@ export function buildAutoPublishPlan({
       );
 
       if (candidateSubmissions.length === 0) {
-        return null;
+        return buildPreviousPublishedFallbackPlanEntry({
+          commodityId,
+          commoditySubmissions,
+          date,
+          previousDayExcludedSubmissions,
+          previousPublished,
+        });
       }
       const calculation = calculateIndexValue({
         calculationMethod: "median_all",
@@ -910,7 +917,13 @@ export function buildAutoPublishPlan({
         calculation.rawValue === null ||
         calculation.median === null
       ) {
-        return null;
+        return buildPreviousPublishedFallbackPlanEntry({
+          commodityId,
+          commoditySubmissions,
+          date,
+          previousDayExcludedSubmissions,
+          previousPublished,
+        });
       }
 
       const medianExcludedByRespondentId = new Map(
@@ -933,21 +946,64 @@ export function buildAutoPublishPlan({
         .map((submission) => submission.updatedAt)
         .sort((first, second) => second.getTime() - first.getTime())[0];
 
+      const planItem: AutoPublishPlanItem = {
+        excludedSubmissions: [...previousDayExcludedSubmissions, ...medianExcludedSubmissions],
+        latestUpdatedAt,
+        median: calculation.median,
+        rawCount: commoditySubmissions.length,
+        rawValue: calculation.rawValue,
+        selectedSubmissions,
+        usedCount: calculation.usedCount,
+        value: calculation.value,
+      };
+
       return [
         commodityId,
-        {
-          excludedSubmissions: [...previousDayExcludedSubmissions, ...medianExcludedSubmissions],
-          latestUpdatedAt,
-          median: calculation.median,
-          rawCount: commoditySubmissions.length,
-          rawValue: calculation.rawValue,
-          selectedSubmissions,
-          usedCount: calculation.usedCount,
-          value: calculation.value,
-        },
-      ] as const;
-    }).filter((entry): entry is NonNullable<typeof entry> => Boolean(entry)),
+        planItem,
+      ];
+    }).filter((entry): entry is [string, AutoPublishPlanItem] => Boolean(entry));
+  const plan = new Map<string, AutoPublishPlanItem>(
+    planEntries,
   );
+
+  return plan;
+}
+
+function buildPreviousPublishedFallbackPlanEntry({
+  commodityId,
+  commoditySubmissions,
+  date,
+  previousDayExcludedSubmissions,
+  previousPublished,
+}: {
+  commodityId: string;
+  commoditySubmissions: AutoPublishSubmission[];
+  date: string;
+  previousDayExcludedSubmissions: AutoPublishPlanItem["excludedSubmissions"];
+  previousPublished: number | null;
+}): [string, AutoPublishPlanItem] | null {
+  if (previousPublished === null || previousPublished <= 0) {
+    return null;
+  }
+  const latestUpdatedAt = commoditySubmissions
+    .map((submission) => submission.updatedAt)
+    .sort((first, second) => second.getTime() - first.getTime())[0] ??
+    new Date(`${date}T00:00:00.000Z`);
+
+  return [
+    commodityId,
+    {
+      carriedForwardFromPreviousPublished: true,
+      excludedSubmissions: previousDayExcludedSubmissions,
+      latestUpdatedAt,
+      median: previousPublished,
+      rawCount: commoditySubmissions.length,
+      rawValue: previousPublished,
+      selectedSubmissions: [],
+      usedCount: 0,
+      value: previousPublished,
+    },
+  ];
 }
 
 export function selectAutoPublishCommodityIds({
