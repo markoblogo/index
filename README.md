@@ -29,6 +29,9 @@ conditions to keep pricing visibility consistent across partner and operator upd
 The Spike public pages now publish daily reference snapshots for selected CPT and
 FCA spot benchmarks from supported respondents.
 
+The public SPIKE homepage also switches between export, processing and border
+basis views across CPT Port, CPT parity Odesa and FCA Chop categories.
+
 ## System Map
 
 ```mermaid
