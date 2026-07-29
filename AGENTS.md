@@ -103,5 +103,9 @@ Research pilot (find-partners, non-production): `docs/pilots/find-partners/mock-
 - This repo is one of the few allowed places for optional continuous code review because workflow/auth/runtime changes can compound quickly.
 - Allowed: manual runs, pre-push review, and optional post-commit local review.
 - Current local helper: `Open Code Review` (`ocr`) as a second reviewer on the diff before push/PR.
+- Optional local security helper: `codex-security` as a second reviewer for automation routes, publishing flows, backend/runtime scripts, retrieval/runtime logic, auth, secrets handling, and boundary-sensitive changes.
+- Skip `codex-security` for content-only, editorial-only, catalog-only, or visual/UI-only diffs.
+- It stays advisory and local: no auto-fix, no autonomous PR comments, no new blocking gate, and no replacement for tests/router review/owner approval.
+- Typical local run: `npx codex-security scan .`
 - Not allowed as default policy: global daemon requirement, automatic PR comments, or auto-fix as a substitute for checklist/tests/router review.
 - Reference: `docs/continuous-review-boundary.md`.
