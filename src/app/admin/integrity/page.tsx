@@ -135,12 +135,30 @@ export default async function IntegrityPage({ searchParams }: IntegrityPageProps
 
 type ReasonKey = CortexEditorialMatchDiagnosticsHistoryPoint["reasons"][number]["reason"];
 
-const reasonCardsConfig: Array<{ label: string; reason: ReasonKey }> = [
-  { label: "Unknown reason", reason: "unknown_reason" },
-  { label: "Ambiguous competing posts", reason: "ambiguous_competing_posts" },
-  { label: "Low lexical overlap", reason: "low_lexical_overlap" },
-  { label: "Low-overlap single candidate", reason: "low_overlap_single_candidate" },
-  { label: "Awaiting editorial", reason: "awaiting_editorial" },
+const reasonCardsConfig: Array<{ label: string; reasons: ReasonKey[] }> = [
+  { label: "Awaiting: no posts", reasons: ["awaiting_no_posts"] },
+  {
+    label: "Awaiting: outside window",
+    reasons: ["awaiting_outside_editorial_window"],
+  },
+  {
+    label: "Awaiting: no lexical match",
+    reasons: ["awaiting_no_lexical_match", "awaiting_editorial"],
+  },
+  {
+    label: "Ambiguous: close scores",
+    reasons: ["ambiguous_close_scores", "ambiguous_competing_posts"],
+  },
+  {
+    label: "Ambiguous: low overlap",
+    reasons: ["ambiguous_multi_candidate_low_overlap"],
+  },
+  { label: "Low lexical overlap", reasons: ["low_lexical_overlap"] },
+  {
+    label: "Low-overlap single candidate",
+    reasons: ["low_overlap_single_candidate"],
+  },
+  { label: "Unknown reason", reasons: ["unknown_reason"] },
 ];
 
 function MatchDiagnosticsPanel({ points }: { points: CortexEditorialMatchDiagnosticsHistoryPoint[] }) {
@@ -161,7 +179,7 @@ function MatchDiagnosticsPanel({ points }: { points: CortexEditorialMatchDiagnos
       </div>
       <div className="grid gap-2 text-sm md:grid-cols-3">
         {reasonCardsConfig.map((item) => (
-          <ReasonCard key={item.reason} current={latest} previous={previous} reason={item.reason} label={item.label} />
+          <ReasonCard key={item.label} current={latest} previous={previous} reasons={item.reasons} label={item.label} />
         ))}
       </div>
       <div className="overflow-hidden rounded-[1rem] border border-black/10">
@@ -177,11 +195,6 @@ function MatchDiagnosticsPanel({ points }: { points: CortexEditorialMatchDiagnos
           </thead>
           <tbody>
             {points.map((item) => {
-              const rowUnknown = item.reasons.find((reason) => reason.reason === "unknown_reason")?.count ?? 0;
-              const rowLowLexical = item.reasons.find((reason) => reason.reason === "low_lexical_overlap")?.count ?? 0;
-              const rowSingle = item.reasons.find((reason) => reason.reason === "low_overlap_single_candidate")?.count ?? 0;
-              const rowAmbiguous = item.reasons.find((reason) => reason.reason === "ambiguous_competing_posts")?.count ?? 0;
-              const rowAwaiting = item.reasons.find((reason) => reason.reason === "awaiting_editorial")?.count ?? 0;
               return (
                 <tr className="border-t border-black/10" key={`${item.generatedAt}:${item.kind}`}>
                   <td className="px-3 py-2">{new Date(item.generatedAt).toISOString().slice(0, 10)}</td>
@@ -189,7 +202,7 @@ function MatchDiagnosticsPanel({ points }: { points: CortexEditorialMatchDiagnos
                   <td className="px-3 py-2">{item.coverageRate === null ? "n/a" : `${Math.round(item.coverageRate * 100)}%`}</td>
                   <td className="px-3 py-2">{item.scannedReports} / {item.reportsWithCandidatePair}</td>
                   <td className="px-3 py-2 text-xs leading-6">
-                    A:{rowAwaiting} · AM:{rowAmbiguous} · U:{rowUnknown} · LO:{rowLowLexical + rowSingle}
+                    {summarizeReasons(item)}
                   </td>
                 </tr>
               );
@@ -210,15 +223,15 @@ function ReasonCard({
   current,
   label,
   previous,
-  reason,
+  reasons,
 }: {
   current: CortexEditorialMatchDiagnosticsHistoryPoint;
   label: string;
   previous: CortexEditorialMatchDiagnosticsHistoryPoint | null;
-  reason: ReasonKey;
+  reasons: ReasonKey[];
 }) {
-  const currentCount = current.reasons.find((item) => item.reason === reason)?.count ?? 0;
-  const previousCount = previous ? previous.reasons.find((item) => item.reason === reason)?.count ?? 0 : null;
+  const currentCount = countReasons(current, reasons);
+  const previousCount = previous ? countReasons(previous, reasons) : null;
   return (
     <div className="border border-black/15 bg-uga-mist px-3 py-3">
       <p className="text-xs font-bold uppercase tracking-[0.12em] text-black/55">{label}</p>
@@ -240,6 +253,34 @@ function SummaryPill({ label, value }: { label: string; value: string | number }
 function formatSignedDelta(value: number) {
   const sign = value > 0 ? "+" : "";
   return `${sign}${value}`;
+}
+
+function countReasons(
+  point: CortexEditorialMatchDiagnosticsHistoryPoint,
+  reasons: ReasonKey[],
+) {
+  return reasons.reduce(
+    (sum, reason) =>
+      sum +
+      (point.reasons.find((item) => item.reason === reason)?.count ?? 0),
+    0,
+  );
+}
+
+function summarizeReasons(point: CortexEditorialMatchDiagnosticsHistoryPoint) {
+  const parts = reasonCardsConfig
+    .map((item) => ({
+      count: countReasons(point, item.reasons),
+      label: item.label,
+    }))
+    .filter((item) => item.count > 0)
+    .sort(
+      (left, right) => right.count - left.count || left.label.localeCompare(right.label),
+    )
+    .slice(0, 3)
+    .map((item) => `${item.label}: ${item.count}`);
+
+  return parts.length ? parts.join(" · ") : "No mismatch reasons";
 }
 
 function Metric({ label, tone, value }: { label: string; tone: "critical" | "warning" | "info" | "neutral"; value: number }) {

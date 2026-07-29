@@ -45,7 +45,7 @@ describe("Cortex editorial match diagnostics", () => {
       statusCounts: { ambiguous: 1, awaiting_editorial: 1, matched: 3 },
     });
     expect(diagnostics.reasonCounts).toEqual([
-      { count: 1, reason: "ambiguous_competing_posts" },
+      { count: 1, reason: "ambiguous_close_scores" },
       { count: 1, reason: "awaiting_editorial" },
     ]);
   });
@@ -62,7 +62,7 @@ describe("Cortex editorial match diagnostics", () => {
     });
 
     expect(diagnostics.reasonCounts).toEqual([
-      { count: 1, reason: "ambiguous_competing_posts" },
+      { count: 1, reason: "ambiguous_close_scores" },
       { count: 1, reason: "low_overlap_single_candidate" },
     ]);
     expect(diagnostics.scannedReports).toBe(1);
@@ -99,6 +99,42 @@ describe("Cortex editorial match diagnostics", () => {
     expect(diagnostics.reasonCounts).toEqual([
       { count: 1, reason: "ambiguous_competing_posts" },
       { count: 1, reason: "low_overlap_single_candidate" },
+    ]);
+  });
+
+  it("splits awaiting editorial reasons into actionable subtypes", () => {
+    const diagnostics = buildCortexEditorialMatchDiagnostics({
+      kind: "daily",
+      observations: [
+        observation("waiting", "original", "awaiting_editorial", "No posts found for spike_brokers in the collector table."),
+        observation("window", "original", "awaiting_editorial", "Posts exist for spike_brokers, but none are in the editorial window."),
+        observation("lexical", "original", "awaiting_editorial", "Posts exist for spike_brokers, but none passed lexical matching."),
+      ],
+      policy,
+      tenantId: "spike-ua",
+    });
+
+    expect(diagnostics.reasonCounts).toEqual([
+      { count: 1, reason: "awaiting_no_lexical_match" },
+      { count: 1, reason: "awaiting_no_posts" },
+      { count: 1, reason: "awaiting_outside_editorial_window" },
+    ]);
+  });
+
+  it("splits ambiguous multi-candidate low-overlap from close-score ties", () => {
+    const diagnostics = buildCortexEditorialMatchDiagnostics({
+      kind: "daily",
+      observations: [
+        observation("close", "original", "ambiguous", "Candidate overlap is too close (0.21 vs 0.18).", 2),
+        observation("multi", "original", "ambiguous", "Low lexical overlap for multiple candidates (best: 0.11; runner-up: 0.08).", 2),
+      ],
+      policy,
+      tenantId: "spike-ua",
+    });
+
+    expect(diagnostics.reasonCounts).toEqual([
+      { count: 1, reason: "ambiguous_close_scores" },
+      { count: 1, reason: "ambiguous_multi_candidate_low_overlap" },
     ]);
   });
 });
