@@ -65,6 +65,63 @@ describe("Cortex editorial shadow", () => {
     expect(observation.matchingReason).toContain("Candidate overlap is too close");
   });
 
+  it("resolves close lexical scores when one candidate clearly wins on number overlap", () => {
+    const observation = buildCortexEditorialShadowObservation({
+      posts: [
+        {
+          id: "one",
+          publishedAt: "2026-07-15T18:00:00.000Z",
+          text: "Wheat CPT Odesa 210 USD per ton stable demand rapeseed 580 corn 211 export basis market processing sunflower 716 soy 460 logistics port border rail truck farmer bid crop protein harvest oilseed grain spread crush margin",
+          url: "https://t.me/spike_brokers/1",
+        },
+        {
+          id: "two",
+          publishedAt: "2026-07-15T18:10:00.000Z",
+          text: "Wheat CPT Odesa 210 USD per ton stable demand rapeseed 580 corn 210 export basis market processing sunflower 716 soy 460 logistics port border rail truck farmer bid crop protein harvest oilseed grain spread crush margin",
+          url: "https://t.me/spike_brokers/2",
+        },
+      ],
+      report: {
+        candidate: "original",
+        createdAt: "2026-07-15T17:00:00.000Z",
+        draftText: "Wheat CPT Odesa 210 USD per ton stable demand rapeseed 580 corn 211 export basis market processing sunflower 716 soy 460 logistics port border rail freight farmer bid crop protein harvest oilseed grain spread crush margin",
+        id: "report-daily-6",
+        kind: "daily",
+      },
+    });
+    expect(observation.status).toBe("matched");
+    expect(observation.editorialPost?.url).toBe("https://t.me/spike_brokers/1");
+    expect(observation.matchingReason).toContain("numeric/sentence tie-break");
+  });
+
+  it("keeps close-score cases ambiguous when secondary signals do not separate candidates", () => {
+    const observation = buildCortexEditorialShadowObservation({
+      posts: [
+        {
+          id: "one",
+          publishedAt: "2026-07-15T18:00:00.000Z",
+          text: "Wheat CPT Odesa 210 USD per ton stable demand and export commentary",
+          url: "https://t.me/spike_brokers/1",
+        },
+        {
+          id: "two",
+          publishedAt: "2026-07-15T18:10:00.000Z",
+          text: "Wheat CPT Odesa 210 USD per ton stable demand and processing commentary",
+          url: "https://t.me/spike_brokers/2",
+        },
+      ],
+      report: {
+        candidate: "original",
+        createdAt: "2026-07-15T17:00:00.000Z",
+        draftText: "Wheat CPT Odesa 210 USD per ton stable demand and market commentary",
+        id: "report-daily-7",
+        kind: "daily",
+      },
+    });
+    expect(observation.status).toBe("ambiguous");
+    expect(observation.matchingReason).toContain("Candidate overlap is too close");
+  });
+
   it("clamps bounded internal scans", () => {
     expect(normalizeCortexEditorialShadowListLimit(undefined)).toBe(14);
     expect(normalizeCortexEditorialShadowListLimit(0)).toBe(1);

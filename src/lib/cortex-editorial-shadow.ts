@@ -81,6 +81,15 @@ type EditorialPostLookupContext = {
   hasAnyPostsInWindow: boolean;
 };
 
+type RankedEditorialCandidate = {
+  metrics: {
+    lexicalOverlap: number;
+    numberOverlap: number;
+    sentenceOverlap: number;
+  };
+  post: ShadowPost;
+};
+
 let storageReady: Promise<void> | null = null;
 
 /** Deterministic observation only: never changes prompts, publication, or delivery. */
@@ -91,16 +100,34 @@ export function buildCortexEditorialShadowObservation(input: {
 }): CortexEditorialShadowObservation {
   const generatedAt = validDate(input.report.createdAt) ?? new Date().toISOString();
   const endAt = new Date(new Date(generatedAt).getTime() + editorialWindowHours(input.report.kind) * 3_600_000);
+  const draftNumbers = extractNumbers(input.report.draftText);
+  const draftSentences = sentences(input.report.draftText);
   const candidates = input.posts
     .filter((post) => {
       const publishedAt = validDate(post.publishedAt);
       return publishedAt !== null && new Date(publishedAt) >= new Date(generatedAt) && new Date(publishedAt) <= endAt;
     })
-    .map((post) => ({ post, score: calculateLexicalOverlap(input.report.draftText, post.text) }))
-    .sort((left, right) => right.score - left.score || left.post.publishedAt.localeCompare(right.post.publishedAt));
+    .map((post) => ({
+      metrics: {
+        lexicalOverlap: calculateLexicalOverlap(input.report.draftText, post.text),
+        numberOverlap: calculateSequenceOverlap(draftNumbers, extractNumbers(post.text)),
+        sentenceOverlap: calculateSequenceOverlap(
+          draftSentences,
+          sentences(post.text),
+        ),
+      },
+      post,
+    }))
+    .sort(compareRankedCandidates);
   const best = candidates[0];
   const runnerUp = candidates[1];
-  const status = getMatchStatus(candidates.length, best?.score, runnerUp?.score);
+  const tieBreakWinner = resolveCloseScoreWinner(best, runnerUp);
+  const status = getMatchStatus({
+    best,
+    candidateCount: candidates.length,
+    runnerUp,
+    tieBreakWinner,
+  });
   const selected = status === "awaiting_editorial" ? null : best;
 
   return {
@@ -110,13 +137,14 @@ export function buildCortexEditorialShadowObservation(input: {
     generatedAt,
     id: `cortex-editorial-shadow:${input.report.id}:${input.report.candidate}`,
     kind: input.report.kind,
-    matchScore: selected ? round(selected.score) : null,
+    matchScore: selected ? round(selected.metrics.lexicalOverlap) : null,
     matchingReason: getMatchingReason({
-      bestScore: best?.score,
+      best,
       candidateCount: candidates.length,
       postLookupContext: input.postLookupContext,
-      runnerUpScore: runnerUp?.score,
+      runnerUp,
       status,
+      tieBreakWinner,
     }),
     metrics: selected ? buildMetrics(input.report.draftText, selected.post.text) : null,
     product: "1D3X Cortex",
@@ -273,22 +301,40 @@ export function buildCortexEditorialStructureProfile(input: {
 
 const MIN_MATCH_SCORE = 0.16;
 const MIN_SCORE_GAP = 0.05;
+const MIN_TIEBREAKER_SIGNAL_GAP = 0.15;
 
-function getMatchStatus(candidateCount: number, bestScore?: number, runnerUpScore?: number): CortexEditorialShadowStatus {
+function getMatchStatus(input: {
+  best?: RankedEditorialCandidate;
+  candidateCount: number;
+  runnerUp?: RankedEditorialCandidate;
+  tieBreakWinner: boolean;
+}): CortexEditorialShadowStatus {
+  const bestScore = input.best?.metrics.lexicalOverlap;
+  const runnerUpScore = input.runnerUp?.metrics.lexicalOverlap;
   if (bestScore === undefined) return "awaiting_editorial";
-  if (bestScore >= MIN_MATCH_SCORE && (runnerUpScore === undefined || bestScore - runnerUpScore >= MIN_SCORE_GAP)) return "matched";
-  if (candidateCount === 1) return "ambiguous";
+  if (
+    bestScore >= MIN_MATCH_SCORE &&
+    (runnerUpScore === undefined ||
+      bestScore - runnerUpScore >= MIN_SCORE_GAP ||
+      input.tieBreakWinner)
+  ) {
+    return "matched";
+  }
+  if (input.candidateCount === 1) return "ambiguous";
   return "ambiguous";
 }
 
 function getMatchingReason(input: {
-  bestScore?: number;
+  best?: RankedEditorialCandidate;
   candidateCount: number;
   postLookupContext?: EditorialPostLookupContext;
-  runnerUpScore?: number;
+  runnerUp?: RankedEditorialCandidate;
   status: CortexEditorialShadowStatus;
+  tieBreakWinner: boolean;
 }) {
-  const { bestScore, candidateCount, postLookupContext, runnerUpScore, status } = input;
+  const { best, candidateCount, postLookupContext, runnerUp, status, tieBreakWinner } = input;
+  const bestScore = best?.metrics.lexicalOverlap;
+  const runnerUpScore = runnerUp?.metrics.lexicalOverlap;
   if (status === "awaiting_editorial") {
     if (!postLookupContext?.hasAnyPosts) {
       return "No posts found for spike_brokers in the collector table.";
@@ -298,7 +344,12 @@ function getMatchingReason(input: {
     }
     return "Posts exist for spike_brokers, but none passed lexical matching.";
   }
-  if (status === "matched") return `Best lexical overlap ${round(bestScore ?? 0)} is distinct from the next candidate.`;
+  if (status === "matched") {
+    if (tieBreakWinner && best && runnerUp) {
+      return `Close lexical overlap resolved by numeric/sentence tie-break (${round(best.metrics.lexicalOverlap)} vs ${round(runnerUp.metrics.lexicalOverlap)}; numbers ${round(best.metrics.numberOverlap)} vs ${round(runnerUp.metrics.numberOverlap)}).`;
+    }
+    return `Best lexical overlap ${round(bestScore ?? 0)} is distinct from the next candidate.`;
+  }
   if (bestScore === undefined) return "No lexical overlap candidates in the candidate window.";
   if (candidateCount === 1) return `Single candidate with low lexical overlap (${round(bestScore)}), no tie check possible.`;
   if (bestScore - (runnerUpScore ?? 0) < MIN_SCORE_GAP) {
@@ -334,6 +385,15 @@ function calculateLexicalOverlap(left: string, right: string) {
   return union.size === 0 ? 0 : [...leftTokens].filter((token) => rightTokens.has(token)).length / union.size;
 }
 
+function calculateSequenceOverlap(left: string[], right: string[]) {
+  const leftValues = new Set(left);
+  const rightValues = new Set(right);
+  const union = new Set([...leftValues, ...rightValues]);
+  return union.size === 0
+    ? 0
+    : [...leftValues].filter((value) => rightValues.has(value)).length / union.size;
+}
+
 function tokenize(value: string) {
   return value.toLocaleLowerCase("uk-UA").match(/[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu) ?? [];
 }
@@ -348,6 +408,38 @@ function extractNumbers(value: string) {
 
 function round(value: number) {
   return Number(value.toFixed(3));
+}
+
+function compareRankedCandidates(
+  left: RankedEditorialCandidate,
+  right: RankedEditorialCandidate,
+) {
+  return (
+    right.metrics.lexicalOverlap - left.metrics.lexicalOverlap ||
+    right.metrics.numberOverlap - left.metrics.numberOverlap ||
+    right.metrics.sentenceOverlap - left.metrics.sentenceOverlap ||
+    left.post.publishedAt.localeCompare(right.post.publishedAt)
+  );
+}
+
+function resolveCloseScoreWinner(
+  best?: RankedEditorialCandidate,
+  runnerUp?: RankedEditorialCandidate,
+) {
+  if (!best || !runnerUp) return false;
+  if (best.metrics.lexicalOverlap < MIN_MATCH_SCORE) return false;
+  if (best.metrics.lexicalOverlap - runnerUp.metrics.lexicalOverlap >= MIN_SCORE_GAP) {
+    return false;
+  }
+  const numberGap = best.metrics.numberOverlap - runnerUp.metrics.numberOverlap;
+  if (
+    best.metrics.numberOverlap >= 0.8 &&
+    numberGap >= MIN_TIEBREAKER_SIGNAL_GAP &&
+    best.metrics.sentenceOverlap >= runnerUp.metrics.sentenceOverlap
+  ) {
+    return true;
+  }
+  return false;
 }
 
 function validDate(value: string) {
