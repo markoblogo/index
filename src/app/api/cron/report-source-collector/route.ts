@@ -10,7 +10,10 @@ import {
   normalizeCortexEditorialCorpusBackfillLimit,
 } from "@/lib/cortex-editorial-corpus-backfill";
 import { getActiveIndexConfig } from "@/lib/index-platform";
-import { syncCortexEditorialShadowObservations } from "@/lib/cortex-editorial-shadow";
+import {
+  runCortexEditorialCloseScoreDebug,
+  syncCortexEditorialShadowObservations,
+} from "@/lib/cortex-editorial-shadow";
 import { evaluateCortexEditorialPromotion } from "@/lib/cortex-editorial-promotion";
 import {
   getDailyTelegramDigest,
@@ -48,6 +51,7 @@ export async function GET(request: Request) {
   );
   const tenantId = normalizeTenantId(url.searchParams.get("tenant"));
   const debugUnknownMode = url.searchParams.get("debug_unknown") === "1";
+  const debugCloseScoresMode = url.searchParams.get("debug_close_scores") === "1";
   const unknownReasonLimit = normalizeUnknownReasonLimit(
     Number(url.searchParams.get("unknown_limit")),
     80,
@@ -96,9 +100,18 @@ export async function GET(request: Request) {
             sampleLimit: unknownReasonLimit,
           })
         : null;
+      const debugCloseScores = debugCloseScoresMode
+        ? await runCortexEditorialCloseScoreDebug({
+            kind: "monthly",
+            tenantId: activeTenant,
+            limit: debugLimit,
+            sampleLimit: unknownReasonLimit,
+          })
+        : null;
       return NextResponse.json({
         autonomyReadiness,
         benchmarkDiagnostics,
+        debugCloseScores,
         debugUnknown,
         editorialBackfill,
         editorialPromotion,
@@ -141,9 +154,18 @@ export async function GET(request: Request) {
             sampleLimit: unknownReasonLimit,
           })
         : null;
+      const debugCloseScores = debugCloseScoresMode
+        ? await runCortexEditorialCloseScoreDebug({
+            kind: "weekly",
+            tenantId: activeTenant,
+            limit: debugLimit,
+            sampleLimit: unknownReasonLimit,
+          })
+        : null;
       return NextResponse.json({
         autonomyReadiness,
         benchmarkDiagnostics,
+        debugCloseScores,
         debugUnknown,
         editorialBackfill,
         digest,
@@ -186,9 +208,18 @@ export async function GET(request: Request) {
           sampleLimit: unknownReasonLimit,
         })
       : null;
+    const debugCloseScores = debugCloseScoresMode
+      ? await runCortexEditorialCloseScoreDebug({
+          kind: "daily",
+          tenantId: activeTenant,
+          limit: debugLimit,
+          sampleLimit: unknownReasonLimit,
+        })
+      : null;
     return NextResponse.json({
       autonomyReadiness,
       benchmarkDiagnostics,
+      debugCloseScores,
       debugUnknown,
       date: date ?? null,
       editorialBackfill,

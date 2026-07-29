@@ -55,6 +55,42 @@ export type CortexEditorialStructureProfile = {
   version: string;
 };
 
+export type CortexEditorialCloseScoreSample = {
+  best: {
+    lexicalOverlap: number;
+    numberOverlap: number;
+    postId: string;
+    publishedAt: string;
+    sentenceOverlap: number;
+    url: string;
+  };
+  candidate: "original" | "revised";
+  candidateCount: number;
+  generatedAt: string;
+  kind: "daily" | "weekly" | "monthly";
+  lexicalGap: number;
+  matchingReason: string;
+  reportId: string;
+  runnerUp: {
+    lexicalOverlap: number;
+    numberOverlap: number;
+    postId: string;
+    publishedAt: string;
+    sentenceOverlap: number;
+    url: string;
+  };
+};
+
+export type CortexEditorialCloseScoreDebug = {
+  generatedAt: string;
+  kind: "daily" | "weekly" | "monthly";
+  samples: CortexEditorialCloseScoreSample[];
+  tenantId: string;
+  totalScanned: number;
+  totalTooClose: number;
+  visibility: "protected";
+};
+
 type ShadowReport = {
   candidate: "original" | "revised";
   createdAt: string;
@@ -99,26 +135,12 @@ export function buildCortexEditorialShadowObservation(input: {
   postLookupContext?: EditorialPostLookupContext;
 }): CortexEditorialShadowObservation {
   const generatedAt = validDate(input.report.createdAt) ?? new Date().toISOString();
-  const endAt = new Date(new Date(generatedAt).getTime() + editorialWindowHours(input.report.kind) * 3_600_000);
-  const draftNumbers = extractNumbers(input.report.draftText);
-  const draftSentences = sentences(input.report.draftText);
-  const candidates = input.posts
-    .filter((post) => {
-      const publishedAt = validDate(post.publishedAt);
-      return publishedAt !== null && new Date(publishedAt) >= new Date(generatedAt) && new Date(publishedAt) <= endAt;
-    })
-    .map((post) => ({
-      metrics: {
-        lexicalOverlap: calculateLexicalOverlap(input.report.draftText, post.text),
-        numberOverlap: calculateSequenceOverlap(draftNumbers, extractNumbers(post.text)),
-        sentenceOverlap: calculateSequenceOverlap(
-          draftSentences,
-          sentences(post.text),
-        ),
-      },
-      post,
-    }))
-    .sort(compareRankedCandidates);
+  const candidates = rankEditorialCandidates({
+    draftText: input.report.draftText,
+    generatedAt,
+    kind: input.report.kind,
+    posts: input.posts,
+  });
   const best = candidates[0];
   const runnerUp = candidates[1];
   const tieBreakWinner = resolveCloseScoreWinner(best, runnerUp);
@@ -150,6 +172,121 @@ export function buildCortexEditorialShadowObservation(input: {
     product: "1D3X Cortex",
     reportId: input.report.id,
     status,
+    visibility: "protected",
+  };
+}
+
+export async function runCortexEditorialCloseScoreDebug(
+  input: {
+    kind?: "daily" | "weekly" | "monthly";
+    limit?: number;
+    sampleLimit?: number;
+    tenantId?: string;
+  } = {},
+): Promise<CortexEditorialCloseScoreDebug> {
+  const kind = input.kind ?? "daily";
+  const tenantId = input.tenantId ?? getActiveIndexConfig().id;
+  const limit = normalizeCortexEditorialShadowListLimit(input.limit);
+  const sampleLimit = Math.max(
+    1,
+    Math.min(40, Math.trunc(input.sampleLimit ?? 20)),
+  );
+  if (!hasDatabaseUrl()) {
+    return {
+      generatedAt: new Date().toISOString(),
+      kind,
+      samples: [],
+      tenantId,
+      totalScanned: 0,
+      totalTooClose: 0,
+      visibility: "protected",
+    };
+  }
+
+  await ensureStorage();
+  const reports = await listReports({ kind, limit, tenantId });
+  const samples: CortexEditorialCloseScoreSample[] = [];
+  let totalScanned = 0;
+  let totalTooClose = 0;
+
+  for (const row of reports) {
+    for (const report of toShadowReports(row)) {
+      totalScanned += 1;
+      const posts = await listEditorialPosts({
+        endAt: new Date(
+          new Date(report.createdAt).getTime() +
+            editorialWindowHours(report.kind) * 3_600_000,
+        ),
+        startAt: new Date(report.createdAt),
+        tenantId,
+      });
+      const generatedAt = validDate(report.createdAt) ?? report.createdAt;
+      const candidates = rankEditorialCandidates({
+        draftText: report.draftText,
+        generatedAt,
+        kind: report.kind,
+        posts: posts.posts,
+      });
+      const best = candidates[0];
+      const runnerUp = candidates[1];
+      const tieBreakWinner = resolveCloseScoreWinner(best, runnerUp);
+      const status = getMatchStatus({
+        best,
+        candidateCount: candidates.length,
+        runnerUp,
+        tieBreakWinner,
+      });
+      const matchingReason = getMatchingReason({
+        best,
+        candidateCount: candidates.length,
+        postLookupContext: posts.context,
+        runnerUp,
+        status,
+        tieBreakWinner,
+      });
+
+      if (!matchingReason.toLowerCase().includes("too close") || !best || !runnerUp) {
+        continue;
+      }
+
+      totalTooClose += 1;
+      if (samples.length >= sampleLimit) continue;
+
+      samples.push({
+        best: {
+          lexicalOverlap: round(best.metrics.lexicalOverlap),
+          numberOverlap: round(best.metrics.numberOverlap),
+          postId: best.post.id,
+          publishedAt: best.post.publishedAt,
+          sentenceOverlap: round(best.metrics.sentenceOverlap),
+          url: best.post.url,
+        },
+        candidate: report.candidate,
+        candidateCount: candidates.length,
+        generatedAt,
+        kind: report.kind,
+        lexicalGap: round(best.metrics.lexicalOverlap - runnerUp.metrics.lexicalOverlap),
+        matchingReason,
+        reportId: report.id,
+        runnerUp: {
+          lexicalOverlap: round(runnerUp.metrics.lexicalOverlap),
+          numberOverlap: round(runnerUp.metrics.numberOverlap),
+          postId: runnerUp.post.id,
+          publishedAt: runnerUp.post.publishedAt,
+          sentenceOverlap: round(runnerUp.metrics.sentenceOverlap),
+          url: runnerUp.post.url,
+        },
+      });
+    }
+  }
+
+  return {
+    generatedAt: new Date().toISOString(),
+    kind,
+    samples,
+    tenantId,
+    totalScanned,
+    totalTooClose,
     visibility: "protected",
   };
 }
@@ -356,6 +493,44 @@ function getMatchingReason(input: {
     return `Candidate overlap is too close (${round(bestScore)} vs ${round(runnerUpScore ?? 0)}).`;
   }
   return `Low lexical overlap for multiple candidates (best: ${round(bestScore)}; runner-up: ${round(runnerUpScore ?? 0)}).`;
+}
+
+function rankEditorialCandidates(input: {
+  draftText: string;
+  generatedAt: string;
+  kind: "daily" | "weekly" | "monthly";
+  posts: ShadowPost[];
+}) {
+  const endAt = new Date(
+    new Date(input.generatedAt).getTime() +
+      editorialWindowHours(input.kind) * 3_600_000,
+  );
+  const draftNumbers = extractNumbers(input.draftText);
+  const draftSentences = sentences(input.draftText);
+  return input.posts
+    .filter((post) => {
+      const publishedAt = validDate(post.publishedAt);
+      return (
+        publishedAt !== null &&
+        new Date(publishedAt) >= new Date(input.generatedAt) &&
+        new Date(publishedAt) <= endAt
+      );
+    })
+    .map((post) => ({
+      metrics: {
+        lexicalOverlap: calculateLexicalOverlap(input.draftText, post.text),
+        numberOverlap: calculateSequenceOverlap(
+          draftNumbers,
+          extractNumbers(post.text),
+        ),
+        sentenceOverlap: calculateSequenceOverlap(
+          draftSentences,
+          sentences(post.text),
+        ),
+      },
+      post,
+    }))
+    .sort(compareRankedCandidates);
 }
 
 function buildMetrics(draft: string, editorial: string): CortexEditorialShadowMetrics {
