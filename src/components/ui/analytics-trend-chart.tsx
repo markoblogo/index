@@ -59,6 +59,13 @@ export function AnalyticsTrendChart({
       });
   }, [commodities, history, selectedIds]);
 
+  const dateDomain = useMemo(() => {
+    return Array.from(
+      new Set(series.flatMap((item) => item.points.map((point) => point.date))),
+    )
+      .sort((left, right) => left.localeCompare(right))
+      .slice(-CHART_WINDOW_DAYS);
+  }, [series]);
   const visibleValues = series.flatMap((item) => item.points.map((point) => point.value));
   const minValue = Math.min(...visibleValues);
   const maxValue = Math.max(...visibleValues);
@@ -70,7 +77,8 @@ export function AnalyticsTrendChart({
       ? commodities
       : commodities.slice(0, legendLimit);
   const hiddenLegendCount = Math.max(commodities.length - visibleLegendItems.length, 0);
-  const legendPoint = hoverPoint ?? getLatestTrendPoint(series, paddedRange.min, paddedRange.max);
+  const legendPoint = hoverPoint ??
+    getLatestTrendPoint(series, dateDomain, paddedRange.min, paddedRange.max);
 
   function toggleCommodity(commodityId: CommodityId) {
     setSelectedIds((current) => {
@@ -99,6 +107,7 @@ export function AnalyticsTrendChart({
       pointerX,
       pointerY,
       series,
+      dateDomain,
     });
 
     setHoverPoint(nearest);
@@ -121,7 +130,8 @@ export function AnalyticsTrendChart({
               fill="none"
               key={item.commodity.id}
               points={toChartPoints(
-                item.points.map((point) => point.value),
+                item.points,
+                dateDomain,
                 paddedRange.min,
                 paddedRange.max,
               )}
@@ -144,21 +154,23 @@ export function AnalyticsTrendChart({
                 y1="14"
                 y2="88"
               />
-              {hoverPoint.entries.map((entry) => (
-                <circle
-                  cx={entry.x}
-                  cy={entry.y}
-                  fill={entry.color}
-                  key={entry.commodity.id}
-                  r="1.55"
-                  stroke="#f7f7ef"
-                  strokeWidth="0.65"
-                  vectorEffect="non-scaling-stroke"
-                />
-              ))}
             </g>
           ) : null}
         </svg>
+        {hoverPoint
+          ? hoverPoint.entries.map((entry) => (
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/80 shadow-[0_0_0_1px_rgba(0,0,0,0.35),0_0_12px_rgba(57,255,20,0.45)]"
+                key={entry.commodity.id}
+                style={{
+                  background: getMarkerBackground(entry.color),
+                  left: `${entry.x}%`,
+                  top: `${entry.y}%`,
+                }}
+              />
+            ))
+          : null}
         <div className="pointer-events-none absolute inset-0 top-1 text-[0.65rem] font-black uppercase leading-4 text-white/58">
           <p className="text-right">{paddedRange.max.toFixed(0)} USD/t</p>
           <p className="absolute left-0 top-[14rem] text-left">{paddedRange.min.toFixed(0)} USD/t</p>
@@ -252,49 +264,30 @@ export function AnalyticsTrendChart({
 
 function getLatestTrendPoint(
   series: TrendSeries[],
+  dateDomain: string[],
   min: number,
   max: number,
 ): TrendHoverPoint | null {
-  const entries = series.flatMap((item) => {
-    const point = item.points[item.points.length - 1];
-
-    if (!point) {
-      return [];
-    }
-
-    const coordinate = getChartCoordinate({
-      index: item.points.length - 1,
-      length: item.points.length,
+  for (const date of [...dateDomain].reverse()) {
+    const entries = buildTrendEntriesForDate({
+      date,
+      dateDomain,
       max,
       min,
-      value: point.value,
+      series,
     });
 
-    return [{
-      color: item.color,
-      commodity: item.commodity,
-      date: point.date,
-      value: point.value,
-      x: coordinate.x,
-      y: coordinate.y,
-    }];
-  });
-
-  if (entries.length === 0) {
-    return null;
+    if (entries.length > 0) {
+      return {
+        date,
+        entries: entries.sort((a, b) => b.value - a.value),
+        x: entries[0]?.x ?? 0,
+        y: entries[0]?.y ?? 0,
+      };
+    }
   }
 
-  const latestDate = entries
-    .map((entry) => entry.date)
-    .sort((left, right) => right.localeCompare(left))[0];
-  const latestEntries = entries.filter((entry) => entry.date === latestDate);
-
-  return {
-    date: latestDate,
-    entries: latestEntries.sort((a, b) => b.value - a.value),
-    x: Math.max(...latestEntries.map((entry) => entry.x)),
-    y: latestEntries[0]?.y ?? 0,
-  };
+  return null;
 }
 
 function getCommodityLegendLabel(commodity: Commodity, locale: Locale) {
@@ -348,15 +341,15 @@ function getPaddedRange(min: number, max: number) {
   };
 }
 
-function toChartPoints(values: number[], min: number, max: number) {
-  return values
-    .map((value, index) => {
+function toChartPoints(points: AnalyticsTrendPoint[], dateDomain: string[], min: number, max: number) {
+  return points
+    .map((point) => {
       const { x, y } = getChartCoordinate({
-        index,
-        length: values.length,
+        date: point.date,
+        dateDomain,
         max,
         min,
-        value,
+        value: point.value,
       });
       return `${x},${y}`;
     })
@@ -369,69 +362,37 @@ function findHoverSlice({
   pointerX,
   pointerY,
   series,
+  dateDomain,
 }: {
   max: number;
   min: number;
   pointerX: number;
   pointerY: number;
   series: TrendSeries[];
+  dateDomain: string[];
 }): TrendHoverPoint | null {
-  const referenceSeries = [...series]
-    .filter((item) => item.points.length > 0)
-    .sort((a, b) => b.points.length - a.points.length)[0];
-
-  if (!referenceSeries) {
+  if (dateDomain.length === 0) {
     return null;
   }
-
   const referenceIndex =
-    referenceSeries.points.length <= 1
+    dateDomain.length <= 1
       ? 0
       : Math.round(
           (Math.min(Math.max(pointerX, 0), 100) / 100) *
-            (referenceSeries.points.length - 1),
+            (dateDomain.length - 1),
         );
-  const referencePoint = referenceSeries.points[referenceIndex];
+  const referenceDate = dateDomain[referenceIndex];
 
-  if (!referencePoint) {
+  if (!referenceDate) {
     return null;
   }
 
-  const referenceCoordinate = getChartCoordinate({
-    index: referenceIndex,
-    length: referenceSeries.points.length,
+  const entries = buildTrendEntriesForDate({
+    date: referenceDate,
+    dateDomain,
     max,
     min,
-    value: referencePoint.value,
-  });
-  const entries = series.flatMap((item) => {
-    const pointIndex = item.points.findIndex((point) => point.date === referencePoint.date);
-    const index =
-      pointIndex >= 0 ? pointIndex : getNearestDateIndex(item.points, referencePoint.date);
-    const point = item.points[index];
-
-    if (!point) {
-      return [];
-    }
-
-    const coordinate = getChartCoordinate({
-      index,
-      length: item.points.length,
-      max,
-      min,
-      value: point.value,
-    });
-
-    return [
-      {
-        color: item.color,
-        commodity: item.commodity,
-        date: point.date,
-        value: point.value,
-        x: coordinate.x,
-        y: coordinate.y,
-      },
-    ];
+    series,
   });
 
   if (entries.length === 0) {
@@ -445,39 +406,61 @@ function findHoverSlice({
   }, entries[0]);
 
   return {
-    date: referencePoint.date,
+    date: referenceDate,
     entries: entries.sort((a, b) => b.value - a.value),
-    x: referenceCoordinate.x,
+    x: getDateX(referenceDate, dateDomain),
     y: anchor.y,
   };
 }
 
-function getNearestDateIndex(points: AnalyticsTrendPoint[], date: string) {
-  const target = new Date(`${date}T00:00:00Z`).getTime();
-  let nearest = 0;
-  let distance = Number.POSITIVE_INFINITY;
+function buildTrendEntriesForDate({
+  date,
+  dateDomain,
+  max,
+  min,
+  series,
+}: {
+  date: string;
+  dateDomain: string[];
+  max: number;
+  min: number;
+  series: TrendSeries[];
+}) {
+  return series.flatMap((item) => {
+    const point = item.points.find((entry) => entry.date === date);
 
-  points.forEach((point, index) => {
-    const currentDistance = Math.abs(new Date(`${point.date}T00:00:00Z`).getTime() - target);
-
-    if (currentDistance < distance) {
-      nearest = index;
-      distance = currentDistance;
+    if (!point) {
+      return [];
     }
-  });
 
-  return nearest;
+    const coordinate = getChartCoordinate({
+      date,
+      dateDomain,
+      max,
+      min,
+      value: point.value,
+    });
+
+    return [{
+      color: item.color,
+      commodity: item.commodity,
+      date: point.date,
+      value: point.value,
+      x: coordinate.x,
+      y: coordinate.y,
+    }];
+  });
 }
 
 function getChartCoordinate({
-  index,
-  length,
+  date,
+  dateDomain,
   max,
   min,
   value,
 }: {
-  index: number;
-  length: number;
+  date: string;
+  dateDomain: string[];
   max: number;
   min: number;
   value: number;
@@ -485,9 +468,20 @@ function getChartCoordinate({
   const range = Math.max(max - min, 1);
 
   return {
-    x: length === 1 ? 0 : (index / (length - 1)) * 100,
+    x: getDateX(date, dateDomain),
     y: 82 - ((value - min) / range) * 64,
   };
+}
+
+function getDateX(date: string, dateDomain: string[]) {
+  const index = dateDomain.indexOf(date);
+  return dateDomain.length <= 1 || index < 0
+    ? 0
+    : (index / (dateDomain.length - 1)) * 100;
+}
+
+function getMarkerBackground(color: string) {
+  return `radial-gradient(circle at 35% 28%, rgba(255,255,255,0.98) 0 10%, ${color} 34%, ${color} 58%, rgba(0,0,0,0.42) 100%)`;
 }
 
 function formatHoverDate(date: string, locale: Locale) {
