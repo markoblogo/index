@@ -27,6 +27,21 @@ const defaultComparisonIds: CommodityId[] = [
   "rapeseed-export",
   "rapeseed",
 ];
+const oilseedSelectorColumns: CommodityId[][] = [
+  [
+    "gmo-soybean",
+    "gmo-soybean-export",
+    "gmo-soybean-fca-chop",
+    "non-gmo-soybean-export",
+    "non-gmo-soybean-fca-chop",
+  ],
+  [
+    "sunflower",
+    "rapeseed",
+    "rapeseed-export",
+    "rapeseed-fca-chop",
+  ],
+];
 
 export function GroupedMarketAnalyticsPanel({
   commodities,
@@ -141,6 +156,7 @@ export function GroupedMarketAnalyticsPanel({
           <div className="mt-4 grid gap-4">
             <ComparisonSelectorGroup
               commodities={selectorGroups.oilseeds}
+              columns={oilseedSelectorColumns}
               locale={locale}
               onToggle={toggleCommodity}
               selectedIds={selectedIds}
@@ -162,25 +178,33 @@ export function GroupedMarketAnalyticsPanel({
 }
 
 function ComparisonSelectorGroup({
+  columns,
   commodities,
   locale,
   onToggle,
   selectedIds,
   title,
 }: {
+  columns?: CommodityId[][];
   commodities: Commodity[];
   locale: Locale;
   onToggle: (commodityId: CommodityId) => void;
   selectedIds: CommodityId[];
   title: string;
 }) {
+  const commodityColumns = columns
+    ? orderCommodityColumns(commodities, columns)
+    : [commodities];
+
   return (
     <div>
       <p className="text-[0.65rem] font-black uppercase tracking-[0.18em] text-black/45">
         {title}
       </p>
       <div className="mt-2 grid gap-2 sm:grid-cols-2">
-        {commodities.map((commodity) => {
+        {commodityColumns.map((column, columnIndex) => (
+          <div className="grid gap-2" key={columnIndex}>
+            {column.map((commodity) => {
           const checked = selectedIds.includes(commodity.id);
           const basis = getDeliveryBasisConfigForCommodityId(commodity.id);
 
@@ -210,9 +234,34 @@ function ComparisonSelectorGroup({
             </label>
           );
         })}
+          </div>
+        ))}
       </div>
     </div>
   );
+}
+
+function orderCommodityColumns(commodities: Commodity[], columns: CommodityId[][]) {
+  const commodityById = new Map(commodities.map((commodity) => [commodity.id, commodity]));
+  const usedIds = new Set<CommodityId>();
+  const orderedColumns = columns.map((column) =>
+    column.flatMap((id) => {
+      const commodity = commodityById.get(id);
+      if (!commodity) {
+        return [];
+      }
+
+      usedIds.add(id);
+      return [commodity];
+    }),
+  );
+  const overflow = commodities.filter((commodity) => !usedIds.has(commodity.id));
+
+  if (overflow.length > 0) {
+    orderedColumns[orderedColumns.length - 1]?.push(...overflow);
+  }
+
+  return orderedColumns;
 }
 
 function getCopy(locale: Locale) {
