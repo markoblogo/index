@@ -219,7 +219,7 @@ export function ScenarioModelPanel({
           >
             {commodities.map((commodity) => (
               <option key={commodity.id} value={commodity.id}>
-                {commodity.name[locale]}
+                {getCommoditySelectLabel(commodity, locale)}
               </option>
             ))}
           </select>
@@ -1073,6 +1073,14 @@ function getCommodityChartTitle(commodity: Commodity | undefined, locale: Locale
         : locale === "uk" ? "Зернові експорт" : "Grains export";
 
   return `${commodity.name[locale]} · ${basis} · ${group}`;
+}
+
+function getCommoditySelectLabel(commodity: Commodity, locale: Locale) {
+  const marketType = commodity.group === "processing"
+    ? "crush / переробка"
+    : "export / експорт";
+
+  return `${commodity.name[locale]} (${marketType})`;
 }
 
 function getSeasonContext(date: string | undefined, locale: Locale) {
