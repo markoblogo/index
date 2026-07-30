@@ -15,6 +15,7 @@ type AnalyticsTrendChartProps = {
   commodities: Commodity[];
   history: AnalyticsTrendPoint[];
   locale: Locale;
+  showLegendControls?: boolean;
 };
 
 const chartColors = [
@@ -32,6 +33,7 @@ export function AnalyticsTrendChart({
   commodities,
   history,
   locale,
+  showLegendControls = true,
 }: AnalyticsTrendChartProps) {
   const [selectedIds, setSelectedIds] = useState<CommodityId[]>(
     commodities.map((commodity) => commodity.id),
@@ -187,7 +189,8 @@ export function AnalyticsTrendChart({
           </div>
         </div>
       ) : null}
-      <div className="mt-3 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+      {showLegendControls ? (
+        <div className="mt-3 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap gap-1.5">
           {visibleLegendItems.map((commodity) => {
             const active = selectedIds.includes(commodity.id);
@@ -241,6 +244,7 @@ export function AnalyticsTrendChart({
           ) : null}
         </div>
       </div>
+      ) : null}
     </div>
   );
 }
