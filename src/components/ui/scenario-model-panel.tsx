@@ -1076,11 +1076,22 @@ function getCommodityChartTitle(commodity: Commodity | undefined, locale: Locale
 }
 
 function getCommoditySelectLabel(commodity: Commodity, locale: Locale) {
-  const marketType = commodity.group === "processing"
-    ? "crush / переробка"
-    : "export / експорт";
+  const marketType =
+    commodity.group === "processing"
+      ? locale === "uk"
+        ? "переробка"
+        : "crush"
+      : locale === "uk"
+        ? "експорт"
+        : "export";
 
-  return `${commodity.name[locale]} (${marketType})`;
+  const shouldShowPort = ["corn", "wheat-115", "feed-wheat"].includes(
+    commodity.id,
+  );
+  const basisLabel =
+    shouldShowPort && locale === "uk" ? " · СРТ Port" : shouldShowPort ? " · CPT Port" : "";
+
+  return `${commodity.name[locale]}${basisLabel} (${marketType})`;
 }
 
 function getSeasonContext(date: string | undefined, locale: Locale) {
