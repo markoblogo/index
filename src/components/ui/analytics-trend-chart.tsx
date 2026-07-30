@@ -70,6 +70,7 @@ export function AnalyticsTrendChart({
       ? commodities
       : commodities.slice(0, legendLimit);
   const hiddenLegendCount = Math.max(commodities.length - visibleLegendItems.length, 0);
+  const legendPoint = hoverPoint ?? getLatestTrendPoint(series, paddedRange.min, paddedRange.max);
 
   function toggleCommodity(commodityId: CommodityId) {
     setSelectedIds((current) => {
@@ -163,13 +164,13 @@ export function AnalyticsTrendChart({
           <p className="absolute left-0 top-[14rem] text-left">{paddedRange.min.toFixed(0)} USD/t</p>
         </div>
       </div>
-      {hoverPoint ? (
+      {legendPoint ? (
         <div className="mt-2 rounded-lg border border-uga-green/40 bg-[#07120b] p-2 shadow-sm shadow-black/30">
           <p className="text-[0.62rem] font-black uppercase tracking-[0.16em] text-uga-green">
-            {formatHoverDate(hoverPoint.date, locale)}
+            {formatHoverDate(legendPoint.date, locale)}
           </p>
           <div className="mt-1.5 grid gap-1">
-            {hoverPoint.entries.map((entry) => (
+            {legendPoint.entries.map((entry) => (
               <div
                 className="grid grid-cols-[0.55rem_minmax(0,1fr)_7rem] items-center gap-1.5 text-[0.58rem] font-black uppercase leading-tight"
                 key={entry.commodity.id}
@@ -247,6 +248,53 @@ export function AnalyticsTrendChart({
       ) : null}
     </div>
   );
+}
+
+function getLatestTrendPoint(
+  series: TrendSeries[],
+  min: number,
+  max: number,
+): TrendHoverPoint | null {
+  const entries = series.flatMap((item) => {
+    const point = item.points[item.points.length - 1];
+
+    if (!point) {
+      return [];
+    }
+
+    const coordinate = getChartCoordinate({
+      index: item.points.length - 1,
+      length: item.points.length,
+      max,
+      min,
+      value: point.value,
+    });
+
+    return [{
+      color: item.color,
+      commodity: item.commodity,
+      date: point.date,
+      value: point.value,
+      x: coordinate.x,
+      y: coordinate.y,
+    }];
+  });
+
+  if (entries.length === 0) {
+    return null;
+  }
+
+  const latestDate = entries
+    .map((entry) => entry.date)
+    .sort((left, right) => right.localeCompare(left))[0];
+  const latestEntries = entries.filter((entry) => entry.date === latestDate);
+
+  return {
+    date: latestDate,
+    entries: latestEntries.sort((a, b) => b.value - a.value),
+    x: Math.max(...latestEntries.map((entry) => entry.x)),
+    y: latestEntries[0]?.y ?? 0,
+  };
 }
 
 function getCommodityLegendLabel(commodity: Commodity, locale: Locale) {

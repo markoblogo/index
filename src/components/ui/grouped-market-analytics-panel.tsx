@@ -112,6 +112,21 @@ export function GroupedMarketAnalyticsPanel({
               showLegendControls={false}
             />
           </div>
+          <div className="mt-4 border-t border-black/15 pt-4">
+            <div className="mb-3">
+              <h4 className="text-sm font-black uppercase leading-5 text-black">
+                {text.volatilityTitle}
+              </h4>
+              <p className="mt-1 text-[0.68rem] font-semibold leading-4 text-black/50">
+                {text.volatilityDescription}
+              </p>
+            </div>
+            <VolatilityRangePanel
+              commodities={filteredCommodities}
+              history={history}
+              locale={locale}
+            />
+          </div>
         </div>
 
         <div className="rounded-[1.3rem] border border-black bg-white p-4">
@@ -142,23 +157,6 @@ export function GroupedMarketAnalyticsPanel({
         </div>
       </div>
 
-      <div className="rounded-[1.3rem] border border-black bg-white p-4">
-        <div className="border-b border-black/15 pb-3">
-          <h3 className="text-xl font-black uppercase leading-6 text-black">
-            {text.volatilityTitle}
-          </h3>
-          <p className="mt-2 text-xs font-semibold leading-5 text-black/55">
-            {text.volatilityDescription}
-          </p>
-        </div>
-        <div className="mt-4">
-          <VolatilityRangePanel
-            commodities={filteredCommodities}
-            history={history}
-            locale={locale}
-          />
-        </div>
-      </div>
     </div>
   );
 }
