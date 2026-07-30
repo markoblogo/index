@@ -277,10 +277,10 @@ function getCopy(locale: Locale) {
       selectorTitle: "Вибір культур для порівняння",
       title: "Динаміка та волатильність за групами",
       trendDescription:
-        "Вибрані позиції та їхній базис поставки відображаються за останні 180 днів.",
+        "Вибрані позиції та їхній базис поставки відображаються за останні 30 днів.",
       trendTitle: "Динаміка індексів за позиціями",
       volatilityDescription:
-        "Волатильність і ціновий діапазон за останні 180 днів тільки для вибраної групи.",
+        "Діапазон min/max, поточна позиція ціни та волатильність за останні 30 днів.",
       volatilityTitle: "Волатильність і ціновий діапазон",
     };
   }
@@ -296,10 +296,10 @@ function getCopy(locale: Locale) {
     selectorTitle: "Comparison selector",
     title: "Dynamics and volatility by group",
     trendDescription:
-      "Selected positions and their delivery basis are shown over the last 180 days.",
+      "Selected positions and their delivery basis are shown over the last 30 days.",
     trendTitle: "Index dynamics by position",
     volatilityDescription:
-      "Volatility and price range over the last 180 days for the selected group only.",
+      "Min/max range, current price position and volatility over the last 30 days.",
     volatilityTitle: "Volatility and price range",
   };
 }

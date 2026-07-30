@@ -27,7 +27,7 @@ const chartColors = [
   "#7c6cff",
 ];
 
-const CHART_WINDOW_DAYS = 180;
+const CHART_WINDOW_DAYS = 30;
 
 export function AnalyticsTrendChart({
   commodities,
