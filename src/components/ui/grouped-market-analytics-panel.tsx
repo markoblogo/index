@@ -123,7 +123,7 @@ export function GroupedMarketAnalyticsPanel({
               {text.selectorDescription}
             </p>
           </div>
-          <div className="mt-4 grid gap-5 md:grid-cols-2 xl:grid-cols-1">
+          <div className="mt-4 grid gap-4">
             <ComparisonSelectorGroup
               commodities={selectorGroups.oilseeds}
               locale={locale}
@@ -181,17 +181,17 @@ function ComparisonSelectorGroup({
       <p className="text-[0.65rem] font-black uppercase tracking-[0.18em] text-black/45">
         {title}
       </p>
-      <div className="mt-2 grid gap-2">
+      <div className="mt-2 grid gap-2 sm:grid-cols-2">
         {commodities.map((commodity) => {
           const checked = selectedIds.includes(commodity.id);
           const basis = getDeliveryBasisConfigForCommodityId(commodity.id);
 
           return (
             <label
-              className={`grid cursor-pointer grid-cols-[auto_1fr] gap-2 rounded-xl border px-3 py-2 transition ${
+              className={`grid min-h-[4.15rem] cursor-pointer grid-cols-[auto_1fr] gap-2 rounded-[1rem] border px-2.5 py-2 transition ${
                 checked
-                  ? "border-uga-green bg-uga-green/10 text-black"
-                  : "border-black/10 bg-white text-black/60 hover:border-black/25 hover:text-black"
+                  ? "border-uga-green bg-[linear-gradient(135deg,rgba(57,255,20,0.13),rgba(255,255,255,0.04)_55%,rgba(255,255,255,0.08))] text-black shadow-[inset_0_0_0_1px_rgba(57,255,20,0.08)]"
+                  : "border-black/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.72),rgba(255,255,255,0.38)_55%,rgba(120,38,60,0.10))] text-black/60 hover:border-black/25 hover:text-black"
               }`}
               key={commodity.id}
             >
@@ -202,10 +202,10 @@ function ComparisonSelectorGroup({
                 type="checkbox"
               />
               <span>
-                <span className="block text-xs font-black uppercase leading-4">
+                <span className="block text-[0.68rem] font-black uppercase leading-4 tracking-[0.02em]">
                   {commodity.shortName?.[locale] ?? commodity.name[locale]}
                 </span>
-                <span className="mt-0.5 block text-[0.62rem] font-black uppercase tracking-[0.08em] text-black/42">
+                <span className="mt-0.5 block text-[0.56rem] font-black uppercase leading-3 tracking-[0.08em] text-black/42">
                   {getSelectorBasisLabel(basis.code, basis.name)}
                 </span>
               </span>
