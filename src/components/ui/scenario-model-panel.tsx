@@ -314,15 +314,6 @@ export function ScenarioModelPanel({
                   strokeWidth="3"
                   vectorEffect="non-scaling-stroke"
                 />
-                <circle
-                  cx={HISTORY_END_X}
-                  cy={toChartY(sample.at(-1)?.value ?? 0, range.min, range.max)}
-                  fill="#f8f8f2"
-                  r="1.9"
-                  stroke="var(--color-lime)"
-                  strokeWidth="0.8"
-                  vectorEffect="non-scaling-stroke"
-                />
                 <SeasonalityProjection
                   forecast={seasonalProjection}
                   latest={sample.at(-1)?.value ?? 0}
@@ -332,6 +323,18 @@ export function ScenarioModelPanel({
               </>
             ) : null}
           </svg>
+          {sample.length ? (
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/80 shadow-[0_0_0_1px_rgba(0,0,0,0.35),0_0_12px_rgba(188,255,28,0.55)]"
+              style={{
+                background:
+                  "radial-gradient(circle at 35% 28%, rgba(255,255,255,0.98) 0 10%, var(--color-lime) 34%, var(--color-lime) 58%, rgba(0,0,0,0.42) 100%)",
+                left: `${HISTORY_END_X}%`,
+                top: `${toChartY(sample.at(-1)?.value ?? 0, range.min, range.max)}%`,
+              }}
+            />
+          ) : null}
             <div className="pointer-events-none absolute inset-y-8 right-0 flex flex-col justify-between text-right text-xs font-black tabular-nums text-white/58">
               <span>{Math.round(range.max)} $</span>
               <span>{Math.round((range.max + range.min) / 2)} $</span>

@@ -557,14 +557,14 @@ function PublishedValuesTable({
   const groups = groupRowsByDate(rows);
 
   return (
-    <div className="min-w-0 border border-black bg-white">
-      <div className="border-b border-black bg-uga-mist px-4 py-3 text-xs font-semibold leading-5 text-black/60">
+    <div className="min-w-0">
+      <div className="mb-3 border border-black bg-uga-mist px-4 py-3 text-xs font-semibold leading-5 text-black/60">
         {copy.historyPublicLimit}
       </div>
-      <div className="divide-y divide-black">
+      <div className="divide-y divide-black border border-black bg-white">
         {groups.map((group) => (
           <details className="group" key={group.date}>
-            <summary className="grid cursor-pointer grid-cols-[1fr_auto] gap-4 px-4 py-4 text-left marker:hidden">
+            <summary className="grid min-h-[5.25rem] cursor-pointer grid-cols-[1fr_auto] items-center gap-4 px-4 py-4 text-left marker:hidden">
               <span>
                 <span className="block text-sm font-black uppercase tracking-[0.12em] text-black">
                   {formatShortDate(group.date, locale)}

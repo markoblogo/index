@@ -171,23 +171,28 @@ export function SpreadAnalysisPanel({
                   className="pointer-events-none absolute top-0 h-full w-0.5 -translate-x-1/2 bg-uga-green shadow-[0_0_16px_rgba(57,255,20,0.7)]"
                   style={{ left: `${hoveredPosition.x}%` }}
                 />
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/80 shadow-[0_0_0_1px_rgba(0,0,0,0.35),0_0_12px_rgba(57,255,20,0.55)]"
+                  style={{
+                    background:
+                      "radial-gradient(circle at 35% 28%, rgba(255,255,255,0.98) 0 10%, var(--color-green) 34%, var(--color-green) 58%, rgba(0,0,0,0.42) 100%)",
+                    left: `${hoveredPosition.x}%`,
+                    top: `${hoveredPosition.y}%`,
+                  }}
+                />
                 <div
-                  className="pointer-events-none absolute z-10 min-w-[5.5rem] -translate-x-1/2 -translate-y-1/2 rounded-full border px-3 py-2 text-center text-xs font-black leading-tight shadow-lg"
+                  className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-full border px-2.5 py-1 text-center text-[0.68rem] font-black leading-none shadow-lg"
                   style={{
                     backgroundColor: "#f8f8f2",
                     borderColor: "var(--color-green)",
                     boxShadow: "0 10px 24px rgba(0, 0, 0, 0.45)",
                     color: "#07100c",
                     left: `${Math.min(Math.max(hoveredPosition.x, 10), 90)}%`,
-                    top: "82%",
+                    top: `${Math.min(Math.max(hoveredPosition.y - 4, 12), 88)}%`,
                   }}
                 >
-                  <span className="block whitespace-nowrap">
-                    {formatSigned(hoveredPoint.value)} USD/t
-                  </span>
-                  <span className="mt-1 block whitespace-nowrap text-[0.65rem] text-black/60">
-                    {formatCompactDate(hoveredPoint.date)}
-                  </span>
+                  <span className="block whitespace-nowrap">{formatSigned(hoveredPoint.value)} USD/t</span>
                 </div>
               </>
             ) : null}
