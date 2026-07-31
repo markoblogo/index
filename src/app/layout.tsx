@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import Script from "next/script";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import {
   getPlatformSiteUrl,
@@ -96,6 +97,26 @@ export default function RootLayout({
         className="antialiased"
         data-index={activeIndex?.theme.dataAttribute ?? "platform"}
       >
+        {activeIndex?.id === "spike-ua" ? (
+          <>
+            <Script
+              id="plausible-lib"
+              src="https://plausible.io/js/pa-oIILvXlOCB80PPF_z8WoR.js"
+              strategy="afterInteractive"
+            />
+            <Script id="plausible-init" strategy="afterInteractive">
+              {`
+                window.plausible = window.plausible || function () {
+                  (window.plausible.q = window.plausible.q || []).push(arguments);
+                };
+                window.plausible.init = window.plausible.init || function (i) {
+                  window.plausible.o = i || {};
+                };
+                window.plausible.init();
+              `}
+            </Script>
+          </>
+        ) : null}
         <script
           dangerouslySetInnerHTML={{
             __html: `
