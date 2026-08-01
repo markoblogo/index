@@ -431,62 +431,67 @@ function MovementSummary({
   locale: Locale;
 }) {
   const activeIndex = getActiveIndexConfig();
+  const latestPublishedDate = history
+    .map((point) => point.date)
+    .sort((first, second) => second.localeCompare(first))[0];
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {commodities.map((commodity) => {
-          const commodityHistory = getCommodityHistory(history, commodity.id);
-          const latest = commodityHistory.at(-1);
+      {commodities.map((commodity) => {
+        const commodityHistory = getCommodityHistory(history, commodity.id);
+        const latest = commodityHistory.find(
+          (point) => point.date === latestPublishedDate,
+        );
 
-          if (!latest) {
-            return null;
-          }
+        if (!latest) {
+          return null;
+        }
 
-          const latestDate = formatShortDate(latest.date, locale);
-          const sevenDay =
-            latest.value - getCalendarLookbackPoint(commodityHistory, latest.date, 7).value;
-          const thirtyDay =
-            latest.value - getCalendarLookbackPoint(commodityHistory, latest.date, 30).value;
-          const blockLabel = getMovementCardBlockLabel(commodity, locale, activeIndex);
-          const vatLabel = locale === "uk" ? "з ПДВ" : "with VAT";
+        const latestDate = formatShortDate(latest.date, locale);
+        const sevenDay =
+          latest.value - getCalendarLookbackPoint(commodityHistory, latest.date, 7).value;
+        const thirtyDay =
+          latest.value - getCalendarLookbackPoint(commodityHistory, latest.date, 30).value;
+        const blockLabel = getMovementCardBlockLabel(commodity, locale, activeIndex);
+        const vatLabel = locale === "uk" ? "з ПДВ" : "with VAT";
 
-          return (
-            <article
-              className="min-h-[18.5rem] rounded-[1.25rem] border border-black bg-[#050505] p-5 text-[#f8f8f2] shadow-[0_18px_55px_rgba(0,0,0,0.18)]"
-              key={commodity.id}
-            >
-              <div className="flex min-h-6 flex-wrap items-center gap-2">
-                <span className="text-[0.66rem] font-black uppercase tracking-[0.2em] text-[var(--spike-accent)]">
-                  {blockLabel}
+        return (
+          <article
+            className="min-h-[18.5rem] rounded-[1.25rem] border border-black bg-[#050505] p-5 text-[#f8f8f2] shadow-[0_18px_55px_rgba(0,0,0,0.18)]"
+            key={commodity.id}
+          >
+            <div className="flex min-h-6 flex-wrap items-center gap-2">
+              <span className="text-[0.66rem] font-black uppercase tracking-[0.2em] text-[var(--spike-accent)]">
+                {blockLabel}
+              </span>
+              {commodity.vatIncluded ? (
+                <span className="rounded-full border border-[var(--spike-pink)]/45 bg-[var(--spike-pink)]/12 px-2 py-0.5 text-[0.58rem] font-black uppercase tracking-[0.12em] text-[var(--spike-pink)]">
+                  {vatLabel}
                 </span>
-                {commodity.vatIncluded ? (
-                  <span className="rounded-full border border-[var(--spike-pink)]/45 bg-[var(--spike-pink)]/12 px-2 py-0.5 text-[0.58rem] font-black uppercase tracking-[0.12em] text-[var(--spike-pink)]">
-                    {vatLabel}
-                  </span>
-                ) : null}
-              </div>
-              <h3 className="mt-5 min-h-[3.5rem] text-2xl font-black uppercase leading-none tracking-tight text-[#f8f8f2]">
-                {commodity.name[locale]}
-              </h3>
-              <div className="mt-6">
-                <p className="text-[0.62rem] font-black uppercase tracking-[0.16em] text-white/42">
-                  Index
-                </p>
-                <p className="mt-1 text-5xl font-black leading-none text-[#f8f8f2]">
-                  {latest.value.toFixed(0)}
-                </p>
-                <p className="mt-2 text-[0.68rem] font-black uppercase tracking-[0.12em] text-white/42">
-                  {latestDate}
-                </p>
-              </div>
-              <div className="mt-6 grid grid-cols-3 gap-2 text-xs">
-                <MetricDelta label="1D" value={latest.dayChange} />
-                <MetricDelta label="7D" value={sevenDay} />
-                <MetricDelta label="30D" value={thirtyDay} />
-              </div>
-            </article>
-          );
-        })}
+              ) : null}
+            </div>
+            <h3 className="mt-5 min-h-[3.5rem] text-2xl font-black uppercase leading-none tracking-tight text-[#f8f8f2]">
+              {commodity.name[locale]}
+            </h3>
+            <div className="mt-6">
+              <p className="text-[0.62rem] font-black uppercase tracking-[0.16em] text-white/42">
+                Index
+              </p>
+              <p className="mt-1 text-5xl font-black leading-none text-[#f8f8f2]">
+                {latest.value.toFixed(0)}
+              </p>
+              <p className="mt-2 text-[0.68rem] font-black uppercase tracking-[0.12em] text-white/42">
+                {latestDate}
+              </p>
+            </div>
+            <div className="mt-6 grid grid-cols-3 gap-2 text-xs">
+              <MetricDelta label="1D" value={latest.dayChange} />
+              <MetricDelta label="7D" value={sevenDay} />
+              <MetricDelta label="30D" value={thirtyDay} />
+            </div>
+          </article>
+        );
+      })}
     </div>
   );
 }
