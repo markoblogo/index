@@ -138,6 +138,8 @@ Shared capabilities:
   [`docs/html-artifact-contract.md`](docs/html-artifact-contract.md).
 - Includes a real MediaHub daily review artifact:
   [`docs/media-hub-daily-status-artifact.html`](docs/media-hub-daily-status-artifact.html).
+- Uses live-source research only as report-only reviewed evidence:
+  [`docs/mediahub-live-source-research-note.md`](docs/mediahub-live-source-research-note.md).
   Treat it as the standard day-window handoff page for MediaHub operator/review flows.
 - Uses a compact front-door routing contract for engineering work:
   [`docs/ship-router-contract.md`](docs/ship-router-contract.md).
