@@ -436,8 +436,9 @@ function MovementSummary({
     .sort((first, second) => second.localeCompare(first))[0];
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {commodities.map((commodity) => {
+    <div className="-mx-4 overflow-x-auto px-4 pb-2 [scrollbar-width:thin]">
+      <div className="flex min-w-max gap-4">
+        {commodities.map((commodity) => {
         const commodityHistory = getCommodityHistory(history, commodity.id);
         const latest = commodityHistory.find(
           (point) => point.date === latestPublishedDate,
@@ -457,7 +458,7 @@ function MovementSummary({
 
         return (
           <article
-            className="min-h-[18.5rem] rounded-[1.25rem] border border-black bg-[#050505] p-5 text-[#f8f8f2] shadow-[0_18px_55px_rgba(0,0,0,0.18)]"
+            className="min-h-[18.5rem] w-[17.5rem] rounded-[1.25rem] border border-black bg-[#050505] p-5 text-[#f8f8f2] shadow-[0_18px_55px_rgba(0,0,0,0.18)]"
             key={commodity.id}
           >
             <div className="flex min-h-6 flex-wrap items-center gap-2">
@@ -492,6 +493,7 @@ function MovementSummary({
           </article>
         );
       })}
+      </div>
     </div>
   );
 }
