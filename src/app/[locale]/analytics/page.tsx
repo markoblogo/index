@@ -129,7 +129,7 @@ const ExperimentalAnalyticsSectionAsync = nextDynamic(
   },
 );
 
-const VOLATILITY_WINDOWS = [90, 180, 365] as const;
+const VOLATILITY_WINDOWS = [30, 90, 180, 365] as const;
 type VolatilityWindow = (typeof VOLATILITY_WINDOWS)[number];
 
 const profileByCommodity: Partial<
@@ -155,7 +155,7 @@ export default async function AnalyticsPage({
 }) {
   const [{ locale }, queryParams] = await Promise.all([params, searchParams]);
   const copy = getAnalyticsCopy(locale);
-  const volatilityWindow = normalizeVolatilityWindow("365");
+  const volatilityWindow = normalizeVolatilityWindow("30");
   const fxRatesPromise = getFxRates();
   const scenarioMarketReadSnapshotPromise = getScenarioMarketReadSnapshot();
   const analyticsDisplaySnapshotPromise = getAnalyticsDisplaySnapshot();
@@ -433,8 +433,7 @@ function MovementSummary({
   const activeIndex = getActiveIndexConfig();
 
   return (
-    <div className="-mx-4 overflow-x-auto px-4 pb-2 [scrollbar-width:thin]">
-      <div className="flex min-w-max gap-4">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {commodities.map((commodity) => {
           const commodityHistory = getCommodityHistory(history, commodity.id);
           const latest = commodityHistory.at(-1);
@@ -448,14 +447,12 @@ function MovementSummary({
             latest.value - getCalendarLookbackPoint(commodityHistory, latest.date, 7).value;
           const thirtyDay =
             latest.value - getCalendarLookbackPoint(commodityHistory, latest.date, 30).value;
-          const ninetyDay =
-            latest.value - getCalendarLookbackPoint(commodityHistory, latest.date, 90).value;
           const blockLabel = getMovementCardBlockLabel(commodity, locale, activeIndex);
           const vatLabel = locale === "uk" ? "з ПДВ" : "with VAT";
 
           return (
             <article
-              className="min-h-[20rem] w-[17.5rem] rounded-[1.25rem] border border-black bg-[#050505] p-5 text-[#f8f8f2] shadow-[0_18px_55px_rgba(0,0,0,0.18)]"
+              className="min-h-[18.5rem] rounded-[1.25rem] border border-black bg-[#050505] p-5 text-[#f8f8f2] shadow-[0_18px_55px_rgba(0,0,0,0.18)]"
               key={commodity.id}
             >
               <div className="flex min-h-6 flex-wrap items-center gap-2">
@@ -482,16 +479,14 @@ function MovementSummary({
                   {latestDate}
                 </p>
               </div>
-              <div className="mt-6 grid grid-cols-2 gap-2 text-xs">
+              <div className="mt-6 grid grid-cols-3 gap-2 text-xs">
                 <MetricDelta label="1D" value={latest.dayChange} />
                 <MetricDelta label="7D" value={sevenDay} />
                 <MetricDelta label="30D" value={thirtyDay} />
-                <MetricDelta label="90D" value={ninetyDay} />
               </div>
             </article>
           );
         })}
-      </div>
     </div>
   );
 }
@@ -536,7 +531,7 @@ function MetricDelta({ label, value }: { label: string; value: number }) {
               : "mt-1 font-black text-white/58"
         }
       >
-        {formatSigned(value)}
+        {formatSignedWhole(value)}
       </p>
     </div>
   );
@@ -955,6 +950,7 @@ function getCommodityGroupLabel(key: string, locale: Locale) {
 
 function copyAnnualVolatilityMeta(locale: Locale, volatilityWindow: VolatilityWindow) {
   const map: Record<VolatilityWindow, string> = {
+    30: locale === "uk" ? "30 днів" : "30 days",
     90: locale === "uk" ? "90 днів" : "90 days",
     180: locale === "uk" ? "180 днів" : "180 days",
     365: locale === "uk" ? "365 днів" : "365 days",
@@ -1009,7 +1005,7 @@ function normalizeVolatilityWindow(value: string | undefined): VolatilityWindow 
     return parsed as VolatilityWindow;
   }
 
-  return 365;
+  return 30;
 }
 
 function getCommodityHistory(
@@ -1079,6 +1075,12 @@ function getCommodityProfile(commodityId: CommodityId) {
 
 function formatSigned(value: number) {
   return `${value > 0 ? "+" : ""}${value.toFixed(1)}`;
+}
+
+function formatSignedWhole(value: number) {
+  const rounded = Math.round(value);
+
+  return `${rounded > 0 ? "+" : ""}${rounded}`;
 }
 
 function roundOne(value: number) {
@@ -1169,13 +1171,13 @@ function getAnalyticsCopy(locale: Locale) {
         "Порівнюйте динаміку індексів, аналізуйте структуру ринку, відстежуйте волатильність і переглядайте аналітичні сценарії для українських експортних цін на зернові та олійні культури.",
       heroEyebrow: "Аналітика",
       heroTitle: "Аналітика значень UGA Index",
-      annualVolatilitySoybean: "Річна волатильність сої",
-      annualVolatilityRapeseed: "Річна волатильність ріпаку",
-      annualVolatilitySunflower: "Річна волатильність соняшнику",
-      annualVolatilityCorn: "Річна волатильність кукурудзи",
-      annualVolatilityWheat: "Річна волатильність пшениці 11,5",
+      annualVolatilitySoybean: "30-денна волатильність сої",
+      annualVolatilityRapeseed: "30-денна волатильність ріпаку",
+      annualVolatilitySunflower: "30-денна волатильність соняшнику",
+      annualVolatilityCorn: "30-денна волатильність кукурудзи",
+      annualVolatilityWheat: "30-денна волатильність пшениці 11,5",
       daysLabel: "днів",
-      volatilityWindowLabel: "Вікно річної волатильності",
+      volatilityWindowLabel: "Вікно волатильності",
       highestWeeklyGain: "Найбільше місячне зростання",
       historyActions: ["Повна історія", "Export CSV", "API access"],
       historyDescription:
@@ -1195,7 +1197,7 @@ function getAnalyticsCopy(locale: Locale) {
       monthUnit: "місяців",
       mostVolatileCommodity: "Найбільш волатильна за місяць культура",
       movementDescription:
-        "Останнє значення індексу та зміни за 1, 7, 30 і 90 днів.",
+        "Останнє значення індексу та зміни за 1, 7 і 30 днів.",
       movementTitle: "Підсумок цінових змін",
       noRealDataBody:
         "Після першої публікації індексу тут з'являться реальні історичні значення, спреди, волатильність і сценарні зрізи. Demo-серії використовуються лише в demo-режимі.",
@@ -1346,13 +1348,13 @@ function getAnalyticsCopy(locale: Locale) {
       "Compare index dynamics, review market structure, track volatility and explore analytical scenarios for Ukrainian grain and oilseed export prices.",
     heroEyebrow: "Analytics",
     heroTitle: "Commodity intelligence for UGA Index values",
-      annualVolatilitySoybean: "Annual soybean volatility",
-      annualVolatilityRapeseed: "Annual rapeseed volatility",
-      annualVolatilitySunflower: "Annual sunflower volatility",
-      annualVolatilityCorn: "Annual corn volatility",
-      annualVolatilityWheat: "Annual wheat 11.5 volatility",
+      annualVolatilitySoybean: "30-day soybean volatility",
+      annualVolatilityRapeseed: "30-day rapeseed volatility",
+      annualVolatilitySunflower: "30-day sunflower volatility",
+      annualVolatilityCorn: "30-day corn volatility",
+      annualVolatilityWheat: "30-day wheat 11.5 volatility",
       daysLabel: "days",
-      volatilityWindowLabel: "Annual volatility window",
+      volatilityWindowLabel: "Volatility window",
       highestWeeklyGain: "Highest monthly gain",
     historyActions: ["View full history", "Export CSV", "API access"],
     historyDescription:
@@ -1372,7 +1374,7 @@ function getAnalyticsCopy(locale: Locale) {
     monthUnit: "months",
     mostVolatileCommodity: "Most volatile commodity this month",
     movementDescription:
-      "Latest index value and 1, 7, 30, and 90-day changes by commodity.",
+      "Latest index value and 1, 7 and 30-day changes by commodity.",
     movementTitle: "Price movement summary",
     noRealDataBody:
       "After the first index publication, this page will show real historical values, spreads, volatility and scenario views. Demo series are used only in demo mode.",
