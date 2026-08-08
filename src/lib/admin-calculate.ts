@@ -55,6 +55,8 @@ export type AdminCalculationCommodity = {
   median: number | null;
   value: number | null;
   rawValue: number | null;
+  previousDayValue: number | null;
+  dayChangeAbs: number | null;
   spikeIndicative: number | null;
   spikeDifference: number | null;
   spikeDeviationPct: number | null;
@@ -1042,6 +1044,11 @@ function buildCalculationCommodity({
     median: result.median === null ? null : roundToOneDecimal(result.median),
     value: result.value,
     rawValue: result.rawValue,
+    previousDayValue: previousPublished,
+    dayChangeAbs:
+      result.value === null || previousPublished === null
+        ? null
+        : roundToOneDecimal(result.value - previousPublished),
     spikeIndicative,
     spikeDifference,
     spikeDeviationPct,

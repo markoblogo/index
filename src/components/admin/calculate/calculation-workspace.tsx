@@ -194,7 +194,7 @@ export function CalculationWorkspace({
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1120px] text-left">
+          <table className="w-full min-w-[1320px] text-left">
             <thead className="bg-uga-dark text-xs uppercase tracking-[0.14em] text-white/70">
               <tr>
                 <th className="px-4 py-3 font-semibold">Commodity</th>
@@ -202,6 +202,8 @@ export function CalculationWorkspace({
                 <th className="px-4 py-3 font-semibold">Included</th>
                 <th className="px-4 py-3 font-semibold">Median</th>
                 <th className="px-4 py-3 font-semibold">{SITE_CONFIG.name}</th>
+                <th className="px-4 py-3 font-semibold">Попередній день</th>
+                <th className="px-4 py-3 font-semibold">Зміна д/д</th>
                 {showBenchmark ? (
                   <>
                     <th className="px-4 py-3 font-semibold">Benchmark</th>
@@ -289,6 +291,16 @@ function CalculationRow({
         <td className="px-4 py-4">
           <Metric label="Calculated" value={formatUsd(commodity.value)} strong />
         </td>
+        <td className="px-4 py-4">
+          <Metric label="Попередній день" value={formatUsd(commodity.previousDayValue)} />
+        </td>
+        <td className="px-4 py-4">
+          <Metric
+            label="Зміна д/д"
+            value={formatUsdDelta(commodity.dayChangeAbs)}
+            strong={commodity.dayChangeAbs !== null}
+          />
+        </td>
         {showBenchmark ? (
           <>
             <td className="px-4 py-4">
@@ -337,7 +349,7 @@ function CalculationRow({
       </tr>
       {commodity.excluded.length > 0 ? (
         <tr>
-          <td className="px-4 pb-4 pt-0" colSpan={showBenchmark ? 8 : 6}>
+          <td className="px-4 pb-4 pt-0" colSpan={showBenchmark ? 10 : 8}>
             <div className="border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">
               {formatExcludedRows(commodity.excluded)}
             </div>
@@ -440,6 +452,18 @@ function Metric({
 
 function formatUsd(value: number | null) {
   return value === null ? "n/a" : `$${value.toFixed(1)} USD/t`;
+}
+
+function formatUsdDelta(value: number | null) {
+  if (value === null) {
+    return "n/a";
+  }
+
+  if (value === 0) {
+    return "$0.0 USD/t";
+  }
+
+  return `${value > 0 ? "+" : "-"}$${Math.abs(value).toFixed(1)} USD/t`;
 }
 
 function formatCategoryBadge(category: string) {
