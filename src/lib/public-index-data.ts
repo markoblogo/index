@@ -23,6 +23,7 @@ import {
 } from "@/lib/tenant-basis";
 import { getSpikePublicVisibleTradeDate } from "@/lib/spike-publication-window";
 import { getLatestSubmissionFallbacks } from "@/lib/public-submission-fallbacks";
+import { resolvePublicDisplayFallback } from "@/lib/public-index-display";
 
 export type PublicIndexSnapshot = {
   commodities: Commodity[];
@@ -317,12 +318,11 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
     const submissionFallback =
       submissionFallbackByCommodityId.get(commodity.id) ??
       (publishedIndex ? null : latestSubmissionFallbackByCommodityId.get(commodity.id));
-    const displayFallback =
-      submissionFallback &&
-      (!publishedIndex ||
-        submissionFallback.date > publishedIndex.tradeDate.toISOString().slice(0, 10))
-        ? submissionFallback
-        : null;
+    const displayFallback = resolvePublicDisplayFallback({
+      publishedIndexDate: publishedIndex?.tradeDate.toISOString().slice(0, 10) ?? null,
+      submissionFallback,
+      tenantId: activeIndex.id,
+    });
     const history = recentPublishedByCommodityId.get(commodity.id) ?? [];
     const storedAiComment = {
       en: aiCommentsEn[commodity.code] ?? aiCommentsEn[mockCommodity.code] ?? "",
@@ -392,12 +392,11 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
     const submissionFallback =
       submissionFallbackByCommodityId.get(commodity.id) ??
       (publishedIndex ? null : latestSubmissionFallbackByCommodityId.get(commodity.id));
-    const displayFallback =
-      submissionFallback &&
-      (!publishedIndex ||
-        submissionFallback.date > publishedIndex.tradeDate.toISOString().slice(0, 10))
-        ? submissionFallback
-        : null;
+    const displayFallback = resolvePublicDisplayFallback({
+      publishedIndexDate: publishedIndex?.tradeDate.toISOString().slice(0, 10) ?? null,
+      submissionFallback,
+      tenantId: activeIndex.id,
+    });
     const basisConfig = getDeliveryBasisConfigForCommodityCode(
       commodity.code,
       activeIndex,

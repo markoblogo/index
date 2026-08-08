@@ -11,12 +11,24 @@ export async function loadPublicHomePageData(locale: Locale) {
     getFxRates(),
     getActiveRespondentCountData(),
   ]);
+  const latestQuoteDate =
+    activeIndex.id === "spike-ua"
+      ? snapshot.latestQuotes
+          .map((quote) => quote.date)
+          .sort((first, second) => second.localeCompare(first))[0] ?? null
+      : null;
   const updatedAt = new Intl.DateTimeFormat(
     locale === "uk" ? "uk-UA" : "en-US",
     {
       dateStyle: "medium",
     },
-  ).format(new Date(snapshot.updatedAt));
+  ).format(
+    new Date(
+      latestQuoteDate
+        ? `${latestQuoteDate}T00:00:00.000Z`
+        : snapshot.updatedAt,
+    ),
+  );
 
   return {
     activeIndex,
