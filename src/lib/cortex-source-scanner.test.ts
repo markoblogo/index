@@ -45,21 +45,57 @@ describe("cortex source scanner", () => {
     expect(manifest.product).toBe("1D3X Cortex");
     expect(manifest.schemaVersion).toBe(1);
     expect(manifest.sources.map((source) => source.relativePath)).toEqual([
+      "AGENTS.md",
       "docs/action-events.md",
       "docs/implementation-plan.md",
       "docs/source/manual.pdf",
+      "package.json",
       "README.md",
       "scripts/cortex-source-scan.ts",
       "src/app/page.tsx",
+      "UGA INDEX.pdf",
     ]);
     expect(manifest.sources.map((source) => source.relativePath)).not.toContain(".env");
     expect(manifest.totals.byKind["site-content"]).toBe(1);
-    expect(manifest.totals.byKind["manual-book"]).toBe(1);
+    expect(manifest.totals.byKind["manual-book"]).toBe(2);
     expect(manifest.totals.byKind["development-plan"]).toBe(1);
     expect(manifest.totals.byKind["action-event"]).toBe(1);
     expect(manifest.totals.byKind.code).toBe(1);
-    expect(manifest.totals.files).toBe(6);
+    expect(manifest.totals.files).toBe(9);
     expect(manifest.sources.every((source) => source.hash.length === 64)).toBe(true);
+  });
+
+  it("fails closed for noisy and unknown top-level directories", async () => {
+    const rootPath = await createFixtureRoot();
+    await mkdir(path.join(rootPath, ".whatsapp-session-20260703", "session"), { recursive: true });
+    await mkdir(path.join(rootPath, ".wwebjs_cache"), { recursive: true });
+    await mkdir(path.join(rootPath, "sandbox"), { recursive: true });
+    await writeFile(
+      path.join(rootPath, ".whatsapp-session-20260703", "session", "manifest.json"),
+      "{\"session\":true}\n",
+    );
+    await writeFile(path.join(rootPath, ".wwebjs_cache", "session.html"), "<html></html>\n");
+    await writeFile(path.join(rootPath, "sandbox", "draft.md"), "# Draft\n");
+
+    const manifest = await buildCortexSourceManifest({
+      generatedAt: "2026-07-06T00:00:00.000Z",
+      roots: [
+        {
+          ownerProject: "index",
+          rootId: "fixture-index",
+          rootPath,
+          visibility: "internal",
+        },
+      ],
+    });
+
+    expect(manifest.sources.map((source) => source.relativePath)).not.toContain(
+      ".whatsapp-session-20260703/session/manifest.json",
+    );
+    expect(manifest.sources.map((source) => source.relativePath)).not.toContain(".wwebjs_cache/session.html");
+    expect(manifest.sources.map((source) => source.relativePath)).not.toContain("sandbox/draft.md");
+    expect(manifest.sources.map((source) => source.relativePath)).toContain("docs/action-events.md");
+    expect(manifest.sources.map((source) => source.relativePath)).toContain("src/app/page.tsx");
   });
 
   it("builds local ecosystem roots from existing paths only", async () => {
@@ -107,7 +143,7 @@ describe("cortex source scanner", () => {
       added: 1,
       changed: 1,
       removed: 1,
-      unchanged: 4,
+      unchanged: 7,
     });
     expect(ledger.chunkingQueue.map((source) => source.relativePath).sort()).toEqual([
       "README.md",
@@ -123,10 +159,13 @@ async function createFixtureRoot() {
   await mkdir(path.join(rootPath, "docs/source"), { recursive: true });
   await mkdir(path.join(rootPath, "scripts"), { recursive: true });
   await mkdir(path.join(rootPath, "src/app"), { recursive: true });
+  await writeFile(path.join(rootPath, "AGENTS.md"), "# Agent notes\n");
   await writeFile(path.join(rootPath, "README.md"), "# Fixture\n");
+  await writeFile(path.join(rootPath, "UGA INDEX.pdf"), "pdf-bytes");
   await writeFile(path.join(rootPath, "docs/action-events.md"), "# Actions\n");
   await writeFile(path.join(rootPath, "docs/implementation-plan.md"), "# Plan\n");
   await writeFile(path.join(rootPath, "docs/source/manual.pdf"), "manual");
+  await writeFile(path.join(rootPath, "package.json"), "{\"name\":\"fixture\"}\n");
   await writeFile(path.join(rootPath, "scripts/cortex-source-scan.ts"), "export {};\n");
   await writeFile(path.join(rootPath, "src/app/page.tsx"), "export default function Page() { return null; }\n");
   await writeFile(path.join(rootPath, ".env"), "SECRET=value\n");

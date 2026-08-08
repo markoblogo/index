@@ -26,6 +26,7 @@ export type CortexLocalEcosystemRootPaths = {
 };
 
 export type CortexSourceManifestEntry = {
+  admission: CortexSourceAdmissionMetadata;
   evidenceId: string;
   extractedAt: string;
   hash: string;
@@ -38,6 +39,21 @@ export type CortexSourceManifestEntry = {
   title: string;
   urlOrPath: string;
   visibility: CortexVisibility;
+};
+
+export type CortexSourceAdmissionTrustLevel = "canonical" | "approved-generated";
+
+export type CortexSourceCanonicalStatus = "canonical" | "non-canonical";
+
+export type CortexSourceProvenanceExpectation =
+  | "repo-committed-path"
+  | "rebuildable-generated-artifact";
+
+export type CortexSourceAdmissionMetadata = {
+  canonicalStatus: CortexSourceCanonicalStatus;
+  sourceClass: "canonical-domain-knowledge" | "canonical-project-knowledge";
+  trustLevel: CortexSourceAdmissionTrustLevel;
+  provenanceExpectation: CortexSourceProvenanceExpectation;
 };
 
 export type CortexSourceManifest = {
@@ -117,6 +133,37 @@ const SCANNED_EXTENSIONS = new Set([
   ".txt",
   ".yaml",
   ".yml",
+]);
+
+const APPROVED_TOP_LEVEL_DIRS = new Set([
+  "docs",
+  "fixtures",
+  "prisma",
+  "public",
+  "scripts",
+  "services",
+  "src",
+  "tests",
+]);
+
+const APPROVED_TOP_LEVEL_FILE_NAMES = new Set([
+  "AGENTS.md",
+  "README.md",
+  "components.json",
+  "eslint.config.mjs",
+  "next-env.d.ts",
+  "next.config.test.ts",
+  "next.config.ts",
+  "package-lock.json",
+  "package.json",
+  "playwright.config.ts",
+  "postcss.config.mjs",
+  "prisma.config.ts",
+  "railway.json",
+  "tailwind.config.ts",
+  "tsconfig.json",
+  "vercel.json",
+  "vitest.config.ts",
 ]);
 
 export async function buildCortexSourceManifest(input: {
@@ -231,7 +278,7 @@ export async function buildLocalEcosystemScanRoots(
 
 async function scanRoot(root: CortexScanRoot, extractedAt: string) {
   const absoluteRoot = path.resolve(root.rootPath);
-  const files = await listFiles(absoluteRoot);
+  const files = await listFiles(root, absoluteRoot);
 
   return Promise.all(
     files.map(async (filePath): Promise<CortexSourceManifestEntry> => {
@@ -241,6 +288,7 @@ async function scanRoot(root: CortexScanRoot, extractedAt: string) {
       const hash = createHash("sha256").update(bytes).digest("hex");
 
       return {
+        admission: admissionMetadataForPath(relativePath),
         evidenceId: `cortex:source-scan:${root.rootId}:${hash.slice(0, 16)}`,
         extractedAt,
         hash,
@@ -258,25 +306,26 @@ async function scanRoot(root: CortexScanRoot, extractedAt: string) {
   );
 }
 
-async function listFiles(root: string): Promise<string[]> {
-  const rootStat = await stat(root);
+async function listFiles(root: CortexScanRoot, currentPath: string): Promise<string[]> {
+  const rootStat = await stat(currentPath);
   if (!rootStat.isDirectory()) {
-    return shouldScanFile(root) ? [root] : [];
+    return shouldScanFile(root, currentPath) ? [currentPath] : [];
   }
 
-  const entries = await readdir(root, { withFileTypes: true });
+  const entries = await readdir(currentPath, { withFileTypes: true });
   const files: string[] = [];
 
   for (const entry of entries) {
-    const nextPath = path.join(root, entry.name);
+    const nextPath = path.join(currentPath, entry.name);
     if (entry.isDirectory()) {
-      if (!IGNORED_DIRS.has(entry.name)) {
-        files.push(...await listFiles(nextPath));
+      if (!shouldDescendIntoDir(root, currentPath, entry.name)) {
+        continue;
       }
+      files.push(...await listFiles(root, nextPath));
       continue;
     }
 
-    if (entry.isFile() && shouldScanFile(nextPath)) {
+    if (entry.isFile() && shouldScanFile(root, nextPath)) {
       files.push(nextPath);
     }
   }
@@ -284,12 +333,54 @@ async function listFiles(root: string): Promise<string[]> {
   return files;
 }
 
-function shouldScanFile(filePath: string) {
+function shouldDescendIntoDir(root: CortexScanRoot, currentPath: string, dirName: string) {
+  if (IGNORED_DIRS.has(dirName)) {
+    return false;
+  }
+
+  const relativeDir = toPosixPath(path.relative(root.rootPath, path.join(currentPath, dirName)));
+  if (!relativeDir) {
+    return true;
+  }
+
+  const segments = relativeDir.split("/");
+  if (segments.some((segment) => segment.startsWith("."))) {
+    return false;
+  }
+
+  if (root.ownerProject !== "index") {
+    return true;
+  }
+
+  return segments.length > 1 || APPROVED_TOP_LEVEL_DIRS.has(segments[0] ?? "");
+}
+
+function shouldScanFile(root: CortexScanRoot, filePath: string) {
   const basename = path.basename(filePath);
   if (SECRET_FILE_PATTERNS.some((pattern) => pattern.test(basename))) {
     return false;
   }
-  return SCANNED_EXTENSIONS.has(path.extname(filePath).toLowerCase());
+
+  const extension = path.extname(filePath).toLowerCase();
+  if (!SCANNED_EXTENSIONS.has(extension)) {
+    return false;
+  }
+
+  const relativePath = toPosixPath(path.relative(root.rootPath, filePath));
+  const segments = relativePath.split("/");
+  if (segments.some((segment) => segment.startsWith("."))) {
+    return false;
+  }
+
+  if (root.ownerProject !== "index") {
+    return true;
+  }
+
+  if (segments.length === 1) {
+    return APPROVED_TOP_LEVEL_FILE_NAMES.has(segments[0] ?? "") || extension === ".pdf";
+  }
+
+  return APPROVED_TOP_LEVEL_DIRS.has(segments[0] ?? "");
 }
 
 export function classifySource(relativePath: string): CortexScannedSourceKind {
@@ -354,6 +445,20 @@ function sourceIdForKind(kind: CortexScannedSourceKind, ownerProject: CortexScan
     "site-content": "ecosystem-site-content",
   };
   return sourceIds[kind];
+}
+
+function admissionMetadataForPath(relativePath: string): CortexSourceAdmissionMetadata {
+  const normalized = toPosixPath(relativePath);
+  const topLevel = normalized.split("/", 1)[0] ?? normalized;
+
+  return {
+    canonicalStatus: "canonical",
+    provenanceExpectation: "repo-committed-path",
+    sourceClass: topLevel === "src" || topLevel === "public"
+      ? "canonical-project-knowledge"
+      : "canonical-domain-knowledge",
+    trustLevel: "canonical",
+  };
 }
 
 async function pathExists(value: string) {

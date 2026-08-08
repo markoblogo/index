@@ -45,6 +45,7 @@
     "cortex:cropto-source-chunk": "tsx scripts/cortex-cropto-source-chunk.ts",
     "cortex:memory-search": "tsx scripts/cortex-memory-search.ts",
     "cortex:mn7r-snapshot-chunk": "tsx scripts/cortex-mn7r-snapshot-chunk.ts",
+    "cortex:source-hygiene-report": "tsx scripts/cortex-source-hygiene-report.ts",
     "cortex:source-chunk": "tsx scripts/cortex-source-chunk.ts",
     "cortex:source-ingest": "tsx scripts/cortex-source-ingest.ts",
     "cortex:source-scan": "tsx scripts/cortex-source-scan.ts",

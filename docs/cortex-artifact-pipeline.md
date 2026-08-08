@@ -13,6 +13,11 @@ The pipeline is intentionally file-based for the current phase. It proves source
 coverage, visibility gates and repeatable context-pack generation before a
 vector store or dedicated Cortex service is introduced.
 
+Source admission is intentionally fail-closed for Index-owned repository
+knowledge. Read [`docs/cortex-source-admission.md`](./cortex-source-admission.md)
+before widening scanner scope or rebuilding the local corpus after a policy
+change.
+
 ## Inputs
 
 - Index repository docs, app code, MediaHub context, plans and source contracts.

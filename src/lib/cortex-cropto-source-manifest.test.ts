@@ -83,6 +83,12 @@ function fixtureManifest(overrides: { firstHash?: string; rootPath?: string } = 
     schemaVersion: 1,
     sources: [
       {
+        admission: {
+          canonicalStatus: "non-canonical",
+          provenanceExpectation: "rebuildable-generated-artifact",
+          sourceClass: "canonical-domain-knowledge",
+          trustLevel: "approved-generated",
+        },
         evidenceId: "cortex:cropto:readme",
         extractedAt: "2026-07-10T10:00:00.000Z",
         hash: overrides.firstHash ?? "hash-readme",
@@ -97,6 +103,12 @@ function fixtureManifest(overrides: { firstHash?: string; rootPath?: string } = 
         visibility: "public",
       },
       {
+        admission: {
+          canonicalStatus: "non-canonical",
+          provenanceExpectation: "rebuildable-generated-artifact",
+          sourceClass: "canonical-project-knowledge",
+          trustLevel: "approved-generated",
+        },
         evidenceId: "cortex:cropto:app",
         extractedAt: "2026-07-10T10:00:00.000Z",
         hash: "hash-app",
