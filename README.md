@@ -7,6 +7,14 @@ market indices. The codebase is intentionally organized as one index engine with
 tenant-specific brands, content, styling, commodities, respondents, integrations
 and deployment settings.
 
+Read first for a fresh coding session:
+
+1. `README.md`
+2. `AGENTS.md`
+3. `docs/product-context.md`
+4. `docs/media-hub-domain-model.md`
+5. task-specific docs only
+
 The platform now also includes the 1d3x corporate landing site. 1d3x is the
 umbrella brand for local commodity index launches built with institutional
 partners and market leaders.
@@ -104,6 +112,9 @@ Shared capabilities:
 - bounded Context extraction adapter contract for Telegram/RSS/manual files,
   Obscura/Playwright and shadow markdown extraction pilots without adopting a
   heavy scraper platform or anti-bot runtime;
+- fail-closed Context / Index Cortex source-admission hygiene: allowlisted
+  sources, explicit provenance, and no assumption of broad autonomous scanning
+  as a current behavior;
 - Context manual-material receipts for provenance, freshness, operator review
   state and safe prompt use of only `ok` structured markdown evidence;
 - Context recurring source-family registry for bounded scheduled ingestion,
