@@ -11,6 +11,7 @@ import { persistCortexSsiIntegrityObservation } from "@/lib/cortex-ssi-integrity
 import {
   AUTO_PREVIOUS_DAY_OUTLIER_REASON,
   AUTO_PREVIOUS_DAY_OUTLIER_THRESHOLD,
+  isSubmissionManuallyIncluded,
 } from "@/lib/admin-daily-inputs";
 import {
   normalizeMediaHubTelegramChatId,
@@ -28,6 +29,7 @@ export type AutoPublishSubmission = {
   id: string;
   commodityId: string;
   deliveryBasisId: string;
+  metadata?: unknown;
   price: number;
   respondentId: string;
   source: "admin" | "respondent" | "spike";
@@ -242,6 +244,7 @@ export async function autoPublishSpikeDailyIndices(
       id: submission.id,
       commodityId: submission.commodityId,
       deliveryBasisId: submission.deliveryBasisId,
+      metadata: submission.metadata,
       price: submission.priceUsdPerMt.toNumber(),
       respondentId: submission.respondentId,
       source: submission.source,
@@ -891,14 +894,20 @@ export function buildAutoPublishPlan({
         deviationPct: number;
         exclusionReason: typeof AUTO_PREVIOUS_DAY_OUTLIER_REASON;
       }> = commoditySubmissions
-        .filter((submission) => isAutoPublishPreviousDayOutlier(submission.price, previousPublished))
+        .filter(
+          (submission) =>
+            !isSubmissionManuallyIncluded(submission) &&
+            isAutoPublishPreviousDayOutlier(submission.price, previousPublished),
+        )
         .map((submission) => ({
           ...submission,
           deviationPct: getPreviousDayDeviationPct(submission.price, previousPublished),
           exclusionReason: AUTO_PREVIOUS_DAY_OUTLIER_REASON,
         }));
       const candidateSubmissions = commoditySubmissions.filter(
-        (submission) => !isAutoPublishPreviousDayOutlier(submission.price, previousPublished),
+        (submission) =>
+          isSubmissionManuallyIncluded(submission) ||
+          !isAutoPublishPreviousDayOutlier(submission.price, previousPublished),
       );
 
       if (candidateSubmissions.length === 0) {

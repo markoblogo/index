@@ -62,6 +62,7 @@ export async function POST(request: Request) {
       date,
       indexCode: value.indexCode,
       meta: {
+        excludedFromIndex: false,
         manualOverride: true,
         overrideReason: "telegram_report_site_catchup",
         sourceReport: `ssi_telegram_daily_${date}`,

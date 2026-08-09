@@ -164,6 +164,33 @@ describe("buildAutoPublishPlan", () => {
     });
   });
 
+  it("keeps a manually included value even when it exceeds the previous-day threshold", () => {
+    const plan = buildAutoPublishPlan({
+      basisByCommodityId: new Map([["corn-fca-chop", "basis-chop"]]),
+      previousPublishedByCommodityId: new Map([["corn-fca-chop", 222]]),
+      submissions: [
+        {
+          id: "manual-override",
+          commodityId: "corn-fca-chop",
+          deliveryBasisId: "basis-chop",
+          metadata: { excludedFromIndex: false },
+          price: 199,
+          respondentId: "SSI_MANUAL_OVERRIDE",
+          source: "admin",
+          status: "submitted",
+          updatedAt: new Date("2026-08-04T14:05:00.000Z"),
+        },
+      ],
+    });
+
+    expect(plan.get("corn-fca-chop")).toMatchObject({
+      excludedSubmissions: [],
+      rawCount: 1,
+      usedCount: 1,
+      value: 199,
+    });
+  });
+
   it("keeps valid values and records previous-day exclusions in the plan", () => {
     const plan = buildAutoPublishPlan({
       basisByCommodityId: new Map([["corn-fca-chop", "basis-chop"]]),
