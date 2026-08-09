@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import { Prisma } from "@prisma/client";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath, revalidateTag, updateTag } from "next/cache";
 import { db, hasDatabaseUrl } from "@/lib/db";
 import { calculateIndexValue } from "@/lib/index-calculation";
 import { generateAndStoreDailyAiMarketBriefs } from "@/lib/ai-market-brief-lazy";
@@ -8,6 +8,10 @@ import { fetchWithTimeout } from "@/lib/fetch-timeout";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import { computePublishedChange } from "@/lib/index-publish";
 import { persistCortexSsiIntegrityObservation } from "@/lib/cortex-ssi-integrity";
+import {
+  AUTO_PREVIOUS_DAY_OUTLIER_REASON,
+  AUTO_PREVIOUS_DAY_OUTLIER_THRESHOLD,
+} from "@/lib/admin-daily-inputs";
 import {
   normalizeMediaHubTelegramChatId,
   publishMediaHubSnapshotReport,
@@ -37,7 +41,9 @@ export type AutoPublishPlanItem = {
   carriedForwardFromPreviousPublished?: boolean;
   excludedSubmissions: Array<AutoPublishSubmission & {
     deviationPct: number;
-    exclusionReason: "previous_day_5pct_deviation" | "outside_2pct_median_band";
+    exclusionReason:
+      | typeof AUTO_PREVIOUS_DAY_OUTLIER_REASON
+      | "outside_2pct_median_band";
   }>;
   latestUpdatedAt: Date;
   median: number;
@@ -515,6 +521,7 @@ function revalidateSsiPublicIndexViews() {
   revalidatePath("/en/analytics");
   revalidatePath("/api/public/latest");
   revalidatePath("/api/public/history");
+  updateTag("public-index-data");
   revalidateTag("public-index-data", "max");
 }
 
@@ -885,7 +892,7 @@ export function buildAutoPublishPlan({
         .map((submission) => ({
           ...submission,
           deviationPct: getPreviousDayDeviationPct(submission.price, previousPublished),
-          exclusionReason: "previous_day_5pct_deviation" as const,
+          exclusionReason: AUTO_PREVIOUS_DAY_OUTLIER_REASON,
         }));
       const candidateSubmissions = commoditySubmissions.filter(
         (submission) => !isAutoPublishPreviousDayOutlier(submission.price, previousPublished),
@@ -1051,7 +1058,7 @@ async function getPreviousPublishedValuesByCommodityId({
 function isAutoPublishPreviousDayOutlier(price: number, previousPublished: number | null) {
   return previousPublished !== null &&
     previousPublished > 0 &&
-    Math.abs(price - previousPublished) / previousPublished > 0.05;
+    Math.abs(price - previousPublished) / previousPublished > AUTO_PREVIOUS_DAY_OUTLIER_THRESHOLD;
 }
 
 function getPreviousDayDeviationPct(price: number, previousPublished: number | null) {

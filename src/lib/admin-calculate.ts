@@ -20,6 +20,7 @@ import {
 } from "@/lib/index-publish";
 import { commodities } from "@/lib/mock-data";
 import {
+  AUTO_PREVIOUS_DAY_OUTLIER_REASON,
   getDailyInputData,
   isAutoPreviousDayOutlier,
   isSubmissionExcluded,
@@ -536,7 +537,7 @@ async function persistDatabaseCalculations(
           exclusionReason: manuallyExcluded
             ? "manual_exclude_from_index"
             : autoPreviousDayExcluded
-              ? "previous_day_5pct_deviation"
+              ? AUTO_PREVIOUS_DAY_OUTLIER_REASON
               : excluded ? "outside_2pct_median_band" : null,
         };
       }),
@@ -1095,7 +1096,7 @@ function buildCalculationCommodity({
                       100,
                   )
                 : 0,
-            reason: "previous_day_5pct_deviation",
+            reason: AUTO_PREVIOUS_DAY_OUTLIER_REASON,
           })),
       ),
     published,

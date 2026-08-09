@@ -70,7 +70,8 @@ export type DailyInputData = {
 };
 
 const BENCHMARK_WARNING_THRESHOLD = 0.02;
-const AUTO_PREVIOUS_DAY_OUTLIER_THRESHOLD = 0.05;
+export const AUTO_PREVIOUS_DAY_OUTLIER_THRESHOLD = 0.1;
+export const AUTO_PREVIOUS_DAY_OUTLIER_REASON = "previous_day_10pct_deviation";
 const MANUAL_EXCLUDE_FROM_INDEX_REASON = "admin_manual_exclude_from_index";
 const commodityCodeByMockId: Record<CommodityId, string> = Object.fromEntries(
   getActiveIndexTenant().commodities.map((commodity) => [commodity.id, commodity.dbCode]),

@@ -99,7 +99,7 @@ describe("buildAutoPublishPlan", () => {
     });
   });
 
-  it("excludes values more than 5 percent away from the previous published value", () => {
+  it("excludes values more than 10 percent away from the previous published value", () => {
     const plan = buildAutoPublishPlan({
       basisByCommodityId: new Map([["corn-fca-chop", "basis-chop"]]),
       previousPublishedByCommodityId: new Map([["corn-fca-chop", 222]]),
@@ -119,7 +119,7 @@ describe("buildAutoPublishPlan", () => {
 
     expect(plan.get("corn-fca-chop")).toMatchObject({
       carriedForwardFromPreviousPublished: true,
-      excludedSubmissions: [{ id: "bad-submission", exclusionReason: "previous_day_5pct_deviation" }],
+      excludedSubmissions: [{ id: "bad-submission", exclusionReason: "previous_day_10pct_deviation" }],
       rawCount: 1,
       usedCount: 0,
       value: 222,
@@ -203,7 +203,7 @@ describe("buildAutoPublishPlan", () => {
     });
 
     expect(plan.get("corn-fca-chop")).toMatchObject({
-      excludedSubmissions: [{ id: "bad-submission", exclusionReason: "previous_day_5pct_deviation" }],
+      excludedSubmissions: [{ id: "bad-submission", exclusionReason: "previous_day_10pct_deviation" }],
       rawCount: 6,
       usedCount: 5,
       value: 223,
