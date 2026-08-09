@@ -56,33 +56,50 @@ export async function POST(request: Request) {
   }
 
   const saved = [];
-  for (const value of values) {
-    const submission = await upsertRespondentPrice({
-      currency: "USD",
-      date,
-      indexCode: value.indexCode,
-      meta: {
-        excludedFromIndex: false,
-        manualOverride: true,
-        overrideReason: "telegram_report_site_catchup",
-        sourceReport: `ssi_telegram_daily_${date}`,
+  let stage = "save";
+  let publish;
+
+  try {
+    for (const value of values) {
+      const submission = await upsertRespondentPrice({
+        currency: "USD",
+        date,
+        indexCode: value.indexCode,
+        meta: {
+          excludedFromIndex: false,
+          manualOverride: true,
+          overrideReason: "telegram_report_site_catchup",
+          sourceReport: `ssi_telegram_daily_${date}`,
+        },
+        price: value.price,
+        respondentCode: SSI_MANUAL_OVERRIDE_RESPONDENT,
+      });
+
+      saved.push({
+        indexCode: value.indexCode,
+        price: value.price,
+        saved: Boolean(submission),
+      });
+    }
+
+    stage = "publish";
+    publish = await autoPublishSpikeDailyIndices(date, {
+      generateAiBrief: false,
+      publishMediaHub: false,
+      replaceExisting: true,
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error: "Manual override failed",
+        date,
+        detail: error instanceof Error ? error.message : "Unknown error",
+        saved,
+        stage,
       },
-      price: value.price,
-      respondentCode: SSI_MANUAL_OVERRIDE_RESPONDENT,
-    });
-
-    saved.push({
-      indexCode: value.indexCode,
-      price: value.price,
-      saved: Boolean(submission),
-    });
+      { status: 500 },
+    );
   }
-
-  const publish = await autoPublishSpikeDailyIndices(date, {
-    generateAiBrief: false,
-    publishMediaHub: false,
-    replaceExisting: true,
-  });
 
   return NextResponse.json({
     date,
