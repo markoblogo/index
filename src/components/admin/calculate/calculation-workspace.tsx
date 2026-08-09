@@ -299,6 +299,13 @@ function CalculationRow({
             label="Зміна д/д"
             value={formatUsdDelta(commodity.dayChangeAbs)}
             strong={commodity.dayChangeAbs !== null}
+            tone={
+              commodity.dayChangeAbs === null || commodity.dayChangeAbs === 0
+                ? "neutral"
+                : commodity.dayChangeAbs > 0
+                  ? "positive"
+                  : "negative"
+            }
           />
         </td>
         {showBenchmark ? (
@@ -426,26 +433,32 @@ function formatExcludedRows(commodity: AdminCalculationCommodity["excluded"]) {
 function Metric({
   label,
   strong,
+  tone = strong ? "positive" : "neutral",
   value,
 }: {
   label: string;
   strong?: boolean;
+  tone?: "neutral" | "positive" | "negative";
   value: number | string;
 }) {
+  const valueClassName = strong
+    ? tone === "negative"
+      ? "mt-1 text-lg font-semibold tracking-tight text-red-600"
+      : tone === "neutral"
+        ? "mt-1 text-lg font-semibold tracking-tight text-uga-dark"
+        : "mt-1 text-lg font-semibold tracking-tight text-uga-green"
+    : tone === "negative"
+      ? "mt-1 text-base font-semibold tracking-tight text-red-600"
+      : tone === "positive"
+        ? "mt-1 text-base font-semibold tracking-tight text-uga-green"
+        : "mt-1 text-base font-semibold tracking-tight text-uga-dark";
+
   return (
     <div className="min-w-[8rem]">
       <p className="text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-black/45">
         {label}
       </p>
-      <p
-        className={
-          strong
-            ? "mt-1 text-lg font-semibold tracking-tight text-uga-green"
-            : "mt-1 text-base font-semibold tracking-tight text-uga-dark"
-        }
-      >
-        {value}
-      </p>
+      <p className={valueClassName}>{value}</p>
     </div>
   );
 }
