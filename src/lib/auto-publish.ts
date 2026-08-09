@@ -887,7 +887,10 @@ export function buildAutoPublishPlan({
   const planEntries = [...basisByCommodityId.keys()].map((commodityId): [string, AutoPublishPlanItem] | null => {
       const commoditySubmissions = byCommodity.get(commodityId) ?? [];
       const previousPublished = previousPublishedByCommodityId.get(commodityId) ?? null;
-      const previousDayExcludedSubmissions = commoditySubmissions
+      const previousDayExcludedSubmissions: Array<AutoPublishSubmission & {
+        deviationPct: number;
+        exclusionReason: typeof AUTO_PREVIOUS_DAY_OUTLIER_REASON;
+      }> = commoditySubmissions
         .filter((submission) => isAutoPublishPreviousDayOutlier(submission.price, previousPublished))
         .map((submission) => ({
           ...submission,
