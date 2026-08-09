@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import { Prisma } from "@prisma/client";
-import { revalidatePath, revalidateTag, updateTag } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { db, hasDatabaseUrl } from "@/lib/db";
 import { calculateIndexValue } from "@/lib/index-calculation";
 import { generateAndStoreDailyAiMarketBriefs } from "@/lib/ai-market-brief-lazy";
@@ -524,7 +524,6 @@ function revalidateSsiPublicIndexViews() {
   revalidatePath("/en/analytics");
   revalidatePath("/api/public/latest");
   revalidatePath("/api/public/history");
-  updateTag("public-index-data");
   revalidateTag("public-index-data", "max");
 }
 
