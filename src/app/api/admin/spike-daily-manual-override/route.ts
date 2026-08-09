@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { isBearerTokenAuthorized } from "@/lib/cron-auth";
+import { getCurrentDemoUser } from "@/lib/demo-auth";
 import { autoPublishSpikeDailyIndices, formatDateKyiv } from "@/lib/auto-publish";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import { upsertRespondentPrice } from "@/lib/respondent-prices";
@@ -18,7 +19,10 @@ type ManualOverrideBody = {
 const SSI_MANUAL_OVERRIDE_RESPONDENT = "SSI_MANUAL_OVERRIDE";
 
 export async function POST(request: Request) {
+  const user = await getCurrentDemoUser();
+  const hasAdminRole = user?.role === "admin";
   if (
+    !hasAdminRole &&
     !isBearerTokenAuthorized(request, [
       process.env.SPIKE_DAILY_CATCHUP_SECRET,
       process.env.MEDIA_HUB_CATCHUP_SECRET,
@@ -81,6 +85,7 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     date,
+    authMode: hasAdminRole ? "admin_session" : "bearer_secret",
     publish,
     saved,
     tenant: activeIndex.id,
