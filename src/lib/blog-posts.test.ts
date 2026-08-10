@@ -28,6 +28,9 @@ describe("spike blog editorial contract", () => {
     expect(post?.videoUrl).toBe(
       "https://youtu.be/66bVMxlkREc?si=uIewZqricSiuFjAD",
     );
-    expect(post?.subtitle).toContain("everyday realities of running a small Ukrainian farm");
+    expect(post?.videoAfterParagraph).toBe(3);
+    expect(post?.subtitle).toContain(
+      "everyday realities of running a small Ukrainian farm",
+    );
   });
 });

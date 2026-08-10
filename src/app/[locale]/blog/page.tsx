@@ -222,7 +222,7 @@ export default async function BlogPage({ params, searchParams }: BlogPageProps) 
                       <div className="relative aspect-[1672/941] overflow-hidden border-b border-white/12 xl:border-b-0 xl:border-r">
                         <Image
                           alt={featuredPost.title}
-                          className="h-full w-full object-cover object-top transition duration-500 group-hover:scale-[1.03]"
+                          className="absolute inset-0 block h-full w-full object-cover object-top transition duration-500 group-hover:scale-[1.03]"
                           height={941}
                           sizes="(min-width: 1280px) 760px, 100vw"
                           src={featuredPost.coverImage}
@@ -272,7 +272,7 @@ export default async function BlogPage({ params, searchParams }: BlogPageProps) 
                         <div className="relative aspect-[1672/941] overflow-hidden border-b border-white/12">
                           <Image
                             alt={post.title}
-                            className="h-full w-full object-cover object-top transition duration-500 group-hover:scale-[1.03]"
+                            className="absolute inset-0 block h-full w-full object-cover object-top transition duration-500 group-hover:scale-[1.03]"
                             height={941}
                             sizes="(min-width: 1536px) 720px, (min-width: 1280px) 560px, 100vw"
                             src={post.coverImage}

@@ -15,6 +15,7 @@ export type BlogPost = {
   tags: string[];
   title: string;
   subtitle?: string | null;
+  videoAfterParagraph?: number | null;
   videoLabel?: string | null;
   videoUrl?: string | null;
 };
@@ -375,6 +376,7 @@ export const spikeBlogPosts: BlogPost[] = [
     slug: "from-ukrainian-grain-markets-to-a-ukrainian-farming-game",
     subtitle:
       "A new indie strategy game turns the everyday realities of running a small Ukrainian farm — machinery, fuel, weather and grain prices — into a calm, distinctly local experience.",
+    videoAfterParagraph: 3,
     tags: [
       "Ukraine",
       "grain market",

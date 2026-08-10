@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { ReactNode } from "react";
 import { BlogShareTools } from "@/components/blog/blog-share-tools";
 import { SITE_CONFIG } from "@/lib/constants";
 import {
@@ -125,53 +126,8 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
         <div className="mx-auto grid max-w-6xl gap-8 py-10 lg:grid-cols-[minmax(0,1fr)_16rem]">
           <div className="grid gap-6 text-lg font-medium leading-8 text-white/76">
-            {post.videoUrl ? (
-              <div className="overflow-hidden rounded-[1.25rem] border border-white/18 bg-[#050505]/84 p-3">
-                {toYoutubeEmbedUrl(post.videoUrl) ? (
-                  <div className="relative aspect-video overflow-hidden rounded-[1rem]">
-                    <iframe
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      allowFullScreen
-                      className="absolute inset-0 h-full w-full"
-                      referrerPolicy="strict-origin-when-cross-origin"
-                      src={toYoutubeEmbedUrl(post.videoUrl) ?? undefined}
-                      title={post.videoLabel ?? post.title}
-                    />
-                  </div>
-                ) : (
-                  <a
-                    className="inline-flex w-fit rounded-full border border-[#f8f8f2]/45 bg-[#050505] px-4 py-2 text-sm font-black uppercase tracking-[0.12em] text-[#f8f8f2] transition hover:bg-[var(--spike-accent)] hover:text-[#050505]"
-                    href={post.videoUrl}
-                    rel="noopener noreferrer"
-                    target="_blank"
-                  >
-                    {post.videoLabel ?? "Watch the trailer"}
-                  </a>
-                )}
-              </div>
-            ) : null}
-            {post.resourceLinks?.length ? (
-              <div className="flex flex-wrap gap-3">
-                {post.resourceLinks.map((link) => (
-                  <a
-                    className="inline-flex w-fit rounded-full border border-[#f8f8f2]/45 bg-[#050505] px-4 py-2 text-sm font-black uppercase tracking-[0.12em] text-[#f8f8f2] transition hover:bg-[var(--spike-accent)] hover:text-[#050505]"
-                    href={link.href}
-                    key={link.href}
-                    rel="noopener noreferrer"
-                    target="_blank"
-                  >
-                    {link.label}
-                  </a>
-                ))}
-              </div>
-            ) : null}
-            {post.body.map((paragraph, index) =>
-              renderBlogParagraph(
-                paragraph,
-                locale,
-                `paragraph-${locale}-${post.slug}-${index}`,
-              ),
-            )}
+            {renderEditorialBody(post, locale)}
+            {renderResourceActions(post)}
           </div>
           <aside className="h-fit rounded-[1.15rem] border border-white/18 bg-[#050505]/76 p-4">
             <p className="text-[0.68rem] font-black uppercase tracking-[0.18em] text-[var(--spike-pink)]">
@@ -205,6 +161,117 @@ function formatDate(value: string, locale: Locale) {
 
 function isBodyHeading(value: string) {
   return value.length <= 80 && !/[.!?…]$/.test(value);
+}
+
+function isCountableParagraph(value: string, locale: Locale) {
+  return !isBodyHeading(value) && !getResourceLinkMeta(value, locale);
+}
+
+function renderEditorialBody(
+  post: NonNullable<ReturnType<typeof getBlogPost>>,
+  locale: Locale,
+) {
+  const blocks: ReactNode[] = [];
+  const videoAfterParagraph = post.videoAfterParagraph ?? null;
+  let paragraphCount = 0;
+  let videoInserted = false;
+
+  post.body.forEach((paragraph, index) => {
+    blocks.push(
+      renderBlogParagraph(
+        paragraph,
+        locale,
+        `paragraph-${locale}-${post.slug}-${index}`,
+      ),
+    );
+
+    if (isCountableParagraph(paragraph, locale)) {
+      paragraphCount += 1;
+    }
+
+    if (
+      !videoInserted &&
+      post.videoUrl &&
+      videoAfterParagraph &&
+      paragraphCount >= videoAfterParagraph
+    ) {
+      blocks.push(
+        <div key={`video-${locale}-${post.slug}`}>
+          {renderVideoBlock(post)}
+        </div>,
+      );
+      videoInserted = true;
+    }
+  });
+
+  if (!videoInserted && post.videoUrl) {
+    blocks.push(
+      <div key={`video-${locale}-${post.slug}`}>
+        {renderVideoBlock(post)}
+      </div>,
+    );
+  }
+
+  return blocks;
+}
+
+function renderVideoBlock(post: NonNullable<ReturnType<typeof getBlogPost>>) {
+  const embedUrl = post.videoUrl ? toYoutubeEmbedUrl(post.videoUrl) : null;
+
+  if (!post.videoUrl) {
+    return null;
+  }
+
+  return (
+    <div className="overflow-hidden rounded-[1.25rem] border border-white/18 bg-[#050505]/84 p-3">
+      {embedUrl ? (
+        <div className="relative aspect-video overflow-hidden rounded-[1rem]">
+          <iframe
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            className="absolute inset-0 h-full w-full"
+            referrerPolicy="strict-origin-when-cross-origin"
+            src={embedUrl}
+            title={post.videoLabel ?? post.title}
+          />
+        </div>
+      ) : (
+        <a
+          className="inline-flex w-fit items-center gap-2 rounded-full border border-[var(--spike-accent)]/60 bg-[var(--spike-accent)]/12 px-4 py-2 text-sm font-black uppercase tracking-[0.12em] text-[var(--spike-accent)] transition hover:bg-[var(--spike-accent)] hover:text-[#050505]"
+          href={post.videoUrl}
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          {post.videoLabel ?? "Watch the trailer"}
+        </a>
+      )}
+    </div>
+  );
+}
+
+function renderResourceActions(post: NonNullable<ReturnType<typeof getBlogPost>>) {
+  if (!post.resourceLinks?.length) {
+    return null;
+  }
+
+  return (
+    <div className="mt-2 border-t border-white/12 pt-6">
+      <div className="flex flex-wrap gap-3">
+        {post.resourceLinks.map((link) => (
+          <a
+            className="inline-flex w-fit items-center gap-2 rounded-full border border-[var(--spike-accent)]/60 bg-[var(--spike-accent)]/12 px-4 py-2 text-sm font-black uppercase tracking-[0.12em] text-[var(--spike-accent)] transition hover:bg-[var(--spike-accent)] hover:text-[#050505]"
+            href={link.href}
+            key={link.href}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            {link.label}
+            <span aria-hidden="true">↗</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function getResourceLinkMeta(line: string, locale: Locale) {

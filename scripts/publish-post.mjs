@@ -60,6 +60,7 @@ export function postObject(surface, packet) {
     subtitle: packet.payload.subtitle || packet.payload.excerpt,
     tags: packet.enrichment.tags,
     title: packet.title,
+    videoAfterParagraph: packet.payload.video_after_paragraph || null,
     videoLabel: packet.payload.video_label || null,
     videoUrl: packet.payload.video_url || null,
   };

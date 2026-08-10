@@ -39,6 +39,7 @@ describe("publish-post insertion", () => {
         external_links: [{ label: "Steam", href: "https://example.com" }],
         language: "en",
         subtitle: "Deck line",
+        video_after_paragraph: 2,
         video_label: "Watch the trailer",
         video_url: "https://youtu.be/example",
       },
@@ -48,6 +49,7 @@ describe("publish-post insertion", () => {
     expect(post.resourceLinks).toEqual([
       { label: "Steam", href: "https://example.com" },
     ]);
+    expect(post.videoAfterParagraph).toBe(2);
     expect(post.videoLabel).toBe("Watch the trailer");
     expect(post.videoUrl).toBe("https://youtu.be/example");
   });
