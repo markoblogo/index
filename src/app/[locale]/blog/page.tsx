@@ -219,7 +219,7 @@ export default async function BlogPage({ params, searchParams }: BlogPageProps) 
                       className="grid gap-0 xl:grid-cols-[0.95fr_1.05fr]"
                       href={`/${locale}/blog/${featuredPost.slug}`}
                     >
-                      <div className="relative aspect-[1672/941] overflow-hidden border-b border-white/12 xl:border-b-0 xl:border-r">
+                      <div className="relative min-h-[15rem] overflow-hidden border-b border-white/12 aspect-[1672/941] xl:h-full xl:min-h-0 xl:aspect-auto xl:border-b-0 xl:border-r">
                         <Image
                           alt={featuredPost.title}
                           className="absolute inset-0 block h-full w-full object-cover object-top transition duration-500 group-hover:scale-[1.03]"
