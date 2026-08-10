@@ -95,7 +95,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                 <span>{post.readingMinutes} {labels.minutes}</span>
               </div>
               <p className="mt-5 max-w-4xl text-xl font-semibold leading-8 text-white/78">
-                {post.excerpt}
+                {post.subtitle ?? post.excerpt}
               </p>
             </div>
             <div className="lg:justify-self-end lg:self-end">
@@ -125,6 +125,46 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
         <div className="mx-auto grid max-w-6xl gap-8 py-10 lg:grid-cols-[minmax(0,1fr)_16rem]">
           <div className="grid gap-6 text-lg font-medium leading-8 text-white/76">
+            {post.videoUrl ? (
+              <div className="overflow-hidden rounded-[1.25rem] border border-white/18 bg-[#050505]/84 p-3">
+                {toYoutubeEmbedUrl(post.videoUrl) ? (
+                  <div className="relative aspect-video overflow-hidden rounded-[1rem]">
+                    <iframe
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                      className="absolute inset-0 h-full w-full"
+                      referrerPolicy="strict-origin-when-cross-origin"
+                      src={toYoutubeEmbedUrl(post.videoUrl) ?? undefined}
+                      title={post.videoLabel ?? post.title}
+                    />
+                  </div>
+                ) : (
+                  <a
+                    className="inline-flex w-fit rounded-full border border-[#f8f8f2]/45 bg-[#050505] px-4 py-2 text-sm font-black uppercase tracking-[0.12em] text-[#f8f8f2] transition hover:bg-[var(--spike-accent)] hover:text-[#050505]"
+                    href={post.videoUrl}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    {post.videoLabel ?? "Watch the trailer"}
+                  </a>
+                )}
+              </div>
+            ) : null}
+            {post.resourceLinks?.length ? (
+              <div className="flex flex-wrap gap-3">
+                {post.resourceLinks.map((link) => (
+                  <a
+                    className="inline-flex w-fit rounded-full border border-[#f8f8f2]/45 bg-[#050505] px-4 py-2 text-sm font-black uppercase tracking-[0.12em] text-[#f8f8f2] transition hover:bg-[var(--spike-accent)] hover:text-[#050505]"
+                    href={link.href}
+                    key={link.href}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    {link.label}
+                  </a>
+                ))}
+              </div>
+            ) : null}
             {post.body.map((paragraph, index) =>
               renderBlogParagraph(
                 paragraph,
@@ -219,4 +259,21 @@ function renderBlogParagraph(
   }
 
   return <p key={keyPrefix}>{value}</p>;
+}
+
+function toYoutubeEmbedUrl(value: string) {
+  try {
+    const url = new URL(value);
+    if (url.hostname === "youtu.be") {
+      const id = url.pathname.replace(/^\/+/, "");
+      return id ? `https://www.youtube.com/embed/${id}` : null;
+    }
+    if (url.hostname.includes("youtube.com")) {
+      const id = url.searchParams.get("v");
+      return id ? `https://www.youtube.com/embed/${id}` : null;
+    }
+  } catch {
+    return null;
+  }
+  return null;
 }

@@ -11,8 +11,12 @@ export type BlogPost = {
   seoDescription: string;
   seoTitle: string;
   slug: string;
+  resourceLinks?: Array<{ href: string; label: string }>;
   tags: string[];
   title: string;
+  subtitle?: string | null;
+  videoLabel?: string | null;
+  videoUrl?: string | null;
 };
 
 export type BlogPostLanguage = "en" | "uk";
@@ -338,32 +342,59 @@ export const spikeBlogPosts: BlogPost[] = [
     title: "How Spot Indices Help Read Daily Grain Market Movement",
   },
   {
-    "body": [
-      "We usually look at Ukrainian agriculture through prices, grain markets and indices. Here is a rather different perspective.",
-      "Ukrainian indie developer Vladyslav (TessaraOxygen) is building *The Headlands*, a meditative management strategy set in a Ukrainian village at the turn of the 2000s. You start with an old tractor and limited resources, cultivate land, sow grain, manage fuel costs and respond to changing crop prices and weather.",
-      "It is an unexpectedly fitting cultural companion to the market data we work with every day.",
-      "The Headlands is scheduled for release on September 14, 2026, and a free demo is already available on Steam."
+    body: [
+      "At SPIKE SPOT INDEX, we usually approach Ukrainian agriculture through market signals: grain prices, logistics, supply and demand. The Headlands offers a different perspective — one rooted in the everyday decisions behind those numbers.",
+      "Created by Ukrainian indie developer Vladyslav, known as TessaraOxygen, The Headlands is a meditative top-down farming strategy set in a Ukrainian village at the turn of the 2000s. Its setting sits between two eras: the familiar legacy of Soviet-built machinery and the uncertain, resourceful reality of an independent countryside finding its own way forward.",
+      "The player takes over a neglected farm with little more than an ageing tractor, a few fields and limited resources. From there, progress is deliberately gradual: cultivate land, sow grain, harvest crops, manage fuel consumption and decide when — and whether — to sell into a changing market.",
+      "That market element makes the game especially resonant for anyone familiar with agriculture. Grain prices are not simply a background number: they influence planning, investment and the timing of every sale. A good harvest does not automatically mean a good result; machinery, fuel, time and market conditions must all be balanced.",
+      "Weather is another central part of farm management. Rather than functioning as decoration, it directly affects day-to-day work and reinforces the game’s unhurried rhythm: observe conditions, plan carefully and allow the farm to grow step by step.",
+      "The Headlands also places unusual emphasis on the character of agricultural machinery. Its tractors, trucks and harvesters are designed around the sounds, wear and practical details that many people from the region will recognise. Players can expand their fleet with specialised equipment, help local residents through contracts, and work alongside a mechanic-mentor who creates one-of-a-kind homemade machines outside any official catalogue.",
+      "The result is not a high-pressure farming simulator, but a thoughtful game about work, patience and the practical choices that shape rural life. It is a cultural counterpart to the agricultural market data we analyse every day: a reminder that behind every tonne of grain is land, machinery, weather, people and a sequence of decisions.",
+      "The Headlands is scheduled for release on 14 September 2026. A free demo is already available on Steam. The Steam page describes it as a single-player, top-down farming strategy focused on gradual farm growth, resource management, contracts and a living grain market.",
     ],
-    "coverImage": "/blog/the-headlands-ukrainian-farming-game-context.jpg",
-    "excerpt": "A short SSI post linking Ukrainian grain-market context with The Headlands, a Ukrainian farming game.",
-    "publishedAt": "2026-08-10",
-    "readingMinutes": 1,
-    "seoDescription": "A short SSI post linking Ukrainian grain-market context with The Headlands, a Ukrainian farming game.",
-    "seoTitle": "From Ukrainian grain markets to a Ukrainian farming game",
-    "slug": "from-ukrainian-grain-markets-to-a-ukrainian-farming-game",
-    "tags": [
+    coverImage: "/blog/the-headlands-ukrainian-farming-game-context.jpg",
+    excerpt:
+      "A new indie strategy game turns the everyday realities of running a small Ukrainian farm — machinery, fuel, weather and grain prices — into a calm, distinctly local experience.",
+    language: "en",
+    publishedAt: "2026-08-10",
+    readingMinutes: 3,
+    resourceLinks: [
+      {
+        href: "https://store.steampowered.com/app/4301110/The_Headlands/",
+        label: "Steam",
+      },
+      {
+        href: "https://youtu.be/66bVMxlkREc?si=uIewZqricSiuFjAD",
+        label: "Trailer",
+      },
+    ],
+    seoDescription:
+      "A Ukrainian farming strategy game turns grain prices, fuel, machinery and weather into a calm, distinctly local agricultural experience.",
+    seoTitle:
+      "The Headlands: A Ukrainian Farming Game Where Every Harvest Has a Price",
+    slug: "from-ukrainian-grain-markets-to-a-ukrainian-farming-game",
+    subtitle:
+      "A new indie strategy game turns the everyday realities of running a small Ukrainian farm — machinery, fuel, weather and grain prices — into a calm, distinctly local experience.",
+    tags: [
       "Ukraine",
       "grain market",
       "farming",
-      "games"
+      "games",
+      "SPIKE Spot Index",
     ],
-    "title": "From Ukrainian grain markets to a Ukrainian farming game",
-    "language": "en"
+    title:
+      "The Headlands: A Ukrainian Farming Game Where Every Harvest Has a Price",
+    videoLabel: "Watch the trailer",
+    videoUrl: "https://youtu.be/66bVMxlkREc?si=uIewZqricSiuFjAD",
   }
 ];
 
 export function getBlogPost(slug: string) {
   return spikeBlogPosts.find((post) => post.slug === slug) ?? null;
+}
+
+export function getSortedBlogPosts(posts: BlogPost[] = spikeBlogPosts) {
+  return [...posts].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
 }
 
 export function getBlogTags() {

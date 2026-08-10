@@ -5,8 +5,8 @@ import { notFound } from "next/navigation";
 import { SITE_CONFIG } from "@/lib/constants";
 import {
   getBlogLabels,
+  getSortedBlogPosts,
   getBlogTags,
-  spikeBlogPosts,
   type BlogPostLanguage,
 } from "@/lib/blog-posts";
 import { isLocale, type Locale } from "@/lib/i18n";
@@ -45,16 +45,17 @@ export default async function BlogPage({ params, searchParams }: BlogPageProps) 
   }
 
   const labels = getBlogLabels(locale);
+  const orderedPosts = getSortedBlogPosts();
   const query = (queryParams.q ?? "").trim();
   const selectedTag = (queryParams.tag ?? "").trim();
   const selectedLanguage = normalizeBlogLanguage(queryParams.lang);
   const normalizedQuery = query.toLowerCase();
   const languageCounts = {
-    all: spikeBlogPosts.length,
-    en: spikeBlogPosts.filter((post) => post.language === "en").length,
-    uk: spikeBlogPosts.filter((post) => post.language === "uk").length,
+    all: orderedPosts.length,
+    en: orderedPosts.filter((post) => post.language === "en").length,
+    uk: orderedPosts.filter((post) => post.language === "uk").length,
   };
-  const posts = spikeBlogPosts.filter((post) => {
+  const posts = orderedPosts.filter((post) => {
     const matchesLanguage =
       selectedLanguage === "all" ? true : post.language === selectedLanguage;
     const matchesTag = selectedTag ? post.tags.includes(selectedTag) : true;
@@ -171,7 +172,7 @@ export default async function BlogPage({ params, searchParams }: BlogPageProps) 
                   {labels.latest}
                 </p>
                 <p className="mt-1 text-sm font-semibold text-white/52">
-                  {posts.length} / {spikeBlogPosts.length}
+                  {posts.length} / {orderedPosts.length}
                 </p>
               </div>
               <div className="rounded-full border border-white/16 bg-[#050505]/72 p-1">
@@ -244,7 +245,7 @@ export default async function BlogPage({ params, searchParams }: BlogPageProps) 
                           {featuredPost.title}
                         </h2>
                         <p className="text-sm font-semibold leading-6 text-white/64">
-                          {featuredPost.excerpt}
+                          {featuredPost.subtitle ?? featuredPost.excerpt}
                         </p>
                         <div className="flex flex-wrap gap-2">
                           {featuredPost.tags.slice(0, 4).map((tag) => (
