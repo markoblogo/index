@@ -223,10 +223,9 @@ export default async function BlogPage({ params, searchParams }: BlogPageProps) 
                         <Image
                           alt={featuredPost.title}
                           className="absolute inset-0 block h-full w-full object-cover object-top transition duration-500 group-hover:scale-[1.03]"
-                          height={941}
+                          fill
                           sizes="(min-width: 1280px) 760px, 100vw"
                           src={featuredPost.coverImage}
-                          width={1672}
                         />
                         <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#050505]/52 to-transparent" />
                       </div>
