@@ -9,11 +9,11 @@ import {
 
 const liveIndices = [
   {
-    name: "UGA Index",
-    href: "https://uga.1d3x.com",
-    embed: "https://uga.1d3x.com/embed/site?locale=en&theme=light&view=index",
+    name: "1D3X Basket / POP",
+    href: "https://pop.1d3x.com/",
+    embed: "https://pop.1d3x.com/",
     description:
-      "An institutional export price benchmark for Ukrainian grain and oilseed markets, built with the Ukrainian Grain Association.",
+      "A comparative index laboratory that turns familiar products and everyday benchmarks into readable measures of purchasing power, relative prices and local economic conditions.",
   },
   {
     name: "SPIKE SPOT INDEX",
