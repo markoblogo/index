@@ -337,6 +337,29 @@ export const spikeBlogPosts: BlogPost[] = [
     ],
     title: "How Spot Indices Help Read Daily Grain Market Movement",
   },
+  {
+    "body": [
+      "We usually look at Ukrainian agriculture through prices, grain markets and indices. Here is a rather different perspective.",
+      "Ukrainian indie developer Vladyslav (TessaraOxygen) is building *The Headlands*, a meditative management strategy set in a Ukrainian village at the turn of the 2000s. You start with an old tractor and limited resources, cultivate land, sow grain, manage fuel costs and respond to changing crop prices and weather.",
+      "It is an unexpectedly fitting cultural companion to the market data we work with every day.",
+      "The Headlands is scheduled for release on September 14, 2026, and a free demo is already available on Steam."
+    ],
+    "coverImage": "/blog/the-headlands-ukrainian-farming-game-context.jpg",
+    "excerpt": "A short SSI post linking Ukrainian grain-market context with The Headlands, a Ukrainian farming game.",
+    "publishedAt": "2026-08-10",
+    "readingMinutes": 1,
+    "seoDescription": "A short SSI post linking Ukrainian grain-market context with The Headlands, a Ukrainian farming game.",
+    "seoTitle": "From Ukrainian grain markets to a Ukrainian farming game",
+    "slug": "from-ukrainian-grain-markets-to-a-ukrainian-farming-game",
+    "tags": [
+      "Ukraine",
+      "grain market",
+      "farming",
+      "games"
+    ],
+    "title": "From Ukrainian grain markets to a Ukrainian farming game",
+    "language": "en"
+  }
 ];
 
 export function getBlogPost(slug: string) {

@@ -1,7 +1,8 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
-function parseArgs(argv) {
+export function parseArgs(argv) {
   const args = { surface: '', packet: '', dryRun: false, write: false };
   for (let index = 2; index < argv.length; index += 1) {
     const token = argv[index];
@@ -17,11 +18,11 @@ function parseArgs(argv) {
   return args;
 }
 
-function loadPacket(packetPath) {
+export function loadPacket(packetPath) {
   return JSON.parse(readFileSync(packetPath, 'utf8'));
 }
 
-function targetFor(surface) {
+export function targetFor(surface) {
   if (surface === 'ssi') {
     return {
       file: path.join(process.cwd(), 'src', 'lib', 'blog-posts.ts'),
@@ -40,12 +41,12 @@ function targetFor(surface) {
   throw new Error(`Unsupported surface: ${surface}`);
 }
 
-function estimateReadingMinutes(bodyLines) {
+export function estimateReadingMinutes(bodyLines) {
   const words = bodyLines.join(' ').trim().split(/\s+/).filter(Boolean).length;
   return Math.max(1, Math.ceil(words / 180));
 }
 
-function postObject(surface, packet) {
+export function postObject(surface, packet) {
   const base = {
     body: packet.payload.body_lines,
     coverImage: packet.payload.cover_image || '/brand/operational-model.webp',
@@ -69,7 +70,7 @@ function postObject(surface, packet) {
   return base;
 }
 
-function insertIntoArray(source, arrayName, objectLiteral) {
+export function insertIntoArray(source, arrayName, objectLiteral) {
   const marker = `export const ${arrayName}`;
   const start = source.indexOf(marker);
   if (start === -1) throw new Error(`Array export not found: ${arrayName}`);
@@ -78,22 +79,19 @@ function insertIntoArray(source, arrayName, objectLiteral) {
   if (arrayStart === -1 || arrayEnd === -1) throw new Error(`Array boundaries not found: ${arrayName}`);
   const before = source.slice(0, arrayEnd);
   const after = source.slice(arrayEnd);
-  const needsComma = before.trimEnd().endsWith('{') ? false : before.trimEnd().endsWith('[') ? false : true;
-  const prefix = needsComma ? ',\n' : '\n';
+  const trimmed = before.trimEnd();
+  const prefix = trimmed.endsWith('[') || trimmed.endsWith(',') ? '\n' : ',\n';
   return `${before}${prefix}${objectLiteral}${after}`;
 }
 
-function objectLiteral(value, indent = 2) {
+export function objectLiteral(value, indent = 2) {
   const lines = JSON.stringify(value, null, indent).split('\n');
   return lines.map((line) => `  ${line}`).join('\n');
 }
 
-const args = parseArgs(process.argv);
-const packet = loadPacket(args.packet);
-const target = targetFor(args.surface);
-const source = readFileSync(target.file, 'utf8');
-const exists = source.includes(`slug: "${packet.slug}"`) || source.includes(`"slug": "${packet.slug}"`);
-const report = {
+export function buildReport(args, packet, target, source) {
+  const exists = source.includes(`slug: "${packet.slug}"`) || source.includes(`"slug": "${packet.slug}"`);
+  return {
     operation: 'index.publish-post',
     mode: args.write ? 'WRITE' : 'DRY_RUN',
     surface: args.surface,
@@ -103,20 +101,35 @@ const report = {
     title: packet.title,
     validationTier: packet.validation_tier,
   };
-
-if (args.dryRun) {
-  console.log(JSON.stringify(report, null, 2));
-  process.exit(0);
 }
 
-if (exists) {
-  throw new Error(`Refusing to overwrite existing post slug: ${packet.slug}`);
+export function main(argv = process.argv) {
+  const args = parseArgs(argv);
+  const packet = loadPacket(args.packet);
+  const target = targetFor(args.surface);
+  const source = readFileSync(target.file, 'utf8');
+  const report = buildReport(args, packet, target, source);
+
+  if (args.dryRun) {
+    console.log(JSON.stringify(report, null, 2));
+    return report;
+  }
+
+  if (report.exists) {
+    throw new Error(`Refusing to overwrite existing post slug: ${packet.slug}`);
+  }
+
+  if (!existsSync(target.file)) {
+    throw new Error(`Target file not found: ${target.file}`);
+  }
+
+  const updated = insertIntoArray(source, target.arrayName, objectLiteral(postObject(args.surface, packet)));
+  writeFileSync(target.file, updated);
+  const written = { ...report, written: true };
+  console.log(JSON.stringify(written, null, 2));
+  return written;
 }
 
-if (!existsSync(target.file)) {
-  throw new Error(`Target file not found: ${target.file}`);
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main();
 }
-
-const updated = insertIntoArray(source, target.arrayName, objectLiteral(postObject(args.surface, packet)));
-writeFileSync(target.file, updated);
-console.log(JSON.stringify({ ...report, written: true }, null, 2));
