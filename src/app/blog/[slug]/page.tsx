@@ -8,6 +8,7 @@ import {
   type PlatformBlogContentBlock,
   type PlatformBlogPost,
 } from "@/lib/platform-blog-posts";
+import { renderInlineMarkdown } from "@/lib/platform-blog-inline-markdown";
 import { isPlatformSite } from "@/lib/platform-site";
 
 function formatDate(value: string) {
@@ -39,11 +40,15 @@ export async function generateMetadata({
   return {
     title: `${post.seoTitle} | 1d3x Blog`,
     description: post.seoDescription,
+    alternates: {
+      canonical: `/blog/${post.slug}`,
+    },
     openGraph: {
       description: post.seoDescription,
       images: [post.coverImage],
       title: post.seoTitle,
       type: "article",
+      url: `/blog/${post.slug}`,
     },
   };
 }
@@ -147,7 +152,7 @@ function PlatformPostBlock({ block }: { block: PlatformBlogContentBlock }) {
       <p>
         {block.text.split("\n\n").map((line, index) => (
           <span className="block" key={`${line}-${index}`}>
-            {line}
+            {renderInlineMarkdown(line)}
           </span>
         ))}
       </p>
@@ -273,7 +278,7 @@ function PlatformPostBlock({ block }: { block: PlatformBlogContentBlock }) {
     <p className="rounded-[1rem] border border-white/18 bg-[#091f17] p-5 text-base leading-8 text-[#9fffb1] md:text-lg">
       {block.text.split("\n\n").map((line, index) => (
         <span className="block" key={`${line}-${index}`}>
-          {line}
+          {renderInlineMarkdown(line)}
         </span>
       ))}
     </p>

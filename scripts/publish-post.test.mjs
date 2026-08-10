@@ -53,4 +53,40 @@ describe("publish-post insertion", () => {
     expect(post.videoLabel).toBe("Watch the trailer");
     expect(post.videoUrl).toBe("https://youtu.be/example");
   });
+
+  it("keeps 1d3x post objects within the 1d3x article shape", () => {
+    const post = postObject("1d3x", {
+      title: "Title",
+      slug: "title",
+      enrichment: {
+        date_published: "2026-08-10",
+        meta_description: "meta",
+        seo_title: "seo",
+        tags: ["one"],
+      },
+      payload: {
+        body_lines: ["Paragraph one."],
+        cover_image: "/blog/example.jpg",
+        excerpt: "Deck line",
+        external_links: [{ label: "Steam", href: "https://example.com" }],
+        subtitle: "Deck line",
+        video_after_paragraph: 2,
+        video_label: "Watch the trailer",
+        video_url: "https://youtu.be/example",
+      },
+    });
+
+    expect(post).toEqual({
+      body: ["Paragraph one."],
+      coverImage: "/blog/example.jpg",
+      excerpt: "Deck line",
+      publishedAt: "2026-08-10",
+      readingMinutes: 1,
+      seoDescription: "meta",
+      seoTitle: "seo",
+      slug: "title",
+      tags: ["one"],
+      title: "Title",
+    });
+  });
 });

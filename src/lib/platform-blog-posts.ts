@@ -330,6 +330,36 @@ export const platformBlogPosts: PlatformBlogPost[] = [
     tags: ["1d3x", "spike", "handbook", "market infrastructure", "announcement"],
     title: "Spot Market Handbook: a practical guide to Ukrainian agricultural price formation",
   },
+  {
+    "body": [
+      "At 1d3x, we build infrastructure for creating clear, local and meaningful indices.",
+      "We started with agricultural commodity benchmarks: the **SPIKE Spot Index** at [spike.1d3x.com](https://spike.1d3x.com/) and the Ukrainian Grain Association index. These projects focus on making physical commodity markets more transparent, readable and easier to navigate.",
+      "But an index can describe far more than commodity prices.",
+      "We later launched [pop.1d3x.com](https://pop.1d3x.com/), a lighter project that tracks familiar global comparisons: the Big Mac Index, Starbucks Latte Index and iPhone Index. It is a reminder that indexes can turn complex differences between places into something instantly understandable.",
+      "There are many more unusual, useful and occasionally provocative indices worth exploring. We are starting to collect them here on the 1d3x blog under the #PopIndex tag.",
+      "Our first pick is the **Ciggie Index**:\n[https://cig-index.vercel.app/](https://cig-index.vercel.app/)",
+      "Instead of presenting air pollution only as an AQI number, it translates exposure into a more intuitive equivalent: the estimated number of cigarettes a person would effectively “smoke” by spending time outdoors in a given city.",
+      "At the time of writing, for example, the index shows that spending 24 hours outside in New York at the displayed air-quality level corresponds to roughly **1.2 cigarettes**. On more polluted days and in more polluted cities, the equivalent can be dramatically higher. The point is less the exact number, which changes with air quality, than the way the index translates an abstract environmental reading into an immediately understandable comparison.",
+      "Of course, this is not a literal medical measurement of smoking. It is a communication tool — a striking way to make an abstract environmental metric more personal and memorable.",
+      "That is the power of a good index: it takes a number people may ignore and gives it a meaning they can immediately feel."
+    ],
+    "coverImage": "/blog/popindex-measuring-air-pollution-in-cigarettes.png",
+    "excerpt": "A 1D3X note on the Ciggie Index as a memorable alternative index that translates air pollution into a more intuitive public comparison.",
+    "publishedAt": "2026-08-10",
+    "readingMinutes": 2,
+    "seoDescription": "A 1D3X note on the Ciggie Index and why unusual indices can make abstract environmental metrics instantly understandable.",
+    "seoTitle": "#PopIndex: Measuring Air Pollution in Cigarettes",
+    "slug": "popindex-measuring-air-pollution-in-cigarettes",
+    "tags": [
+      "popindex",
+      "air quality",
+      "AQI",
+      "data",
+      "index",
+      "1D3X"
+    ],
+    "title": "#PopIndex: Measuring Air Pollution in Cigarettes"
+  }
 ];
 
 export function getPlatformBlogPost(slug: string) {

@@ -53,22 +53,22 @@ export function postObject(surface, packet) {
     excerpt: packet.payload.excerpt,
     publishedAt: packet.enrichment.date_published,
     readingMinutes: estimateReadingMinutes(packet.payload.body_lines),
-    resourceLinks: packet.payload.external_links || [],
     seoDescription: packet.enrichment.meta_description,
     seoTitle: packet.enrichment.seo_title,
     slug: packet.slug,
-    subtitle: packet.payload.subtitle || packet.payload.excerpt,
     tags: packet.enrichment.tags,
     title: packet.title,
-    videoAfterParagraph: packet.payload.video_after_paragraph || null,
-    videoLabel: packet.payload.video_label || null,
-    videoUrl: packet.payload.video_url || null,
   };
 
   if (surface === 'ssi') {
     return {
       ...base,
       language: packet.payload.language || (packet.locales?.includes?.('uk') ? 'uk' : 'en'),
+      resourceLinks: packet.payload.external_links || [],
+      subtitle: packet.payload.subtitle || packet.payload.excerpt,
+      videoAfterParagraph: packet.payload.video_after_paragraph || null,
+      videoLabel: packet.payload.video_label || null,
+      videoUrl: packet.payload.video_url || null,
     };
   }
 
