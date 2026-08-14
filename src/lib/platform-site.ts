@@ -18,7 +18,13 @@ const SPIKE_DOMAINS = [
 function getHost(value?: string) {
   if (!value) return "";
   try {
-    const normalized = value.trim();
+    const normalized = value
+      .split(",")
+      .map((item) => item.trim())
+      .find((item) => item.length > 0) ?? "";
+
+    if (!normalized) return "";
+
     const candidate = normalized.includes("://")
       ? normalized
       : `https://${normalized}`;

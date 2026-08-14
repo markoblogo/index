@@ -92,9 +92,15 @@ export default async function RootLayout({
 }: Readonly<{
   children: ReactNode;
 }>) {
-  const requestHost = (await headers()).get("host") ?? undefined;
+  const headerStore = await headers();
+  const requestHost =
+    headerStore.get("x-forwarded-host") ??
+    headerStore.get("host") ??
+    undefined;
   const platformSite = isPlatformSite(requestHost);
-  const activeIndex = platformSite ? null : getActiveIndexConfig();
+  const activeIndex = platformSite
+    ? null
+    : getActiveIndexConfig(requestHost);
 
   return (
     <html lang="en" suppressHydrationWarning>

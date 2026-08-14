@@ -10,20 +10,27 @@ import {
 import { isPlatformSite } from "@/lib/platform-site";
 
 export default async function HomeRedirect() {
-  const requestHost = (await headers()).get("host");
+  const headerStore = await headers();
+  const requestHost =
+    headerStore.get("x-forwarded-host") ??
+    headerStore.get("host") ??
+    undefined;
 
   if (isPlatformSite(requestHost ?? undefined)) {
     return <PlatformLanding />;
   }
 
-  const [cookieStore, headerStore] = await Promise.all([cookies(), headers()]);
+  const [cookieStore, requestHeaderStore] = await Promise.all([
+    cookies(),
+    headers(),
+  ]);
   const cookieLocale = cookieStore.get(LOCALE_COOKIE)?.value;
 
   if (cookieLocale && isLocale(cookieLocale)) {
     redirect(`/${cookieLocale}`);
   }
 
-  const locale = detectLocaleFromCountry(getCountryHeader(headerStore));
+  const locale = detectLocaleFromCountry(getCountryHeader(requestHeaderStore));
 
   redirect(`/${locale}`);
 }
