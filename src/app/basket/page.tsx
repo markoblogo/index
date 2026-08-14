@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { BasketLanding } from "@/components/basket/basket-landing";
 
-export default function BasketCompatibilityRedirect() {
-  redirect("/");
+export default function BasketPage() {
+  return <BasketLanding />;
 }
