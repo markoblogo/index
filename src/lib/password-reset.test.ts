@@ -1,6 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+vi.mock("@/lib/constants", () => ({
+  SITE_CONFIG: {
+    get tenantId() {
+      return process.env.INDEX_TENANT === "spike-ua" ? "spike-ua" : "uga-ua";
+    },
+    get name() {
+      return process.env.INDEX_TENANT === "spike-ua"
+        ? "SPIKE SPOT INDEX"
+        : "UGA Index";
+    },
+  },
+}));
 
 const passwordResetTokenDeleteMany = vi.fn();
 const passwordResetTokenCreate = vi.fn();
@@ -35,9 +47,11 @@ describe("requestPasswordReset", () => {
   const originalEnv = { ...process.env };
 
   beforeEach(() => {
+    vi.resetModules();
     vi.clearAllMocks();
     process.env = { ...originalEnv };
     process.env.RESEND_API_KEY = "re_test";
+    process.env.INDEX_TENANT = "uga-ua";
     delete process.env.SPIKE_ADMIN_INVITE_SENDER;
     delete process.env.SPIKE_ADMIN_INVITE_REPLY_TO;
     delete process.env.UGA_PASSWORD_RESET_SENDER;

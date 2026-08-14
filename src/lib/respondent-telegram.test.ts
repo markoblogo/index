@@ -1,11 +1,38 @@
-import { describe, expect, it } from "vitest";
-import {
-  buildTelegramSubmissionConfirmationText,
-  getKyivReminderLevel,
-} from "@/lib/respondent-telegram";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("@/lib/index-platform", () => ({
+  getActiveIndexConfig() {
+    return process.env.INDEX_TENANT === "spike-ua"
+      ? {
+          id: "spike-ua",
+          name: "SPIKE SPOT INDEX",
+        }
+      : {
+          id: "uga-ua",
+          name: "UGA Index",
+        };
+  },
+  isSpikeIndex: process.env.INDEX_TENANT === "spike-ua",
+}));
+
+beforeEach(() => {
+  process.env.INDEX_TENANT = "uga-ua";
+});
+
+afterEach(() => {
+  delete process.env.INDEX_TENANT;
+});
+
+function loadRespondentTelegramModule() {
+  vi.resetModules();
+  return import("@/lib/respondent-telegram");
+}
 
 describe("buildTelegramSubmissionConfirmationText", () => {
-  it("renders Ukrainian confirmation with submitted values", () => {
+  it("renders Ukrainian confirmation with submitted values", async () => {
+    const { buildTelegramSubmissionConfirmationText } =
+      await loadRespondentTelegramModule();
+
     const text = buildTelegramSubmissionConfirmationText({
       date: "2026-06-02",
       locale: "uk",
@@ -23,27 +50,31 @@ describe("buildTelegramSubmissionConfirmationText", () => {
 });
 
 describe("getKyivReminderLevel", () => {
-  it("keeps the legacy UGA initial Kyiv slot at 16:00", () => {
+  it("keeps the legacy UGA initial Kyiv slot at 16:00", async () => {
+    const { getKyivReminderLevel } = await loadRespondentTelegramModule();
     expect(getKyivReminderLevel(new Date("2026-06-03T13:05:00.000Z"))).toBe(
       "initial",
     );
   });
 
-  it("keeps the legacy UGA first reminder slot at 17:00", () => {
+  it("keeps the legacy UGA first reminder slot at 17:00", async () => {
+    const { getKyivReminderLevel } = await loadRespondentTelegramModule();
     expect(getKyivReminderLevel(new Date("2026-06-03T14:05:00.000Z"))).toBe(
       "reminder_18",
     );
   });
 
-  it("keeps the legacy UGA final reminder slot at 18:00", () => {
+  it("keeps the legacy UGA final reminder slot at 18:00", async () => {
+    const { getKyivReminderLevel } = await loadRespondentTelegramModule();
     expect(getKyivReminderLevel(new Date("2026-06-03T15:05:00.000Z"))).toBe(
       "final_19",
     );
   });
 
-  it("uses only two SSI Telegram slots before publication", () => {
+  it("uses only two SSI Telegram slots before publication", async () => {
     const previousTenant = process.env.INDEX_TENANT;
     process.env.INDEX_TENANT = "spike-ua";
+    const { getKyivReminderLevel } = await import("@/lib/respondent-telegram");
 
     expect(getKyivReminderLevel(new Date("2026-06-03T12:05:00.000Z"))).toBeNull();
     expect(getKyivReminderLevel(new Date("2026-06-03T13:05:00.000Z"))).toBe(
@@ -62,7 +93,8 @@ describe("getKyivReminderLevel", () => {
     }
   });
 
-  it("skips weekends", () => {
+  it("skips weekends", async () => {
+    const { getKyivReminderLevel } = await loadRespondentTelegramModule();
     expect(getKyivReminderLevel(new Date("2026-06-06T13:05:00.000Z"))).toBeNull();
   });
 });
