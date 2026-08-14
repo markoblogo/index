@@ -12,6 +12,15 @@ import {
 } from "@/lib/basket/data";
 import type { BasketChartSeries, BasketLatestItem, BasketMarket } from "@/lib/basket/types";
 
+const recommendedBook = {
+  title: "Burgers, Lipstick & Underwear",
+  subtitle: "What Strange Indicators Really Tell Us About the Economy",
+  cover: "/basket/assets/burgers-lipstick-underwear.png",
+  canonical: "https://abvx.xyz/books/burgers-lipstick-underwear",
+  kindle: "https://www.amazon.com/dp/B0HF5DWCHB",
+  paperback: "https://www.amazon.com/dp/B0HF7SJJ7N",
+} as const;
+
 export function BasketLanding({ embed = false, initialMarket = "GLOBAL" }: { embed?: boolean; initialMarket?: BasketMarket }) {
   const [market, setMarket] = useState<BasketMarket>(initialMarket);
   const latest = useMemo(() => getBasketLatest(market), [market]);
@@ -140,6 +149,65 @@ export function BasketLanding({ embed = false, initialMarket = "GLOBAL" }: { emb
           <h3 className="mt-3 text-xl font-black">{report.title}</h3>
           <p className="mt-3 text-sm leading-6 text-white/62">{report.summary}</p>
         </InfoPanel>
+      </section>
+
+      <section className="mx-auto max-w-[1440px] px-5 pb-7 sm:px-8 lg:px-10">
+        <div className="basket-panel grid gap-6 overflow-hidden p-6 lg:grid-cols-[17rem_1fr] lg:items-center">
+          <div className="mx-auto w-full max-w-[15rem] rounded-[1.4rem] border border-white/10 bg-black/25 p-3">
+            <Image
+              alt="Cover of Burgers, Lipstick & Underwear"
+              className="h-auto w-full rounded-[1rem] object-cover"
+              height={960}
+              src={recommendedBook.cover}
+              width={640}
+            />
+          </div>
+
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.28em] text-[#ffc42e]">
+              Recommended reading
+            </p>
+            <h2 className="mt-4 text-3xl font-black uppercase leading-[0.95] text-white sm:text-4xl">
+              {recommendedBook.title}
+            </h2>
+            <p className="mt-3 text-sm uppercase tracking-[0.12em] text-white/45">
+              {recommendedBook.subtitle}
+            </p>
+            <p className="mt-5 max-w-3xl text-base leading-7 text-white/68">
+              A book about familiar objects, consumer prices, and strange
+              comparison units as ways of making economic systems readable —
+              and about the moment a vivid measure becomes folklore instead of
+              a useful proxy.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <a
+                className="basket-primary-button"
+                href={recommendedBook.kindle}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                Kindle
+                <ArrowIcon />
+              </a>
+              <a
+                className="basket-secondary-button"
+                href={recommendedBook.paperback}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                Paperback
+              </a>
+              <a
+                className="basket-secondary-button"
+                href={recommendedBook.canonical}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                Read more
+              </a>
+            </div>
+          </div>
+        </div>
       </section>
 
       {!embed ? <BasketFooter /> : null}
