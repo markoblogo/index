@@ -17,11 +17,11 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --no-audit --no-fund
-      - run: npm run build
       - name: Install Playwright for proof only
         run: |
           npm install --no-save --no-package-lock playwright@1.55.0
           npx playwright install --with-deps chromium
+      - run: npm run build
       - name: Start index
         run: |
           npm run start > /tmp/index-server.log 2>&1 &
@@ -37,6 +37,18 @@ jobs:
           node <<'NODE'
           const { chromium } = require('playwright');
           const fs = require('fs');
+          async function loadLazyAssets(page) {
+            await page.evaluate(async () => {
+              const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+              for (let y = 0; y < document.documentElement.scrollHeight; y += Math.max(320, window.innerHeight * 0.75)) {
+                window.scrollTo(0, y);
+                await delay(80);
+              }
+              window.scrollTo(0, 0);
+              await delay(200);
+            });
+            await page.waitForLoadState('networkidle');
+          }
           (async () => {
             const browser = await chromium.launch({
               headless: true,
@@ -45,12 +57,14 @@ jobs:
             for (const [mode, viewport] of [['desktop',{width:1440,height:1000}], ['mobile',{width:390,height:844}]]) {
               const page = await browser.newPage({ viewport });
               await page.goto('http://127.0.0.1:3000/basket', { waitUntil: 'networkidle' });
+              await loadLazyAssets(page);
               await page.screenshot({ path: `/tmp/pop-proof/basket-${mode}.png`, fullPage: true });
               const directMetrics = await page.evaluate(() => ({
                 width: document.documentElement.scrollWidth,
                 viewport: window.innerWidth,
                 height: document.documentElement.scrollHeight,
                 hasBasket: Boolean(document.querySelector('[data-basket-site]')),
+                failedImages: [...document.images].filter((img) => !img.complete || img.naturalWidth === 0).map((img) => img.getAttribute('src')),
                 text: document.body.innerText.slice(0, 4000)
               }));
               fs.writeFileSync(`/tmp/pop-proof/basket-${mode}.json`, JSON.stringify(directMetrics, null, 2));
@@ -59,9 +73,11 @@ jobs:
 
             const hostPage = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
             await hostPage.goto('http://pop.1d3x.com:3000/', { waitUntil: 'networkidle' });
+            await loadLazyAssets(hostPage);
             await hostPage.screenshot({ path: '/tmp/pop-proof/pop-host-desktop.png', fullPage: true });
             const hostMetrics = await hostPage.evaluate(() => ({
               hasBasket: Boolean(document.querySelector('[data-basket-site]')),
+              failedImages: [...document.images].filter((img) => !img.complete || img.naturalWidth === 0).map((img) => img.getAttribute('src')),
               text: document.body.innerText.slice(0, 4000)
             }));
             fs.writeFileSync('/tmp/pop-proof/pop-host-desktop.json', JSON.stringify(hostMetrics, null, 2));
@@ -69,9 +85,10 @@ jobs:
 
             const iframePage = await browser.newPage({ viewport: { width: 1440, height: 900 } });
             await iframePage.setContent('<html><body style="margin:0;background:#111"><iframe id="pop" src="http://pop.1d3x.com:3000/" style="width:100%;height:820px;border:0"></iframe></body></html>');
-            await iframePage.locator('#pop').contentFrame().locator('[data-basket-site]').waitFor({ timeout: 15000 });
+            const frame = iframePage.frameLocator('#pop');
+            await frame.locator('[data-basket-site]').waitFor({ timeout: 15000 });
             await iframePage.screenshot({ path: '/tmp/pop-proof/pop-iframe-desktop.png', fullPage: true });
-            const iframeText = await iframePage.locator('#pop').contentFrame().locator('body').innerText();
+            const iframeText = await frame.locator('body').innerText();
             fs.writeFileSync('/tmp/pop-proof/pop-iframe-desktop.json', JSON.stringify({ text: iframeText.slice(0, 3000) }, null, 2));
             await iframePage.close();
             await browser.close();
