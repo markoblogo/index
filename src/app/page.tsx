@@ -1,6 +1,10 @@
 import { cookies } from "next/headers";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import {
+  BasketHeroEmbed,
+  BasketLanding,
+} from "@/components/basket/basket-landing";
 import { PlatformLanding } from "@/components/platform/platform-landing";
 import {
   detectLocaleFromCountry,
@@ -15,6 +19,11 @@ export default async function HomeRedirect() {
     headerStore.get("x-forwarded-host") ??
     headerStore.get("host") ??
     undefined;
+
+  if (isPopHost(requestHost)) {
+    const isIframe = headerStore.get("sec-fetch-dest") === "iframe";
+    return isIframe ? <BasketHeroEmbed /> : <BasketLanding />;
+  }
 
   if (isPlatformSite(requestHost ?? undefined)) {
     return <PlatformLanding />;
@@ -33,6 +42,23 @@ export default async function HomeRedirect() {
   const locale = detectLocaleFromCountry(getCountryHeader(requestHeaderStore));
 
   redirect(`/${locale}`);
+}
+
+function isPopHost(value?: string) {
+  if (!value) return false;
+
+  const host = value
+    .split(",")
+    .map((item) => item.trim().toLowerCase())
+    .find(Boolean);
+
+  return Boolean(
+    host &&
+      (host === "pop.1d3x.com" ||
+        host.startsWith("pop.1d3x.com:") ||
+        host.includes("1d3x-basket") ||
+        host.includes("basket")),
+  );
 }
 
 function getCountryHeader(headerStore: Headers) {
