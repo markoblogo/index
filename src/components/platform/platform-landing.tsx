@@ -819,7 +819,7 @@ export function PlatformLanding() {
               </div>
             </article>
 
-            <article className="grid gap-5 rounded-[1.5rem] border border-white/12 bg-[#0a0f15] p-5 text-white sm:p-6 lg:grid-cols-[13rem_1fr]">
+            <article className="grid gap-5 rounded-[1.5rem] border border-white/12 bg-[#0a0f15] p-5 text-white sm:p-6 lg:col-span-2 lg:grid-cols-[13rem_1fr]">
               <div className="border border-white/10 bg-black/30 p-3">
                 <Image
                   alt="Cover of Burgers, Lipstick & Underwear"
