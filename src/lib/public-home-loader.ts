@@ -10,7 +10,7 @@ export async function loadPublicHomePageData(
 ) {
   const activeIndex = getActiveIndexConfig(requestHost);
   const [snapshot, fxRates, respondentCount] = await Promise.all([
-    getPublicIndexSnapshot(),
+    getPublicIndexSnapshot(requestHost),
     getFxRates(),
     getActiveRespondentCountData(),
   ]);

@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { headers } from "next/headers";
 import { EmbedSiteFullscreenButton, EmbedSiteThemeButton } from "@/components/embed/embed-site-controls";
 import { HomeHero } from "@/components/ui/home-hero";
 import { SITE_CONFIG } from "@/lib/constants";
@@ -24,12 +25,13 @@ export const dynamic = "force-dynamic";
 
 export default async function EmbedSitePage({ searchParams }: EmbedSitePageProps) {
   const params = await searchParams;
+  const requestHost = (await headers()).get("host") ?? undefined;
   const locale = normalizeEmbedLocale(params.locale);
   const view = normalizeView(params.view);
   const theme = params.theme === "dark" ? "dark" : "light";
   const dict = getDictionary(locale);
-  const activeIndex = getActiveIndexConfig();
-  const snapshot = await getPublicIndexSnapshot();
+  const activeIndex = getActiveIndexConfig(requestHost);
+  const snapshot = await getPublicIndexSnapshot(requestHost);
   const fxRates = await getFxRates();
   const respondentCount = await getActiveRespondentCountData();
   const updatedAt = new Intl.DateTimeFormat(locale === "uk" ? "uk-UA" : "en-US", {

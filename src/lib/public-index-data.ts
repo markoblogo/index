@@ -1,7 +1,7 @@
 import { allowMockFallback, db, hasDatabaseUrl } from "@/lib/db";
 import { unstable_cache } from "next/cache";
 import { getLatestDemoPublishedIndices } from "@/lib/demo-published-index-store";
-import { getActiveIndexConfig } from "@/lib/index-platform";
+import { getActiveIndexConfig, type IndexConfig } from "@/lib/index-platform";
 import {
   commodities,
   indexUpdatedAt,
@@ -31,39 +31,48 @@ export type PublicIndexSnapshot = {
   updatedAt: string;
 };
 
-const activeIndex = getActiveIndexConfig();
 const PUBLIC_INDEX_SNAPSHOT_CACHE_SECONDS = 12 * 60 * 60;
-const primaryDeliveryBasis = activeIndex.deliveryBases[0];
-const MOCK_BASIS_ID = primaryDeliveryBasis.code.toLowerCase().replaceAll("_", "-");
-const commodityCodeByMockId: Record<CommodityId, string> = Object.fromEntries(
-  activeIndex.commodities.map((commodity) => [commodity.id, commodity.dbCode]),
-);
-const mockCommodityByCode = new Map(
-  commodities.flatMap((commodity) => [
-    [commodity.code, commodity],
-    [commodityCodeByMockId[commodity.id], commodity],
-  ]),
-);
 
-function formatPublicChangeAbs(value: number) {
+function formatPublicChangeAbs(value: number, activeIndex: IndexConfig) {
   return activeIndex.id === "spike-ua" ? Math.round(value) : roundOne(value);
 }
 
-export async function getPublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
+function getMockCommodityByCodeMap(activeIndex: IndexConfig) {
+  const commodityCodeByMockId: Record<CommodityId, string> = Object.fromEntries(
+    activeIndex.commodities.map((commodity) => [commodity.id, commodity.dbCode]),
+  );
+
+  return new Map(
+    commodities.flatMap((commodity) => [
+      [commodity.code, commodity],
+      [commodityCodeByMockId[commodity.id], commodity],
+    ]),
+  );
+}
+
+function getMockBasisId(activeIndex: IndexConfig) {
+  return activeIndex.deliveryBases[0].code.toLowerCase().replaceAll("_", "-");
+}
+
+export async function getPublicIndexSnapshot(
+  requestHost?: string,
+): Promise<PublicIndexSnapshot> {
+  const activeIndex = getActiveIndexConfig(requestHost);
+
   if (!hasDatabaseUrl()) {
     if (!allowMockFallback()) {
       throw new Error("DATABASE_URL is required for production public index data.");
     }
 
-    return getMockPublicIndexSnapshot();
+    return getMockPublicIndexSnapshot(activeIndex);
   }
 
   try {
-    return await getCachedDatabasePublicIndexSnapshot();
+    return await getCachedDatabasePublicIndexSnapshot(activeIndex)();
   } catch (error) {
     if (allowMockFallback()) {
       console.warn("Falling back to mock public index data.", error);
-      return getMockPublicIndexSnapshot();
+      return getMockPublicIndexSnapshot(activeIndex);
     }
 
     console.error("Failed to load database public index data.", error);
@@ -71,16 +80,18 @@ export async function getPublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
   }
 }
 
-const getCachedDatabasePublicIndexSnapshot = unstable_cache(
-  async () => getDatabasePublicIndexSnapshot(),
-  ["public-index-snapshot", activeIndex.id],
-  {
-    revalidate: PUBLIC_INDEX_SNAPSHOT_CACHE_SECONDS,
-    tags: ["public-index-data"],
-  },
-);
+const getCachedDatabasePublicIndexSnapshot = (activeIndex: IndexConfig) =>
+  unstable_cache(
+    async () => getDatabasePublicIndexSnapshot(activeIndex),
+    ["public-index-snapshot", activeIndex.id],
+    {
+      revalidate: PUBLIC_INDEX_SNAPSHOT_CACHE_SECONDS,
+      tags: ["public-index-data"],
+    },
+  );
 
-function getMockPublicIndexSnapshot(): PublicIndexSnapshot {
+function getMockPublicIndexSnapshot(activeIndex: IndexConfig): PublicIndexSnapshot {
+  const MOCK_BASIS_ID = getMockBasisId(activeIndex);
   const latestPublished = getLatestDemoPublishedIndices(MOCK_BASIS_ID);
   const activeRespondentCount = getActiveRespondentCount();
   const visibleDate =
@@ -146,10 +157,13 @@ function getMockPublicIndexSnapshot(): PublicIndexSnapshot {
   };
 }
 
-async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
+async function getDatabasePublicIndexSnapshot(
+  activeIndex: IndexConfig,
+): Promise<PublicIndexSnapshot> {
   await syncIndexPositionDirectory(activeIndex);
 
   const activeRespondentCount = await getActiveRespondentCountData();
+  const mockCommodityByCode = getMockCommodityByCodeMap(activeIndex);
   const today = todayKyivDate();
   const candidateVisibleTradeDate =
     activeIndex.id === "spike-ua" ? getSpikePublicVisibleTradeDate() : today;
@@ -169,7 +183,7 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
 
   if (bases.length === 0 || baskets.length === 0) {
     if (allowMockFallback()) {
-      return getMockPublicIndexSnapshot();
+      return getMockPublicIndexSnapshot(activeIndex);
     }
 
     throw new Error("Missing configured basis or basket.");
@@ -342,7 +356,7 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
         publishedIndex?.tradeDate.toISOString().slice(0, 10) ??
         latestPublishedDate;
       const aiComment = buildCardAiComment({
-        dayChange: formatPublicChangeAbs(change.changeAbs),
+        dayChange: formatPublicChangeAbs(change.changeAbs, activeIndex),
         history,
         latest,
         latestDate,
@@ -354,7 +368,7 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
         code: commodity.code,
         name: { uk: commodity.nameUk, en: commodity.nameEn },
         latest,
-        absoluteChange: formatPublicChangeAbs(change.changeAbs),
+        absoluteChange: formatPublicChangeAbs(change.changeAbs, activeIndex),
         percentChange: change.changePct,
         sparkline: buildRealSparkline(history, latest),
         aiComment,
@@ -368,7 +382,7 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
       getPreviousHistoryValue(history, latestDate),
     );
     const aiComment = buildCardAiComment({
-      dayChange: formatPublicChangeAbs(publishedChange.changeAbs),
+      dayChange: formatPublicChangeAbs(publishedChange.changeAbs, activeIndex),
       history,
       latest,
       latestDate,
@@ -380,7 +394,7 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
       code: commodity.code,
       name: { uk: commodity.nameUk, en: commodity.nameEn },
       latest,
-      absoluteChange: formatPublicChangeAbs(publishedChange.changeAbs),
+      absoluteChange: formatPublicChangeAbs(publishedChange.changeAbs, activeIndex),
       percentChange: publishedChange.changePct,
       sparkline: buildRealSparkline(history, latest),
       aiComment,
@@ -417,7 +431,7 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
         basis: basisConfig.name,
         date: displayFallback?.date ?? latestPublishedDate,
         price: displayFallback?.value ?? null,
-        absoluteChange: formatPublicChangeAbs(change.changeAbs),
+        absoluteChange: formatPublicChangeAbs(change.changeAbs, activeIndex),
         percentChange: change.changePct,
         respondents: displayFallback?.rawCount ?? activeRespondentCount,
       };
@@ -439,7 +453,7 @@ async function getDatabasePublicIndexSnapshot(): Promise<PublicIndexSnapshot> {
       date: latestDate,
       basis: basisConfig.name,
       price: latest,
-      absoluteChange: formatPublicChangeAbs(publishedChange.changeAbs),
+      absoluteChange: formatPublicChangeAbs(publishedChange.changeAbs, activeIndex),
       percentChange: publishedChange.changePct,
       respondents: activeRespondentCount,
     };

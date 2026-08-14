@@ -1,4 +1,5 @@
 import dynamic from "next/dynamic";
+import { headers } from "next/headers";
 
 import { EmbedShell } from "@/components/embed/embed-shell";
 import { normalizeEmbedLocale } from "@/lib/embed";
@@ -32,9 +33,10 @@ export default async function EmbedChartPage({
   searchParams,
 }: EmbedChartPageProps) {
   const params = await searchParams;
+  const requestHost = (await headers()).get("host") ?? undefined;
   const locale = normalizeEmbedLocale(params.locale);
   const requestedCommodity = getCommodityId(params.commodity);
-  const snapshot = await getPublicIndexSnapshot();
+  const snapshot = await getPublicIndexSnapshot(requestHost);
   const commodity =
     snapshot.commodities.find((item) => item.id === requestedCommodity) ??
     snapshot.commodities[0];

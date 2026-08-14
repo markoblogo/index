@@ -1,4 +1,5 @@
 import dynamic from "next/dynamic";
+import { headers } from "next/headers";
 
 import { EmbedShell } from "@/components/embed/embed-shell";
 import { SITE_CONFIG } from "@/lib/constants";
@@ -37,10 +38,11 @@ export default async function EmbedCardsPage({
   searchParams,
 }: EmbedCardsPageProps) {
   const params = await searchParams;
+  const requestHost = (await headers()).get("host") ?? undefined;
   const locale = normalizeEmbedLocale(params.locale);
   const layout = normalizeEmbedLayout(params.layout);
   normalizeEmbedTheme();
-  const snapshot = await getPublicIndexSnapshot();
+  const snapshot = await getPublicIndexSnapshot(requestHost);
   const compact = layout === "compact";
 
   return (
