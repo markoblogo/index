@@ -765,6 +765,12 @@ export function getActiveIndexConfig(requestHost?: string) {
 }
 
 export function getActiveTenantId(requestHost?: string): IndexTenantId {
+  const siteHost = getHost(requestHost ?? process.env.NEXT_PUBLIC_SITE_URL);
+
+  if (siteHost.includes("pop") || siteHost.includes("spike")) {
+    return "spike-ua";
+  }
+
   const requested =
     process.env.INDEX_TENANT ?? process.env.NEXT_PUBLIC_INDEX_TENANT ?? "";
   const normalizedRequested = requested.trim().toLowerCase();
@@ -772,12 +778,9 @@ export function getActiveTenantId(requestHost?: string): IndexTenantId {
   if (normalizedRequested === "spike-ua") return "spike-ua";
   if (normalizedRequested === "uga-ua") return "uga-ua";
 
-  const siteHost = getHost(requestHost ?? process.env.NEXT_PUBLIC_SITE_URL);
-
   if (
     normalizedRequested === "platform" ||
     normalizedRequested === "1d3x" ||
-    normalizedRequested === "spike" ||
     normalizedRequested === "pop" ||
     siteHost.includes("spike") ||
     siteHost.includes("pop")
