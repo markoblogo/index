@@ -3,11 +3,21 @@ import { describe, expect, it } from "vitest";
 import { getSortedBlogPosts, getBlogPost } from "@/lib/blog-posts";
 
 describe("spike blog editorial contract", () => {
-  it("orders newest published article first", () => {
+  it("orders published articles newest-first by publishedAt date", () => {
     const ordered = getSortedBlogPosts();
-    expect(ordered[0]?.slug).toBe(
-      "from-ukrainian-grain-markets-to-a-ukrainian-farming-game",
+
+    expect(ordered.length).toBeGreaterThan(0);
+    expect(ordered[0]?.publishedAt).toBe(
+      [...ordered]
+        .map((post) => post.publishedAt)
+        .sort((a, b) => b.localeCompare(a))[0],
     );
+
+    for (let index = 1; index < ordered.length; index += 1) {
+      expect(ordered[index - 1]!.publishedAt >= ordered[index]!.publishedAt).toBe(
+        true,
+      );
+    }
   });
 
   it("preserves public editorial resources on the Headlands article", () => {
