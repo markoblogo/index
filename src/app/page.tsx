@@ -10,7 +10,9 @@ import {
 import { isPlatformSite } from "@/lib/platform-site";
 
 export default async function HomeRedirect() {
-  if (isPlatformSite()) {
+  const requestHost = (await headers()).get("host");
+
+  if (isPlatformSite(requestHost ?? undefined)) {
     return <PlatformLanding />;
   }
 

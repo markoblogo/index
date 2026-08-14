@@ -6,10 +6,10 @@ import { CurrencyToggle, CurrencyValue } from "@/components/ui/currency-toggle";
 import { useCurrentDisplayCurrency } from "@/components/ui/currency-toggle";
 import { IndexSparkline } from "@/components/ui/index-sparkline";
 import { SITE_CONFIG } from "@/lib/constants";
+import type { IndexConfig } from "@/lib/index-platform";
 import type { FxRates } from "@/lib/fx-rates";
 import type { Locale } from "@/lib/i18n";
 import {
-  getActiveIndexConfig,
   getSpikeCommodityCategories,
   type SpikeCommodityCategory,
 } from "@/lib/index-platform";
@@ -19,6 +19,7 @@ type SpikeCommodityView = SpikeCommodityCategory | "chop-export";
 
 type HomeHeroProps = {
   commodities: Commodity[];
+  activeIndex: IndexConfig;
   fxRates: FxRates;
   locale: Locale;
   respondentCount: number;
@@ -35,14 +36,14 @@ type HomeHeroProps = {
 
 export function HomeHero({
   commodities,
+  activeIndex,
   fxRates,
   labels,
   locale,
   respondentCount,
   updatedAt,
 }: HomeHeroProps) {
-  const activeIndex = getActiveIndexConfig();
-  const copy = getHeroCopy(locale);
+  const copy = getHeroCopy(locale, activeIndex);
   const facts = copy.facts.map((fact) =>
     fact.kind === "respondents"
       ? { ...fact, value: String(respondentCount) }
@@ -53,6 +54,7 @@ export function HomeHero({
     return (
       <SpikeHomeHero
         commodities={commodities}
+        activeIndex={activeIndex}
         fxRates={fxRates}
         labels={labels}
         locale={locale}
@@ -163,13 +165,13 @@ export function HomeHero({
 function SpikeHomeHero({
   commodities,
   fxRates,
+  activeIndex,
   locale,
   updatedAt,
 }: HomeHeroProps) {
-  const activeIndex = getActiveIndexConfig();
   const [selectedCategory, setSelectedCategory] =
     useState<SpikeCommodityView>("all-seasons");
-  const copy = getHeroCopy(locale);
+  const copy = getHeroCopy(locale, activeIndex);
   const categories = [
     getSpikeCommodityCategories(locale)[0],
     getSpikeCommodityCategories(locale)[2],
@@ -697,9 +699,7 @@ function HeroIndexCard({
   );
 }
 
-function getHeroCopy(locale: Locale) {
-  const activeIndex = getActiveIndexConfig();
-
+function getHeroCopy(locale: Locale, activeIndex: IndexConfig) {
   if (locale === "uk") {
     return {
       editorialLine: activeIndex.home.editorialLine.uk,

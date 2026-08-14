@@ -760,11 +760,11 @@ export const INDEX_CONFIGS: Record<IndexTenantId, IndexConfig> = {
   },
 };
 
-export function getActiveIndexConfig() {
-  return INDEX_CONFIGS[getActiveTenantId()];
+export function getActiveIndexConfig(requestHost?: string) {
+  return INDEX_CONFIGS[getActiveTenantId(requestHost)];
 }
 
-export function getActiveTenantId(): IndexTenantId {
+export function getActiveTenantId(requestHost?: string): IndexTenantId {
   const requested =
     process.env.INDEX_TENANT ?? process.env.NEXT_PUBLIC_INDEX_TENANT ?? "";
   const normalizedRequested = requested.trim().toLowerCase();
@@ -772,7 +772,7 @@ export function getActiveTenantId(): IndexTenantId {
   if (normalizedRequested === "spike-ua") return "spike-ua";
   if (normalizedRequested === "uga-ua") return "uga-ua";
 
-  const siteHost = getHost(process.env.NEXT_PUBLIC_SITE_URL);
+  const siteHost = getHost(requestHost ?? process.env.NEXT_PUBLIC_SITE_URL);
 
   if (
     normalizedRequested === "platform" ||

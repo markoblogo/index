@@ -52,6 +52,7 @@ export default async function EmbedSitePage({ searchParams }: EmbedSitePageProps
 
       {view === "index" ? (
         <HomeHero
+          activeIndex={activeIndex}
           commodities={snapshot.commodities}
           fxRates={fxRates}
           labels={{

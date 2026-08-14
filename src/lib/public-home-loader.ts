@@ -4,8 +4,11 @@ import { getActiveIndexConfig } from "@/lib/index-platform";
 import { getPublicIndexSnapshot } from "@/lib/public-index-data";
 import { getActiveRespondentCountData } from "@/lib/respondent-directory-lazy";
 
-export async function loadPublicHomePageData(locale: Locale) {
-  const activeIndex = getActiveIndexConfig();
+export async function loadPublicHomePageData(
+  locale: Locale,
+  requestHost?: string,
+) {
+  const activeIndex = getActiveIndexConfig(requestHost);
   const [snapshot, fxRates, respondentCount] = await Promise.all([
     getPublicIndexSnapshot(),
     getFxRates(),

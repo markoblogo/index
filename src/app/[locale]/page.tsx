@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { HomeHero } from "@/components/ui/home-hero";
 import { getDictionary, type Locale } from "@/lib/i18n";
 import { loadPublicHomePageData } from "@/lib/public-home-loader";
@@ -12,12 +13,14 @@ export default async function LocaleHome({
 }) {
   const { locale } = await params;
   const dict = getDictionary(locale);
+  const requestHost = (await headers()).get("host") ?? undefined;
   const { activeIndex, fxRates, respondentCount, snapshot, updatedAt } =
-    await loadPublicHomePageData(locale);
+    await loadPublicHomePageData(locale, requestHost);
 
   return (
     <>
       <HomeHero
+        activeIndex={activeIndex}
         commodities={snapshot.commodities}
         fxRates={fxRates}
         labels={{
