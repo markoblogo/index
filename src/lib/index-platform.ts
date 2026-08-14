@@ -765,31 +765,40 @@ export function getActiveIndexConfig(requestHost?: string) {
 }
 
 export function getActiveTenantId(requestHost?: string): IndexTenantId {
-  const siteHost = getHost(requestHost ?? process.env.NEXT_PUBLIC_SITE_URL);
-
-  if (siteHost.includes("pop") || siteHost.includes("spike")) {
-    return "spike-ua";
-  }
+  const siteHost = getHost(
+    requestHost ??
+      process.env.VERCEL_URL ??
+      process.env.VERCEL_PROJECT_PRODUCTION_URL ??
+      process.env.NEXT_PUBLIC_SITE_URL,
+  );
 
   const requested =
     process.env.INDEX_TENANT ?? process.env.NEXT_PUBLIC_INDEX_TENANT ?? "";
   const normalizedRequested = requested.trim().toLowerCase();
 
-  if (normalizedRequested === "spike-ua") return "spike-ua";
-  if (normalizedRequested === "uga-ua") return "uga-ua";
+  if (siteHost.includes("basket") || siteHost.includes("pop")) {
+    return "spike-ua";
+  }
 
-  if (
-    normalizedRequested === "platform" ||
-    normalizedRequested === "1d3x" ||
-    normalizedRequested === "pop" ||
-    siteHost.includes("spike") ||
-    siteHost.includes("pop")
-  ) {
+  if (siteHost.includes("spike")) {
     return "spike-ua";
   }
 
   if (siteHost.includes("uga") || siteHost.includes("index-uga") || siteHost.includes("index.uga")) {
     return "uga-ua";
+  }
+
+  if (normalizedRequested === "spike-ua" || normalizedRequested === "platform") {
+    return "spike-ua";
+  }
+
+  if (normalizedRequested === "uga-ua") return "uga-ua";
+
+  if (
+    normalizedRequested === "1d3x" ||
+    normalizedRequested === "pop"
+  ) {
+    return "spike-ua";
   }
 
   return "spike-ua";
@@ -799,7 +808,11 @@ function getHost(value?: string) {
   if (!value) return "";
 
   try {
-    return new URL(value).hostname.toLowerCase();
+    const normalized = value.trim();
+    const candidate = normalized.includes("://")
+      ? normalized
+      : `https://${normalized}`;
+    return new URL(candidate).hostname.toLowerCase();
   } catch {
     return "";
   }
