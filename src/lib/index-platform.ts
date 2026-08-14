@@ -766,9 +766,40 @@ export function getActiveIndexConfig() {
 
 export function getActiveTenantId(): IndexTenantId {
   const requested =
-    process.env.INDEX_TENANT ?? process.env.NEXT_PUBLIC_INDEX_TENANT ?? "uga-ua";
+    process.env.INDEX_TENANT ?? process.env.NEXT_PUBLIC_INDEX_TENANT ?? "";
+  const normalizedRequested = requested.trim().toLowerCase();
 
-  return requested === "spike-ua" ? "spike-ua" : "uga-ua";
+  if (normalizedRequested === "spike-ua") return "spike-ua";
+  if (normalizedRequested === "uga-ua") return "uga-ua";
+
+  const siteHost = getHost(process.env.NEXT_PUBLIC_SITE_URL);
+
+  if (
+    normalizedRequested === "platform" ||
+    normalizedRequested === "1d3x" ||
+    normalizedRequested === "spike" ||
+    normalizedRequested === "pop" ||
+    siteHost.includes("spike") ||
+    siteHost.includes("pop")
+  ) {
+    return "spike-ua";
+  }
+
+  if (siteHost.includes("uga") || siteHost.includes("index-uga") || siteHost.includes("index.uga")) {
+    return "uga-ua";
+  }
+
+  return "spike-ua";
+}
+
+function getHost(value?: string) {
+  if (!value) return "";
+
+  try {
+    return new URL(value).hostname.toLowerCase();
+  } catch {
+    return "";
+  }
 }
 
 export function getSpikeCommodityCategories(locale: Locale) {
