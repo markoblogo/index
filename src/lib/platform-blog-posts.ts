@@ -359,6 +359,42 @@ export const platformBlogPosts: PlatformBlogPost[] = [
       "1D3X"
     ],
     "title": "#PopIndex: Measuring Air Pollution in Cigarettes"
+  },
+  {
+    "body": [
+      "Large systems are hard to look at directly.",
+      "So people keep translating them into smaller objects: a burger, a lipstick, a pair of underwear, an hour of labor, a freight rate, a cigarette equivalent, a benchmark score.",
+      "That translation impulse is the subject of *Burgers, Lipstick & Underwear: What Strange Indicators Really Tell Us About the Economy*.",
+      "The book is built around a simple observation: vivid measures travel farther than abstract explanations. A reader may not remember a macroeconomic table, but they may remember how many minutes of work it takes to buy an iPhone, what a burger says about purchasing power, or why a pollution reading becomes emotionally legible when someone turns it into cigarettes.",
+      "That does not make those measures trivial. It makes them powerful.",
+      "It also makes them risky.",
+      "A good strange indicator gives the reader something to hold. It turns an overwhelming system into one manageable angle. But the same portability that makes an indicator memorable can also make it misleading. The object starts to feel more precise than it is. The comparison starts to look universal when it was only ever partial. The proxy becomes folklore, or worse, an incentive target.",
+      "That is why the book keeps moving between charm and skepticism. Yes, a memorable number can make the world readable. No, readability is not the same thing as truth.",
+      "This is also why the subject fits naturally around the broader 1D3X interest in indices and reference pricing. Benchmark design is not just a technical task. It is a translation task. Which part of reality are you trying to preserve? Which distortion are you willing to accept? What happens when the simplified number leaves its original context and starts living on its own?",
+      "Some of the book's examples are playful. Some are industrial. Some are almost absurd. Together, they show that measurement culture is everywhere. Consumer objects, recession folklore, working-time comparisons, freight signals, and AI benchmarks all belong to the same family: attempts to turn complexity into something portable enough for human attention.",
+      "The problem is not that people use proxies. The problem is forgetting that a proxy is a proxy.",
+      "That is where the book is strongest. It does not ask the reader to reject strange measures. It asks the reader to use them with proportion. Inspect the method. Ask what disappeared in translation. Notice what changes when people start optimizing for the score. Enjoy the vividness, but do not surrender judgment to it.",
+      "If you are interested in how numbers become narratives, and how narratives become benchmarks, this is the book.",
+      "Read more on ABVX: [Burgers, Lipstick & Underwear](https://abvx.xyz/books/burgers-lipstick-underwear).",
+      "Kindle: [Amazon Kindle edition](https://www.amazon.com/dp/B0HF5DWCHB).",
+      "Paperback: [Amazon paperback edition](https://www.amazon.com/dp/B0HF7SJJ7N)."
+    ],
+    "coverImage": "/blog/burgers-lipstick-underwear.png",
+    "excerpt": "Why burgers, lipstick, underwear, work-time measures, freight, and AI benchmarks all belong to the same conversation about making complex systems readable.",
+    "publishedAt": "2026-08-14",
+    "readingMinutes": 3,
+    "seoDescription": "Why burgers, lipstick, underwear, work-time measures, freight, and AI benchmarks all belong to the same conversation about making complex systems readable.",
+    "seoTitle": "The Strange Ways We Turn the World into Numbers",
+    "slug": "the-strange-ways-we-turn-the-world-into-numbers",
+    "tags": [
+      "1D3X",
+      "indices",
+      "benchmarks",
+      "data literacy",
+      "consumer proxies",
+      "books"
+    ],
+    "title": "The Strange Ways We Turn the World into Numbers"
   }
 ];
 

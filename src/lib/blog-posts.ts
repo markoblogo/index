@@ -388,6 +388,59 @@ export const spikeBlogPosts: BlogPost[] = [
       "The Headlands: A Ukrainian Farming Game Where Every Harvest Has a Price",
     videoLabel: "Watch the trailer",
     videoUrl: "https://youtu.be/66bVMxlkREc?si=uIewZqricSiuFjAD",
+  },
+  {
+    "body": [
+      "A good index has two jobs.",
+      "First, it has to compress reality into a form a reader can actually use. Second, it has to remain honest about what was lost in the compression.",
+      "That is the territory explored by *Burgers, Lipstick & Underwear: What Strange Indicators Really Tell Us About the Economy*.",
+      "The book moves through Big Mac comparisons, working-time measures, lipstick and underwear recession folklore, freight signals, pollution equivalents, and AI benchmarks. What ties those examples together is not novelty for its own sake. It is a methodological question: when does a vivid proxy help us understand the world, and when does it become a seductive number that travels farther than its evidence?",
+      "That question matters to any project that publishes benchmarks.",
+      "A memorable number has obvious advantages. It is easier to repeat, easier to compare, and easier to explain to readers who do not want a full statistical appendix before breakfast. But memorability is not the same thing as robustness. A benchmark can be intuitive while still hiding weak comparability, unstable inputs, context loss, or incentives that begin to distort behavior once the measure becomes important.",
+      "This is where many famous indicators split into two different lives. In their first life, they are explanatory devices. They help people see a complex system from one useful angle. In their second life, they turn into folklore. The measure remains famous after the conditions that made it informative have changed, or after the audience has forgotten what the proxy was actually built to capture.",
+      "That transition is subtle. Nothing about the number itself announces that it has crossed the line. What changes is the relationship between the method and the story being told about it.",
+      "The book is strongest when it insists on asking very plain questions: What is the object? What data supports it? What counts as comparable? What disappears in translation? What changes once people start optimizing for the score?",
+      "Those are also the questions that keep any reference benchmark from drifting into performance theatre.",
+      "A useful benchmark does not need to be dull. It can be memorable, visual, even slightly provocative. But it needs proportion. It needs to make a claim no bigger than the method can carry. And it needs enough contextual discipline that a reader can separate the signal from the story wrapped around it.",
+      "That is why the book feels adjacent to index methodology rather than merely playful economics. It treats proxy selection as a design choice with consequences.",
+      "The result is a compact reminder that the most dangerous numbers are often the most portable ones. They feel usable before they have been inspected.",
+      "Read more on ABVX, or use the Kindle and paperback links below."
+    ],
+    "coverImage": "/blog/burgers-lipstick-underwear.png",
+    "excerpt": "A SPIKE note on the difference between a useful benchmark and a seductive number that travels farther than its evidence.",
+    "publishedAt": "2026-08-14",
+    "readingMinutes": 3,
+    "seoDescription": "A SPIKE note on the difference between a useful benchmark and a seductive number that travels farther than its evidence.",
+    "seoTitle": "Useful Index or Seductive Number?",
+    "slug": "useful-index-or-seductive-number",
+    "tags": [
+      "indices",
+      "methodology",
+      "benchmark design",
+      "proxy selection",
+      "SPIKE",
+      "books"
+    ],
+    "title": "Useful Index or Seductive Number?",
+    "language": "en",
+    "resourceLinks": [
+      {
+        "label": "Read more on ABVX",
+        "href": "https://abvx.xyz/books/burgers-lipstick-underwear"
+      },
+      {
+        "label": "Kindle",
+        "href": "https://www.amazon.com/dp/B0HF5DWCHB"
+      },
+      {
+        "label": "Paperback",
+        "href": "https://www.amazon.com/dp/B0HF7SJJ7N"
+      }
+    ],
+    "subtitle": "A SPIKE note on the difference between a useful benchmark and a seductive number that travels farther than its evidence.",
+    "videoAfterParagraph": null,
+    "videoLabel": null,
+    "videoUrl": null
   }
 ];
 

@@ -90,6 +90,13 @@ const handbookResource = {
   epub: getTenantAssetAbsoluteUrl("spike.handbook.en.epub", "https://spike.1d3x.com"),
 } as const;
 
+const burgersBook = {
+  cover: "/blog/burgers-lipstick-underwear.png",
+  canonical: "https://abvx.xyz/books/burgers-lipstick-underwear",
+  kindle: "https://www.amazon.com/dp/B0HF5DWCHB",
+  paperback: "https://www.amazon.com/dp/B0HF7SJJ7N",
+} as const;
+
 const jsonLd = {
   "@context": "https://schema.org",
   "@graph": [
@@ -807,6 +814,66 @@ export function PlatformLanding() {
                     href={handbookResource.epub}
                   >
                     Download EPUB
+                  </a>
+                </div>
+              </div>
+            </article>
+
+            <article className="grid gap-5 rounded-[1.5rem] border border-white/12 bg-[#0a0f15] p-5 text-white sm:p-6 lg:grid-cols-[13rem_1fr]">
+              <div className="border border-white/10 bg-black/30 p-3">
+                <Image
+                  alt="Cover of Burgers, Lipstick & Underwear"
+                  className="h-auto w-full object-contain"
+                  height={960}
+                  src={burgersBook.cover}
+                  unoptimized
+                  width={640}
+                />
+              </div>
+
+              <div className="flex flex-col justify-between gap-5">
+                <div>
+                  <p className="text-sm font-black uppercase tracking-[0.12em] text-[#ffc42e]">
+                    External book
+                  </p>
+                  <h3 className="mt-3 text-2xl font-black leading-tight text-white">
+                    Burgers, Lipstick &amp; Underwear
+                  </h3>
+                  <p className="mt-2 text-sm uppercase tracking-[0.08em] text-white/52">
+                    What Strange Indicators Really Tell Us About the Economy
+                  </p>
+                  <p className="mt-4 max-w-3xl text-base leading-7 text-white/72">
+                    A compact book about how memorable objects and strange proxies
+                    turn complex systems into portable numbers — and why useful
+                    measures can still become folklore, incentives, or beautiful
+                    mistakes.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap gap-3">
+                  <a
+                    className="inline-flex min-w-[10.25rem] items-center justify-center rounded-full border border-[#ffc42e] bg-[#ffc42e] px-5 py-3 text-xs font-black uppercase tracking-[0.12em] text-black transition hover:bg-white"
+                    href={burgersBook.kindle}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    Kindle
+                  </a>
+                  <a
+                    className="inline-flex min-w-[10.25rem] items-center justify-center rounded-full border border-white/16 px-5 py-3 text-xs font-black uppercase tracking-[0.12em] text-white transition hover:border-white hover:bg-white hover:text-black"
+                    href={burgersBook.paperback}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    Paperback
+                  </a>
+                  <a
+                    className="inline-flex min-w-[10.25rem] items-center justify-center rounded-full border border-white/16 px-5 py-3 text-xs font-black uppercase tracking-[0.12em] text-white transition hover:border-white hover:bg-white hover:text-black"
+                    href={burgersBook.canonical}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    Read more
                   </a>
                 </div>
               </div>
