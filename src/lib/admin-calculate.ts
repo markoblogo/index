@@ -32,7 +32,7 @@ import {
   canManuallyUnlockPublicationDate,
   revalidatePublishedIndexViews,
 } from "@/lib/admin-publication-lock";
-import { generateAndStoreDailyAiMarketBriefs } from "@/lib/ai-market-brief-lazy";
+import { scheduleAdminPublishAiBrief } from "@/lib/admin-publish-post-processing";
 import { getActiveRespondentCount } from "@/lib/respondent-directory";
 import { syncIndexPositionDirectory } from "@/lib/position-directory-sync";
 import {
@@ -84,7 +84,11 @@ export type AdminCalculationData = {
   basisLabel: string;
   lockReason: string | null;
   lockedForPublication: boolean;
-  publicationStatus: "not_published" | "published_locked" | "published_unlocked";
+  publicationStatus:
+    | "not_published"
+    | "partially_published"
+    | "published_locked"
+    | "published_unlocked";
   canUnlockPublication: boolean;
   source: "database" | "mock";
   commodities: AdminCalculationCommodity[];
@@ -220,13 +224,8 @@ export async function publishAdminIndices(formData: FormData, user: DemoUser) {
 
   const calculations = await persistDatabaseCalculations(date, user);
   await publishDatabaseCalculations(date, calculations, user, benchmarkBlendCommodityIds);
-  await generateAndStoreDailyAiMarketBriefs({
-    actorUserId: user.userId,
-    date,
-    force: true,
-    source: "admin_publish",
-  });
   revalidatePublishedIndexViews();
+  scheduleAdminPublishAiBrief({ date, userId: user.userId });
   redirect(`/admin/calculate?date=${date}&notice=published_database`);
 }
 
@@ -350,12 +349,10 @@ async function getDatabaseCalculationData(date: string): Promise<AdminCalculatio
   }
 
   const { dbCommodities, existingCalculations, publishedIndices } = context;
-  const lockedPublishedCount = [...publishedIndices.values()].filter(
-    (publishedIndex) => publishedIndex.locked,
-  ).length;
+  const { complete, lockedPublishedCount, partial } = getPublicationCoverage(context);
   const lockedForPublication = isPastTradeDate(date)
     ? publishedIndices.size > 0
-    : lockedPublishedCount > 0;
+    : complete;
 
   return {
     date,
@@ -363,7 +360,9 @@ async function getDatabaseCalculationData(date: string): Promise<AdminCalculatio
     lockReason: lockedForPublication ? lockedPublicationReason() : null,
     lockedForPublication,
     publicationStatus:
-      lockedPublishedCount > 0
+      partial
+        ? "partially_published"
+        : lockedPublishedCount > 0
         ? "published_locked"
         : publishedIndices.size > 0
           ? "published_unlocked"
@@ -430,11 +429,11 @@ async function persistDatabaseCalculations(
   }
 
   const tradeDate = dateToUtcDate(date);
-  const savedCalculations = [];
+  const calculatedById = await getDatabaseUserId(user);
 
-  for (const commodity of context.dbCommodities) {
+  const savedCalculations = await Promise.all(context.dbCommodities.map(async (commodity) => {
     if (targetCommodityId && commodity.id !== targetCommodityId) {
-      continue;
+      return null;
     }
 
     const calculationInput = buildDatabaseCalculationInput(context, commodity.id);
@@ -442,7 +441,7 @@ async function persistDatabaseCalculations(
     const basket = context.basketByCommodityId.get(commodity.id);
 
     if (!basis || !basket) {
-      continue;
+      return null;
     }
 
     const result = calculateIndexValue({
@@ -476,7 +475,7 @@ async function persistDatabaseCalculations(
         usedCount: result.usedCount,
         basketWeight: basket.weight,
         version: nextVersion,
-        calculatedById: await getDatabaseUserId(user),
+        calculatedById,
         calculatedAt: new Date(),
       },
       create: {
@@ -492,7 +491,7 @@ async function persistDatabaseCalculations(
         usedCount: result.usedCount,
         basketWeight: basket.weight,
         version: nextVersion,
-        calculatedById: await getDatabaseUserId(user),
+        calculatedById,
       },
     });
 
@@ -545,7 +544,7 @@ async function persistDatabaseCalculations(
 
     await db.auditLog.create({
       data: {
-        actorUserId: await getDatabaseUserId(user),
+        actorUserId: calculatedById,
         actorRole: "admin",
         action: "index_calculation.recalculated",
         entityType: "IndexCalculation",
@@ -569,10 +568,10 @@ async function persistDatabaseCalculations(
       },
     });
 
-    savedCalculations.push(calculation);
-  }
+    return calculation;
+  }));
 
-  return savedCalculations;
+  return savedCalculations.filter((calculation) => calculation !== null);
 }
 
 async function publishDatabaseCalculations(
@@ -583,12 +582,12 @@ async function publishDatabaseCalculations(
 ) {
   const publisherUserId = await getDatabaseUserId(user);
 
-  for (const calculation of calculations) {
+  await Promise.all(calculations.map(async (calculation) => {
     if (
       !isPublishableDatabaseCalculation(calculation.status) ||
       calculation.publicValueUsdPerMt === null
     ) {
-      continue;
+      return;
     }
 
     const existing = await db.publishedIndex.findUnique({
@@ -603,7 +602,7 @@ async function publishDatabaseCalculations(
     });
 
     if (existing?.locked) {
-      continue;
+      return;
     }
 
     const previous = await db.publishedIndex.findFirst({
@@ -709,7 +708,7 @@ async function publishDatabaseCalculations(
         },
       },
     });
-  }
+  }));
 }
 
 function isPublishableDatabaseCalculation(status: string) {
@@ -982,11 +981,39 @@ async function isPublicationLockedForDate(date: string) {
 
   const context = await getDatabaseCalculationContext(date);
   const publishedIndices = [...(context?.publishedIndices.values() ?? [])];
-  const lockedPublishedCount = publishedIndices.filter((index) => index.locked).length;
+  const { complete } = context
+    ? getPublicationCoverage(context)
+    : { complete: false };
 
   return isPastTradeDate(date)
     ? publishedIndices.length > 0
-    : lockedPublishedCount > 0;
+    : complete;
+}
+
+function getPublicationCoverage(
+  context: NonNullable<Awaited<ReturnType<typeof getDatabaseCalculationContext>>>,
+) {
+  const publishableCommodityIds = new Set(
+    [...context.existingCalculations.values()]
+      .filter(
+        (calculation) =>
+          isPublishableDatabaseCalculation(calculation.status) &&
+          calculation.publicValueUsdPerMt !== null,
+      )
+      .map((calculation) => calculation.commodityId),
+  );
+  const lockedPublishedCount = [...publishableCommodityIds].filter(
+    (commodityId) => context.publishedIndices.get(commodityId)?.locked,
+  ).length;
+  const complete =
+    publishableCommodityIds.size > 0 &&
+    lockedPublishedCount === publishableCommodityIds.size;
+
+  return {
+    complete,
+    lockedPublishedCount,
+    partial: lockedPublishedCount > 0 && !complete,
+  };
 }
 
 function lockedPublicationReason() {

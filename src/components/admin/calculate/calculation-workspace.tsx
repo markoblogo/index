@@ -25,7 +25,11 @@ type CalculationPageData = {
   date: string;
   lockedForPublication: boolean;
   lockReason: string | null;
-  publicationStatus: "not_published" | "published_locked" | "published_unlocked";
+  publicationStatus:
+    | "not_published"
+    | "partially_published"
+    | "published_locked"
+    | "published_unlocked";
   source: "database" | "mock";
   canUnlockPublication: boolean;
 };
@@ -88,6 +92,8 @@ export function CalculationWorkspace({
                 className={
                   data.publicationStatus === "published_locked"
                     ? "rounded-full bg-uga-lime px-3 py-1 text-black"
+                    : data.publicationStatus === "partially_published"
+                      ? "rounded-full border border-amber-400 bg-amber-50 px-3 py-1 text-amber-800"
                     : data.publicationStatus === "published_unlocked"
                       ? "rounded-full border border-uga-lime px-3 py-1 text-uga-lime"
                     : "rounded-full border border-black/15 bg-white px-3 py-1 text-black/65"
@@ -95,6 +101,8 @@ export function CalculationWorkspace({
               >
                 {data.publicationStatus === "published_locked"
                   ? "Published indices locked"
+                  : data.publicationStatus === "partially_published"
+                    ? "Publication incomplete · retry available"
                   : data.publicationStatus === "published_unlocked"
                     ? "Published indices unlocked"
                   : "Indices not published"}

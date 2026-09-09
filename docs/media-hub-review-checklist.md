@@ -45,6 +45,12 @@ Expected route outcomes for MediaHub/Context intake:
 - Approval-sensitive actions fail closed when secrets/session are missing.
 - Channel sends have idempotency or explicit force semantics.
 - Site-only and channel-send modes remain separable.
+- Admin `publish-site` returns after the current index snapshot and receipt are
+  persisted; AI brief refresh and other optional post-processing must not block
+  the operator response.
+- An interrupted multi-position publication remains resumable: already locked
+  positions stay idempotent and missing positions can be published by retrying
+  the same date.
 - Public index APIs and report sends do not use stale saved index tables when a
   current published snapshot exists.
 - Telegram daily reports fit one message; weekly/monthly parts fit one message
