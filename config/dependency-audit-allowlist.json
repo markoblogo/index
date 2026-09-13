@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "review_by": "2026-10-15",
+  "allowed_roots": {
+    "whatsapp-web.js": "Latest 1.34.7 still reaches Puppeteer and archive advisories; no clean current release is available."
+  }
+}

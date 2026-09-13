@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "repo": "markoblogo/index",
+  "tools": {
+    "agentsgen": {"init": false, "pack": true, "check": true}
+  },
+  "presets": ["web-ui"]
+}

@@ -1,6 +1,6 @@
 # Product Context
 
-Last reviewed: 2026-07-14
+Last reviewed: 2026-09-14
 
 ## Product
 
@@ -36,3 +36,5 @@ The public 1d3x surface is a partnership entry point. Product communication shou
 ## Maintenance
 
 Refresh after tenant, methodology, publication, partnership, or Cortex-boundary changes. Recurring content, SEO, analytics, or partnership reviews must retain evidence and stop at a human approval gate before external effects.
+
+Repository instructions and human preferences remain separate from product data. agentsgen owns repo-local agent context; ID owns optional policy-filtered human context; SET may export reviewable workflow plans; ABVX-OS may consume bounded evidence. None of these companions grants Index publication or channel-send authority.

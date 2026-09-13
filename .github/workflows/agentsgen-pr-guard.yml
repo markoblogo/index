@@ -1,0 +1,27 @@
+name: Agent context
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: agent-context-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+      - name: Install agentsgen
+        run: python -m pip install agentsgen==0.5.1
+      - name: Validate generated agent context
+        run: agentsgen pack --autodetect --check --format=json

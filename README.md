@@ -2,10 +2,36 @@
 
 ![1d3x logo](public/brand/1d3x-logo.webp)
 
-Index Platform is a shared Next.js/TypeScript platform for Ukrainian commodity
-market indices. The codebase is intentionally organized as one index engine with
-tenant-specific brands, content, styling, commodities, respondents, integrations
-and deployment settings.
+**Evidence-backed commodity intelligence and benchmark publishing for Ukraine.**
+
+[![CI](https://github.com/markoblogo/index/actions/workflows/ci.yml/badge.svg)](https://github.com/markoblogo/index/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/markoblogo/index)](https://github.com/markoblogo/index/releases)
+[![Node 22](https://img.shields.io/badge/node-22-339933)](https://nodejs.org/)
+[![Next.js 16](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/)
+[![Code license: MIT](https://img.shields.io/badge/code%20license-MIT-green.svg)](LICENSE)
+
+Index Platform is the shared Next.js/TypeScript engine behind **1d3x**, **UGA Index**, and **SPIKE SPOT INDEX**. It combines respondent inputs, governed index calculation, evidence-backed publication, market context, analytics, and a bounded Cortex AI layer while keeping tenant data and public claims separate.
+
+## Start here
+
+```sh
+git clone https://github.com/markoblogo/index.git
+cd index
+npm ci
+cp .env.example .env.local
+INDEX_TENANT=spike-ua NEXT_PUBLIC_INDEX_TENANT=spike-ua npm run dev
+```
+
+The local app can use seeded fallback data. Production publication, channel delivery, database writes, and Cortex handoffs require explicit environment configuration and the relevant authorization boundary.
+
+| Goal | Read |
+| --- | --- |
+| Understand the product | [Product context](docs/product-context.md) |
+| Run a tenant locally | [Local setup](#local-setup) and [.env.example](.env.example) |
+| Change calculations or publication | [Index and Context review checklist](docs/media-hub-review-checklist.md) |
+| Work with Cortex | [Cortex agent-flow contract](docs/cortex-agent-flow-contract.md) |
+| Understand companion products | [ABVX ecosystem contracts](docs/ECOSYSTEM.md) |
+| Contribute or report a vulnerability | [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) |
 
 Read first for a fresh coding session:
 
@@ -393,10 +419,12 @@ Tenant configuration controls:
 
 ## Local Setup
 
+Requires Node.js 22 and npm 11.6.2.
+
 Install dependencies:
 
 ```bash
-npm install
+npm ci
 ```
 
 Run UGA locally:

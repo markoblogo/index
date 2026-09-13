@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "generated_by": "agentsgen",
+  "generated_at": "2026-09-13T23:06:29Z",
+  "repo": {
+    "path": ".",
+    "stack": "unknown",
+    "autodetect": true
+  },
+  "commands": [
+    {
+      "id": "install",
+      "title": "Install",
+      "command": "npm ci",
+      "cwd": ".",
+      "source": {
+        "kind": "config",
+        "hint": ".agentsgen.json:commands.install"
+      },
+      "notes": ""
+    },
+    {
+      "id": "dev",
+      "title": "Dev",
+      "command": "npm run dev",
+      "cwd": ".",
+      "source": {
+        "kind": "config",
+        "hint": ".agentsgen.json:commands.dev"
+      },
+      "notes": ""
+    },
+    {
+      "id": "test",
+      "title": "Test",
+      "command": "npm run test",
+      "cwd": ".",
+      "source": {
+        "kind": "config",
+        "hint": ".agentsgen.json:commands.test"
+      },
+      "notes": ""
+    },
+    {
+      "id": "lint",
+      "title": "Lint",
+      "command": "npm run lint",
+      "cwd": ".",
+      "source": {
+        "kind": "config",
+        "hint": ".agentsgen.json:commands.lint"
+      },
+      "notes": ""
+    },
+    {
+      "id": "build",
+      "title": "Build",
+      "command": "npm run build",
+      "cwd": ".",
+      "source": {
+        "kind": "config",
+        "hint": ".agentsgen.json:commands.build"
+      },
+      "notes": ""
+    },
+    {
+      "id": "typecheck",
+      "title": "Typecheck",
+      "command": "npm run typecheck",
+      "cwd": ".",
+      "source": {
+        "kind": "package.json",
+        "hint": "typecheck"
+      },
+      "notes": ""
+    }
+  ]
+}

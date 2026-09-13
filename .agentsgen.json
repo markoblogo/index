@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "mode": "safe",
+  "on_missing_markers": "error",
+  "generated_suffix": ".generated",
+  "markers": {
+    "start": "<!-- AGENTSGEN:START section={section} -->",
+    "end": "<!-- AGENTSGEN:END section={section} -->"
+  },
+  "sections": ["agentsgen_contract", "task_contract", "verification"],
+  "pack": {
+    "enabled": true,
+    "llms_format": "txt",
+    "output_dir": "docs/ai",
+    "files": []
+  },
+  "commands": {
+    "install": "npm ci",
+    "dev": "npm run dev",
+    "build": "npm run build",
+    "test": "npm run test",
+    "lint": "npm run lint"
+  },
+  "project": {
+    "name": "Index Platform",
+    "primary_stack": "typescript",
+    "repo_root": "."
+  }
+}
