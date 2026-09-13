@@ -1,0 +1,23 @@
+<!-- AGENTSGEN:START section=llms -->
+Project: Index Platform
+Stack: typescript
+
+Agent context bundle (LLMO Pack):
+- Run guide: docs/ai/how-to-run.md
+- Test guide: docs/ai/how-to-test.md
+- Architecture: docs/ai/architecture.md
+- Data contracts: docs/ai/data-contracts.md
+- ID handoff: docs/ai/id-context.json
+- Security: SECURITY_AI.md
+- Contributing: CONTRIBUTING_AI.md
+
+Quick commands:
+- install: (mixed repo detected - set explicit command in .agentsgen.json)
+- dev: (mixed repo detected - set explicit command in .agentsgen.json)
+- test: (mixed repo detected - set explicit command in .agentsgen.json)
+- lint: (mixed repo detected - set explicit command in .agentsgen.json)
+- build: (mixed repo detected - set explicit command in .agentsgen.json)
+
+Notes:
+- Keep these files concise and command-accurate. Avoid speculative guidance.
+<!-- AGENTSGEN:END section=llms -->

@@ -1,7 +1,11 @@
 {
   "name": "index-platform",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
+  "engines": {
+    "node": ">=22 <25"
+  },
+  "packageManager": "npm@11.6.2",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -13,7 +17,8 @@
     "test:e2e": "playwright test",
     "audit:repo": "node scripts/audit-repo-health.mjs",
     "content:publish-post": "node scripts/publish-post.mjs",
-    "audit:release": "npm run audit:repo && npm run lint && npm run test && npm run build",
+    "audit:dependencies": "node scripts/audit-dependencies.mjs",
+    "audit:release": "npm run audit:repo && npm run audit:dependencies && npm run lint && npm run test && npm run build",
     "audit:production-env:ci": "node scripts/check-production-env-smoke.mjs",
     "audit:all": "npm run audit:production-env:ci && npm run audit:release",
     "check:production-env": "node scripts/check-production-env.mjs",
@@ -59,11 +64,11 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
-    "@prisma/adapter-pg": "^7.8.0",
-    "@prisma/client": "^7.8.0",
+    "@prisma/adapter-pg": "^7.10.0",
+    "@prisma/client": "^7.10.0",
     "grammy": "^1.44.0",
-    "next": "^16.3.3",
-    "pg": "^8.20.0",
+    "next": "^16.3.5",
+    "pg": "^8.23.0",
     "qrcode": "^1.5.4",
     "qrcode-terminal": "^0.12.0",
     "react": "^19.0.0",
@@ -82,16 +87,16 @@
     "@types/react-dom": "^19.0.0",
     "autoprefixer": "^10.4.21",
     "eslint": "^9.25.1",
-    "eslint-config-next": "^16.3.3",
+    "eslint-config-next": "^16.3.5",
     "postcss": "^8.5.6",
-    "prisma": "^7.8.0",
+    "prisma": "^7.10.0",
     "tailwindcss": "^3.4.17",
     "tsx": "^4.21.0",
     "typescript": "^5.8.3",
     "vitest": "^4.1.5"
   },
   "overrides": {
-    "@prisma/dev": "0.24.14",
+    "@prisma/dev": "0.24.17",
     "@hono/node-server": "^1.19.13",
     "esbuild": "^0.28.1"
   }
