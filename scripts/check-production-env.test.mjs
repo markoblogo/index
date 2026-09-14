@@ -133,6 +133,24 @@ describe("check-production-env", () => {
     expect(spike.invalid).not.toContain("UGA_INDEX_RUNTIME_MODE=production");
   });
 
+  it("accepts UGA SPIKE read-through production without a database or respondent delivery", () => {
+    const withoutDatabase = { ...baseEnv };
+    delete withoutDatabase.DATABASE_URL;
+    delete withoutDatabase.RESEND_API_KEY;
+    const result = validateProductionEnv({
+      ...withoutDatabase,
+      INDEX_TENANT: "uga-ua",
+      NEXT_PUBLIC_SITE_URL: "https://index.uga.ua",
+      UGA_INDEX_RUNTIME_MODE: "production",
+      UGA_SPIKE_PUBLIC_API_BASE: "https://spike.1d3x.com",
+      UGA_SPIKE_READTHROUGH_ENABLED: "enabled",
+    }, { project: "uga-index" });
+
+    expect(result.ok).toBe(true);
+    expect(result.missing).not.toContain("DATABASE_URL");
+    expect(result.missing).not.toContain("RESPONDENT_EMAIL_CRON_SECRET");
+  });
+
   it("parses project arguments", () => {
     expect(getProjectFromArgs(["--project", "spike-ua-index"])).toBe("spike-ua-index");
     expect(getProjectFromArgs(["--project=uga-index"])).toBe("uga-index");

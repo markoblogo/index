@@ -25,4 +25,7 @@
 
 - `npm run audit:all` should pass before every deploy.
 - Production deployments require `DATABASE_URL`.
+- UGA may instead run with `UGA_SPIKE_READTHROUGH_ENABLED=enabled` and no
+  `DATABASE_URL`. This public read-only mode depends on SPIKE availability and
+  exposes only the four commodity codes shared by both products.
 - Public embeds require correct `NEXT_PUBLIC_SITE_URL` and `ALLOWED_EMBED_ORIGINS`.

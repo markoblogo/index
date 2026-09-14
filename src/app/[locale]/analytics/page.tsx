@@ -7,6 +7,7 @@ import { getActiveIndexConfig } from "@/lib/index-platform";
 import { getLatestPublishedMediaHubReportSummary } from "@/lib/media-hub-publication-scheduler";
 import { commodities, type Commodity, type CommodityId } from "@/lib/mock-data";
 import { getPublicHistoryData } from "@/lib/public-api-data";
+import { isUgaSpikeReadthroughEnabled } from "@/lib/uga-spike-readthrough";
 import { getActiveRespondentCountData } from "@/lib/respondent-directory-lazy";
 import {
   getAnalyticsDisplaySnapshot,
@@ -650,15 +651,15 @@ function PublishedValuesTable({
 }
 
 async function getAnalyticsHistory(activeRespondentCount: number, useFullHistory: boolean) {
-  if (hasDatabaseUrl()) {
+  if (hasDatabaseUrl() || isUgaSpikeReadthroughEnabled()) {
     const realHistory = await getRealAnalyticsHistory(useFullHistory);
 
-    if (realHistory.length > 0 || !allowMockFallback()) {
+    if (realHistory.length > 0 || !allowMockFallback() || isUgaSpikeReadthroughEnabled()) {
       return realHistory;
     }
   }
 
-  if (!hasDatabaseUrl() || allowMockFallback()) {
+  if ((!hasDatabaseUrl() && !isUgaSpikeReadthroughEnabled()) || allowMockFallback()) {
     return buildDemoAnalyticsHistory(activeRespondentCount);
   }
 

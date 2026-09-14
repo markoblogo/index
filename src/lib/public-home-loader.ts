@@ -3,6 +3,7 @@ import { getFxRates } from "@/lib/fx-rates";
 import { getActiveIndexConfig } from "@/lib/index-platform";
 import { getPublicIndexSnapshot } from "@/lib/public-index-data";
 import { getActiveRespondentCountData } from "@/lib/respondent-directory-lazy";
+import { isUgaSpikeReadthroughEnabled } from "@/lib/uga-spike-readthrough";
 
 export async function loadPublicHomePageData(
   locale: Locale,
@@ -15,11 +16,12 @@ export async function loadPublicHomePageData(
     getActiveRespondentCountData(),
   ]);
   const latestQuoteDate =
-    activeIndex.id === "spike-ua"
-      ? snapshot.latestQuotes
-          .map((quote) => quote.date)
-          .sort((first, second) => second.localeCompare(first))[0] ?? null
-      : null;
+    snapshot.latestQuotes
+      .map((quote) => quote.date)
+      .sort((first, second) => second.localeCompare(first))[0] ?? null;
+  const displayedRespondentCount = isUgaSpikeReadthroughEnabled(requestHost)
+    ? Math.max(0, ...snapshot.latestQuotes.map((quote) => quote.respondents))
+    : respondentCount;
   const updatedAt = new Intl.DateTimeFormat(
     locale === "uk" ? "uk-UA" : "en-US",
     {
@@ -36,7 +38,7 @@ export async function loadPublicHomePageData(
   return {
     activeIndex,
     fxRates,
-    respondentCount,
+    respondentCount: displayedRespondentCount,
     snapshot,
     updatedAt,
   };

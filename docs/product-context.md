@@ -4,7 +4,7 @@ Last reviewed: 2026-09-14
 
 ## Product
 
-Index Platform is a shared Next.js/TypeScript platform for tenant-specific Ukrainian commodity indices. It supports 1d3x, UGA Index, and SPIKE SPOT INDEX with shared calculation, publication, respondent, analytics, content, and deployment foundations.
+Index Platform is a shared Next.js/TypeScript platform for Ukrainian commodity market products. SPIKE SPOT INDEX owns the active calculation, publication, respondent, analytics, and Context workflows. UGA Index currently provides a transparent read-only view of four compatible SPIKE public positions without a separate production database. 1d3x remains the umbrella and partnership surface.
 
 ## Audience And Jobs
 
@@ -19,6 +19,7 @@ The public 1d3x surface is a partnership entry point. Product communication shou
 
 - Tenant configuration, published values, methodology, legal pages, and code are the source for product claims.
 - Public context and analytics must distinguish current published data from saved reports, source materials, and synthetic/demo fixtures.
+- UGA must identify SPIKE as its data source and must not imply a separate UGA calculation, respondent panel, or publication process while read-through mode is active.
 - Cortex is a bounded evidence/context layer, not an autonomous decision-maker or live trading system.
 - Do not claim regulatory status, market coverage, accuracy, performance, partner participation, or live-data freshness without owner-confirmed and current evidence.
 

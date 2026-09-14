@@ -70,11 +70,16 @@ const TELEGRAM_MEDIA_HUB_PROJECTS = new Set(["1d3x", "spike-ua-index"]);
 
 export function validateProductionEnv(env = process.env, options = {}) {
   const project = normalizeProject(options.project ?? env.VERCEL_PROJECT ?? env.VERCEL_PROJECT_NAME ?? "");
+  const ugaSpikeReadthrough =
+    project === "uga-index" && env.UGA_SPIKE_READTHROUGH_ENABLED === "enabled";
   const missing = [];
   const invalid = [];
   const warnings = [];
 
   for (const key of COMMON_REQUIRED) {
+    if (ugaSpikeReadthrough && (key === "DATABASE_URL" || key === "RESEND_API_KEY")) {
+      continue;
+    }
     if (!hasValue(env, key)) missing.push(key);
   }
 
@@ -98,13 +103,15 @@ export function validateProductionEnv(env = process.env, options = {}) {
       invalid.push(`NEXT_PUBLIC_SITE_URL host must be one of: ${expectedHosts.join(", ")}`);
     }
 
-    for (const key of PROJECT_REQUIRED[project] ?? []) {
-      if (!hasValue(env, key)) missing.push(key);
-    }
+    if (!ugaSpikeReadthrough) {
+      for (const key of PROJECT_REQUIRED[project] ?? []) {
+        if (!hasValue(env, key)) missing.push(key);
+      }
 
-    for (const group of PROJECT_TOKEN_GROUPS[project] ?? []) {
-      if (!group.some((key) => hasValue(env, key))) {
-        missing.push(`${group.join(" or ")}`);
+      for (const group of PROJECT_TOKEN_GROUPS[project] ?? []) {
+        if (!group.some((key) => hasValue(env, key))) {
+          missing.push(`${group.join(" or ")}`);
+        }
       }
     }
 
@@ -114,6 +121,15 @@ export function validateProductionEnv(env = process.env, options = {}) {
 
     if (project === "uga-index" && env.UGA_INDEX_RUNTIME_MODE !== "production") {
       invalid.push("UGA_INDEX_RUNTIME_MODE=production");
+    }
+
+    if (ugaSpikeReadthrough) {
+      const sourceUrl = String(env.UGA_SPIKE_PUBLIC_API_BASE ?? "").replace(/\/+$/, "");
+      if (!sourceUrl) {
+        missing.push("UGA_SPIKE_PUBLIC_API_BASE");
+      } else if (sourceUrl !== "https://spike.1d3x.com") {
+        invalid.push("UGA_SPIKE_PUBLIC_API_BASE must use https://spike.1d3x.com");
+      }
     }
 
     if (project === "spike-ua-index" && env.SSI_WHATSAPP_ENABLED === "1") {

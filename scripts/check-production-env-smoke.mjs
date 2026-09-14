@@ -47,8 +47,12 @@ const projectCases = [
   {
     project: "uga-index",
     env: {
+      DATABASE_URL: "",
       INDEX_TENANT: "uga-ua",
       NEXT_PUBLIC_SITE_URL: "https://index.uga.ua",
+      RESEND_API_KEY: "",
+      UGA_SPIKE_PUBLIC_API_BASE: "https://spike.1d3x.com",
+      UGA_SPIKE_READTHROUGH_ENABLED: "enabled",
     },
   },
   {

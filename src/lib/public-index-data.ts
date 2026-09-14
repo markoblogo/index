@@ -1,7 +1,11 @@
 import { allowMockFallback, db, hasDatabaseUrl } from "@/lib/db";
 import { unstable_cache } from "next/cache";
 import { getLatestDemoPublishedIndices } from "@/lib/demo-published-index-store";
-import { getActiveIndexConfig, type IndexConfig } from "@/lib/index-platform";
+import {
+  getActiveIndexConfig,
+  getCommodityCategory,
+  type IndexConfig,
+} from "@/lib/index-platform";
 import {
   commodities,
   indexUpdatedAt,
@@ -24,11 +28,20 @@ import {
 import { getSpikePublicVisibleTradeDate } from "@/lib/spike-publication-window";
 import { getLatestSubmissionFallbacks } from "@/lib/public-submission-fallbacks";
 import { resolvePublicDisplayFallback } from "@/lib/public-index-display";
+import {
+  fetchUgaSpikeReadthrough,
+  isUgaSpikeReadthroughEnabled,
+} from "@/lib/uga-spike-readthrough";
 
 export type PublicIndexSnapshot = {
   commodities: Commodity[];
   latestQuotes: LatestQuote[];
   updatedAt: string;
+  source?: {
+    mode: "read_through";
+    name: "SPIKE SPOT INDEX";
+    url: string;
+  };
 };
 
 const PUBLIC_INDEX_SNAPSHOT_CACHE_SECONDS = 12 * 60 * 60;
@@ -59,6 +72,10 @@ export async function getPublicIndexSnapshot(
 ): Promise<PublicIndexSnapshot> {
   const activeIndex = getActiveIndexConfig(requestHost);
 
+  if (isUgaSpikeReadthroughEnabled(requestHost)) {
+    return getUgaSpikeReadthroughSnapshot(activeIndex);
+  }
+
   if (!hasDatabaseUrl()) {
     if (!allowMockFallback()) {
       throw new Error("DATABASE_URL is required for production public index data.");
@@ -78,6 +95,80 @@ export async function getPublicIndexSnapshot(
     console.error("Failed to load database public index data.", error);
     throw error;
   }
+}
+
+async function getUgaSpikeReadthroughSnapshot(
+  activeIndex: IndexConfig,
+): Promise<PublicIndexSnapshot> {
+  const [latestPayload, historyPayload] = await Promise.all([
+    fetchUgaSpikeReadthrough("latest"),
+    fetchUgaSpikeReadthrough("history"),
+  ]);
+  const latestByCode = new Map(
+    latestPayload.data.map((item) => [item.commodityCode, item]),
+  );
+  const historyByCode = new Map<string, Array<{ date: string; value: number }>>();
+
+  for (const item of historyPayload.data) {
+    const history = historyByCode.get(item.commodityCode) ?? [];
+    history.push({ date: item.date, value: item.valueUsdPerMt as number });
+    historyByCode.set(item.commodityCode, history);
+  }
+
+  const publicCommodities: Commodity[] = activeIndex.commodities.map((configured) => {
+    const current = latestByCode.get(configured.dbCode);
+    const history = (historyByCode.get(configured.dbCode) ?? []).sort((first, second) =>
+      first.date.localeCompare(second.date),
+    );
+    const latest = current?.valueUsdPerMt ?? null;
+
+    return {
+      id: configured.id,
+      code: configured.code,
+      marker: configured.marker,
+      name: configured.name,
+      shortName: configured.shortName,
+      latest,
+      absoluteChange: current?.changeAbs ?? 0,
+      percentChange: current?.changePct ?? 0,
+      sparkline: buildRealSparkline(history, latest),
+      group: configured.group,
+      category: getCommodityCategory(configured),
+      vatIncluded: configured.vatIncluded,
+      detailMetrics: configured.detailMetrics,
+    };
+  });
+  const publicLatestQuotes = activeIndex.commodities.flatMap((configured) => {
+    const current = latestByCode.get(configured.dbCode);
+    if (!current) return [];
+
+    return [{
+      id: `${configured.id}-${current.date}`,
+      commodityId: configured.id,
+      date: current.date,
+      basis: current.basis,
+      price: current.valueUsdPerMt,
+      absoluteChange: current.changeAbs ?? 0,
+      percentChange: current.changePct ?? 0,
+      respondents: current.respondents ?? 0,
+    }];
+  });
+  const latestDate = publicLatestQuotes
+    .map((quote) => quote.date)
+    .sort((first, second) => second.localeCompare(first))[0];
+
+  return {
+    commodities: publicCommodities,
+    latestQuotes: publicLatestQuotes,
+    source: {
+      mode: "read_through",
+      name: "SPIKE SPOT INDEX",
+      url: "https://spike.1d3x.com",
+    },
+    updatedAt:
+      latestPayload.generatedAt ??
+      (latestDate ? `${latestDate}T00:00:00.000Z` : new Date(0).toISOString()),
+  };
 }
 
 const getCachedDatabasePublicIndexSnapshot = (activeIndex: IndexConfig) =>

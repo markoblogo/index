@@ -22,6 +22,12 @@ cp .env.example .env.local
 INDEX_TENANT=spike-ua NEXT_PUBLIC_INDEX_TENANT=spike-ua npm run dev
 ```
 
+For a database-free UGA deployment that relays compatible public SPIKE
+positions, set `UGA_SPIKE_READTHROUGH_ENABLED=enabled` and
+`UGA_SPIKE_PUBLIC_API_BASE=https://spike.1d3x.com`. Keep `DATABASE_URL` absent.
+UGA then preserves SPIKE values, dates, bases, and respondent counts without a
+separate calculation or write.
+
 The local app can use seeded fallback data. Production publication, channel delivery, database writes, and Cortex handoffs require explicit environment configuration and the relevant authorization boundary.
 
 | Goal | Read |
@@ -50,12 +56,12 @@ The current live products are:
 | Tenant | Public Product | Domain | Runtime Status |
 | --- | --- | --- | --- |
 | `1d3x` | 1d3x | [1d3x.com](https://1d3x.com) | Corporate landing site and partnership entry point |
-| `uga-ua` | UGA Index | [index.uga.ua](https://index.uga.ua) | Production-style deployment |
+| `uga-ua` | UGA Index | [index.uga.ua](https://index.uga.ua) | Read-only SPIKE public-data mirror |
 | `spike-ua` | SPIKE SPOT INDEX | [spike.1d3x.com](https://spike.1d3x.com) | Production-style deployment, active development |
 
-This is not a mixed "UGA plus Spike" app. It is a multi-brand index platform
-where UGA and Spike are two clients running on the same calculation,
-publication, respondent and analytics foundation.
+UGA currently acts as a transparent read-only presentation layer for four
+compatible SPIKE positions. SPIKE remains the source and calculation product;
+UGA does not maintain a separate production database or index workflow.
 
 SPIKE publishes public benchmark snapshots for Ukrainian grain and oilseed spot
 conditions to keep pricing visibility consistent across partner and operator updates.
@@ -81,16 +87,17 @@ flowchart LR
   N["Shared Next.js platform"]
   E["Index engine and publication workflow"]
   R["Respondents and admin inputs"]
-  U["UGA database"]
+  U["UGA read-only SPIKE relay"]
   S["SPIKE database"]
   C["1D3X Cortex artifact and context-pack layer"]
   M["MN7R / MediaHub / Cr0pto source artifacts"]
   D["Delivery surfaces: site, embeds, APIs, analytics, context"]
 
   R --> E
-  U --> E
   S --> E
   E --> N
+  S --> U
+  U --> N
   N --> P
   N --> D
   M --> C
@@ -195,11 +202,12 @@ artifact, receipt, or reviewed evidence page for the scoped change.
 UGA-specific features:
 
 - UGA Index brand and content;
-- 4 public commodities: corn, wheat 11.5% protein, feed wheat, GMO soybean;
-- UGA Black Sea export basis language;
+- read-only relay of 4 SPIKE positions: corn, wheat 11.5% protein, feed wheat,
+  and GMO soybean;
+- source SPIKE dates, basis labels, values, changes, and respondent counts;
 - UGA embed package for the association website;
-- email-oriented respondent workflow and UGA member-area/product positioning;
-- Neon PostgreSQL production database.
+- no separate production database, respondent collection, calculation, or
+  publication workflow.
 
 Spike-specific features:
 
@@ -227,7 +235,8 @@ Spike-specific features:
 
 ## Product Status
 
-Both products are live as demo/production-style versions. They are suitable for
+SPIKE is live as a production-style product; UGA is a read-only presentation of
+the compatible SPIKE public feed. They are suitable for
 reviewing real workflows, validating integrations and iterating with users.
 They are still under active development and should not be treated as final
 regulated market-data products until legal, security, backup and operational
@@ -242,7 +251,7 @@ Current production-oriented state:
 - Spike domain: `https://spike.1d3x.com`;
 - legacy redirects: `https://index-uga.cr0pto.com` and
   `https://spike-ua.cr0pto.com`;
-- UGA database: Neon Postgres;
+- UGA data source: SPIKE public API, with no UGA production database;
 - Spike database: Supabase Postgres;
 - runtime mode: `UGA_INDEX_RUNTIME_MODE=production` for production-style
   deployments;
@@ -252,9 +261,9 @@ Current production-oriented state:
 - health check: `GET /api/health`;
 - latest public values: `GET /api/public/latest`.
 
-Production deployments must have `DATABASE_URL` configured. Without a database,
-local development can fall back to seeded/static demo data, but production
-runtime should be DB-backed.
+SPIKE and database-backed platform deployments require `DATABASE_URL`. UGA's
+read-through production mode intentionally omits it and fails closed when the
+SPIKE public API is unavailable.
 
 ## Methodology
 
@@ -322,13 +331,9 @@ SSI manual maintenance rule:
 - public user/respondent behavior belongs in the public manual, operator
   behavior belongs in the admin manual.
 
-Scheduled UGA processes:
-
-- respondent Telegram notifications: `/api/cron/respondent-telegram`;
-- respondent email notifications remain available as a backup channel:
-  `/api/cron/respondent-emails`;
-- temporary Spike-to-UGA demo sync exists at `/api/cron/uga-spike-demo-sync`, but
-  is disabled by default and must stay disabled for real UGA respondent testing.
+UGA read-through has no scheduled respondent, calculation, synchronization, or
+publication process. The legacy `/api/cron/uga-spike-demo-sync` route remains
+disabled and is not used by production.
 
 Current `vercel.json` cron schedule:
 
@@ -351,11 +356,11 @@ route logic.
 
 UGA Spike fallback status:
 
-- UGA production should not copy or fall back to Spike Spot Index values.
-- `UGA_SPIKE_DEMO_SYNC_ENABLED` must be `disabled` unless a temporary demo sync
-  is explicitly requested again.
-- UGA daily inputs and public values are now expected to come from admin-entered
-  values, respondent submissions, and UGA publication workflow only.
+- UGA production reads the public SPIKE API directly and stores no copy.
+- `UGA_SPIKE_READTHROUGH_ENABLED=enabled` selects this explicit mode.
+- `UGA_SPIKE_DEMO_SYNC_ENABLED` stays `disabled`; there is no UGA database to
+  synchronize.
+- UGA health follows SPIKE public-feed availability and reports the source mode.
 
 Telegram respondent UX:
 
@@ -484,18 +489,13 @@ NEXT_PUBLIC_SITE_URL="https://index.uga.ua"
 INDEX_TENANT="uga-ua"
 NEXT_PUBLIC_INDEX_TENANT="uga-ua"
 ALLOWED_EMBED_ORIGINS="https://uga.ua https://www.uga.ua https://index.uga.ua https://1d3x.com https://www.1d3x.com https://uga.1d3x.com https://index-uga.cr0pto.com"
-RESEND_API_KEY="set-in-vercel"
-RESPONDENT_EMAIL_CRON_SECRET="set-in-vercel"
-RESPONDENT_TELEGRAM_CRON_SECRET="set-in-vercel"
-TELEGRAM_CONFIRMATION_CRON_SECRET="set-in-vercel"
-UGA_TELEGRAM_BOT_TOKEN="set-in-vercel"
-UGA_TELEGRAM_ADMIN_CHAT_ID="set-in-vercel"
 UGA_SPIKE_PUBLIC_API_BASE="https://spike.1d3x.com"
+UGA_SPIKE_READTHROUGH_ENABLED="enabled"
 UGA_SPIKE_DEMO_SYNC_ENABLED="disabled"
-UGA_SPIKE_DEMO_SYNC_CRON_SECRET="set-in-vercel"
 ```
 
-UGA admin provisioning:
+Legacy UGA admin provisioning is retained for local development only and is not
+part of the database-free production mode:
 
 ```bash
 UGA_ADMIN_EMAIL="admin@example.ua" \
