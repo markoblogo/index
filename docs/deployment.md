@@ -120,6 +120,12 @@ RESPONDENT_EMAIL_CRON_SECRET="replace-with-a-long-random-cron-secret"
 CRON_SECRET="same-value-for-vercel-cron"
 ```
 
+For the database-free UGA mirror, omit `DATABASE_URL` and set
+`UGA_SPIKE_READTHROUGH_ENABLED=enabled` plus
+`UGA_SPIKE_PUBLIC_API_BASE=https://spike.1d3x.com`. Its health check validates
+the SPIKE public feed instead of PostgreSQL. Keep UGA respondent, calculation,
+synchronization, and publication jobs disabled in this mode.
+
 `NEXT_PUBLIC_SITE_URL` is the canonical public URL used by embeds, metadata, and absolute public links. Change it when migrating from the development domain to the final domain.
 
 `UGA_PASSWORD_RESET_SENDER` and `UGA_PASSWORD_RESET_REPLY_TO` control the sender identity for admin/respondent password reset emails. If they are omitted, the app falls back to `UGA Index <onboarding@resend.dev>` and `inbox@uga.ua`.

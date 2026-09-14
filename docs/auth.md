@@ -1,5 +1,8 @@
 # UGA Index Authentication Plan
 
+> Historical plan. The current UGA production surface is public and read-only,
+> has no database, and does not operate an admin or respondent workflow.
+
 UGA Index should use an allowlist-based authentication model in production.
 
 ## Intended Production Flow

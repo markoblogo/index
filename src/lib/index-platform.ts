@@ -540,31 +540,31 @@ export const INDEX_CONFIGS: Record<IndexTenantId, IndexConfig> = {
     theme: { dataAttribute: "uga" },
     home: {
       subtitle: {
-        uk: "Щоденні значення для ключових зернових та олійних культур України на базисі CPT Black Sea Panamax Ports (POC).",
-        en: "Daily values for core Ukrainian grain and oilseed commodities on CPT Black Sea Panamax Ports (POC) basis.",
+        uk: "Read-only трансляція чотирьох сумісних ринкових позицій SPIKE SPOT INDEX для зернового ринку України.",
+        en: "Read-only display of four compatible SPIKE SPOT INDEX market positions for Ukraine's grain market.",
       },
       trustStrip: {
-        uk: "EOD-дані респондентів · медіанна валідація · +/-2% фільтр викидів · мінімум 5 респондентів · фіксація після публікації",
-        en: "Respondent EOD data · median validation · +/-2% outlier filter · minimum 5 respondents · locked publication",
+        uk: "Джерело: SPIKE SPOT INDEX · без власного розрахунку UGA · read-only",
+        en: "Source: SPIKE SPOT INDEX · no separate UGA calculation · read-only",
       },
       heroTitle: { uk: "UGA Index", en: "UGA Index" },
-      editorialLine: { uk: "/ експортний ціновий бенчмарк", en: "/ export pricing benchmark" },
-      boardKicker: { uk: "Щоденний бюлетень", en: "Daily bulletin" },
+      editorialLine: { uk: "/ трансляція даних SPIKE", en: "/ SPIKE data mirror" },
+      boardKicker: { uk: "Ринкові дані SPIKE", en: "SPIKE market data" },
       facts: {
         uk: [
-          { value: "4", label: "культури" },
-          { value: "8", label: "респондентів" },
-          { value: "EOD", label: "перевірка" },
+          { value: "4", label: "позиції" },
+          { value: "SPIKE", label: "джерело" },
+          { value: "R/O", label: "режим" },
         ],
         en: [
-          { value: "4", label: "commodities" },
-          { value: "8", label: "respondents" },
-          { value: "EOD", label: "review" },
+          { value: "4", label: "positions" },
+          { value: "SPIKE", label: "source" },
+          { value: "R/O", label: "mode" },
         ],
       },
       officialNotice: {
-        uk: "Офіційні значення: USD/т. UAH та EUR - перерахунок для відображення.",
-        en: "Official values: USD/t. UAH and EUR are display conversions.",
+        uk: "Значення, дати, базиси та кількість респондентів транслюються зі SPIKE SPOT INDEX. UGA не виконує окремий розрахунок.",
+        en: "Values, dates, bases, and respondent counts are relayed from SPIKE SPOT INDEX. UGA performs no separate calculation.",
       },
       footerDemo: { uk: "Платформа:", en: "Platform for the" },
       partnersLine: {

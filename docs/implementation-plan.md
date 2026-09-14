@@ -1,5 +1,9 @@
 # UGA Index Implementation Plan
 
+> Historical plan. UGA production currently runs as a database-free, read-only
+> relay of compatible SPIKE public data. The database, respondent, calculation,
+> and publication work below is inactive unless the product direction changes.
+
 ## Current Architecture
 
 UGA Index is a Next.js App Router application with TypeScript, Tailwind CSS, Prisma and PostgreSQL. The UGA tenant is production-priority; the Spike tenant remains a reusable configuration.

@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-09-14
+
+### Changed
+
+- Replaced UGA's unavailable database runtime with a transparent read-only
+  relay of four compatible SPIKE public positions.
+- Updated UGA health, environment validation, product copy, and operational
+  documentation for the database-free mode.
+
 ## [0.2.0] - 2026-09-14
 
 ### Added
@@ -17,5 +26,6 @@
 - Hardened CI permissions, concurrency, timeouts, and action runtimes.
 - Separated the MIT code grant from tenant data, methodology, brands, and content rights.
 
-[Unreleased]: https://github.com/markoblogo/index/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/markoblogo/index/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/markoblogo/index/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/markoblogo/index/releases/tag/v0.2.0

@@ -19,6 +19,11 @@ import {
   getDeliveryBasisConfigForCommodityCode,
 } from "@/lib/tenant-basis";
 import { getSpikePublicVisibleTradeDate } from "@/lib/spike-publication-window";
+import {
+  fetchUgaSpikeReadthrough,
+  isUgaSpikeReadthroughEnabled,
+  type SpikeReadthroughItem,
+} from "@/lib/uga-spike-readthrough";
 
 export type PublicLatestItem = {
   commodityId: CommodityId;
@@ -31,6 +36,7 @@ export type PublicLatestItem = {
   changeAbs: number;
   changePct: number;
   respondents: number;
+  source?: "SPIKE SPOT INDEX";
 };
 
 export type PublicHistoryItem = Omit<PublicLatestItem, "valueUsdPerMt"> & {
@@ -65,6 +71,11 @@ function formatPublicChangeAbs(value: number) {
 }
 
 export async function getPublicLatestData() {
+  if (isUgaSpikeReadthroughEnabled()) {
+    const payload = await fetchUgaSpikeReadthrough("latest");
+    return payload.data.map(toPublicLatestItem);
+  }
+
   if (!hasDatabaseUrl()) {
     if (!allowMockFallback()) {
       throw new Error("DATABASE_URL is required for production public latest data.");
@@ -92,6 +103,14 @@ export async function getPublicHistoryData(options: {
 } = {}) {
   const dayLimit =
     options.scope === "analytics" ? undefined : options.dayLimit ?? PUBLIC_HISTORY_DAY_LIMIT;
+
+  if (isUgaSpikeReadthroughEnabled()) {
+    const payload = await fetchUgaSpikeReadthrough("history");
+    return selectRecentPublicHistoryDays(
+      payload.data.map(toPublicHistoryItem),
+      dayLimit,
+    );
+  }
 
   if (!hasDatabaseUrl()) {
     if (!allowMockFallback()) {
@@ -144,6 +163,30 @@ const getCachedDatabaseAnalyticsHistoryData = unstable_cache(
 );
 
 const getCachedDatabasePublicHistoryData = getCachedDatabaseHistoryData;
+
+function toPublicLatestItem(item: SpikeReadthroughItem): PublicLatestItem {
+  return {
+    commodityId: item.commodityId,
+    commodityCode: item.commodityCode,
+    commodityNameUk: item.commodityNameUk,
+    commodityNameEn: item.commodityNameEn,
+    date: item.date,
+    basis: item.basis,
+    valueUsdPerMt: item.valueUsdPerMt,
+    changeAbs: item.changeAbs ?? 0,
+    changePct: item.changePct ?? 0,
+    respondents: item.respondents ?? 0,
+    source: "SPIKE SPOT INDEX",
+  };
+}
+
+function toPublicHistoryItem(item: SpikeReadthroughItem): PublicHistoryItem {
+  return {
+    ...toPublicLatestItem(item),
+    status: item.status === "verified_archive" ? "verified_archive" : "published",
+    valueUsdPerMt: item.valueUsdPerMt as number,
+  };
+}
 
 async function getMockLatestData(): Promise<PublicLatestItem[]> {
   const snapshot = await getPublicIndexSnapshot();
