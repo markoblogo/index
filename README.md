@@ -967,7 +967,7 @@ docs/source/
 <!-- ABVX:ECOSYSTEM:BEGIN -->
 ## ABVX ecosystem
 
-- [mn7r](https://mn7r.com/) — Provides read-only market context for brokerage workflows. Current release: `v1.1.1`.
+- [mn7r](https://mn7r.com/) — Provides read-only market context for brokerage workflows. Current release: `book-assets-2026-09-23`.
 - [AGENTS.md_generator](https://agentsmd.abvx.xyz/) — Keeps repository guidance and machine-readable context current. Current release: `v0.5.1`.
 - [abvx-shortener](https://go.abvx.xyz/) — Uses stable short links for public campaigns and QR destinations. Current release: `v0.4.0`.
 - [abvx-agent-skills](https://abvx.xyz/work/abvx-agent-skills) — Uses shared, reviewable agent capabilities during maintenance. Current release: `v0.15.0`.
