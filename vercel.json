@@ -57,6 +57,10 @@
       "schedule": "30 16 * * 1-5"
     },
     {
+      "path": "/api/cron/media-hub-google-drive-sync",
+      "schedule": "0 6 * * *"
+    },
+    {
       "path": "/api/cron/media-hub-monitoring-window-15",
       "schedule": "0 15 * * 1-5"
     },

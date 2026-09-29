@@ -18,6 +18,7 @@ export type MediaHubManualMaterialKind =
 
 export type MediaHubManualMaterialSourceType =
   | "telegram_file"
+  | "google_drive_file"
   | "telegram_link"
   | "telegram_text"
   | "corporate_telegram_group"
@@ -302,12 +303,14 @@ export async function ingestMediaHubLinkMaterial(input: {
 
 export async function ingestMediaHubFileMaterial(input: {
   bytes: Buffer;
+  canonicalUrl?: string;
   filename: string;
   hashtags?: string[];
   kind: MediaHubManualMaterialKind;
   mimeType: string;
-  receivedFrom: "telegram" | "admin";
-  sourceType: Extract<MediaHubManualMaterialSourceType, "telegram_file" | "admin_upload">;
+  originalUrl?: string;
+  receivedFrom: "telegram" | "admin" | "google-drive";
+  sourceType: Extract<MediaHubManualMaterialSourceType, "telegram_file" | "admin_upload" | "google_drive_file">;
   telegramChatId?: string;
   telegramFromId?: string;
   telegramMessageId?: string;
@@ -320,9 +323,11 @@ export async function ingestMediaHubFileMaterial(input: {
   const extraction = await extractMaterialContent(input);
   return storeManualMaterial({
     ...input,
+    canonicalUrl: input.canonicalUrl,
     contentBytes: input.bytes,
     extraction,
     originalFilename: input.filename,
+    originalUrl: input.originalUrl,
   });
 }
 
@@ -330,7 +335,7 @@ export async function ingestMediaHubTextMaterial(input: {
   hashtags?: string[];
   kind: MediaHubManualMaterialKind;
   originalUrl?: string;
-  receivedFrom: "telegram" | "admin" | "scheduler";
+  receivedFrom: "telegram" | "admin" | "scheduler" | "google-drive";
   sourceDomain?: string;
   sourceType: Extract<MediaHubManualMaterialSourceType, "telegram_text" | "corporate_telegram_group" | "scheduled_api">;
   telegramChatId?: string;
@@ -633,7 +638,7 @@ async function storeManualMaterial(input: {
   mimeType?: string;
   originalFilename?: string;
   originalUrl?: string;
-  receivedFrom: "telegram" | "admin" | "scheduler";
+  receivedFrom: "telegram" | "admin" | "scheduler" | "google-drive";
   sourceDomain?: string;
   sourceType: MediaHubManualMaterialSourceType;
   telegramChatId?: string;

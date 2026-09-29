@@ -127,6 +127,55 @@ Vision-related environment variables:
 - `MEDIA_HUB_STORE_PREVIEW_BYTES=0` - keeps preview metadata/summaries without
   storing preview binary bytes.
 
+## SSI report source folder in Google Drive
+
+Operator-provided SSI reporting materials are collected in the [SSI reports
+source folder](https://drive.google.com/drive/folders/1cHuO86kaqND34vLTFo3Ly_OoBSNV3rgC).
+Consult it when preparing SSI weekly and monthly Context reports.
+
+Use the folder as a source catalog, then select materials by the period they
+cover, not by upload or modification time alone:
+
+- Weekly reports: current broker market comments, Black Sea basis and oilseed
+  updates, dated `agro_ex_im` and `check points` tables, current Ukrzaliznytsia
+  grain-transport statistics, and in-season crop progress.
+- Monthly reports: season-to-date export/import and transport statistics,
+  harvest/sowing progress series, and dated market assessments. Compare the
+  latest period with the prior comparable period and retain the source's units,
+  geography and reporting cutoff.
+- Daily or stale files may support a dated historical comparison, but must not
+  be described as current conditions without checking their observation date.
+
+For each fact used, retain the Drive file title/link, source date or covered
+period, relevant page/sheet, units, and any transformation in the report's
+provenance. Do not combine overlapping daily tables as if they were independent
+observations, and do not infer missing values from filenames.
+
+Some files are third-party broker material with redistribution restrictions.
+Do not copy their prose, charts or tables into a public report. Use only a
+short, independently checked paraphrase with attribution when publication
+rights permit; otherwise keep the material for internal context and request
+operator review before using it publicly.
+
+The SSI Drive folder is connected through a read-only Google OAuth integration.
+The daily `/api/cron/media-hub-google-drive-sync` job imports changed files as
+`google_drive_file` materials for the `spike-ua` tenant; filenames marked as
+monthly are routed to monthly reports, and other files default to weekly.
+Duplicate content remains deduplicated by the existing material intake. The
+OAuth refresh token is AES-256-GCM encrypted in the non-public `private` schema;
+the encryption key is derived from the OAuth client secret, so client
+credentials belong only in the SSI production environment. The cron is
+bearer-authenticated and does not run for
+the 1D3X platform deployment.
+
+The OAuth app is currently in Testing and uses the restricted `drive.readonly`
+scope. Only configured test users can authorize it, and Google may expire its
+refresh token after seven days. Production continuity requires completing
+Google's verification requirements before the app is published. Until then,
+operators must monitor the sync receipt and reconnect if Google revokes the
+testing token. Imported files remain evidence, not automatic approval to
+publish claims; retain source date, page/sheet, units, rights notes and review.
+
 ## Corporate Context sources
 
 First-party corporate sources are connected to the Context monitoring layer without new paid APIs or manual API keys:
