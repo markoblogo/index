@@ -26,10 +26,18 @@ export function parseCortexRuntimeArgs(argv = process.argv.slice(2)) {
   return { url };
 }
 
+export function validateCortexRuntimeCredential(value) {
+  const token = String(value ?? "").trim();
+  if (!token) throw new Error("CORTEX_INTERNAL_API_SECRET is required");
+  if (["[SENSITIVE]", "[REDACTED]", "undefined", "null"].includes(token)) {
+    throw new Error("CORTEX_INTERNAL_API_SECRET is a placeholder, not a credential. Vercel Secrets cannot be read back; supply the existing secret privately. No request was sent.");
+  }
+  return token;
+}
+
 async function main() {
   const { url } = parseCortexRuntimeArgs();
-  const token = String(process.env.CORTEX_INTERNAL_API_SECRET || "").trim();
-  if (!token) throw new Error("CORTEX_INTERNAL_API_SECRET is required");
+  const token = validateCortexRuntimeCredential(process.env.CORTEX_INTERNAL_API_SECRET);
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 20_000);

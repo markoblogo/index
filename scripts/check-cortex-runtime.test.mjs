@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { parseCortexRuntimeArgs, validateCortexRuntimePayload } from "./check-cortex-runtime.mjs";
+import { parseCortexRuntimeArgs, validateCortexRuntimeCredential, validateCortexRuntimePayload } from "./check-cortex-runtime.mjs";
 
 describe("check-cortex-runtime", () => {
+  it("rejects missing credentials and redaction placeholders before requesting health", () => {
+    expect(() => validateCortexRuntimeCredential(undefined)).toThrow("is required");
+    for (const value of ["[SENSITIVE]", " [SENSITIVE] ", "[REDACTED]", "undefined", "null"]) {
+      expect(() => validateCortexRuntimeCredential(value)).toThrow("No request was sent");
+    }
+    expect(validateCortexRuntimeCredential("fixture-token")).toBe("fixture-token");
+  });
   it("accepts a ready Cortex payload", () => {
     expect(validateCortexRuntimePayload({
       assistantProvider: "configured",

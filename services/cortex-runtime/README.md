@@ -101,3 +101,9 @@ npm run cortex:artifact-publish -- --manifest=.cortex/chunk-manifest.runtime.jso
 
 After configuring Vercel, run `npm run check:cortex-runtime` against the Index
 health URL. Keep the runtime token separate from the Index internal API secret.
+
+Vercel Secrets are write-only: environment pulls may return `[SENSITIVE]`, not
+the original credential. The local health checker rejects that placeholder
+before requesting health. Use the existing gateway secret from an authorized
+consumer privately; never paste it into logs/chat or substitute the storage
+runtime token. A placeholder 401 is not evidence of broken gateway auth.
