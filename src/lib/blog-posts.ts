@@ -34,6 +34,32 @@ const spikeHandbookUaEpubUrl = getTenantAssetAbsoluteUrl(
 export const spikeBlogPosts: BlogPost[] = [
   {
     body: [
+      "На YouTube-каналі Agro Import вийшла розмова Руслана Нероди з генеральним директором Spike Brokers Олександром Солов'єм про те, як українським аграріям діяти на зерновому ринку у 2026 році.",
+      "У центрі інтерв'ю — практичне питання: тримати зерно чи продавати. Співрозмовники говорять про стратегії продажу, формування ціни та чинники, які впливають на рішення фермера.",
+      "Окремо обговорюють логістику експорту, ризики для портових маршрутів і можливості продати зерно за умов, коли звичні шляхи можуть бути обмежені. У розмові також звучать оцінки ринкових перспектив на 2026 рік.",
+      "Розмова відбулася на тлі інтерфейсу SPIKE Spot Index — щоденного орієнтира цін на українському фізичному ринку зернових та олійних культур.",
+      "Дивіться повний запис інтерв'ю на каналі Agro Import.",
+    ],
+    coverImage: "/blog/oleksandr-solovey-agro-import-interview-2026.jpg",
+    excerpt:
+      "Генеральний директор Spike Brokers Олександр Соловей і Руслан Нерода обговорили, чи варто тримати зерно або продавати у 2026 році, цінові стратегії, експортну логістику та ринкові перспективи.",
+    language: "uk",
+    publishedAt: "2026-10-04",
+    readingMinutes: 2,
+    seoDescription:
+      "Інтерв'ю Олександра Солов'я та Руслана Нероди на Agro Import: продаж зерна у 2026 році, цінові стратегії, експортна логістика та прогнози ринку.",
+    seoTitle:
+      "Олександр Соловей на Agro Import: тримати чи продавати зерно у 2026 році",
+    slug: "oleksandr-solovey-agro-import-grain-market-interview-2026",
+    tags: ["Agro Import", "Spike Brokers", "зерно", "логістика", "Україна"],
+    title:
+      "Тримати чи продавати зерно у 2026 році: інтерв'ю Олександра Солов'я на Agro Import",
+    videoAfterParagraph: 3,
+    videoLabel: "Інтерв'ю на YouTube-каналі Agro Import",
+    videoUrl: "https://www.youtube.com/live/rpI3JKEWtYk?is=skRzQNz_zYXy0F1I",
+  },
+  {
+    body: [
       "Ukraine’s physical grain market moves through many small signals every day.",
       "Bids, offers, private deals, port demand, freight costs, farmer selling activity, quality parameters, currency movement and logistics updates all influence the final price level. Some signals are visible. Many are fragmented. Some are shared through chats, calls and private conversations before they appear in any structured data product.",
       "In such an environment, market participants need more than isolated quotes. They need a reliable reference point.",
