@@ -33,6 +33,8 @@ The local app can use seeded fallback data. Production publication, channel deli
 | Goal | Read |
 | --- | --- |
 | Understand the product | [Product context](docs/product-context.md) |
+| Understand the market infrastructure | [Agro commodity market infrastructure](https://abvx.xyz/editorial/focus/agro-commodity-market-infrastructure-en?utm_source=github&utm_medium=readme&utm_campaign=abvx_guides_2026_10&utm_content=index) |
+| Compare spot references on a common basis | [Ukrainian grain and oilseed comparison guide](https://abvx.xyz/editorial/focus/compare-ukrainian-spot-references-en?utm_source=github&utm_medium=readme&utm_campaign=abvx_guides_2026_10&utm_content=index) — includes a fictional worked example |
 | Run a tenant locally | [Local setup](#local-setup) and [.env.example](.env.example) |
 | Change calculations or publication | [Index and Context review checklist](docs/media-hub-review-checklist.md) |
 | Work with Cortex | [Cortex agent-flow contract](docs/cortex-agent-flow-contract.md) |
