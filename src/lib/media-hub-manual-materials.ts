@@ -57,7 +57,7 @@ type MaterialRow = {
   reportingWeekEnd: Date;
   reportingMonth: string;
   receivedAt: Date;
-  receivedFrom: string;
+  receivedFrom?: string;
   telegramChatId: string | null;
   telegramMessageId: string | null;
   telegramFromId: string | null;
