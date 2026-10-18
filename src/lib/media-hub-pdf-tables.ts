@@ -1,17 +1,23 @@
 import "server-only";
 import { createHash } from "node:crypto";
+import { preparePdfOcrViews } from "./media-hub-pdf-ocr-views";
 import type { ExtractedMaterialContent } from "@/lib/media-hub-manual-materials";
 import { PDF_TABLE_OCR_VERSION, PDF_TABLE_RESPONSE_FORMAT, parsePdfTableResponse, validateStonexSnapshotCoverage, type PdfEvidenceTable } from "./media-hub-pdf-table-evidence";
 
 export async function enhancePdfTables(content: ExtractedMaterialContent, filename: string, warnings: string[]) {
-  const images = content.assets.filter(a => a.assetType === "preview_image" && a.bytes);
+  const originals = content.assets.filter(a => a.assetType === "preview_image" && a.bytes);
   const enabled = process.env.MEDIA_HUB_ENABLE_PDF_TABLE_OCR !== "0" &&
     process.env.MEDIA_HUB_ENABLE_VISION_SUMMARY !== "0" && Boolean(process.env.OPENAI_API_KEY);
+  const prepared = enabled ? await preparePdfOcrViews(originals, `${filename}\n${content.extractedText}`)
+    : { views: originals, derived: [], specialized: false, failed: false };
+  content = { ...content, assets: [...content.assets, ...prepared.derived] };
+  const images = prepared.views;
   const tables: PdfEvidenceTable[] = [];
   const errors: string[] = [];
+  if (prepared.failed) errors.push("ocr_view_preparation_failed");
   const failures: Array<{ page: number; reason: string; elapsedMs: number }> = [];
   const model = process.env.MEDIA_HUB_PDF_TABLE_OCR_MODEL || process.env.MEDIA_HUB_VISION_MODEL || "gpt-4.1";
-  const maxImages = Math.max(1, Math.min(6, Number(process.env.MEDIA_HUB_PDF_TABLE_OCR_MAX_IMAGES) || 3));
+  const maxImages = Math.max(1, Math.min(6, Number(process.env.MEDIA_HUB_PDF_TABLE_OCR_MAX_IMAGES) || (prepared.specialized ? 6 : 3)));
   const deadline = Date.now() + 90_000;
   if (images.length > maxImages) errors.push("ocr_images_truncated");
   for (const asset of enabled ? images.slice(0, maxImages) : []) {

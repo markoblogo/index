@@ -411,3 +411,10 @@ trailing estimate column. StoneX USDA Snapshot materials have a source-family
 integrity check for all four metric tables, six aligned columns, crop rows, and
 explicit units. Coverage/alignment failures discard the machine table evidence
 and retain `partial_visual_pending`; they never authorize publication.
+
+The witnessed StoneX Snapshot and Summary layouts also use bounded, enlarged
+OCR regions: four stacked metric tables or three side-by-side crop panels.
+Coordinates and parent-image SHA-256 are stored on each derived preview; original
+images remain unchanged. These layouts allow at most six OCR views within the
+same file budget. Unexpected dimensions, region limits, or coverage failures
+remain review gaps, not authority to invent or publish numbers.
