@@ -1,5 +1,25 @@
 # SSI WhatsApp worker on Railway
 
+## Frozen as of 2026-10-18
+
+WhatsApp is deferred until SSI website and Telegram report quality is accepted.
+SSI production uses `SSI_WHATSAPP_ENABLED=0`; the worker exits before loading
+credentials, Chromium, or third-party packages unless the process explicitly sets
+`SSI_WHATSAPP_WORKER_UNFROZEN=1`. Existing sessions, connection settings, and
+queued delivery records are retained; no service or data is deleted.
+
+`whatsapp-web.js` was removed from the main application dependencies, eliminating
+its 9 known production advisory paths. A fresh production-only npm audit on
+2026-10-18 reported zero advisories; the old dependency exception was removed,
+not renewed. The next dependency review is due 2026-11-18 with no accepted roots.
+
+Do not follow the deployment instructions below while frozen. Reactivation needs
+owner approval, a newly reviewed dependency/runtime, worker authentication and
+delivery tests, and explicit worker/application opt-in. Do not reinstall the old
+version or enable delivery just to restore the previous configuration.
+
+## Archived deployment instructions
+
 Deploy this repository as a separate Railway service using `Dockerfile.whatsapp`.
 
 ## Required Railway variables

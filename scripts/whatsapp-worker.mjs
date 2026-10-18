@@ -3,13 +3,17 @@ import { createServer } from "node:http";
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import process from "node:process";
-import qrImage from "qrcode";
-import qrcode from "qrcode-terminal";
-import pkg from "whatsapp-web.js";
-
-const { Client, LocalAuth } = pkg;
+if (process.env.SSI_WHATSAPP_WORKER_UNFROZEN !== "1") {
+  console.log("WhatsApp worker is frozen. Site and Telegram delivery are unaffected.");
+  process.exit(0);
+}
 
 loadEnvFile(resolve(process.cwd(), ".env.whatsapp.local"));
+
+const [{ default: qrImage }, { default: qrcode }, { default: pkg }] = await Promise.all([
+  import("qrcode"), import("qrcode-terminal"), import("whatsapp-web.js"),
+]);
+const { Client, LocalAuth } = pkg;
 
 const PORT = Number.parseInt(process.env.PORT || process.env.WHATSAPP_WORKER_PORT || "8787", 10);
 const SECRET = process.env.WHATSAPP_WORKER_SECRET || process.env.SSI_WHATSAPP_WEBHOOK_SECRET;
