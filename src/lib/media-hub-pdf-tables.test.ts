@@ -42,6 +42,8 @@ describe("bounded PDF table intake", () => {
     expect(evidence).toContain("UNREADABLE"); expect(evidence).toContain("page 1");
     const request = JSON.parse(String(vi.mocked(fetch).mock.calls[0][1]?.body));
     expect(request.input[1].content[1].detail).toBe("high");
+    expect(request.max_output_tokens).toBe(8000);
+    expect(vi.mocked(fetch).mock.calls[0][1]?.signal).toBeInstanceOf(AbortSignal);
   });
   it("never promotes failed or disabled OCR to complete extraction", async () => {
     const image = { assetType: "preview_image" as const, bytes: Buffer.from("fixture"), pageNumber: 2, mimeType: "image/png" };
@@ -55,6 +57,23 @@ describe("bounded PDF table intake", () => {
   it("rejects missing, numeric or misaligned cells rather than shifting columns", () => {
     expect(() => parsePdfTableResponse(JSON.stringify({ tables: [{ ...reply.tables[0], rows: [["Corn", "1.849"]] }] }), 2, "hash")).toThrow("ragged");
     expect(() => parsePdfTableResponse(JSON.stringify({ tables: [{ ...reply.tables[0], rows: [["Corn", 1.849, "1.567"]] }] }), 2, "hash")).toThrow("cell");
+  });
+  it("records an output cap without accepting incomplete numeric evidence", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "test-only");
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ status: "incomplete", incomplete_details: { reason: "max_output_tokens" } })));
+    const result = await enhancePdfTables({ ...empty, assets: [{ assetType: "preview_image", bytes: Buffer.from("fixture"), pageNumber: 2 }] }, "dense.pdf", []);
+    expect(result.extractedTables).toEqual([]);
+    expect(result.extractedFacts.at(-1)).toMatchObject({ failures: [{ page: 2, reason: "output_token_limit", elapsedMs: expect.any(Number) }] });
+    expect(result.extractionStatus).toBe("partial_visual_pending");
+  });
+  it("classifies a response-body timeout without retaining provider or secret text", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "test-only");
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => { throw new DOMException("private provider detail", "TimeoutError"); } })));
+    const result = await enhancePdfTables({ ...empty, assets: [{ assetType: "preview_image", bytes: Buffer.from("fixture"), pageNumber: 2 }] }, "dense.pdf", []);
+    expect(result.extractedFacts.at(-1)).toMatchObject({ failures: [{ page: 2, reason: "timeout", elapsedMs: expect.any(Number) }] });
+    expect(JSON.stringify(result)).not.toContain("private provider detail");
+    expect(JSON.stringify(result)).not.toContain("test-only");
+    expect(result.extractionStatus).toBe("partial_visual_pending");
   });
   it("keeps table rows beyond a short material summary available to the report", () => {
     const table = parsePdfTableResponse(JSON.stringify(reply), 2, "hash")[0];

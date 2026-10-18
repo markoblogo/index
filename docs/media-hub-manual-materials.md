@@ -93,7 +93,8 @@ external service, browser worker or system OCR installation is required.
 
 `MEDIA_HUB_ENABLE_PDF_TABLE_OCR=0` disables it. It also respects the existing
 vision disable flag and requires `OPENAI_API_KEY`. Default OCR budget is three
-images / 45 seconds per file; `MEDIA_HUB_PDF_TABLE_OCR_MAX_IMAGES` is bounded
+images / 90 seconds per file, at most 60 seconds per image including response-body
+reading, with an 8,000-output-token cap; `MEDIA_HUB_PDF_TABLE_OCR_MAX_IMAGES` is bounded
 to 1-6. Unreadable cells remain `UNREADABLE`, never zero. Invalid, truncated or
 failed OCR remains `partial_visual_pending`; email/disclaimer text cannot mark
 that PDF complete. Receipts include `pdfTableOcrAttempt: pdf-tables-v1`, image
@@ -247,7 +248,7 @@ the 1D3X platform deployment.
 count and the sync checkpoint, with a session-authenticated manual sync button.
 The button calls `POST /api/admin/media-hub/google-drive/sync`; this requires an
 active SSI admin session and a same-origin request. No cron secret is needed.
-Each request imports at most 20 file versions within a three-minute budget;
+Each request imports at most 20 file versions within a two-minute batch budget;
 the button continues bounded batches while the page remains open. Imported
 versions are skipped before download/extraction, and each successfully stored
 file advances the checkpoint. A partial batch never jumps the checkpoint to

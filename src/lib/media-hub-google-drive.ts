@@ -13,7 +13,7 @@ const FILE_MAX_BYTES = 50 * 1024 * 1024;
 const REQUEST_TIMEOUT_MS = 25_000;
 const STATE_COOKIE = "ssi_drive_oauth_state";
 const SYNC_BATCH_SIZE = 20;
-const SYNC_BUDGET_MS = 180_000;
+const SYNC_BUDGET_MS = 120_000;
 const REPORT_LOOKBACK_DAYS = 62;
 
 export type GoogleDriveSyncStatus = {
