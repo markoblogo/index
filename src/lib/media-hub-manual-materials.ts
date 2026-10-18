@@ -128,6 +128,7 @@ export type MediaHubManualMaterialDigest = {
   hashtags: string[];
   id: string;
   kind: string;
+  receivedFrom: string;
   receivedAt: Date;
   originalFilename: string | null;
   originalUrl: string | null;
@@ -493,6 +494,7 @@ function toMaterialDigest(row: MaterialRowWithAssets, textLimit = MAX_EXTRACTED_
     hashtags: parseStoredHashtags(row.hashtagsJson),
     id: row.id,
     kind: row.kind,
+    receivedFrom: row.receivedFrom,
     originalFilename: row.originalFilename,
     originalUrl: row.originalUrl,
     receivedAt: row.receivedAt,

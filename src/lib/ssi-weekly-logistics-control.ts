@@ -32,7 +32,7 @@ export type SsiWeeklyLogisticsGate = {
   missingTypes: SsiWeeklyLogisticsType[];
   periodEndDate: string;
   status: "blocked" | "ready";
-  reason?: "database_not_configured" | "provider_not_configured" | "required_materials_missing";
+  reason?: "database_not_configured" | "required_materials_missing";
 };
 
 export function findMissingSsiWeeklyLogisticsTypes(hashtags: string[][]) {

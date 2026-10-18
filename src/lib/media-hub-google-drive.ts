@@ -155,7 +155,7 @@ async function refreshGoogleDriveAccessToken(refreshToken: string) {
     }
     throw new Error("Google Drive access token refresh failed.");
   }
-  if (!payload.access_token) throw new Error("Google returned no Drive access token.");
+  if (!payload?.access_token) throw new Error("Google returned no Drive access token.");
   return payload.access_token;
 }
 
