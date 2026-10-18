@@ -665,9 +665,9 @@ async function storeManualMaterial(input: {
   input = sanitizeMaterialStorageText(input);
   const contentHash = createHash("sha256").update(input.contentBytes).digest("hex");
   const period = getMediaHubManualMaterialPeriod(input.reportingDate ?? new Date(), input.kind);
-  const existing = await db.$queryRawUnsafe<Array<{ id: string; extractionStatus: string }>>(
+  const existing = await db.$queryRawUnsafe<Array<{ id: string; extractionStatus: string; contentHash: string }>>(
     `
-      SELECT "id", "extractionStatus"
+      SELECT "id", "extractionStatus", "contentHash"
       FROM "MediaHubManualMaterial"
       WHERE "tenantId" = $1
         AND (
@@ -687,9 +687,10 @@ async function storeManualMaterial(input: {
       typeof fact === "object" && fact !== null && "officeParserAttempt" in fact);
     const pdfAttempted = input.extraction.extractedFacts.some((fact) =>
       typeof fact === "object" && fact !== null && "pdfParserAttempt" in fact);
-    if (input.receivedFrom === "google-drive" &&
+    const adminPdfRepair = input.receivedFrom === "admin" && pdfAttempted && existing[0].contentHash === contentHash;
+    if (adminPdfRepair || (input.receivedFrom === "google-drive" &&
       ((existing[0].extractionStatus !== "extracted" &&
-        (input.extraction.extractionStatus === "extracted" || officeAttempted)) || pdfAttempted)) {
+        (input.extraction.extractionStatus === "extracted" || officeAttempted)) || pdfAttempted))) {
       await storeManualMaterialAssets({
         contentBytes: input.contentBytes, contentHash, extraction: input.extraction,
         materialId: existing[0].id, includeOriginal: false,

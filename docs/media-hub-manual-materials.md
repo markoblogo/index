@@ -391,3 +391,13 @@ curl -sS "https://api.telegram.org/bot$MEDIA_HUB_TELEGRAM_BOT_TOKEN/setWebhook" 
     "allowed_updates": ["message", "edited_message", "channel_post", "edited_channel_post", "callback_query"]
   }'
 ```
+
+## Targeted administrator PDF repair
+
+An authenticated SSI administrator can re-upload the exact original PDF to rerun
+OCR without rescanning the entire Drive archive. Repair requires a matching
+content SHA-256 in the same tenant and a PDF parser receipt; a URL match alone is
+not sufficient. Only extraction text, tables, facts, summary, status, and derived
+assets are refreshed. The material ID, original file, source URL, reporting dates,
+and report usage are retained. Telegram duplicates keep their existing behavior.
+This is material normalization only, never report publication or channel sending.
