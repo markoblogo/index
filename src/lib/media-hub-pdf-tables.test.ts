@@ -43,6 +43,7 @@ describe("bounded PDF table intake", () => {
     const request = JSON.parse(String(vi.mocked(fetch).mock.calls[0][1]?.body));
     expect(request.input[1].content[1].detail).toBe("high");
     expect(request.max_output_tokens).toBe(8000);
+    expect(request.text.format.type).toBe("json_schema");
     expect(vi.mocked(fetch).mock.calls[0][1]?.signal).toBeInstanceOf(AbortSignal);
   });
   it("never promotes failed or disabled OCR to complete extraction", async () => {

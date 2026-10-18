@@ -1,5 +1,18 @@
 export const PDF_TABLE_OCR_VERSION = "pdf-tables-v1";
 
+export const PDF_TABLE_RESPONSE_FORMAT = {
+  type: "json_schema", name: "pdf_tables", strict: true,
+  schema: { type: "object", additionalProperties: false, required: ["tables"], properties: {
+    tables: { type: "array", items: { type: "object", additionalProperties: false,
+      required: ["title", "unit", "observationDate", "header", "rows"], properties: {
+        title: { type: "string" }, unit: { type: "string" }, observationDate: { type: "string" },
+        header: { type: "array", items: { type: "string" } },
+        rows: { type: "array", items: { type: "array", items: { type: "string" } } },
+      } },
+    },
+  } },
+} as const;
+
 export type PdfEvidenceTable = {
   parser: typeof PDF_TABLE_OCR_VERSION;
   title: string;
@@ -10,6 +23,27 @@ export type PdfEvidenceTable = {
   sourcePage: number;
   imageSha256: string;
 };
+
+export function validateStonexSnapshotCoverage(tables: PdfEvidenceTable[], context: string) {
+  if (!/StoneX/i.test(context) || !/USDA[\s\S]{0,160}Snapshot|Snapshot[\s\S]{0,160}USDA/i.test(context)) return;
+  const expected = [
+    { title: /\bUS\b.*carryout/i, rows: ["Corn", "Soybeans", "Wheat"], unit: /billion.*bushel/i },
+    { title: /world.*carryout/i, rows: ["Corn", "Soybeans", "Wheat"], unit: /million.*ton/i },
+    { title: /\bUS\b.*production/i, rows: ["Corn", "Soybeans"], unit: /billion.*bushel/i },
+    { title: /\bUS\b.*yield/i, rows: ["Corn", "Soybeans"], unit: /bushel.*acre/i },
+  ];
+  for (const spec of expected) {
+    const matches = tables.filter(t => spec.title.test(t.title));
+    if (matches.length !== 1) throw new Error("stonex_snapshot_table_coverage");
+    const table = matches[0];
+    if (table.header.length !== 6 || table.header[0] !== "" ||
+      !/^USDA\b/i.test(table.header[1]) || !/Average Trade/i.test(table.header[2]) ||
+      !/Estimate Range/i.test(table.header[3]) || !/^USDA\b/i.test(table.header[4]) ||
+      !/StoneX.*Est/i.test(table.header[5])) throw new Error("stonex_snapshot_column_alignment");
+    if (!spec.unit.test(table.unit) || table.rows.length !== spec.rows.length ||
+      table.rows.some((row, i) => row[0] !== spec.rows[i])) throw new Error("stonex_snapshot_rows_or_units");
+  }
+}
 
 // Validate structure without converting decimal strings, units or missing cells.
 export function parsePdfTableResponse(text: string, page: number, hash: string): PdfEvidenceTable[] {

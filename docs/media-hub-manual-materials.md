@@ -401,3 +401,13 @@ not sufficient. Only extraction text, tables, facts, summary, status, and derive
 assets are refreshed. The material ID, original file, source URL, reporting dates,
 and report usage are retained. Telegram duplicates keep their existing behavior.
 This is material normalization only, never report publication or channel sending.
+
+## Dense-table quality gate
+
+PDF table OCR uses structured JSON output and defaults to `gpt-4.1` on the
+existing OpenAI provider. `MEDIA_HUB_PDF_TABLE_OCR_MODEL` overrides only PDF OCR;
+other image summaries are unchanged. Keep empty leading header cells and every
+trailing estimate column. StoneX USDA Snapshot materials have a source-family
+integrity check for all four metric tables, six aligned columns, crop rows, and
+explicit units. Coverage/alignment failures discard the machine table evidence
+and retain `partial_visual_pending`; they never authorize publication.
