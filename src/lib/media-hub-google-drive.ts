@@ -141,8 +141,12 @@ export async function syncGoogleDriveContextMaterials(options: { rescanRecent?: 
        'application/vnd.openxmlformats-officedocument.wordprocessingml.document') AND "extractionStatus" <> 'extracted'
        AND NOT COALESCE("extractedFactsJson", '[]'::jsonb) @> '[{"officeParserAttempt":"ooxml-bounded-v1"}]'::jsonb)
      AND NOT ("mimeType" = 'application/pdf'
-       AND NOT COALESCE("extractedFactsJson", '[]'::jsonb) @> '[{"pdfParserAttempt":"pdfjs-bounded-v1"}]'::jsonb)`,
+       AND (NOT COALESCE("extractedFactsJson", '[]'::jsonb) @> '[{"pdfParserAttempt":"pdfjs-bounded-v1"}]'::jsonb
+         OR ($2::boolean AND NOT COALESCE("extractedFactsJson", '[]'::jsonb) @> '[{"pdfTableOcrAttempt":"pdf-tables-v1"}]'::jsonb)
+         OR ($2::boolean AND $3::boolean AND "extractionStatus" = 'partial_visual_pending')))`,
     eligibleFiles.map(versionUrl),
+    process.env.MEDIA_HUB_ENABLE_PDF_TABLE_OCR !== "0" && process.env.MEDIA_HUB_ENABLE_VISION_SUMMARY !== "0" && Boolean(process.env.OPENAI_API_KEY),
+    Boolean(options.rescanRecent),
   ) : [];
   const importedVersions = new Set(existing.map((row) => row.canonicalUrl));
   const results: MaterialIngestResult[] = [];

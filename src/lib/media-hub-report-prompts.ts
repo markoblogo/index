@@ -4,6 +4,7 @@ import type { CortexEditorialGuidance, CortexEditorialStructureProfile } from "@
 import type { MediaHubWindowSnapshot } from "@/lib/media-hub";
 import type { MediaHubManualMaterialDigest } from "@/lib/media-hub-manual-materials";
 import type { PublicLatestItem } from "@/lib/public-api-data";
+import { renderPdfTableEvidence } from "@/lib/media-hub-pdf-table-evidence";
 
 type ReportKind = "daily" | "weekly" | "monthly";
 type Tenant = "spike" | "platform";
@@ -382,6 +383,7 @@ function renderManualMaterials(materials: MediaHubManualMaterialDigest[], kind: 
     ),
     ...renderOkMarkdownEvidence(ranked.map(({ material }) => material), kind),
     ...renderVisualEvidence(ranked.map(({ material }) => material)),
+    ...renderPdfTableEvidence(ranked.map(({ material }) => material)),
   ].join("\n");
 }
 

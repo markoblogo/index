@@ -160,7 +160,7 @@ type ExtractedMaterialAssetDraft = {
   visualSummary?: string;
 };
 
-type ExtractedMaterialContent = {
+export type ExtractedMaterialContent = {
   assets: ExtractedMaterialAssetDraft[];
   extractedFacts: Array<Record<string, unknown>>;
   extractedTables: Array<Record<string, unknown>>;
@@ -961,13 +961,14 @@ async function extractMaterialContent(input: {
   }
   if (mimeType.includes("pdf") || filename.endsWith(".pdf")) {
     const { extractPdfContent } = await import("@/lib/media-hub-pdf-extraction");
+    const { enhancePdfTables } = await import("@/lib/media-hub-pdf-tables");
     const pdf = await extractPdfContent(input.bytes, input.filename ?? filename, {
       maxPreviewPages: getMaxPreviewPages(),
       maxTextChars: MAX_EXTRACTED_TEXT_CHARS,
       previewsEnabled: process.env.MEDIA_HUB_ENABLE_PDF_PREVIEWS !== "0",
     });
     const text = pdf.text;
-    return enhanceVisualAssets({
+    return enhancePdfTables({
       assets: [
         ...buildTextAssets(text, `PDF parser: ${pdf.parser}. Review notes: ${pdf.warnings.join(", ")}`),
         ...buildMarkitdownShadowAssets(markdownShadow),
@@ -979,7 +980,7 @@ async function extractMaterialContent(input: {
       extractionStatus: text.length > 120
         ? (pdf.warnings.length ? "partial" : "extracted")
         : pdf.previewAssets.length > 0 ? "partial_visual_pending" : "unsupported",
-    });
+    }, input.filename ?? filename, pdf.warnings);
   }
   if (/\.(xlsx|docx)$/.test(filename)) {
     const { extractBoundedOfficeFile } = await import("@/lib/media-hub-office-extraction");

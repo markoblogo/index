@@ -37,7 +37,7 @@ export async function extractPdfContent(
   try {
     writeFileSync(pdfPath, bytes);
     const textResult = tryExtractPdfTextWithPoppler(pdfPath, execFileSync);
-    const previewAssets = options.previewsEnabled
+    let previewAssets = options.previewsEnabled
       ? tryRenderPdfPreviewAssets(pdfPath, {
           execFileSync,
           join,
@@ -49,14 +49,18 @@ export async function extractPdfContent(
           tmpdir,
         })
       : [];
+    const visual = options.previewsEnabled && !previewAssets.length
+      ? await (await import("./media-hub-pdf-images")).extractPdfImages(bytes, options.maxPreviewPages)
+      : { assets: [], warnings: [] as string[] };
+    if (visual.assets.length) previewAssets = visual.assets;
     const fallback = textResult ? null : await extractPdfTextWithPdfjs(bytes, options.maxTextChars);
     return {
       parser: textResult ? "pdftotext" : fallback?.text ? "pdfjs" : "none",
       previewAssets,
       text: (textResult || fallback?.text || "").replace(/\u0000/g, " ").slice(0, options.maxTextChars),
-      warnings: textResult
+      warnings: [...visual.warnings, ...(textResult
         ? (textResult.length > options.maxTextChars ? ["text_truncated"] : [])
-        : fallback?.warnings ?? ["pdf_text_unavailable"],
+        : fallback?.warnings ?? ["pdf_text_unavailable"])],
     };
   } finally {
     rmSync(tmp, { force: true, recursive: true });

@@ -83,6 +83,35 @@ vision generation never blocks ingestion.
 
 ### Serverless PDF extraction and repair
 
+Mixed PDFs now retain embedded images without Poppler: pinned `unpdf` extracts
+bounded raw images and direct dependency `sharp` encodes PNG previews. Limits:
+25 MiB input, 12 image-bearing candidate pages, 16 MP per decoded image,
+at most 6 image assets, 750 KiB per stored preview and a 12-second soft budget.
+The existing configured OpenAI vision provider transcribes tables at high detail
+into string cells, preserving headers, observation dates and units. No new
+external service, browser worker or system OCR installation is required.
+
+`MEDIA_HUB_ENABLE_PDF_TABLE_OCR=0` disables it. It also respects the existing
+vision disable flag and requires `OPENAI_API_KEY`. Default OCR budget is three
+images / 45 seconds per file; `MEDIA_HUB_PDF_TABLE_OCR_MAX_IMAGES` is bounded
+to 1-6. Unreadable cells remain `UNREADABLE`, never zero. Invalid, truncated or
+failed OCR remains `partial_visual_pending`; email/disclaimer text cannot mark
+that PDF complete. Receipts include `pdfTableOcrAttempt: pdf-tables-v1`, image
+hash, page, provider/model, table counts and failure information. Machine OCR
+is not independent corroboration and source conflicts require review.
+
+Normalized table rows enter report prompts separately from the 700-character
+summary, with an 18,000-character total table-evidence budget. Prompt data
+retains row/column boundaries, units and dates. Drive sync upgrades old PDF
+versions lacking the new receipt once; an explicit admin rescan retries pending
+visual extraction. Originals, reporting dates and file versions are preserved.
+
+`MEDIA_HUB_SSI_PERIODIC_PUBLICATION_HOLD=1` pauses SSI weekly/monthly publishing
+before report generation, site persistence or channel delivery. It does not
+pause Drive ingestion, daily SSI indices/reports or other tenants. The owner
+must accept report quality before this hold is removed. OCR deployment and
+ingestion verification do not authorize publication or channel sends.
+
 PDF text uses Poppler when available, otherwise pinned `unpdf`/PDF.js; binary
 regex guessing is not evidence extraction. PDF.js processes at most 25 MiB,
 30 pages and the configured text limit, with a 12-second soft async budget.

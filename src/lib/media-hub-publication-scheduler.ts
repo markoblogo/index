@@ -30,6 +30,7 @@ import {
 import { isPlatformSite } from "@/lib/platform-site";
 import { buildSsiNonDailyStructuredMessages } from "@/lib/ssi-non-daily-channel-report";
 import { getSsiWeeklyLogisticsPublicationBlock } from "@/lib/ssi-weekly-logistics-control";
+import { isSsiPeriodicPublicationHeld } from "@/lib/ssi-periodic-publication-hold";
 import {
   getPublicLatestData,
   getPublicHistoryData,
@@ -260,6 +261,12 @@ export async function runDueMediaHubPublication(options: {
     ? options.forceKind
     : plan.kind;
   const publishTelegram = options.publishTelegram !== false;
+
+  if (!isPlatformSite() && isSsiPeriodicPublicationHeld(getActiveIndexConfig().id, kind)) {
+    return { plan: { ...plan, kind }, result: {
+      status: "skipped" as const, skippedReason: "ssi_periodic_quality_hold",
+    } };
+  }
 
   if (kind === "daily") {
     if (
@@ -788,6 +795,9 @@ export async function publishMediaHubSnapshotReport(
   kind: Exclude<MediaHubPublicationKind, "none">,
   periodEndDate: string,
 ) {
+  if (!isPlatformSite() && isSsiPeriodicPublicationHeld(getActiveIndexConfig().id, kind)) {
+    return { status: "skipped" as const, skippedReason: "ssi_periodic_quality_hold" };
+  }
   if (!hasDatabaseUrl() && isPlatformSite()) {
     return buildTransientPublishResult(kind, periodEndDate);
   }
