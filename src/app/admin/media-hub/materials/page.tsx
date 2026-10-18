@@ -1,6 +1,9 @@
 import { revalidatePath } from "next/cache";
 import { buildContextSourceOperatorSummary } from "@/lib/context-recurring-sources";
 import { requireDemoRole } from "@/lib/demo-auth";
+import { getActiveIndexConfig } from "@/lib/index-platform";
+import { getGoogleDriveSyncStatus } from "@/lib/media-hub-google-drive";
+import { GoogleDriveSyncPanel } from "@/components/admin/google-drive-sync-panel";
 import {
   ingestMediaHubFileMaterial,
   ingestMediaHubLinkMaterial,
@@ -16,6 +19,7 @@ export default async function AdminMediaHubMaterialsPage() {
   await requireDemoRole("admin");
   const materials = await listRecentMediaHubManualMaterials();
   const sourceSummary = buildContextSourceOperatorSummary(materials);
+  const driveStatus = getActiveIndexConfig().id === "spike-ua" ? await getGoogleDriveSyncStatus() : null;
 
   async function ingestAction(formData: FormData) {
     "use server";
@@ -91,6 +95,8 @@ export default async function AdminMediaHubMaterialsPage() {
           </div>
         </div>
       </header>
+
+      {driveStatus ? <GoogleDriveSyncPanel initialStatus={driveStatus} /> : null}
 
       <form
         action={ingestAction}

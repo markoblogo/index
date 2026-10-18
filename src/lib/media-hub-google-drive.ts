@@ -12,6 +12,28 @@ const FILES_URL = "https://www.googleapis.com/drive/v3/files";
 const FILE_MAX_BYTES = 50 * 1024 * 1024;
 const REQUEST_TIMEOUT_MS = 25_000;
 const STATE_COOKIE = "ssi_drive_oauth_state";
+const SYNC_BATCH_SIZE = 20;
+const SYNC_BUDGET_MS = 180_000;
+
+export type GoogleDriveSyncStatus = {
+  configured: boolean;
+  connectedAt: string | null;
+  lastSyncAt: string | null;
+  materialCount: number;
+};
+
+export async function getGoogleDriveSyncStatus(): Promise<GoogleDriveSyncStatus> {
+  const configured = Boolean(process.env.MEDIA_HUB_GOOGLE_DRIVE_CLIENT_ID && process.env.MEDIA_HUB_GOOGLE_DRIVE_CLIENT_SECRET);
+  if (!hasDatabaseUrl()) return { configured, connectedAt: null, lastSyncAt: null, materialCount: 0 };
+  const rows = await db.$queryRawUnsafe<Array<{ status: Omit<GoogleDriveSyncStatus, "configured"> }>>(
+    `SELECT json_build_object(
+       'connectedAt', (SELECT "updatedAt" FROM private."MediaHubGoogleDriveCredential" WHERE "id" = 'spike-ua'),
+       'lastSyncAt', (SELECT "lastSuccessfulSyncAt" FROM private."MediaHubGoogleDriveSyncState" WHERE "id" = 'spike-ua'),
+       'materialCount', (SELECT count(*) FROM "MediaHubManualMaterial" WHERE "tenantId" = 'spike-ua' AND "receivedFrom" = 'google-drive')
+     ) AS status`,
+  );
+  return { configured, ...rows[0].status };
+}
 
 export function classifyGoogleDriveMaterialKind(filename: string) {
   return /monthly|month|місячн|за\s+місяц|за\s+місяць/i.test(filename)
@@ -86,6 +108,7 @@ export async function saveGoogleDriveRefreshToken(token: string) {
 }
 
 export async function syncGoogleDriveContextMaterials() {
+  const startedAt = new Date();
   if (!hasDatabaseUrl()) throw new Error("Database is not configured.");
   const credential = await db.$queryRawUnsafe<Array<{ refreshTokenCiphertext: string }>>(
     `SELECT "refreshTokenCiphertext" FROM private."MediaHubGoogleDriveCredential" WHERE "id" = 'spike-ua' LIMIT 1`,
@@ -98,25 +121,43 @@ export async function syncGoogleDriveContextMaterials() {
   );
   const lastSyncAt = stateRows[0]?.lastSuccessfulSyncAt ?? new Date("2000-01-01T00:00:00.000Z");
   const modifiedAfter = new Date(lastSyncAt.getTime() - 5 * 60_000).toISOString();
-  const files = await listChangedDriveFiles(token, modifiedAfter);
+  const files = await listChangedDriveFiles(token, modifiedAfter, startedAt.toISOString());
+  const eligibleFiles = files.filter((file) => file.id && file.name && file.modifiedTime &&
+    file.mimeType !== "application/vnd.google-apps.folder" && Number(file.size ?? 0) <= FILE_MAX_BYTES);
+  const versionUrl = (file: (typeof files)[number]) => {
+    const link = file.webViewLink ?? `https://drive.google.com/file/d/${encodeURIComponent(file.id!)}/view`;
+    return `${link}${link.includes("?") ? "&" : "?"}driveVersion=${encodeURIComponent(file.modifiedTime!)}`;
+  };
+  const existing = eligibleFiles.length ? await db.$queryRawUnsafe<Array<{ canonicalUrl: string }>>(
+    `SELECT "canonicalUrl" FROM "MediaHubManualMaterial" WHERE "tenantId" = 'spike-ua'
+     AND "receivedFrom" = 'google-drive' AND "canonicalUrl" = ANY($1::text[])`,
+    eligibleFiles.map(versionUrl),
+  ) : [];
+  const importedVersions = new Set(existing.map((row) => row.canonicalUrl));
   const results: MaterialIngestResult[] = [];
-  for (const file of files) {
+  let visitedCount = 0;
+  let alreadyImportedCount = 0;
+  for (const file of eligibleFiles) {
     if (!file.id || !file.name || !file.modifiedTime || file.mimeType === "application/vnd.google-apps.folder") continue;
-    const size = Number(file.size ?? 0);
-    if (size > FILE_MAX_BYTES) continue;
+    if (importedVersions.has(versionUrl(file))) {
+      alreadyImportedCount += 1;
+      visitedCount += 1;
+      continue;
+    }
+    if (results.length >= SYNC_BATCH_SIZE || Date.now() - startedAt.getTime() >= SYNC_BUDGET_MS) break;
     const download = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(file.id)}?alt=media`, {
       headers: { authorization: `Bearer ${token}` },
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
     if (!download.ok) throw new Error(`Google Drive download failed for ${file.id}.`);
     const bytes = Buffer.from(await download.arrayBuffer());
-    if (bytes.length > FILE_MAX_BYTES) continue;
+    if (bytes.length > FILE_MAX_BYTES) throw new Error(`Google Drive file exceeds size limit: ${file.name}.`);
     const kind = classifyGoogleDriveMaterialKind(file.name);
     const logisticsType = classifySsiWeeklyLogisticsTypeFromFilename(file.name);
     const fileUrl = file.webViewLink ?? `https://drive.google.com/file/d/${encodeURIComponent(file.id)}/view`;
-    results.push(await ingestMediaHubFileMaterial({
+    const result = await ingestMediaHubFileMaterial({
       bytes,
-      canonicalUrl: `${fileUrl}${fileUrl.includes("?") ? "&" : "?"}driveVersion=${encodeURIComponent(file.modifiedTime)}`,
+      canonicalUrl: versionUrl(file),
       filename: file.name,
       hashtags: ["#ssi", kind === "monthly_material" ? "#monthly" : "#weekly", ...(logisticsType ? [`#${logisticsType}`] : [])],
       kind,
@@ -125,16 +166,31 @@ export async function syncGoogleDriveContextMaterials() {
       receivedFrom: "google-drive",
       sourceType: "google_drive_file",
       tenantId: "spike-ua",
-    }));
+    });
+    if (!result.id || result.extractionStatus === "failed" || result.extractionStatus === "skipped") {
+      throw new Error(`Google Drive material intake failed for ${file.name}.`);
+    }
+    results.push(result);
+    visitedCount += 1;
+    // Persist progress before another external request can fail or time out.
+    await saveGoogleDriveSyncCheckpoint(new Date(file.modifiedTime));
   }
+  const remainingCount = eligibleFiles.length - visitedCount;
+  if (!remainingCount) await saveGoogleDriveSyncCheckpoint(startedAt);
+  return {
+    fileCount: files.length, results, alreadyImportedCount, remainingCount,
+    skippedCount: files.length - eligibleFiles.length,
+    status: remainingCount ? "partial" as const : "processed" as const,
+  };
+}
 
+async function saveGoogleDriveSyncCheckpoint(checkpoint: Date) {
   await db.$executeRawUnsafe(
     `INSERT INTO private."MediaHubGoogleDriveSyncState" ("id", "lastSuccessfulSyncAt", "updatedAt")
      VALUES ('spike-ua', $1, NOW()) ON CONFLICT ("id") DO UPDATE
      SET "lastSuccessfulSyncAt" = GREATEST(private."MediaHubGoogleDriveSyncState"."lastSuccessfulSyncAt", EXCLUDED."lastSuccessfulSyncAt"), "updatedAt" = NOW()`,
-    new Date(Date.now() - 5 * 60_000),
+    checkpoint,
   );
-  return { fileCount: files.length, results, status: "processed" as const };
 }
 
 async function refreshGoogleDriveAccessToken(refreshToken: string) {
@@ -159,7 +215,7 @@ async function refreshGoogleDriveAccessToken(refreshToken: string) {
   return payload.access_token;
 }
 
-async function listChangedDriveFiles(accessToken: string, modifiedAfter: string) {
+async function listChangedDriveFiles(accessToken: string, modifiedAfter: string, modifiedBefore: string) {
   const files: Array<{ id?: string; name?: string; mimeType?: string; modifiedTime?: string; webViewLink?: string; size?: string }> = [];
   let pageToken: string | undefined;
   do {
@@ -168,7 +224,7 @@ async function listChangedDriveFiles(accessToken: string, modifiedAfter: string)
       fields: "nextPageToken,files(id,name,mimeType,modifiedTime,webViewLink,size)",
       orderBy: "modifiedTime",
       pageSize: "100",
-      q: `'${DRIVE_FOLDER_ID}' in parents and trashed = false and modifiedTime > '${modifiedAfter}'`,
+      q: `'${DRIVE_FOLDER_ID}' in parents and trashed = false and modifiedTime > '${modifiedAfter}' and modifiedTime <= '${modifiedBefore}'`,
       ...(pageToken ? { pageToken } : {}),
     }).toString();
     const response = await fetch(url, { headers: { authorization: `Bearer ${accessToken}` }, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });

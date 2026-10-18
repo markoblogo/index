@@ -158,7 +158,7 @@ rights permit; otherwise keep the material for internal context and request
 operator review before using it publicly.
 
 The SSI Drive folder is connected through a read-only Google OAuth integration.
-The daily `/api/cron/media-hub-google-drive-sync` job imports changed files as
+The hourly `/api/cron/media-hub-google-drive-sync` job imports changed files as
 `google_drive_file` materials for the `spike-ua` tenant; filenames marked as
 monthly are routed to monthly reports, and other files default to weekly.
 Duplicate content remains deduplicated by the existing material intake. The
@@ -167,6 +167,20 @@ the encryption key is derived from the OAuth client secret, so client
 credentials belong only in the SSI production environment. The cron is
 bearer-authenticated and does not run for
 the 1D3X platform deployment.
+
+`/admin/media-hub/materials` shows Drive connection metadata, imported-material
+count and the sync checkpoint, with a session-authenticated manual sync button.
+The button calls `POST /api/admin/media-hub/google-drive/sync`; this requires an
+active SSI admin session and a same-origin request. No cron secret is needed.
+Each request imports at most 20 file versions within a three-minute budget;
+the button continues bounded batches while the page remains open. Imported
+versions are skipped before download/extraction, and each successfully stored
+file advances the checkpoint. A partial batch never jumps the checkpoint to
+the current time. Failed intake preserves earlier progress and surfaces an
+error. Folder entries and files exceeding the 50 MB adapter limit are counted
+as skipped. Sync does not generate reports, publish-site or send-channel.
+The generic Expected/Ready/Missing cards on the materials page describe the
+recurring source-family registry, not the Drive connection or logistics gate.
 
 The integration uses the restricted `drive.readonly` scope. While the OAuth app
 is in Testing, only configured test users can authorize it and Google may
