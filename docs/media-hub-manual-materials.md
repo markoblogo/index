@@ -95,6 +95,9 @@ The admin Drive rescan upgrades legacy PDF extractions once per file version
 attempts are recorded too, so an unreadable PDF does not stall every batch.
 The SSI weekly gate requires readable Drive text, not just a matching filename
 or an image preview. All four logistics material types are still required.
+The observed UZ wagon-operation family includes daily border handover and grain
+wagon queue PDFs ("Середньодобова передача через ПП", "Черга ... ПП/порти").
+These are not interchangeable with customs `out_YYMMDD_F.xlsx` export tables.
 
 Report selection examines at most 256 period candidates before choosing 32
 materials and attaching assets. An explicit filename date (ISO, day-first with

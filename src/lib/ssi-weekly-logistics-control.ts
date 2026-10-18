@@ -19,6 +19,11 @@ export function classifySsiWeeklyLogisticsTypeFromFilename(filename: string): Ss
   if (/agro[\s_-]*ex[\s_-]*im/.test(name)) return "agro_ex_im";
   if (/(?:check|chk)[\s_-]*points?|checkpoint|пункт\w* пропуск/.test(name)) return "checkpoints";
   if (/operational[\s_-]*wagons?|оперативн\w*.{0,24}вагон/.test(name)) return "operational_wagons";
+  // Observed UZ source family: wagon handover and queues, not customs out_ tables.
+  const words = name.replace(/[_-]+/g, " ").replace(/\s+/g, " ");
+  if (/середньодобова передача через пп|черга зернові в напрямку пп|черга в напрямку пп по номенклатурі|черга на порти зернові/.test(words)) {
+    return "operational_wagons";
+  }
   if (/([сc]татист|statistics|statistical)/.test(name) && /(уз|укрзаліз|залізнич|перевез|rail|wagon)/.test(name)) {
     return "uz_statistics";
   }
