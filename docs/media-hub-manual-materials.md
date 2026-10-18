@@ -96,6 +96,12 @@ attempts are recorded too, so an unreadable PDF does not stall every batch.
 The SSI weekly gate requires readable Drive text, not just a matching filename
 or an image preview. All four logistics material types are still required.
 
+Report selection examines at most 256 period candidates before choosing 32
+materials and attaching assets. An explicit filename date (ISO, day-first with
+four-digit year, `_YY_MM_DD`, or `DD.MM.YY`) excludes a recently copied archive
+file from a newer reporting window. Selected materials rank by source date,
+falling back to the Drive version date; stored historical dates are not rewritten.
+
 OAuth Production and Google verification are separate states. Branding must be
 verified before requesting restricted-scope review; never claim Google approval
 from a successful connection or Production status. The current app homepage and

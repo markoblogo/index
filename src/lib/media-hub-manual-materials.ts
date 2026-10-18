@@ -9,6 +9,7 @@ import { CONTEXT_RECURRING_SOURCE_FAMILIES } from "@/lib/context-recurring-sourc
 import { db, hasDatabaseUrl } from "@/lib/db";
 import { fetchWithTimeout as fetchExternalWithTimeout } from "@/lib/fetch-timeout";
 import { sanitizeMaterialStorageText } from "@/lib/media-hub-material-text";
+import { selectReportWindowMaterials } from "@/lib/media-hub-material-window";
 import type { MediaHubPublicationKind } from "@/lib/media-hub-publication-scheduler";
 
 export type MediaHubManualMaterialKind =
@@ -434,7 +435,7 @@ export async function getManualMaterialsForPeriod(input: {
         AND "kind" IN ($4, $5, 'source_candidate')
         AND "extractionStatus" IN ('extracted', 'partial', 'unsupported_image_ocr', 'partial_visual_pending')
       ORDER BY "receivedAt" DESC
-      LIMIT 32
+      LIMIT 256
     `,
     input.tenantId,
     input.periodStartDate,
@@ -443,7 +444,8 @@ export async function getManualMaterialsForPeriod(input: {
     fallbackKind,
   );
 
-  return (await attachMaterialAssets(rows)).map((row) => toMaterialDigest(row, 4000));
+  const selected = selectReportWindowMaterials(rows, input.periodStartDate, input.periodEndDate);
+  return (await attachMaterialAssets(selected)).map((row) => toMaterialDigest(row, 4000));
 }
 
 export async function listRecentMediaHubManualMaterials(tenantId?: string) {
