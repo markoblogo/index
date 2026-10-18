@@ -14,6 +14,17 @@ export const SSI_WEEKLY_LOGISTICS_TYPES = [
 ] as const;
 type SsiWeeklyLogisticsType = typeof SSI_WEEKLY_LOGISTICS_TYPES[number];
 
+export function classifySsiWeeklyLogisticsTypeFromFilename(filename: string): SsiWeeklyLogisticsType | undefined {
+  const name = filename.normalize("NFKC").toLowerCase();
+  if (/agro[\s_-]*ex[\s_-]*im/.test(name)) return "agro_ex_im";
+  if (/check[\s_-]*points?|checkpoint|пункт\w* пропуск/.test(name)) return "checkpoints";
+  if (/operational[\s_-]*wagons?|оперативн\w*.{0,24}вагон/.test(name)) return "operational_wagons";
+  if (/(статист|statistics|statistical)/.test(name) && /(уз|укрзаліз|залізнич|перевез|rail|wagon)/.test(name)) {
+    return "uz_statistics";
+  }
+  return undefined;
+}
+
 type ControlAction = "missing_notice" | "request";
 
 export type SsiWeeklyLogisticsGate = {
@@ -25,7 +36,7 @@ export type SsiWeeklyLogisticsGate = {
 };
 
 export function findMissingSsiWeeklyLogisticsTypes(hashtags: string[][]) {
-  const present = new Set(hashtags.flat().map((tag) => tag.trim().toLowerCase()));
+  const present = new Set(hashtags.flat().map((tag) => tag.trim().toLowerCase().replace(/^#+/, "")));
   return SSI_WEEKLY_LOGISTICS_TYPES.filter((type) => !present.has(type));
 }
 
@@ -41,16 +52,6 @@ export async function getSsiWeeklyLogisticsGate(periodEndDate: string): Promise<
   }
 
   const providerChatId = await resolveProviderChatId();
-  if (!providerChatId) {
-    return {
-      availableTypes: [],
-      missingTypes: [...SSI_WEEKLY_LOGISTICS_TYPES],
-      periodEndDate,
-      reason: "provider_not_configured",
-      status: "blocked",
-    };
-  }
-
   const periodStartDate = shiftIsoDate(periodEndDate, -6);
   const materials = await getManualMaterialsForPeriod({
     kind: "weekly",
@@ -58,8 +59,17 @@ export async function getSsiWeeklyLogisticsGate(periodEndDate: string): Promise<
     periodStartDate,
     tenantId: "spike-ua",
   });
-  const providerMaterials = materials.filter((material) => material.telegramFromId === providerChatId);
-  const missingTypes = findMissingSsiWeeklyLogisticsTypes(providerMaterials.map((material) => material.hashtags));
+  const eligibleMaterials = materials.filter((material) =>
+    material.receivedFrom === "google-drive" || (providerChatId !== null && material.telegramFromId === providerChatId)
+  );
+  const missingTypes = findMissingSsiWeeklyLogisticsTypes(eligibleMaterials.map((material) => {
+    const tags = [...material.hashtags];
+    if (material.receivedFrom === "google-drive") {
+      const type = classifySsiWeeklyLogisticsTypeFromFilename(material.originalFilename ?? "");
+      if (type) tags.push(type);
+    }
+    return tags;
+  }));
   const availableTypes = SSI_WEEKLY_LOGISTICS_TYPES.filter((type) => !missingTypes.includes(type));
 
   return {

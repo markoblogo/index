@@ -168,13 +168,20 @@ credentials belong only in the SSI production environment. The cron is
 bearer-authenticated and does not run for
 the 1D3X platform deployment.
 
-The OAuth app is currently in Testing and uses the restricted `drive.readonly`
-scope. Only configured test users can authorize it, and Google may expire its
-refresh token after seven days. Production continuity requires completing
-Google's verification requirements before the app is published. Until then,
-operators must monitor the sync receipt and reconnect if Google revokes the
-testing token. Imported files remain evidence, not automatic approval to
-publish claims; retain source date, page/sheet, units, rights notes and review.
+The integration uses the restricted `drive.readonly` scope. While the OAuth app
+is in Testing, only configured test users can authorize it and Google may
+expire refresh tokens after seven days. For continuous production sync, publish
+the OAuth app after completing any Google verification requirements, then
+reconnect the Drive account and confirm that the sync receipt advances. An
+`invalid_grant` refresh error means the account must be reconnected. Imported
+files remain evidence, not automatic approval to publish claims; retain source
+date, page/sheet, units, rights notes and review.
+
+For the SSI weekly logistics gate, Drive files are recognized by filename for
+`agro_ex_im`, `checkpoints`, operational wagons and Ukrzaliznytsia statistics.
+Other Drive files still enter Context but do not satisfy one of those required
+logistics categories. Telegram submissions continue to use their explicit
+hashtags and the configured provider identity.
 
 ## Corporate Context sources
 

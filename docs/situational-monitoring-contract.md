@@ -1,7 +1,7 @@
 # Situational monitoring contract
 
 Status: proposed docs-level contract
-Updated: 2026-07-26
+Updated: 2026-10-12
 
 This contract adapts a small subset of useful ideas from
 [koala73/worldmonitor](https://github.com/koala73/worldmonitor) for Index,
@@ -12,6 +12,20 @@ Worldmonitor is useful as a reference because it frames monitoring as
 situational awareness: curated streams, cross-stream signal correlation,
 variant surfaces, map/layer controls and explicit freshness tracking. Index
 should take the operational pattern, not the whole platform.
+
+## Reference decision: `world-intel-mcp` (2026-10-12)
+
+Do not install or connect
+[`marc-shade/world-intel-mcp`](https://github.com/marc-shade/world-intel-mcp)
+to SSI MediaHub production. Use it only as a non-normative reference for
+freshness/provenance receipts, explicit data gaps and source-cited synthesis;
+these ideas must remain within Index's existing contracts and source policy.
+
+Do not adopt its MCP service, collector, dashboard, vector store or broad feed
+inventory, and do not use it as an SSI index input. Its local, single-user,
+multi-domain architecture and frequent collection model do not fit SSI's
+bounded, scheduled MediaHub workflow. Any future source or runtime expansion
+requires a separate review and allowlist decision.
 
 ## Scope
 

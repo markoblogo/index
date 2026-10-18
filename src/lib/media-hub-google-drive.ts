@@ -3,6 +3,7 @@ import "server-only";
 import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { db, hasDatabaseUrl } from "@/lib/db";
 import { ingestMediaHubFileMaterial, type MaterialIngestResult } from "@/lib/media-hub-manual-materials";
+import { classifySsiWeeklyLogisticsTypeFromFilename } from "@/lib/ssi-weekly-logistics-control";
 
 const DRIVE_FOLDER_ID = process.env.MEDIA_HUB_GOOGLE_DRIVE_FOLDER_ID ?? "1cHuO86kaqND34vLTFo3Ly_OoBSNV3rgC";
 const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.readonly";
@@ -111,12 +112,13 @@ export async function syncGoogleDriveContextMaterials() {
     const bytes = Buffer.from(await download.arrayBuffer());
     if (bytes.length > FILE_MAX_BYTES) continue;
     const kind = classifyGoogleDriveMaterialKind(file.name);
+    const logisticsType = classifySsiWeeklyLogisticsTypeFromFilename(file.name);
     const fileUrl = file.webViewLink ?? `https://drive.google.com/file/d/${encodeURIComponent(file.id)}/view`;
     results.push(await ingestMediaHubFileMaterial({
       bytes,
       canonicalUrl: `${fileUrl}${fileUrl.includes("?") ? "&" : "?"}driveVersion=${encodeURIComponent(file.modifiedTime)}`,
       filename: file.name,
-      hashtags: ["#ssi", kind === "monthly_material" ? "#monthly" : "#weekly"],
+      hashtags: ["#ssi", kind === "monthly_material" ? "#monthly" : "#weekly", ...(logisticsType ? [`#${logisticsType}`] : [])],
       kind,
       mimeType: file.mimeType || download.headers.get("content-type") || "application/octet-stream",
       originalUrl: fileUrl,
@@ -143,8 +145,16 @@ async function refreshGoogleDriveAccessToken(refreshToken: string) {
     body: new URLSearchParams({ client_id: clientId, client_secret: clientSecret, refresh_token: refreshToken, grant_type: "refresh_token" }),
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
-  if (!response.ok) throw new Error("Google Drive access token refresh failed.");
-  const payload = await response.json() as { access_token?: string };
+  const payload = await response.json().catch(() => null) as { access_token?: string; error?: string } | null;
+  if (!response.ok) {
+    if (payload?.error === "invalid_grant") {
+      throw new Error("Google Drive refresh token expired or was revoked; reconnect the Drive account.");
+    }
+    if (payload?.error === "invalid_client") {
+      throw new Error("Google Drive OAuth client credentials were rejected.");
+    }
+    throw new Error("Google Drive access token refresh failed.");
+  }
   if (!payload.access_token) throw new Error("Google returned no Drive access token.");
   return payload.access_token;
 }
