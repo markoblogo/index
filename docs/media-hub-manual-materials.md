@@ -179,6 +179,15 @@ file advances the checkpoint. A partial batch never jumps the checkpoint to
 the current time. Failed intake preserves earlier progress and surfaces an
 error. Folder entries and files exceeding the 50 MB adapter limit are counted
 as skipped. Sync does not generate reports, publish-site or send-channel.
+The recurring sync is bounded to files modified in the last 62 days, covering
+the current and previous monthly reporting windows. Older files remain in
+Drive; historical backfill is a separate operator action. Drive modification
+time determines the material's reporting window while `receivedAt` records
+the actual import time. The file's content still determines the observation
+date of cited facts; a recent modification is not proof of current data.
+Report retrieval also checks the original Drive version date on legacy rows,
+so an old file imported today cannot satisfy a current-week logistics gate.
+This does not rewrite historical material records.
 The generic Expected/Ready/Missing cards on the materials page describe the
 recurring source-family registry, not the Drive connection or logistics gate.
 

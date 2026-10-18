@@ -53,6 +53,14 @@ describe("resumable Google Drive sync", () => {
     expect(ingest).toHaveBeenCalledTimes(20);
     expect(result).toMatchObject({ status: "partial", remainingCount: 2 });
     expect(execute.mock.calls.at(-1)?.[1]).toEqual(new Date(files[19].modifiedTime));
+    expect(ingest.mock.calls[0]?.[0]).toMatchObject({ reportingDate: new Date(files[0].modifiedTime) });
+  });
+
+  it("limits a missing or obsolete checkpoint to the two-month report horizon", async () => {
+    await syncGoogleDriveContextMaterials();
+    const url = new URL(String(vi.mocked(fetch).mock.calls[1]?.[0]));
+    const times = [...url.searchParams.get("q")!.matchAll(/modifiedTime (?:>|<=) '([^']+)'/g)].map((match) => new Date(match[1]).getTime());
+    expect(times[1] - times[0]).toBe(62 * 86_400_000 + 5 * 60_000);
   });
 
   it("skips already imported versions before downloading or extracting", async () => {

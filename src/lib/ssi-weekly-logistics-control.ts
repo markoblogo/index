@@ -17,7 +17,7 @@ type SsiWeeklyLogisticsType = typeof SSI_WEEKLY_LOGISTICS_TYPES[number];
 export function classifySsiWeeklyLogisticsTypeFromFilename(filename: string): SsiWeeklyLogisticsType | undefined {
   const name = filename.normalize("NFKC").toLowerCase();
   if (/agro[\s_-]*ex[\s_-]*im/.test(name)) return "agro_ex_im";
-  if (/check[\s_-]*points?|checkpoint|пункт\w* пропуск/.test(name)) return "checkpoints";
+  if (/(?:check|chk)[\s_-]*points?|checkpoint|пункт\w* пропуск/.test(name)) return "checkpoints";
   if (/operational[\s_-]*wagons?|оперативн\w*.{0,24}вагон/.test(name)) return "operational_wagons";
   if (/(статист|statistics|statistical)/.test(name) && /(уз|укрзаліз|залізнич|перевез|rail|wagon)/.test(name)) {
     return "uz_statistics";

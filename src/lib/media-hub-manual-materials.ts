@@ -311,6 +311,7 @@ export async function ingestMediaHubFileMaterial(input: {
   mimeType: string;
   originalUrl?: string;
   receivedFrom: "telegram" | "admin" | "google-drive";
+  reportingDate?: Date;
   sourceType: Extract<MediaHubManualMaterialSourceType, "telegram_file" | "admin_upload" | "google_drive_file">;
   telegramChatId?: string;
   telegramFromId?: string;
@@ -337,6 +338,7 @@ export async function ingestMediaHubTextMaterial(input: {
   kind: MediaHubManualMaterialKind;
   originalUrl?: string;
   receivedFrom: "telegram" | "admin" | "scheduler" | "google-drive";
+  reportingDate?: Date;
   sourceDomain?: string;
   sourceType: Extract<MediaHubManualMaterialSourceType, "telegram_text" | "corporate_telegram_group" | "scheduled_api">;
   telegramChatId?: string;
@@ -424,8 +426,10 @@ export async function getManualMaterialsForPeriod(input: {
       SELECT *
       FROM "MediaHubManualMaterial"
       WHERE "tenantId" = $1
-        AND "reportingWeekStart" <= $3::date
-        AND "reportingWeekEnd" >= $2::date
+        AND CASE WHEN "receivedFrom" = 'google-drive' THEN
+          COALESCE(substring("canonicalUrl" from '[?&]driveVersion=([0-9]{4}-[0-9]{2}-[0-9]{2})T')::date, "reportingDate")
+            BETWEEN $2::date AND $3::date
+        ELSE "reportingWeekStart" <= $3::date AND "reportingWeekEnd" >= $2::date END
         AND "kind" IN ($4, $5, 'source_candidate')
         AND "extractionStatus" IN ('extracted', 'partial', 'unsupported_image_ocr', 'partial_visual_pending')
       ORDER BY "receivedAt" DESC
@@ -641,6 +645,7 @@ async function storeManualMaterial(input: {
   originalFilename?: string;
   originalUrl?: string;
   receivedFrom: "telegram" | "admin" | "scheduler" | "google-drive";
+  reportingDate?: Date;
   sourceDomain?: string;
   sourceType: MediaHubManualMaterialSourceType;
   telegramChatId?: string;
@@ -655,7 +660,7 @@ async function storeManualMaterial(input: {
   await ensureMediaHubManualMaterialStorage();
 
   const contentHash = createHash("sha256").update(input.contentBytes).digest("hex");
-  const period = getMediaHubManualMaterialPeriod(new Date(), input.kind);
+  const period = getMediaHubManualMaterialPeriod(input.reportingDate ?? new Date(), input.kind);
   const existing = await db.$queryRawUnsafe<Array<{ id: string; extractionStatus: string }>>(
     `
       SELECT "id", "extractionStatus"

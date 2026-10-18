@@ -65,7 +65,7 @@ export function GoogleDriveSyncPanel({ initialStatus }: { initialStatus: GoogleD
       </div>
       <p role="status" aria-live="polite" className="mt-3 text-sm text-white/72">{message}</p>
       {error ? <p role="alert" className="mt-2 text-sm text-red-300">{error}</p> : null}
-      <p className="mt-3 text-xs text-white/48">Імпорт лише додає матеріали. Публікація звітів виконується окремо.</p>
+      <p className="mt-3 text-xs text-white/48">Імпортуємо зміни за останні 62 дні для тижневих і місячних звітів. Старіші файли залишаються в Drive. Дата зміни файла визначає період матеріалу; фактичний період даних перевіряється за його вмістом. Публікація звітів виконується окремо.</p>
     </section>
   );
 }

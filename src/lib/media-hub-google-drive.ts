@@ -14,6 +14,7 @@ const REQUEST_TIMEOUT_MS = 25_000;
 const STATE_COOKIE = "ssi_drive_oauth_state";
 const SYNC_BATCH_SIZE = 20;
 const SYNC_BUDGET_MS = 180_000;
+const REPORT_LOOKBACK_DAYS = 62;
 
 export type GoogleDriveSyncStatus = {
   configured: boolean;
@@ -119,7 +120,12 @@ export async function syncGoogleDriveContextMaterials() {
   const stateRows = await db.$queryRawUnsafe<Array<{ lastSuccessfulSyncAt: Date | null }>>(
     `SELECT "lastSuccessfulSyncAt" FROM private."MediaHubGoogleDriveSyncState" WHERE "id" = 'spike-ua' LIMIT 1`,
   );
-  const lastSyncAt = stateRows[0]?.lastSuccessfulSyncAt ?? new Date("2000-01-01T00:00:00.000Z");
+  // Weekly/monthly evidence intake must not replay the folder's multi-year archive.
+  const earliestReportDate = new Date(startedAt.getTime() - REPORT_LOOKBACK_DAYS * 86_400_000);
+  const lastSyncAt = new Date(Math.max(
+    stateRows[0]?.lastSuccessfulSyncAt?.getTime() ?? 0,
+    earliestReportDate.getTime(),
+  ));
   const modifiedAfter = new Date(lastSyncAt.getTime() - 5 * 60_000).toISOString();
   const files = await listChangedDriveFiles(token, modifiedAfter, startedAt.toISOString());
   const eligibleFiles = files.filter((file) => file.id && file.name && file.modifiedTime &&
@@ -164,6 +170,7 @@ export async function syncGoogleDriveContextMaterials() {
       mimeType: file.mimeType || download.headers.get("content-type") || "application/octet-stream",
       originalUrl: fileUrl,
       receivedFrom: "google-drive",
+      reportingDate: new Date(file.modifiedTime),
       sourceType: "google_drive_file",
       tenantId: "spike-ua",
     });
@@ -178,7 +185,7 @@ export async function syncGoogleDriveContextMaterials() {
   const remainingCount = eligibleFiles.length - visitedCount;
   if (!remainingCount) await saveGoogleDriveSyncCheckpoint(startedAt);
   return {
-    fileCount: files.length, results, alreadyImportedCount, remainingCount,
+    fileCount: files.length, results, alreadyImportedCount, remainingCount, lookbackDays: REPORT_LOOKBACK_DAYS,
     skippedCount: files.length - eligibleFiles.length,
     status: remainingCount ? "partial" as const : "processed" as const,
   };
