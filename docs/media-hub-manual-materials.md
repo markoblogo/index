@@ -63,8 +63,8 @@ Current pilot:
   markdown receipt for operator review.
 - PDF still uses the existing PDF extraction adapter for text/previews; the
   MarkItDown-style pass records only shadow normalization metadata.
-- DOCX/XLSX are accepted and stored, but exact binary text/table parsing remains
-  metadata-only until a separate dependency decision is approved.
+- DOCX/XLSX use bounded OOXML extraction with cached values, sheet/table structure
+  and explicit truncation/unsupported-format warnings; formulas are not evaluated.
 - The admin materials page shows extraction receipts: adapter, runtime, status,
   markdown availability, freshness, operator review state and warnings.
 - Report generation may use structured markdown only from `ok` receipts.
@@ -80,6 +80,26 @@ links when exact numbers must be parsed automatically.
 If `OPENAI_API_KEY` is configured, Context also generates real vision summaries
 for image uploads and PDF preview pages. This is optional: failed or missing
 vision generation never blocks ingestion.
+
+### Serverless PDF extraction and repair
+
+PDF text uses Poppler when available, otherwise pinned `unpdf`/PDF.js; binary
+regex guessing is not evidence extraction. PDF.js processes at most 25 MiB,
+30 pages and the configured text limit, with a 12-second soft async budget.
+Truncation is recorded; scanned, encrypted or failed PDFs remain review-only
+without invented text. No PDF scripts or external AI service are needed for
+text extraction. Original assets are preserved unchanged.
+
+The admin Drive rescan upgrades legacy PDF extractions once per file version
+(`pdfParserAttempt: pdfjs-bounded-v1`) without duplicating originals. Failed
+attempts are recorded too, so an unreadable PDF does not stall every batch.
+The SSI weekly gate requires readable Drive text, not just a matching filename
+or an image preview. All four logistics material types are still required.
+
+OAuth Production and Google verification are separate states. Branding must be
+verified before requesting restricted-scope review; never claim Google approval
+from a successful connection or Production status. The current app homepage and
+privacy notice are `/en/drive-sync` and `/en/drive-sync/privacy` on SSI.
 
 ## Admin fallback
 

@@ -49,10 +49,14 @@ export async function extractPdfContent(
           tmpdir,
         })
       : [];
+    const fallback = textResult ? null : await extractPdfTextWithPdfjs(bytes, options.maxTextChars);
     return {
-      parser: textResult ? "pdftotext" : "fallback",
+      parser: textResult ? "pdftotext" : fallback?.text ? "pdfjs" : "none",
       previewAssets,
-      text: (textResult || extractFallbackPdfText(bytes)).slice(0, options.maxTextChars),
+      text: (textResult || fallback?.text || "").replace(/\u0000/g, " ").slice(0, options.maxTextChars),
+      warnings: textResult
+        ? (textResult.length > options.maxTextChars ? ["text_truncated"] : [])
+        : fallback?.warnings ?? ["pdf_text_unavailable"],
     };
   } finally {
     rmSync(tmp, { force: true, recursive: true });
@@ -138,15 +142,45 @@ function commandExists(
   }
 }
 
-function extractFallbackPdfText(buffer: Buffer) {
-  return buffer
-    .toString("latin1")
-    .replace(/\\([()\\])/g, "$1")
-    .match(/\(([^()]{8,})\)/g)
-    ?.map((part) => part.slice(1, -1))
-    .join(" ")
-    .replace(/\s+/g, " ")
-    .trim() ?? "";
+async function extractPdfTextWithPdfjs(bytes: Buffer, maxTextChars: number) {
+  if (bytes.length > 25 * 1024 * 1024) return { text: "", warnings: ["pdf_parser_size_limit"] };
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const parse = async () => {
+    const { getDocumentProxy } = await import("unpdf");
+    const pdf = await getDocumentProxy(new Uint8Array(bytes), {
+      useSystemFonts: false, disableFontFace: true,
+      maxImageSize: 16_777_216,
+    });
+    try {
+      const warnings: string[] = [];
+      const pages: string[] = [];
+      let chars = 0;
+      if (pdf.numPages > 30) warnings.push("pages_truncated");
+      for (let number = 1; number <= Math.min(pdf.numPages, 30); number += 1) {
+        const page = await pdf.getPage(number);
+        try {
+          const content = await page.getTextContent();
+          const text = content.items.flatMap(item => "str" in item
+            ? [item.str, item.hasEOL ? "\n" : " "] : []).join("").trim();
+          pages.push(text);
+          chars += text.length + 2;
+          if (chars > maxTextChars) { warnings.push("text_truncated"); break; }
+        } finally { page.cleanup(); }
+      }
+      const text = pages.join("\n\n").slice(0, maxTextChars);
+      if (!text.trim()) warnings.push("pdf_has_no_text_layer");
+      return { text, warnings };
+    } finally { await pdf.loadingTask.destroy(); }
+  };
+  try {
+    return await Promise.race([
+      parse(),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error("PDF extraction budget exceeded")), 12_000);
+      }),
+    ]);
+  } catch { return { text: "", warnings: ["pdf_text_unavailable"] }; }
+  finally { if (timer) clearTimeout(timer); }
 }
 
 function sanitizePdfFilename(value: string) {

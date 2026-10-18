@@ -139,7 +139,9 @@ export async function syncGoogleDriveContextMaterials(options: { rescanRecent?: 
      AND "receivedFrom" = 'google-drive' AND "canonicalUrl" = ANY($1::text[])
      AND NOT ("mimeType" IN ('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
        'application/vnd.openxmlformats-officedocument.wordprocessingml.document') AND "extractionStatus" <> 'extracted'
-       AND NOT COALESCE("extractedFactsJson", '[]'::jsonb) @> '[{"officeParserAttempt":"ooxml-bounded-v1"}]'::jsonb)`,
+       AND NOT COALESCE("extractedFactsJson", '[]'::jsonb) @> '[{"officeParserAttempt":"ooxml-bounded-v1"}]'::jsonb)
+     AND NOT ("mimeType" = 'application/pdf'
+       AND NOT COALESCE("extractedFactsJson", '[]'::jsonb) @> '[{"pdfParserAttempt":"pdfjs-bounded-v1"}]'::jsonb)`,
     eligibleFiles.map(versionUrl),
   ) : [];
   const importedVersions = new Set(existing.map((row) => row.canonicalUrl));

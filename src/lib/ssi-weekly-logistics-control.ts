@@ -27,6 +27,12 @@ export function classifySsiWeeklyLogisticsTypeFromFilename(filename: string): Ss
 
 type ControlAction = "missing_notice" | "request";
 
+export function hasReadableSsiDriveMaterial(material: { extractedText: string; extractionStatus: string }) {
+  return ["extracted", "partial"].includes(material.extractionStatus) &&
+    material.extractedText.trim().length > 120 &&
+    !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f]/.test(material.extractedText);
+}
+
 export type SsiWeeklyLogisticsGate = {
   availableTypes: SsiWeeklyLogisticsType[];
   missingTypes: SsiWeeklyLogisticsType[];
@@ -60,7 +66,8 @@ export async function getSsiWeeklyLogisticsGate(periodEndDate: string): Promise<
     tenantId: "spike-ua",
   });
   const eligibleMaterials = materials.filter((material) =>
-    material.receivedFrom === "google-drive" || (providerChatId !== null && material.telegramFromId === providerChatId)
+    (material.receivedFrom === "google-drive" && hasReadableSsiDriveMaterial(material)) ||
+    (providerChatId !== null && material.telegramFromId === providerChatId)
   );
   const missingTypes = findMissingSsiWeeklyLogisticsTypes(eligibleMaterials.map((material) => {
     const tags = [...material.hashtags];
@@ -165,7 +172,7 @@ export function buildSsiWeeklyLogisticsMissingNotice(gate: SsiWeeklyLogisticsGat
     "🇺🇦 SPIKE BROKERS | Weekly Commodity & Logistics Market",
     formatUkDate(gate.periodEndDate),
     "",
-    "⚠️ Дані для щотижневого логістичного звіту ще не надані.",
+    "⚠️ Пакет даних для щотижневого логістичного звіту неповний або ще не готовий до використання.",
     `Очікуємо: ${missing}.`,
     "Публікацію звіту буде продовжено після отримання повного пакета.",
   ].join("\n");

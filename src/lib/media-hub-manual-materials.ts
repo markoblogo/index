@@ -683,8 +683,11 @@ async function storeManualMaterial(input: {
   if (existing[0]) {
     const officeAttempted = input.extraction.extractedFacts.some((fact) =>
       typeof fact === "object" && fact !== null && "officeParserAttempt" in fact);
-    if (input.receivedFrom === "google-drive" && existing[0].extractionStatus !== "extracted" &&
-      (input.extraction.extractionStatus === "extracted" || officeAttempted)) {
+    const pdfAttempted = input.extraction.extractedFacts.some((fact) =>
+      typeof fact === "object" && fact !== null && "pdfParserAttempt" in fact);
+    if (input.receivedFrom === "google-drive" &&
+      ((existing[0].extractionStatus !== "extracted" &&
+        (input.extraction.extractionStatus === "extracted" || officeAttempted)) || pdfAttempted)) {
       await storeManualMaterialAssets({
         contentBytes: input.contentBytes, contentHash, extraction: input.extraction,
         materialId: existing[0].id, includeOriginal: false,
@@ -964,14 +967,16 @@ async function extractMaterialContent(input: {
     const text = pdf.text;
     return enhanceVisualAssets({
       assets: [
-        ...buildTextAssets(text, pdf.parser === "pdftotext" ? "PDF text extracted with pdftotext." : "PDF text extracted with fallback parser."),
+        ...buildTextAssets(text, `PDF parser: ${pdf.parser}. Review notes: ${pdf.warnings.join(", ")}`),
         ...buildMarkitdownShadowAssets(markdownShadow),
         ...pdf.previewAssets,
       ],
-      extractedFacts: extractFacts(text),
+      extractedFacts: [...extractFacts(text), { pdfParserAttempt: "pdfjs-bounded-v1", parser: pdf.parser, warnings: pdf.warnings }],
       extractedTables: [],
       extractedText: text.slice(0, MAX_EXTRACTED_TEXT_CHARS),
-      extractionStatus: text.length > 120 || pdf.previewAssets.length > 0 ? "partial" : "unsupported",
+      extractionStatus: text.length > 120
+        ? (pdf.warnings.length ? "partial" : "extracted")
+        : pdf.previewAssets.length > 0 ? "partial_visual_pending" : "unsupported",
     });
   }
   if (/\.(xlsx|docx)$/.test(filename)) {
