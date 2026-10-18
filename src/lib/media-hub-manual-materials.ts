@@ -8,6 +8,7 @@ import {
 import { CONTEXT_RECURRING_SOURCE_FAMILIES } from "@/lib/context-recurring-sources";
 import { db, hasDatabaseUrl } from "@/lib/db";
 import { fetchWithTimeout as fetchExternalWithTimeout } from "@/lib/fetch-timeout";
+import { sanitizeMaterialStorageText } from "@/lib/media-hub-material-text";
 import type { MediaHubPublicationKind } from "@/lib/media-hub-publication-scheduler";
 
 export type MediaHubManualMaterialKind =
@@ -659,6 +660,7 @@ async function storeManualMaterial(input: {
 
   await ensureMediaHubManualMaterialStorage();
 
+  input = sanitizeMaterialStorageText(input);
   const contentHash = createHash("sha256").update(input.contentBytes).digest("hex");
   const period = getMediaHubManualMaterialPeriod(input.reportingDate ?? new Date(), input.kind);
   const existing = await db.$queryRawUnsafe<Array<{ id: string; extractionStatus: string }>>(

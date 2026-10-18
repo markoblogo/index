@@ -27,6 +27,6 @@ export async function POST(request: Request) {
     const message = error instanceof Error ? error.message : "unknown error";
     console.error("SSI Google Drive admin sync failed", message);
     return NextResponse.json({ error: /^(Google Drive|Google returned|Stored Google Drive)/.test(message)
-      ? message : "Google Drive sync failed. Please retry or reconnect the account." }, { status: 502 });
+      ? message : "Google Drive material processing failed. Check the server log before retrying." }, { status: 502 });
   }
 }

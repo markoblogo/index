@@ -33,6 +33,7 @@ export function GoogleDriveSyncPanel({ initialStatus }: { initialStatus: GoogleD
       }
       setMessage(`Оброблено файлів: ${processed}. Черга ще не порожня; натисніть кнопку для продовження.`);
     } catch (error) {
+      setMessage("");
       setError(error instanceof Error ? error.message : "Помилка синхронізації.");
     } finally {
       setPending(false);

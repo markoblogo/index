@@ -188,6 +188,9 @@ date of cited facts; a recent modification is not proof of current data.
 Report retrieval also checks the original Drive version date on legacy rows,
 so an old file imported today cannot satisfy a current-week logistics gate.
 This does not rewrite historical material records.
+Before storing extraction output, NUL characters are removed from text and
+nested JSON fields; original binary assets and their content hashes are kept
+unchanged. This prevents PDF fallback text from aborting PostgreSQL intake.
 The generic Expected/Ready/Missing cards on the materials page describe the
 recurring source-family registry, not the Drive connection or logistics gate.
 
