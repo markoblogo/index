@@ -57,7 +57,7 @@ type MaterialRow = {
   reportingWeekEnd: Date;
   reportingMonth: string;
   receivedAt: Date;
-  receivedFrom?: string;
+  receivedFrom: string;
   telegramChatId: string | null;
   telegramMessageId: string | null;
   telegramFromId: string | null;
@@ -128,7 +128,7 @@ export type MediaHubManualMaterialDigest = {
   hashtags: string[];
   id: string;
   kind: string;
-  receivedFrom: string;
+  receivedFrom?: string;
   receivedAt: Date;
   originalFilename: string | null;
   originalUrl: string | null;
