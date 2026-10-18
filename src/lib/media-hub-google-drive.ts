@@ -108,7 +108,7 @@ export async function saveGoogleDriveRefreshToken(token: string) {
   );
 }
 
-export async function syncGoogleDriveContextMaterials() {
+export async function syncGoogleDriveContextMaterials(options: { rescanRecent?: boolean } = {}) {
   const startedAt = new Date();
   if (!hasDatabaseUrl()) throw new Error("Database is not configured.");
   const credential = await db.$queryRawUnsafe<Array<{ refreshTokenCiphertext: string }>>(
@@ -123,7 +123,7 @@ export async function syncGoogleDriveContextMaterials() {
   // Weekly/monthly evidence intake must not replay the folder's multi-year archive.
   const earliestReportDate = new Date(startedAt.getTime() - REPORT_LOOKBACK_DAYS * 86_400_000);
   const lastSyncAt = new Date(Math.max(
-    stateRows[0]?.lastSuccessfulSyncAt?.getTime() ?? 0,
+    options.rescanRecent ? 0 : stateRows[0]?.lastSuccessfulSyncAt?.getTime() ?? 0,
     earliestReportDate.getTime(),
   ));
   const modifiedAfter = new Date(lastSyncAt.getTime() - 5 * 60_000).toISOString();
@@ -136,7 +136,10 @@ export async function syncGoogleDriveContextMaterials() {
   };
   const existing = eligibleFiles.length ? await db.$queryRawUnsafe<Array<{ canonicalUrl: string }>>(
     `SELECT "canonicalUrl" FROM "MediaHubManualMaterial" WHERE "tenantId" = 'spike-ua'
-     AND "receivedFrom" = 'google-drive' AND "canonicalUrl" = ANY($1::text[])`,
+     AND "receivedFrom" = 'google-drive' AND "canonicalUrl" = ANY($1::text[])
+     AND NOT ("mimeType" IN ('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+       'application/vnd.openxmlformats-officedocument.wordprocessingml.document') AND "extractionStatus" <> 'extracted'
+       AND NOT COALESCE("extractedFactsJson", '[]'::jsonb) @> '[{"officeParserAttempt":"ooxml-bounded-v1"}]'::jsonb)`,
     eligibleFiles.map(versionUrl),
   ) : [];
   const importedVersions = new Set(existing.map((row) => row.canonicalUrl));

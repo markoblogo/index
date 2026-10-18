@@ -681,6 +681,22 @@ async function storeManualMaterial(input: {
     period.reportingWeekEnd,
   );
   if (existing[0]) {
+    const officeAttempted = input.extraction.extractedFacts.some((fact) =>
+      typeof fact === "object" && fact !== null && "officeParserAttempt" in fact);
+    if (input.receivedFrom === "google-drive" && existing[0].extractionStatus !== "extracted" &&
+      (input.extraction.extractionStatus === "extracted" || officeAttempted)) {
+      await storeManualMaterialAssets({
+        contentBytes: input.contentBytes, contentHash, extraction: input.extraction,
+        materialId: existing[0].id, includeOriginal: false,
+      });
+      await db.$executeRawUnsafe(
+        `UPDATE "MediaHubManualMaterial" SET "extractedText" = $2, "extractedTablesJson" = $3::jsonb,
+         "extractedFactsJson" = $4::jsonb, "summary" = $5, "extractionStatus" = $6, "updatedAt" = NOW() WHERE "id" = $1`,
+        existing[0].id, input.extraction.extractedText, JSON.stringify(input.extraction.extractedTables),
+        JSON.stringify(input.extraction.extractedFacts), summarizeExtractedMaterial(input.extraction.extractedText), input.extraction.extractionStatus,
+      );
+      return buildResult(input.tenantId, input.kind, input.extraction.extractionStatus, "Existing material extraction upgraded.", existing[0].id);
+    }
     return buildResult(input.tenantId, input.kind, "duplicate", "Duplicate material already exists.", existing[0].id);
   }
 
@@ -773,6 +789,7 @@ async function storeManualMaterial(input: {
 }
 
 async function storeManualMaterialAssets(input: {
+  includeOriginal?: boolean;
   contentBytes: Buffer;
   contentHash: string;
   extraction: ExtractedMaterialContent;
@@ -799,7 +816,7 @@ async function storeManualMaterialAssets(input: {
       ? "Original material stored with the manual material record."
       : "Original material registered by content hash; binary bytes skipped by size/storage policy.",
   };
-  const assets = [originalAsset, ...input.extraction.assets]
+  const assets = [...(input.includeOriginal === false ? [] : [originalAsset]), ...input.extraction.assets]
     .filter((asset) =>
       asset.assetType !== "extracted_text" ||
       Boolean(asset.extractedText?.trim()),
@@ -957,6 +974,15 @@ async function extractMaterialContent(input: {
       extractionStatus: text.length > 120 || pdf.previewAssets.length > 0 ? "partial" : "unsupported",
     });
   }
+  if (/\.(xlsx|docx)$/.test(filename)) {
+    const { extractBoundedOfficeFile } = await import("@/lib/media-hub-office-extraction");
+    const office = extractBoundedOfficeFile(input.bytes, filename);
+    if (office?.text.trim()) return {
+      assets: buildTextAssets(office.text, `Office text/tables extracted. Review notes: ${office.warnings.join(", ")}`),
+      extractedFacts: [...extractFacts(office.text), { type: "office_extraction", parser: "ooxml-bounded", warnings: office.warnings }],
+      extractedTables: office.tables, extractedText: office.text, extractionStatus: "extracted",
+    };
+  }
   if (filename.endsWith(".xlsx") || mimeType.includes("spreadsheetml")) {
     return {
       assets: [
@@ -969,7 +995,7 @@ async function extractMaterialContent(input: {
         },
         ...buildMarkitdownShadowAssets(markdownShadow),
       ],
-      extractedFacts: [{ type: "xlsx_metadata", filename, normalizationWarnings: markdownShadow.warnings ?? [] }],
+      extractedFacts: [{ type: "xlsx_metadata", filename, officeParserAttempt: "ooxml-bounded-v1", normalizationWarnings: markdownShadow.warnings ?? [] }],
       extractedTables: [{
         header: [],
         inferredTopic: inferTopic(filename),
@@ -993,7 +1019,7 @@ async function extractMaterialContent(input: {
         },
         ...buildMarkitdownShadowAssets(markdownShadow),
       ],
-      extractedFacts: [{ type: "docx_metadata", filename, normalizationWarnings: markdownShadow.warnings ?? [] }],
+      extractedFacts: [{ type: "docx_metadata", filename, officeParserAttempt: "ooxml-bounded-v1", normalizationWarnings: markdownShadow.warnings ?? [] }],
       extractedTables: [],
       extractedText: `DOCX received: ${input.filename ?? "uploaded file"}`,
       extractionStatus: "partial",

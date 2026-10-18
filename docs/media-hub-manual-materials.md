@@ -191,6 +191,15 @@ This does not rewrite historical material records.
 Before storing extraction output, NUL characters are removed from text and
 nested JSON fields; original binary assets and their content hashes are kept
 unchanged. This prevents PDF fallback text from aborting PostgreSQL intake.
+XLSX/DOCX intake uses a bounded OOXML reader with the small MIT-licensed
+`fflate` ZIP dependency. It retains sheet names, sparse columns, shared/inline
+strings and cached values; formulas/macros/external links are not executed.
+Number formats are not applied, so raw numeric values require unit/date review.
+Limits: 8 sheets, 400 rows per sheet, 64 columns, 12,000 visited cells and
+18,000 text characters; selected XML parts are capped at 8 MB each/24 MB total.
+Corrupt or oversized archives retain the metadata-only operator-review path.
+Manual sync rescans the 62-day window and upgrades metadata-only Drive Office
+materials through normal per-file intake without duplicating original assets.
 The generic Expected/Ready/Missing cards on the materials page describe the
 recurring source-family registry, not the Drive connection or logistics gate.
 

@@ -19,4 +19,8 @@ describe("Google Drive Context material classification", () => {
   it("recognizes the checkpoint filename abbreviation used by the shared folder", () => {
     expect(classifySsiWeeklyLogisticsTypeFromFilename("chk_points daily v2 (46).xlsx")).toBe("checkpoints");
   });
+
+  it("recognizes the mixed-script initial in the folder's railway statistics filenames", () => {
+    expect(classifySsiWeeklyLogisticsTypeFromFilename("27 08 2026 Cтатистичні дані щодо перевезення зернових вантажів.pdf")).toBe("uz_statistics");
+  });
 });

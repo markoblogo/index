@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid origin" }, { status: 403 });
   }
   try {
-    return NextResponse.json(await syncGoogleDriveContextMaterials());
+    return NextResponse.json(await syncGoogleDriveContextMaterials({ rescanRecent: true }));
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown error";
     console.error("SSI Google Drive admin sync failed", message);

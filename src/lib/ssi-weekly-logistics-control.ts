@@ -19,7 +19,7 @@ export function classifySsiWeeklyLogisticsTypeFromFilename(filename: string): Ss
   if (/agro[\s_-]*ex[\s_-]*im/.test(name)) return "agro_ex_im";
   if (/(?:check|chk)[\s_-]*points?|checkpoint|пункт\w* пропуск/.test(name)) return "checkpoints";
   if (/operational[\s_-]*wagons?|оперативн\w*.{0,24}вагон/.test(name)) return "operational_wagons";
-  if (/(статист|statistics|statistical)/.test(name) && /(уз|укрзаліз|залізнич|перевез|rail|wagon)/.test(name)) {
+  if (/([сc]татист|statistics|statistical)/.test(name) && /(уз|укрзаліз|залізнич|перевез|rail|wagon)/.test(name)) {
     return "uz_statistics";
   }
   return undefined;
