@@ -110,6 +110,23 @@ verified before requesting restricted-scope review; never claim Google approval
 from a successful connection or Production status. The current app homepage and
 privacy notice are `/en/drive-sync` and `/en/drive-sync/privacy` on SSI.
 
+2026-10-18 recovery checkpoint: SSI URL-prefix ownership was verified in Google
+Search Console with `public/googleeb9732349ee22559.html` (keep the file deployed).
+OAuth Branding is verified and published; this does not verify `drive.readonly`.
+Restricted-scope submission still requires a real YouTube demo of the OAuth
+flow and data use. The selected use category is Drive productivity. The
+justification is read-only recurring intake of existing/new contributor files
+from one configured shared folder; per-file `drive.file` selection does not
+cover that unattended workflow. Disclose original/extract storage and configured
+AI processing as in the approved privacy notice. Do not submit placeholder demo
+links, reviewer credentials, security attestations or a verification claim.
+
+The demo must show the app name, OAuth client and requested read-only scope,
+consent flow, admin connection/sync, source provenance and extracted content,
+and revocation/removal instructions. Mask credentials and unrelated account
+data. Google review and any requested security assessment remain external gates;
+they must not be represented as completed by a successful SSI import.
+
 ## Admin fallback
 
 If Telegram upload is inconvenient, add materials manually at:
