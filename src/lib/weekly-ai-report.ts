@@ -508,7 +508,8 @@ export async function ensureWeeklyReport(weekEndDate: string, language = "uk") {
     language,
   );
 
-  revalidateWeeklyReportViews();
+  // Also called while rendering the dynamic admin page; draft creation must
+  // not invalidate caches here. Publication mutations revalidate separately.
   return getWeeklyReportById(id);
 }
 
