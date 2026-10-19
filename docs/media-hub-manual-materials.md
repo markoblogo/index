@@ -418,3 +418,10 @@ Coordinates and parent-image SHA-256 are stored on each derived preview; origina
 images remain unchanged. These layouts allow at most six OCR views within the
 same file budget. Unexpected dimensions, region limits, or coverage failures
 remain review gaps, not authority to invent or publish numbers.
+
+The region encoder selects the largest lossless PNG that fits 750 KiB from a
+bounded resolution ladder (2400/1800/1200/900/600 px height). It records output
+dimensions and only commits a complete set of regions for each parent image.
+Rejected StoneX tables are retained solely in private asset metadata under
+`pdfTableOcrRejection`; they are removed from extracted tables, text and report
+facts. Unit and crop-row validation failures have separate diagnostic codes.

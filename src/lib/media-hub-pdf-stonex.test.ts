@@ -32,4 +32,12 @@ describe("StoneX Snapshot source-family integrity", () => {
     tables[0].rows = tables[0].rows.map(row => row.slice(0, -1));
     expect(() => validateStonexSnapshotCoverage(tables, context)).toThrow("column_alignment");
   });
+  it("distinguishes a wrong unit from an omitted crop row", () => {
+    const tables = parsePdfTableResponse(JSON.stringify(fixture), 2, "image");
+    tables[0].unit = "UNKNOWN";
+    expect(() => validateStonexSnapshotCoverage(tables, context)).toThrow("stonex_snapshot_unit");
+    tables[0].unit = "Billion Bushels";
+    tables[0].rows.pop();
+    expect(() => validateStonexSnapshotCoverage(tables, context)).toThrow("stonex_snapshot_rows");
+  });
 });

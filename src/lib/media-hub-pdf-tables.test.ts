@@ -1,4 +1,5 @@
 import { deflateSync } from "node:zlib";
+import sharp from "sharp";
 import { afterEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 vi.mock("node:child_process", () => ({ execFileSync: () => { throw new Error("ENOENT"); } }));
@@ -29,6 +30,20 @@ const empty = { assets: [], extractedFacts: [], extractedTables: [], extractedTe
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 
 describe("bounded PDF table intake", () => {
+  it("quarantines rejected tables on their source asset without adding them to report evidence", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "test-only");
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ status: "completed", output_text: JSON.stringify(reply) })));
+    const bytes = await sharp({ create: { width: 320, height: 160, channels: 3, background: "white" } }).png().toBuffer();
+    const result = await enhancePdfTables({ ...empty, assets: [{ assetType: "preview_image", bytes, pageNumber: 2, mimeType: "image/png" }] }, "StoneX USDA Snapshot.pdf", []);
+    expect(result.extractionStatus).toBe("partial_visual_pending");
+    expect(result.extractedTables).toEqual([]);
+    expect(result.assets[0].metadata).toMatchObject({ pdfTableOcrRejection: {
+      reason: "stonex_snapshot_table_coverage", tables: [expect.objectContaining({ rows: reply.tables[0].rows })],
+    } });
+    expect(result.extractedText).not.toContain("1.849");
+    expect(JSON.stringify(result.extractedFacts)).not.toContain("1.849");
+    expect(result.assets[0].visualSummary).toContain("rejected");
+  });
   it("retains mixed-document table images without Poppler and passes exact cells into report evidence", async () => {
     vi.stubEnv("OPENAI_API_KEY", "test-only");
     vi.stubGlobal("fetch", vi.fn(async () => Response.json({ status: "completed", output_text: JSON.stringify(reply) })));

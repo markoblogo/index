@@ -28,16 +28,25 @@ export async function preparePdfOcrViews(assets: Asset[], context: string) {
       }
       if (!regions.length) { views.push(asset); continue; }
       const parentImageSha256 = createHash("sha256").update(asset.bytes!).digest("hex");
+      const assetViews: Asset[] = [];
       for (const [i, region] of regions.entries()) {
-        const bytes = await sharp(asset.bytes!).extract(region).resize({
-          width: 1800, height: 2400, fit: "inside", withoutEnlargement: false,
-        }).png().toBuffer();
-        if (bytes.length > 750 * 1024) throw new Error("ocr_region_size_limit");
+        let encoded: { data: Buffer; info: { width: number; height: number } } | undefined;
+        for (const height of [2400, 1800, 1200, 900, 600]) {
+          const candidate = await sharp(asset.bytes!).extract(region).resize({
+            width: Math.floor(height * 0.75), height, fit: "inside", withoutEnlargement: false,
+          }).png({ compressionLevel: 9, adaptiveFiltering: true }).toBuffer({ resolveWithObject: true });
+          if (candidate.data.length <= 750 * 1024) { encoded = candidate; break; }
+        }
+        if (!encoded) throw new Error("ocr_region_size_limit");
+        const bytes = encoded.data;
         const view: Asset = { ...asset, bytes, mimeType: "image/png", byteSize: bytes.length,
           storagePath: `mediahub://preview/${parentImageSha256}/table-region-${i + 1}.png`,
-          metadata: { ...asset.metadata, parentImageSha256, ocrRegion: region, ocrLayout: snapshot ? "stonex-snapshot-v1" : "stonex-summary-v1" } };
-        views.push(view); derived.push(view);
+          metadata: { ...asset.metadata, parentImageSha256, ocrRegion: region,
+            ocrOutputDimensions: { width: encoded.info.width, height: encoded.info.height },
+            ocrLayout: snapshot ? "stonex-snapshot-v1" : "stonex-summary-v1" } };
+        assetViews.push(view);
       }
+      views.push(...assetViews); derived.push(...assetViews);
     } catch { failed = true; views.push(asset); }
   }
   return { views: views.slice(0, 6), derived, specialized: true, failed: failed || views.length > 6 };

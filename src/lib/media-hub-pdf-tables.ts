@@ -70,8 +70,15 @@ export async function enhancePdfTables(content: ExtractedMaterialContent, filena
     validateStonexSnapshotCoverage(tables, `${filename}\n${content.extractedText}`);
   } catch (error) {
     const reason = error instanceof Error ? error.message : "stonex_snapshot_table_coverage";
-    errors.push(reason); failures.push({ page: 0, reason, elapsedMs: 0 }); tables.length = 0;
-    for (const asset of images) asset.metadata = { ...asset.metadata, status: "review", failureReason: reason };
+    errors.push(reason); failures.push({ page: 0, reason, elapsedMs: 0 });
+    // Quarantine on private assets only: rejected cells must not enter report evidence or facts.
+    for (const asset of images) {
+      const hash = createHash("sha256").update(asset.bytes!).digest("hex");
+      asset.metadata = { ...asset.metadata, status: "review", failureReason: reason,
+        pdfTableOcrRejection: { reason, tables: tables.filter(table => table.imageSha256 === hash) } };
+      asset.visualSummary = "PDF table transcription rejected by source-family validation; operator review required.";
+    }
+    tables.length = 0;
   }
   const visualGap = warnings.some(w => /image|preview/.test(w)) || errors.length > 0 || (images.length > 0 && !enabled);
   const status = !enabled && images.length ? "disabled" : visualGap ? "partial" : "complete";

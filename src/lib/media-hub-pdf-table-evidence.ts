@@ -40,8 +40,9 @@ export function validateStonexSnapshotCoverage(tables: PdfEvidenceTable[], conte
       !/^USDA\b/i.test(table.header[1]) || !/Average Trade/i.test(table.header[2]) ||
       !/Estimate Range/i.test(table.header[3]) || !/^USDA\b/i.test(table.header[4]) ||
       !/StoneX.*Est/i.test(table.header[5])) throw new Error("stonex_snapshot_column_alignment");
-    if (!spec.unit.test(table.unit) || table.rows.length !== spec.rows.length ||
-      table.rows.some((row, i) => row[0] !== spec.rows[i])) throw new Error("stonex_snapshot_rows_or_units");
+    if (!spec.unit.test(table.unit)) throw new Error("stonex_snapshot_unit");
+    if (table.rows.length !== spec.rows.length ||
+      table.rows.some((row, i) => row[0] !== spec.rows[i])) throw new Error("stonex_snapshot_rows");
   }
 }
 
