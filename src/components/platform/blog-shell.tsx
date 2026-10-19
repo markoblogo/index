@@ -1,3 +1,4 @@
+import { CreatorCredit } from "@/components/platform/creator-credit";
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -53,7 +54,7 @@ export function BlogFooter() {
             </p>
           ))}
         </div>
-        <div className="mx-auto mt-1 flex max-w-7xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mx-auto mt-1 grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-x-6 gap-y-4 lg:grid-cols-[minmax(0,1fr)_auto_auto]">
           <div className="flex items-center gap-3">
             <Image
               alt="1d3x"
@@ -64,7 +65,7 @@ export function BlogFooter() {
             />
             <p>Commodity index infrastructure.</p>
           </div>
-          <div className="flex gap-5">
+          <div className="col-span-2 flex flex-wrap gap-x-5 gap-y-2 lg:col-span-1 lg:col-start-2 lg:row-start-1">
             <Link className="transition hover:text-white" href="/">
               Home
             </Link>
@@ -75,6 +76,7 @@ export function BlogFooter() {
               partnerships@1d3x.com
             </Link>
           </div>
+          <CreatorCredit />
         </div>
       </div>
     </footer>
