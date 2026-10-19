@@ -26,6 +26,27 @@ describe("StoneX Snapshot source-family integrity", () => {
     const tables = parsePdfTableResponse(JSON.stringify({ tables: fixture.tables.slice(0, 1) }), 2, "image");
     expect(() => validateStonexSnapshotCoverage(tables, context)).toThrow("table_coverage");
   });
+  it("recovers empty unit fields from explicit title labels without changing cells", () => {
+    const input = structuredClone(fixture);
+    for (const table of input.tables) {
+      table.title += ` (in ${table.unit})`;
+      table.unit = "";
+    }
+    const tables = parsePdfTableResponse(JSON.stringify(input), 2, "image");
+    expect(() => validateStonexSnapshotCoverage(tables, context)).not.toThrow();
+    expect(tables.map(table => table.unit)).toEqual(fixture.tables.map(table => table.unit));
+    expect(tables.map(table => table.rows)).toEqual(fixture.tables.map(table => table.rows));
+  });
+  it("does not infer missing units or overwrite conflicting explicit units", () => {
+    const input = structuredClone(fixture);
+    input.tables[0].unit = "";
+    expect(() => validateStonexSnapshotCoverage(parsePdfTableResponse(JSON.stringify(input), 2, "image"), context))
+      .toThrow("stonex_snapshot_unit");
+    input.tables[0].title += " (in Billion Bushels)";
+    input.tables[0].unit = "Million Tonnes";
+    expect(() => validateStonexSnapshotCoverage(parsePdfTableResponse(JSON.stringify(input), 2, "image"), context))
+      .toThrow("stonex_snapshot_unit");
+  });
   it("rejects a missing blank header even if row lengths still match", () => {
     const tables = parsePdfTableResponse(JSON.stringify(fixture), 2, "image");
     tables[0].header = tables[0].header.slice(1);

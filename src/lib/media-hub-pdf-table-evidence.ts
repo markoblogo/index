@@ -66,7 +66,12 @@ export function parsePdfTableResponse(text: string, page: number, hash: string):
       if (!Array.isArray(row) || row.length !== header.length) throw new Error("ragged_table_row");
       return row.map((v: unknown) => cell(v));
     });
-    return { parser: PDF_TABLE_OCR_VERSION, title: cell(table.title), unit: cell(table.unit),
+    const title = cell(table.title);
+    const declaredUnit = cell(table.unit);
+    // OCR sometimes keeps an explicit unit only in the title. Copy that literal
+    // label, never infer a unit from crop names or replace a conflicting value.
+    const titleUnit = title.match(/\(in\s+(Billion Bushels|Million Tonnes|Bushels per Acre)\)/i)?.[1];
+    return { parser: PDF_TABLE_OCR_VERSION, title, unit: declaredUnit || titleUnit || "",
       observationDate: cell(table.observationDate), header, rows, sourcePage: page, imageSha256: hash };
   });
 }
