@@ -55,7 +55,7 @@ export function BlogFooter() {
             </p>
           ))}
         </div>
-        <div className="mx-auto mt-1 grid max-w-7xl grid-cols-1 items-start gap-x-6 gap-y-4 lg:grid-cols-[minmax(0,1fr)_auto_auto]">
+        <div className="mx-auto mt-1 grid max-w-7xl grid-cols-1 items-start gap-x-6 gap-y-4 lg:grid-cols-[minmax(0,1fr)_auto_auto] lg:items-center">
           <PlatformFooterBrand />
           <div className="flex flex-wrap gap-x-5 gap-y-2">
             <Link className="transition hover:text-white" href="/">
