@@ -10,7 +10,8 @@ export function getMediaHubTimezone() {
   return configured || DEFAULT_MEDIA_HUB_TIMEZONE;
 }
 
-export function getMediaHubReportTime(kind: MediaHubScheduleKind, platformSite: boolean) {
+export function getMediaHubReportTime(kind: MediaHubScheduleKind, platformSite: boolean, ssiTenant = false) {
+  if (kind === "weekly" && ssiTenant && !platformSite) return "09:00";
   const configured =
     kind === "daily"
       ? (
@@ -89,4 +90,15 @@ export function shiftIsoDate(date: string, days: number) {
   const utcDate = new Date(`${date}T00:00:00.000Z`);
   utcDate.setUTCDate(utcDate.getUTCDate() + days);
   return utcDate.toISOString().slice(0, 10);
+}
+
+export function buildMediaHubPublicationPlan(date: string, ssiTenant: boolean) {
+  const weekday = getIsoWeekday(date);
+  const plan = (kind: MediaHubScheduleKind, reason: string) => ({ date, kind, reason, timezone: getMediaHubTimezone() });
+  if (weekday <= 5) return plan("daily", "weekday_daily_slot");
+  if (weekday === 6 && getSaturdayOrdinalInMonth(date) === 4) return plan("monthly", "fourth_saturday_monthly_replaces_weekly");
+  if (ssiTenant) return weekday === 7
+    ? { ...plan("weekly", "ssi_sunday_prepared_weekly_slot"), timezone: "Europe/Kyiv" }
+    : plan("none", "ssi_weekly_prepares_overnight");
+  return weekday === 6 ? plan("weekly", "saturday_weekly_slot") : plan("none", "no_publication_on_sunday");
 }

@@ -1,3 +1,4 @@
+import { getSsiWeeklyIntakeEndDate } from "@/lib/ssi-weekly-workflow";
 import "server-only";
 
 import { createHash, randomUUID } from "node:crypto";
@@ -416,6 +417,9 @@ export async function getManualMaterialsForPeriod(input: {
 
   await ensureMediaHubManualMaterialStorage();
 
+  const intakeEndDate = input.tenantId === "spike-ua" && input.kind === "weekly"
+    ? getSsiWeeklyIntakeEndDate(input.periodEndDate) : input.periodEndDate;
+
   const materialKind =
     input.kind === "daily"
       ? "daily_material"
@@ -430,7 +434,7 @@ export async function getManualMaterialsForPeriod(input: {
       WHERE "tenantId" = $1
         AND CASE WHEN "receivedFrom" = 'google-drive' THEN
           COALESCE(substring("canonicalUrl" from '[?&]driveVersion=([0-9]{4}-[0-9]{2}-[0-9]{2})T')::date, "reportingDate")
-            BETWEEN $2::date AND $3::date
+            BETWEEN $2::date AND $6::date
         ELSE "reportingWeekStart" <= $3::date AND "reportingWeekEnd" >= $2::date END
         AND "kind" IN ($4, $5, 'source_candidate')
         AND "extractionStatus" IN ('extracted', 'partial', 'unsupported_image_ocr', 'partial_visual_pending')
@@ -442,9 +446,10 @@ export async function getManualMaterialsForPeriod(input: {
     input.periodEndDate,
     materialKind,
     fallbackKind,
+    intakeEndDate,
   );
 
-  const selected = selectReportWindowMaterials(rows, input.periodStartDate, input.periodEndDate);
+  const selected = selectReportWindowMaterials(rows, input.periodStartDate, input.periodEndDate, 32, intakeEndDate);
   return (await attachMaterialAssets(selected)).map((row) => toMaterialDigest(row, 4000));
 }
 

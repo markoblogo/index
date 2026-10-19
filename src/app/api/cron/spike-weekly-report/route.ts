@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { isCronRequestAuthorized } from "@/lib/cron-auth";
 import { syncTelegramWorkspaceResources } from "@/lib/telegram-source-collector";
 import { runDueMediaHubPublication } from "@/lib/media-hub-publication-scheduler";
+import { getActiveIndexConfig } from "@/lib/index-platform";
+import { isPlatformSite } from "@/lib/platform-site";
+import { runScheduledSsiWeeklyPhase } from "@/lib/ssi-weekly-runtime";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +16,11 @@ export async function GET(request: Request) {
     ])
   ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Legacy external cron callers must not regenerate or send the SSI week early.
+  if (!isPlatformSite() && getActiveIndexConfig().id === "spike-ua") {
+    return NextResponse.json(await runScheduledSsiWeeklyPhase("send"));
   }
 
   const url = new URL(request.url);

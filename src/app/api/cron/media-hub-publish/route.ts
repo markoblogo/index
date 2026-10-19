@@ -14,6 +14,7 @@ import {
   type MediaHubPublicationKind,
 } from "@/lib/media-hub-publication-scheduler";
 import { isPlatformSite } from "@/lib/platform-site";
+import { runScheduledSsiWeeklyPhase } from "@/lib/ssi-weekly-runtime";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +47,9 @@ export async function GET(request: Request) {
 
   const now = new Date();
   const plan = getMediaHubPublicationPlan(date ?? getParisLocalDate(now));
+  if (!date && !forceKind && plan.kind === "weekly" && !isPlatformSite() && getActiveIndexConfig().id === "spike-ua") {
+    return NextResponse.json(await runScheduledSsiWeeklyPhase("send", now));
+  }
   const isDue = isMediaHubPublicationDue(now);
   const isCatchupDue = isRetryCron && isMediaHubPublicationCatchupDue(now, plan);
   const forced = Boolean(

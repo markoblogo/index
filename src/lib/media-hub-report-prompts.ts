@@ -5,6 +5,7 @@ import type { MediaHubWindowSnapshot } from "@/lib/media-hub";
 import type { MediaHubManualMaterialDigest } from "@/lib/media-hub-manual-materials";
 import type { PublicLatestItem } from "@/lib/public-api-data";
 import { renderPdfTableEvidence } from "@/lib/media-hub-pdf-table-evidence";
+import { SSI_WEEKLY_REFERENCE_PATTERN, renderSsiWeeklySpreadsheetEvidence } from "@/lib/media-hub-ssi-weekly-pattern";
 
 type ReportKind = "daily" | "weekly" | "monthly";
 type Tenant = "spike" | "platform";
@@ -189,6 +190,8 @@ export function buildSsiWeeklyMonthlyPrompt(input: {
     commonJsonRules(input),
     "Required structure inside summary array:",
     requiredStructure.join("\n"),
+    input.kind === "weekly" ? SSI_WEEKLY_REFERENCE_PATTERN : "",
+    input.kind === "weekly" ? renderSsiWeeklySpreadsheetEvidence(input.manualMaterials ?? [], input.periodEndDate) : "",
     renderCortexContextPack(input.cortexContextPack),
     renderIndexData(input.latestData, isUk),
     renderManualMaterials(input.manualMaterials ?? [], input.kind),

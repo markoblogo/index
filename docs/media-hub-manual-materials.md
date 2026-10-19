@@ -209,6 +209,18 @@ Operator-provided SSI reporting materials are collected in the [SSI reports
 source folder](https://drive.google.com/drive/folders/1cHuO86kaqND34vLTFo3Ly_OoBSNV3rgC).
 Consult it when preparing SSI weekly and monthly Context reports.
 
+For the calibrated weekly composition, source-cohort rules and reviewed example,
+use [SSI weekly report pattern](media-hub-ssi-weekly-pattern.md).
+
+SSI weekly intake closes on Saturday at 22:00 Europe/Kyiv. Complete the final
+Drive import/extraction after that cutoff, then prepare and validate the report
+overnight or early Sunday. After quality acceptance, the site version may be
+published as soon as it is ready; Telegram delivery is Sunday at 09:00 Kyiv,
+three parts in three messages from that same report version. Publication stays
+on quality hold during calibration. WhatsApp remains frozen and outside this
+workflow until a separate owner instruction. See the pattern's timetable for
+the distinction between agreed requirements and production activation.
+
 Use the folder as a source catalog, then select materials by the period they
 cover, not by upload or modification time alone:
 

@@ -1,3 +1,4 @@
+import { deliverSsiWeeklyParts } from "@/lib/ssi-weekly-telegram-parts";
 import "server-only";
 import { createHash, randomUUID } from "node:crypto";
 import { revalidatePath, revalidateTag } from "next/cache";
@@ -51,7 +52,7 @@ import {
   getMediaHubLocalTimeParts,
   getMediaHubReportTime as getConfiguredMediaHubReportTime,
   getMediaHubTimezone,
-  getSaturdayOrdinalInMonth,
+  buildMediaHubPublicationPlan,
   shiftIsoDate,
 } from "@/lib/media-hub-schedule";
 import {
@@ -160,42 +161,7 @@ const TELEGRAM_DELIVERY_TIMEOUT_MS = 15_000;
 const WHATSAPP_WEBHOOK_TIMEOUT_MS = 15_000;
 
 export function getMediaHubPublicationPlan(date = getParisLocalDate()): MediaHubPublicationPlan {
-  const weekday = getIsoWeekday(date);
-  const timezone = getMediaHubTimezone();
-
-  if (weekday >= 1 && weekday <= 5) {
-    return {
-      date,
-      kind: "daily",
-      reason: "weekday_daily_slot",
-      timezone,
-    };
-  }
-
-  if (weekday !== 6) {
-    return {
-      date,
-      kind: "none",
-      reason: "no_publication_on_sunday",
-      timezone,
-    };
-  }
-
-  if (getSaturdayOrdinalInMonth(date) === 4) {
-    return {
-      date,
-      kind: "monthly",
-      reason: "fourth_saturday_monthly_replaces_weekly",
-      timezone,
-    };
-  }
-
-  return {
-    date,
-    kind: "weekly",
-    reason: "saturday_weekly_slot",
-    timezone,
-  };
+  return buildMediaHubPublicationPlan(date, !isPlatformSite() && getActiveIndexConfig().id === "spike-ua");
 }
 
 export function getMediaHubMonitoringPlan(now: Date = new Date()): MediaHubMonitoringPlan {
@@ -918,6 +884,7 @@ export async function sendMediaHubReportTelegram(
   }
 
   const tenantId = options.audience === "platform" ? "1d3x" : getActiveIndexConfig().id;
+  if (isSsiPeriodicPublicationHeld(tenantId, kind)) return SSI_PERIODIC_PUBLICATION_HOLD_RESULT;
   const report = hasDatabaseUrl()
     ? await getMediaHubReport(kind, periodEndDate, tenantId)
     : null;
@@ -1027,9 +994,30 @@ export async function sendMediaHubReportTelegram(
     return deliveryClaim;
   }
 
-  let sent: Awaited<ReturnType<typeof sendTelegramMessages>>;
+  let sent: Awaited<ReturnType<typeof sendTelegramMessages>> | Awaited<ReturnType<typeof deliverSsiWeeklyParts>>;
   try {
-    sent = await sendTelegramMessages(botToken, normalizeMediaHubTelegramChatId(chatId), messages);
+    if (tenantId === "spike-ua" && kind === "weekly") {
+      const current = await getMediaHubReport(kind, periodEndDate, tenantId);
+      sent = await deliverSsiWeeklyParts({
+        messages, ledger: current?.telegramMessageIds,
+        checkpoint: (ids) => db.$executeRawUnsafe('UPDATE "MediaHubReport" SET "telegramMessageIds" = $4::jsonb, "updatedAt" = NOW() WHERE "tenantId" = $1 AND "kind" = $2 AND "periodEnd" = $3::date', tenantId, kind, periodEndDate, JSON.stringify(ids)),
+        send: async (text) => {
+          const response = await fetchWithTimeout(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ chat_id: normalizeMediaHubTelegramChatId(chatId), disable_web_page_preview: true, parse_mode: "HTML", text }),
+          }, TELEGRAM_DELIVERY_TIMEOUT_MS);
+          if (!response.ok) {
+            if (response.status >= 500) throw new Error("Ambiguous Telegram server response");
+            const rejection = await response.json() as { ok?: boolean };
+            if (rejection.ok !== false) throw new Error("Unconfirmed Telegram rejection");
+            return null;
+          }
+          const payload = await response.json() as { ok?: boolean; result?: { message_id?: number } };
+          if (!payload.ok || !payload.result?.message_id) throw new Error("Unconfirmed Telegram receipt");
+          return payload.result.message_id;
+        },
+      });
+    } else sent = await sendTelegramMessages(botToken, normalizeMediaHubTelegramChatId(chatId), messages);
   } catch (error) {
     await releaseMediaHubTelegramDeliveryClaim({ kind, periodEndDate, tenantId });
     throw error;
@@ -2982,7 +2970,7 @@ async function sendMonthlyMediaHubTelegram(content: ReturnType<typeof buildMonth
 }
 
 export function getMediaHubReportTime(kind: MediaHubPublicationKind = "daily") {
-  return getConfiguredMediaHubReportTime(kind, isPlatformSite());
+  return getConfiguredMediaHubReportTime(kind, isPlatformSite(), getActiveIndexConfig().id === "spike-ua");
 }
 
 export function getParisLocalDate(now: Date = new Date()) {

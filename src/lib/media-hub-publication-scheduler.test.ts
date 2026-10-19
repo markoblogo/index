@@ -74,6 +74,7 @@ describe("media hub publication scheduler", () => {
   });
 
   it("publishes daily on weekdays, weekly on most Saturdays, monthly on fourth Saturday, and nothing on Sunday", () => {
+    platformSite = true;
     expect(getMediaHubPublicationPlan("2026-06-19")).toMatchObject({
       kind: "daily",
       reason: "weekday_daily_slot",
@@ -164,6 +165,7 @@ describe("media hub publication scheduler", () => {
   });
 
   it("runs Saturday weekly/monthly reports at 15:00 Kyiv", () => {
+    platformSite = true;
     expect(isMediaHubPublicationDue(new Date("2026-06-20T12:00:00.000Z"))).toBe(true);
     expect(isMediaHubPublicationDue(new Date("2026-01-10T13:00:00.000Z"))).toBe(true);
     expect(isMediaHubPublicationDue(new Date("2026-06-21T12:00:00.000Z"))).toBe(false);
@@ -173,6 +175,15 @@ describe("media hub publication scheduler", () => {
     expect(normalizeMediaHubTelegramChatId("4847957467")).toBe("-1004847957467");
     expect(normalizeMediaHubTelegramChatId("-1004847957467")).toBe("-1004847957467");
     expect(normalizeMediaHubTelegramChatId("353706900")).toBe("353706900");
+  });
+
+  it("moves SSI weekly delivery to Sunday 09:00 without changing monthly timing", () => {
+    expect(getMediaHubPublicationPlan("2026-06-20").kind).toBe("none");
+    expect(getMediaHubPublicationPlan("2026-06-21").kind).toBe("weekly");
+    expect(isMediaHubPublicationDue(new Date("2026-06-21T06:00:00Z"))).toBe(true);
+    expect(isMediaHubPublicationDue(new Date("2026-01-11T07:00:00Z"))).toBe(true);
+    expect(isMediaHubPublicationDue(new Date("2026-06-20T12:00:00Z"))).toBe(false);
+    expect(isMediaHubPublicationDue(new Date("2026-06-27T12:00:00Z"))).toBe(true);
   });
 
   it("stores the 1D3X Cortex context pack inside generated Context report content", () => {

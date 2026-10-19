@@ -2,6 +2,15 @@ import { describe, expect, it } from "vitest";
 import { materialFilenameDate, selectReportWindowMaterials } from "./media-hub-material-window";
 
 describe("Drive reporting window", () => {
+  it("includes Saturday intake but not explicit Saturday observations in a Friday report", () => {
+    const base = { receivedFrom: "google-drive", canonicalUrl: "https://drive.google.com/file/x?driveVersion=2026-10-17T19%3A00%3A00Z", reportingDate: new Date("2026-10-17") };
+    const friday = { ...base, originalFilename: "agro_ex_im_26_10_16.xlsx" };
+    const undated = { ...base, originalFilename: "Morning_Review.pdf" };
+    const saturday = { ...base, originalFilename: "report_2026-10-17.pdf" };
+    const stale = { ...base, originalFilename: "report_2026-10-09.pdf" };
+    expect(selectReportWindowMaterials([friday, undated, saturday, stale], "2026-10-10", "2026-10-16", 32, "2026-10-17")).toEqual([undated, friday]);
+    expect(selectReportWindowMaterials([undated], "2026-10-10", "2026-10-16")).toEqual([]);
+  });
   it("reads only explicit source dates and validates calendar values", () => {
     expect(materialFilenameDate("agro_ex_im_26_09_06.xlsx")).toBe("2026-09-06");
     expect(materialFilenameDate("15 10 2026_Cтатистичні дані.pdf")).toBe("2026-10-15");
