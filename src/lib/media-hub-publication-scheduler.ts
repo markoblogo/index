@@ -1,4 +1,5 @@
-import { deliverSsiWeeklyParts } from "@/lib/ssi-weekly-telegram-parts";
+import { stringifyReportJson } from "@/lib/report-json";
+import { deliverSsiReportParts } from "@/lib/ssi-telegram-parts";
 import "server-only";
 import { createHash, randomUUID } from "node:crypto";
 import { revalidatePath, revalidateTag } from "next/cache";
@@ -780,8 +781,9 @@ export async function publishMediaHubSnapshotReport(
     const reportStatus = content.validation?.status === "needs_review" && !canPublishStandardSsiDailyReport
       ? "needs_review"
       : "published";
+    const serializedContent = stringifyReportJson(content);
     const contentHash = createHash("sha256")
-      .update(JSON.stringify(content))
+      .update(serializedContent)
       .digest("hex");
     const existing = await getMediaHubReport(kind, periodEndDate, tenantId);
     const id = existing?.id ?? randomUUID();
@@ -814,8 +816,8 @@ export async function publishMediaHubSnapshotReport(
       periodEndDate,
       content.title,
       contentHash,
-      JSON.stringify(content),
-      JSON.stringify({
+      serializedContent,
+      stringifyReportJson({
         manualMaterials,
         snapshots,
       }),
@@ -994,11 +996,13 @@ export async function sendMediaHubReportTelegram(
     return deliveryClaim;
   }
 
-  let sent: Awaited<ReturnType<typeof sendTelegramMessages>> | Awaited<ReturnType<typeof deliverSsiWeeklyParts>>;
+  let sent: Awaited<ReturnType<typeof sendTelegramMessages>> | Awaited<ReturnType<typeof deliverSsiReportParts>>;
   try {
-    if (tenantId === "spike-ua" && kind === "weekly") {
+    if (tenantId === "spike-ua" && (kind === "weekly" || kind === "daily")) {
       const current = await getMediaHubReport(kind, periodEndDate, tenantId);
-      sent = await deliverSsiWeeklyParts({
+      if (!current) throw new Error("Claimed SSI report disappeared");
+      sent = await deliverSsiReportParts({
+        expectedParts: kind === "daily" ? 1 : 3,
         messages, ledger: current?.telegramMessageIds,
         checkpoint: (ids) => db.$executeRawUnsafe('UPDATE "MediaHubReport" SET "telegramMessageIds" = $4::jsonb, "updatedAt" = NOW() WHERE "tenantId" = $1 AND "kind" = $2 AND "periodEnd" = $3::date', tenantId, kind, periodEndDate, JSON.stringify(ids)),
         send: async (text) => {

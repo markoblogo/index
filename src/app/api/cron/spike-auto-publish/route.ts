@@ -85,7 +85,8 @@ export async function GET(request: Request) {
 
     const result = await autoPublishSpikeDailyIndices(targetDate, {
       generateAiBrief: url.searchParams.get("brief") === "1",
-      publishMediaHub: shouldPublishMediaHub,
+      // Historical index repair is site-only; only today's report may be sent.
+      publishMediaHub: shouldPublishMediaHub && targetDate === date,
       replaceExisting: replaceExisting || isRetryWindow,
     });
     results.push({

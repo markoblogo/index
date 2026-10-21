@@ -1,3 +1,4 @@
+import { truncateReportText } from "@/lib/report-json";
 import type { PublicLatestItem } from "@/lib/public-api-data";
 import type { MediaHubWindowSnapshot } from "@/lib/media-hub";
 import type { MediaHubManualMaterialDigest } from "@/lib/media-hub-manual-materials";
@@ -211,7 +212,7 @@ function dedupeEvidence(items: MediaHubEvidenceItem[]) {
 }
 
 function compactEvidenceText(value: string) {
-  return value.replace(/\s+/g, " ").trim().slice(0, 500);
+  return truncateReportText(value.replace(/\s+/g, " ").trim(), 500);
 }
 
 function formatNumber(value: number | null | undefined) {
