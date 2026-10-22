@@ -226,24 +226,21 @@ function SpikeHomeHero({
           <div className="mb-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
             <div className="grid gap-2">
               <div className="flex flex-wrap gap-1.5 lg:justify-start">
-                {categories.map((category) => {
-                  const active = category.id === selectedCategory;
-
-                  return (
-                    <button
-                      className={`rounded-full border px-3 py-1.5 text-[0.62rem] font-black uppercase leading-none tracking-[0.12em] transition ${
-                        active
-                          ? "border-[var(--spike-accent)] bg-[var(--spike-accent)] !text-[#050505]"
-                          : "border-white/18 bg-black/18 text-white/72 hover:border-white/38 hover:text-white"
-                      }`}
-                      key={category.id}
-                      onClick={() => setSelectedCategory(category.id)}
-                      type="button"
-                    >
-                      {category.label}
-                    </button>
-                  );
-                })}
+                {facts.map((fact) => (
+                  <span
+                    className="inline-flex items-center gap-1.5 rounded-full border border-white/18 bg-black/18 px-3 py-1.5 text-[0.62rem] font-black uppercase leading-none tracking-[0.12em] text-white/72"
+                    key={fact.label}
+                  >
+                    {fact.label === "index" ? (
+                      <span
+                        aria-hidden="true"
+                        className="h-1.5 w-1.5 rounded-full bg-[var(--spike-accent)]"
+                      />
+                    ) : null}
+                    <span className="text-white">{fact.value}</span>
+                    <span>{fact.label}</span>
+                  </span>
+                ))}
               </div>
               <p className="max-w-[38rem] text-sm font-semibold leading-5 text-white/68">
                 {activeIndex.home.officialNotice[locale]}
@@ -251,29 +248,26 @@ function SpikeHomeHero({
             </div>
             <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-center">
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:w-[35rem]">
-                {facts.map((fact) => (
-                  <div
-                    className="rounded-[0.85rem] border border-white/18 bg-black/16 px-3 py-2.5 text-center backdrop-blur"
-                    key={fact.label}
-                  >
-                    <p className="text-xl font-black lowercase leading-none text-white">
-                      {fact.label === "index" ? (
-                        <span className="inline-flex items-center justify-center gap-2">
-                          <span
-                            aria-hidden="true"
-                            className="h-2 w-2 rounded-full bg-[var(--spike-accent)] shadow-[0_0_18px_rgba(57,255,20,0.95)]"
-                          />
-                          {fact.value}
-                        </span>
-                      ) : (
-                        fact.value
-                      )}
-                    </p>
-                    <p className="mt-1 text-[0.52rem] font-black uppercase tracking-[0.18em] text-white/52">
-                      {fact.label}
-                    </p>
-                  </div>
-                ))}
+                {categories.map((category) => {
+                  const active = category.id === selectedCategory;
+
+                  return (
+                    <button
+                      aria-pressed={active}
+                      className={`flex min-h-14 min-w-0 items-center justify-center rounded-[0.85rem] border px-3 py-2.5 text-center text-sm font-black uppercase leading-tight tracking-[0.08em] backdrop-blur ${
+                        active
+                          ? "border-[var(--spike-accent)] bg-[var(--spike-accent)] !text-[#050505]"
+                          : "border-white/18 bg-black/16 text-white/72 hover:border-white/38 hover:text-white"
+                      }`}
+                      key={category.id}
+                      onClick={() => setSelectedCategory(category.id)}
+                      title={category.description}
+                      type="button"
+                    >
+                      {category.label}
+                    </button>
+                  );
+                })}
               </div>
               <div className="rounded-full border border-white/18 bg-black/22 p-1.5 backdrop-blur">
                 <CurrencyToggle label={copy.currencyToggleLabel} />
