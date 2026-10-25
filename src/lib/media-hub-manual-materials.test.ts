@@ -288,7 +288,7 @@ describe("media hub corporate Telegram group", () => {
 });
 
 describe("media hub report prompts", () => {
-  it("builds SSI weekly structure without Spike Brokers branding", () => {
+  it("builds SSI weekly structure with the approved Spike Brokers footer", () => {
     const prompt = buildMediaHubReportPrompt({
       kind: "weekly",
       latestData: [],
@@ -302,8 +302,8 @@ describe("media hub report prompts", () => {
 
     expect(prompt).toContain("Частина I. Логістика");
     expect(prompt).toContain("SPIKE Spot Commodity Index Ukraine");
-    expect(prompt).toContain("Spike Spot Index / https://spike.1d3x.com/");
-    expect(prompt).not.toContain("Spike Brokers – Ваш торговий партнер");
+    expect(prompt).toContain("Spike Brokers – Ваш торговий партнер");
+    expect(prompt).not.toContain("Spike Spot Index / https://spike.1d3x.com/");
   });
 
   it("builds 1D3X weekly structure without SSI index section", () => {
