@@ -36,3 +36,6 @@ jobs:
 
       - name: Full audit
         run: npm run audit:all
+
+      - name: Synthetic video scene contract
+        run: python3 -m unittest discover -s services/ssi-weekly-video-worker -p 'test_render.py'

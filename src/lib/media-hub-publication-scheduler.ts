@@ -886,6 +886,7 @@ export async function sendMediaHubReportTelegram(
   }
 
   const tenantId = options.audience === "platform" ? "1d3x" : getActiveIndexConfig().id;
+  if (tenantId === "spike-ua" && kind === "weekly" && process.env.SSI_WEEKLY_PAIRED_DRAFTS === "1") return { status: "blocked" as const, skippedReason: "mac_paired_draft_sender_required" };
   if (isSsiPeriodicPublicationHeld(tenantId, kind)) return SSI_PERIODIC_PUBLICATION_HOLD_RESULT;
   const report = hasDatabaseUrl()
     ? await getMediaHubReport(kind, periodEndDate, tenantId)
@@ -1076,6 +1077,7 @@ async function deletePreviousMediaHubTelegramMessages(
   const tenantId = options.audience === "platform" ? "1d3x" : getActiveIndexConfig().id;
   const report = await getMediaHubReport(kind, periodEndDate, tenantId);
   const messageIds = parseJsonNumberArray(report?.telegramMessageIds);
+  if (kind === "weekly" && getActiveIndexConfig().id === "spike-ua" && process.env.SSI_WEEKLY_PAIRED_DRAFTS === "1") return { status: "blocked" as const, skippedReason: "paired_receipts_must_not_be_reset" };
   if (messageIds.length === 0) {
     return { deletedMessageIds: [], skippedReason: "no_previous_messages", status: "skipped" as const };
   }

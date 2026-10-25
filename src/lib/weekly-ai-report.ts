@@ -1379,6 +1379,7 @@ export async function sendWeeklyReportTelegramNow(
   reportId: string,
   actorUserId?: string | null,
 ) {
+  if (getActiveIndexConfig().id === "spike-ua" && process.env.SSI_WEEKLY_PAIRED_DRAFTS === "1") return { status: "blocked" as const, skippedReason: "mac_paired_draft_sender_required" };
   const report = await getWeeklyReportById(reportId);
 
   if (

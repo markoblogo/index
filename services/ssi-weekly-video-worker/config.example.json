@@ -1,0 +1,15 @@
+{
+  "apiUrl": "https://spike.1d3x.com/api/admin/media-hub/weekly-video-worker",
+  "keychainService": "SSI_WEEKLY_VIDEO_WORKER",
+  "startDate": "2026-11-01",
+  "workRoot": "/absolute/persistent/work/ssi-weekly-video",
+  "handoffRoot": "/absolute/private/verified/framewright-handoff",
+  "python": "/absolute/voice-environment/bin/python",
+  "modelRoot": "/absolute/verified/Supertonic-3",
+  "modelManifest": "/absolute/verified/model-manifest.json",
+  "node": "/absolute/node",
+  "hyperframesCli": "/absolute/pinned-hyperframes/bin/hyperframes.mjs",
+  "chrome": "/absolute/Chrome",
+  "ffmpeg": "/absolute/ffmpeg",
+  "ffprobe": "/absolute/ffprobe"
+}

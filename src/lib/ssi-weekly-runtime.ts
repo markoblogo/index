@@ -10,6 +10,7 @@ import { getSsiWeeklyLogisticsPublicationBlock } from "@/lib/ssi-weekly-logistic
 import { runSsiWeeklyPhase, type SsiWeeklyPhase } from "@/lib/ssi-weekly-workflow";
 
 export function runScheduledSsiWeeklyPhase(phase: SsiWeeklyPhase, now = new Date()) {
+  if (process.env.SSI_WEEKLY_PAIRED_DRAFTS === "1" && !isPlatformSite() && getActiveIndexConfig().id === "spike-ua") return Promise.resolve({ status: "skipped", periodEndDate: undefined, skippedReason: "mac_owned_paired_draft_workflow" });
   return runSsiWeeklyPhase(phase, now, {
     held: isSsiPeriodicPublicationHeld("spike-ua", "weekly"),
     ssiTenant: !isPlatformSite() && getActiveIndexConfig().id === "spike-ua",

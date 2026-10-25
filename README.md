@@ -37,6 +37,7 @@ The local app can use seeded fallback data. Production publication, channel deli
 | Compare spot references on a common basis | [Ukrainian grain and oilseed comparison guide](https://abvx.xyz/editorial/focus/compare-ukrainian-spot-references-en?utm_source=github&utm_medium=readme&utm_campaign=abvx_guides_2026_10&utm_content=index) — includes a fictional worked example |
 | Run a tenant locally | [Local setup](#local-setup) and [.env.example](.env.example) |
 | Change calculations or publication | [Index and Context review checklist](docs/media-hub-review-checklist.md) |
+| Operate SSI weekly founders drafts and paired videos | [Mac worker and delivery runbook](docs/ssi-weekly-paired-drafts.md) |
 | Work with Cortex | [Cortex agent-flow contract](docs/cortex-agent-flow-contract.md) |
 | Understand companion products | [ABVX ecosystem contracts](docs/ECOSYSTEM.md) |
 | Contribute or report a vulnerability | [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) |
