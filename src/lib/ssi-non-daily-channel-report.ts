@@ -2,6 +2,7 @@ import type { Locale } from "@/lib/i18n";
 import type { MediaHubEvidenceItem } from "@/lib/media-hub-evidence";
 import type { MediaHubWindowSnapshot } from "@/lib/media-hub";
 import type { MediaHubLocalizedReport } from "@/lib/media-hub-llm-report";
+import { fitSsiTelegramPart } from "@/lib/ssi-weekly-report-safeguards";
 
 type SsiNonDailyReportContent = {
   evidence?: MediaHubEvidenceItem[];
@@ -33,16 +34,15 @@ export function buildSsiNonDailyStructuredMessages(input: {
   const meta = getMeta(input.kind, input.locale);
   const parts = buildParts(buckets, input.locale);
 
-  return parts.map((part, index) => fitSingleMessage([
+  return parts.map((part, index) => fitSsiTelegramPart({ header: [
     `🇺🇦 <b>${escapeHtml(meta.heading)}</b>`,
     escapeHtml(formatShortDate(input.periodEndDate)),
     "",
     `<b>${escapeHtml(part.title)}</b>`,
     "",
-    ...renderPartSections(part, input.kind),
-    "",
-    index === parts.length - 1 ? meta.footer : meta.partFooter,
-  ].join("\n")));
+  ].join("\n").trim(), sections: getPartSections(part, input.kind), fallback: part.fallback,
+    footer: index === parts.length - 1 ? meta.footer : meta.partFooter,
+  }));
 }
 
 function collectSsiFacts(content: SsiNonDailyReportContent, locale: Locale) {
@@ -153,10 +153,10 @@ function buildParts(b: ReturnType<typeof bucketFacts>, locale: Locale): ChannelP
   ];
 }
 
-function renderPartSections(part: ChannelPart, kind: "weekly" | "monthly") {
+function getPartSections(part: ChannelPart, kind: "weekly" | "monthly") {
   const perSection = kind === "monthly" ? 8 : 6;
   const used = new Set<string>();
-  const rendered = part.sections.flatMap((section) => {
+  return part.sections.map((section) => {
     const items = dedupe(section.items)
       .filter((item) => {
         const key = comparable(item);
@@ -165,11 +165,8 @@ function renderPartSections(part: ChannelPart, kind: "weekly" | "monthly") {
         return true;
       })
       .slice(0, perSection);
-    return items.length > 0
-      ? ["", `<b>${escapeHtml(section.heading)}</b>`, ...items.map((item) => `• ${escapeHtml(item)}`)]
-      : [];
+    return { heading: section.heading, items };
   });
-  return rendered.length > 0 ? rendered : [`• ${escapeHtml(part.fallback)}`];
 }
 
 function patterns(locale: Locale) {
@@ -268,10 +265,6 @@ function isSameFact(a: string, b: string) {
 
 function comparable(value: string) {
   return value.toLowerCase().replace(/[^\p{L}\p{N}%$€₴]+/gu, " ").replace(/\s+/g, " ").trim();
-}
-
-function fitSingleMessage(text: string) {
-  return text.length <= 3900 ? text : `${text.slice(0, 3740).trim()}\n\n<i>Report shortened to fit one message.</i>`;
 }
 
 function formatShortDate(date: string) {

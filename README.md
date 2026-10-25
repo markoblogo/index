@@ -142,6 +142,8 @@ Shared capabilities:
   scenario views;
 - Context pages for daily, weekly and monthly market-news context on 1D3X and
   SPIKE;
+- SSI weekly [benchmark comparison and drafting rules](docs/ssi-weekly-benchmark-2026-10-23.md)
+  for matched-period statistics, seed/oil/meal coverage and three-message output;
 - Context browser extraction policy that prefers Obscura for DOM/text/assets
   extraction and keeps Playwright/Chromium for e2e, screenshots and fallback;
 - bounded Context extraction adapter contract for Telegram/RSS/manual files,

@@ -5,6 +5,7 @@ import type { MediaHubWindowSnapshot } from "@/lib/media-hub";
 import type { MediaHubManualMaterialDigest } from "@/lib/media-hub-manual-materials";
 import type { PublicLatestItem } from "@/lib/public-api-data";
 import { renderPdfTableEvidence } from "@/lib/media-hub-pdf-table-evidence";
+import { buildSsiWeeklyEditorialContract, getSsiWeeklyRequiredParts } from "@/lib/ssi-weekly-editorial-contract";
 import { SSI_WEEKLY_REFERENCE_PATTERN, renderSsiWeeklySpreadsheetEvidence } from "@/lib/media-hub-ssi-weekly-pattern";
 
 type ReportKind = "daily" | "weekly" | "monthly";
@@ -173,12 +174,15 @@ export function buildSsiWeeklyMonthlyPrompt(input: {
       ];
 
   return [
-    isUk
-      ? "You write for Spike Spot Index, not Spike Brokers. Write only in Ukrainian."
-      : "You write for Spike Spot Index, not Spike Brokers. Write only in English.",
+    input.kind === "weekly"
+      ? `You write the SPIKE BROKERS weekly report. Write only in ${isUk ? "Ukrainian" : "English"}.`
+      : isUk
+        ? "You write for Spike Spot Index, not Spike Brokers. Write only in Ukrainian."
+        : "You write for Spike Spot Index, not Spike Brokers. Write only in English.",
     `Create a professional ${reportLabel} Commodity & Logistics Market report for the Ukrainian grains and oilseeds market.`,
-    "Brand footer must be exactly: Spike Spot Index / https://spike.1d3x.com/",
-    "Do not write the old Spike Brokers partner footer.",
+    input.kind === "weekly"
+      ? "Use the weekly heading and partner footer from the weekly editorial contract."
+      : "Brand footer must be exactly: Spike Spot Index / https://spike.1d3x.com/. Do not write the old Spike Brokers partner footer.",
     "No trading recommendations. No invented index values, futures prices, export volumes, destinations, dates or sources.",
     "Avoid generic phrases: ринок перебуває під тиском; залишається стабільним; демонструє зростання; свідчить про; формує баланс; нівелює.",
     input.kind === "monthly"
@@ -189,8 +193,11 @@ export function buildSsiWeeklyMonthlyPrompt(input: {
       : "Weekly report target: 25-45 summary array items with concrete narrative items under every sourced section.",
     commonJsonRules(input),
     "Required structure inside summary array:",
-    requiredStructure.join("\n"),
+    input.kind === "weekly"
+      ? JSON.stringify(getSsiWeeklyRequiredParts(input.locale))
+      : requiredStructure.join("\n"),
     input.kind === "weekly" ? SSI_WEEKLY_REFERENCE_PATTERN : "",
+    input.kind === "weekly" ? buildSsiWeeklyEditorialContract(input.locale) : "",
     input.kind === "weekly" ? renderSsiWeeklySpreadsheetEvidence(input.manualMaterials ?? [], input.periodEndDate) : "",
     renderCortexContextPack(input.cortexContextPack),
     renderIndexData(input.latestData, isUk),

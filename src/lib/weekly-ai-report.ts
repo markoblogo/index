@@ -15,6 +15,8 @@ import {
   type ReportWorkspaceResource,
 } from "@/lib/report-workspace";
 import { getWeeklyTelegramDigest } from "@/lib/telegram-source-collector";
+import { buildSsiWeeklyEditorialContract, getSsiWeeklyRequiredParts } from "@/lib/ssi-weekly-editorial-contract";
+import { getWeeklyAiLimits, isSsiTelegramPackValid, weeklyPublishedComparison } from "@/lib/ssi-weekly-report-safeguards";
 import {
   getPublicHistoryData,
   type PublicHistoryItem,
@@ -42,7 +44,6 @@ export type WeeklySourceType =
   | "admin_note"
   | "other";
 
-const OPENAI_WEEKLY_REPORT_TIMEOUT_MS = 60_000;
 const OPENAI_WEEKLY_COVER_TIMEOUT_MS = 60_000;
 const TELEGRAM_WEEKLY_DELIVERY_TIMEOUT_MS = 15_000;
 
@@ -148,8 +149,10 @@ export type WeeklyReportManifest = {
     latestValue: number | null;
     respondents: number;
     volatility30d: number;
-    weeklyChangeAbs: number;
-    weeklyChangePct: number;
+    weeklyChangeAbs: number | null;
+    weeklyChangePct: number | null;
+    comparisonStartDate?: string;
+    comparisonEndDate?: string;
   }>;
 };
 
@@ -808,25 +811,12 @@ export async function buildWeeklySourceManifest(reportId: string) {
     .map(mapWorkspaceResourceReference);
   const weeklySummary = [...grouped.entries()].map(([code, rows]) => {
     const sorted = [...rows].sort((a, b) => a.date.localeCompare(b.date));
-    const first = sorted[0];
-    const last = sorted.at(-1) ?? first;
     const volatility30d = standardDeviation(sorted.map((row) => row.changePct));
 
     return {
       code,
-      latestValue: last?.valueUsdPerMt ?? null,
-      respondents: last?.respondents ?? 0,
+      ...weeklyPublishedComparison(history.filter(row => row.commodityCode === code), report.weekEndDate),
       volatility30d: roundOne(volatility30d),
-      weeklyChangeAbs: roundOne(
-        (last?.valueUsdPerMt ?? 0) - (first?.valueUsdPerMt ?? 0),
-      ),
-      weeklyChangePct: first?.valueUsdPerMt
-        ? roundOne(
-            (((last?.valueUsdPerMt ?? 0) - first.valueUsdPerMt) /
-              first.valueUsdPerMt) *
-              100,
-          )
-        : 0,
     };
   });
   const averageRespondents =
@@ -844,6 +834,8 @@ export async function buildWeeklySourceManifest(reportId: string) {
   const structuredDataPack =
     report.adminEditedContent?.structuredDataPack?.trim() ?? "";
   const missingDataWarnings = [
+    ...weeklySummary.filter(item => item.weeklyChangeAbs === null)
+      .map(item => `Weekly published comparison missing for ${item.code}: ${item.comparisonStartDate} / ${item.comparisonEndDate}. Do not substitute zero.`),
     ...(weeklyRows.length === 0
       ? ["No published SPIKE daily values found for the selected week."]
       : []),
@@ -1004,8 +996,8 @@ export async function generateWeeklyReportDraft(
     return null;
   }
 
-  const manifest =
-    report.sourceManifest ?? (await buildWeeklySourceManifest(reportId));
+  // Refresh dated endpoints instead of reusing an older, undated calculation.
+  const manifest = await buildWeeklySourceManifest(reportId);
 
   if (!manifest || !hasDatabaseUrl()) {
     return null;
@@ -1077,6 +1069,10 @@ export async function generateWeeklyReportDraft(
     report.language === "en"
       ? "Write every public value in English only. Keep structure concise and professional."
       : "Write every public value in Ukrainian only. Keep structure concise and professional.";
+  const ssiWeeklyEditorialContract = getActiveIndexConfig().id === "spike-ua"
+    ? buildSsiWeeklyEditorialContract(report.language === "en" ? "en" : "uk")
+    : "";
+  const aiLimits = getWeeklyAiLimits(getActiveIndexConfig().id);
   if (apiKey) {
     try {
       const response = await fetchWithTimeout("https://api.openai.com/v1/responses", {
@@ -1087,12 +1083,12 @@ export async function generateWeeklyReportDraft(
         },
         body: JSON.stringify({
           model,
-          max_output_tokens: 2200,
+          max_output_tokens: aiLimits.maxOutputTokens,
           input: [
             {
               role: "system",
               content:
-                `You generate a Weekly AI Commodity & Logistics Report for SPIKE SPOT INDEX. Use only provided SPIKE data, source notes, admin notes and verified source manifests. Do not invent numbers, dates, causes, flows, export volumes, logistics statistics or official SPIKE values. Return strict JSON with keys: dataConfidence, aiWarnings, missingInputs, executiveSummary, telegramMessages, parts, blogDraft. executiveSummary must be 3 concise bullets. telegramMessages must be exactly 3 messages following the fixed public structure. parts must be exactly 3 objects with keys logistics, grains, oilseeds_processing. Each part must contain title and sections. blogDraft must contain title, subtitle, intro, sections, closing, seoDescription, slug, coverPrompt, coverAlt. The blog draft must be more narrative and blog-like than the report but still factual and non-promotional. Sections must be concise, professional, and not trading advice. ${localeInstruction}`,
+                `You generate a Weekly AI Commodity & Logistics Report for SPIKE SPOT INDEX. Use only provided SPIKE data, source notes, admin notes and verified source manifests. Do not invent numbers, dates, causes, flows, export volumes, logistics statistics or official SPIKE values. Return strict JSON with keys: dataConfidence, aiWarnings, missingInputs, executiveSummary, telegramMessages, parts, blogDraft. executiveSummary must be 3 concise bullets. telegramMessages must be exactly 3 messages following the fixed public structure. parts must be exactly 3 objects with keys logistics, grains, oilseeds_processing. Each part must contain title and sections. blogDraft must contain title, subtitle, intro, sections, closing, seoDescription, slug, coverPrompt, coverAlt. The blog draft must be more narrative and blog-like than the report but still factual and non-promotional. Sections must be concise, professional, and not trading advice. ${localeInstruction}\n\n${ssiWeeklyEditorialContract}`,
             },
             {
               role: "user",
@@ -1107,7 +1103,9 @@ export async function generateWeeklyReportDraft(
                 reportWeek: report.weekEndDate,
                 language: report.language,
                 sourceManifest: manifest,
-                requiredParts: [
+                requiredParts: getActiveIndexConfig().id === "spike-ua"
+                  ? getSsiWeeklyRequiredParts(report.language === "en" ? "en" : "uk")
+                  : [
                   {
                     key: "logistics",
                     sections: [
@@ -1153,12 +1151,19 @@ export async function generateWeeklyReportDraft(
             },
           ],
         }),
-      }, OPENAI_WEEKLY_REPORT_TIMEOUT_MS);
+      }, aiLimits.timeoutMs);
 
       if (response.ok) {
         rawAiJson = await response.json();
+        if (rawAiJson && typeof rawAiJson === "object" && "status" in rawAiJson && rawAiJson.status === "incomplete") {
+          throw new Error("Weekly AI response incomplete; do not treat truncated JSON as a finished report.");
+        }
         const text = extractResponseText(rawAiJson);
-        generated = normalizeGeneratedWeeklyReportJson(JSON.parse(text));
+        const payload = JSON.parse(text);
+        if (getActiveIndexConfig().id === "spike-ua" && !isSsiTelegramPackValid(payload.telegramMessages)) {
+          throw new Error("Weekly AI Telegram parts exceed limits or contain incomplete HTML.");
+        }
+        generated = normalizeGeneratedWeeklyReportJson(payload);
       } else {
         warnings = [
           ...warnings,
@@ -1856,8 +1861,8 @@ function buildDeterministicWeeklyReport(
             title: "Border direction",
             body:
               locale === "uk"
-                ? `Прикордонна кукурудза FCA Чоп завершила тиждень на рівні ${formatTelegramMoney(borderCorn?.latestValue)}, а її тижнева зміна становила ${formatTelegramSignedMoney(borderCorn?.weeklyChangeAbs ?? 0)}. Це підтверджує окрему поведінку border-ланцюга порівняно з портовими позиціями.`
-                : `FCA Chop border corn closed the week at ${formatTelegramMoney(borderCorn?.latestValue)}, with a weekly move of ${formatTelegramSignedMoney(borderCorn?.weeklyChangeAbs ?? 0)}. This confirms a border-lane behaviour separate from port-side positions.`,
+                ? `Прикордонна кукурудза FCA Чоп завершила тиждень на рівні ${formatTelegramMoney(borderCorn?.latestValue)}, а її тижнева зміна становила ${formatTelegramSignedMoney(borderCorn?.weeklyChangeAbs ?? null)}. Це підтверджує окрему поведінку border-ланцюга порівняно з портовими позиціями.`
+                : `FCA Chop border corn closed the week at ${formatTelegramMoney(borderCorn?.latestValue)}, with a weekly move of ${formatTelegramSignedMoney(borderCorn?.weeklyChangeAbs ?? null)}. This confirms a border-lane behaviour separate from port-side positions.`,
           },
           {
             title: "Port direction",
@@ -1890,8 +1895,8 @@ function buildDeterministicWeeklyReport(
             title: "Spot Index Ukraine",
             body:
               locale === "uk"
-                ? `Тижнева картина показує, що кукурудза змінилася на ${formatTelegramSignedMoney(corn?.weeklyChangeAbs ?? 0)}, пшениця 11.5% — на ${formatTelegramSignedMoney(wheat?.weeklyChangeAbs ?? 0)}, а фуражна пшениця — на ${formatTelegramSignedMoney(feedWheat?.weeklyChangeAbs ?? 0)}. Це дає читачу не список цифр, а структуру руху.`
-                : `The weekly picture shows corn changed by ${formatTelegramSignedMoney(corn?.weeklyChangeAbs ?? 0)}, 11.5% wheat by ${formatTelegramSignedMoney(wheat?.weeklyChangeAbs ?? 0)}, and feed wheat by ${formatTelegramSignedMoney(feedWheat?.weeklyChangeAbs ?? 0)}. This gives structure rather than a raw list of numbers.`,
+                ? `Тижнева картина показує, що кукурудза змінилася на ${formatTelegramSignedMoney(corn?.weeklyChangeAbs ?? null)}, пшениця 11.5% — на ${formatTelegramSignedMoney(wheat?.weeklyChangeAbs ?? null)}, а фуражна пшениця — на ${formatTelegramSignedMoney(feedWheat?.weeklyChangeAbs ?? null)}. Це дає читачу не список цифр, а структуру руху.`
+                : `The weekly picture shows corn changed by ${formatTelegramSignedMoney(corn?.weeklyChangeAbs ?? null)}, 11.5% wheat by ${formatTelegramSignedMoney(wheat?.weeklyChangeAbs ?? null)}, and feed wheat by ${formatTelegramSignedMoney(feedWheat?.weeklyChangeAbs ?? null)}. This gives structure rather than a raw list of numbers.`,
           },
           {
             title: "Corn",
@@ -1952,8 +1957,8 @@ function buildDeterministicWeeklyReport(
             title: "Sunflower",
             body:
               locale === "uk"
-                ? `Соняшник показав тижневий рух ${formatTelegramSignedMoney(sunflower?.weeklyChangeAbs ?? 0)} і залишився однією з головних позицій для читання переробки та внутрішнього попиту.`
-                : `Sunflower posted a weekly move of ${formatTelegramSignedMoney(sunflower?.weeklyChangeAbs ?? 0)} and remained one of the key positions for reading processing and domestic demand.`,
+                ? `Соняшник показав тижневий рух ${formatTelegramSignedMoney(sunflower?.weeklyChangeAbs ?? null)} і залишився однією з головних позицій для читання переробки та внутрішнього попиту.`
+                : `Sunflower posted a weekly move of ${formatTelegramSignedMoney(sunflower?.weeklyChangeAbs ?? null)} and remained one of the key positions for reading processing and domestic demand.`,
           },
           {
             title: "Rapeseed",
@@ -1966,8 +1971,8 @@ function buildDeterministicWeeklyReport(
             title: "Soybean",
             body:
               locale === "uk"
-                ? `Соя ГМО показала тижневий рух ${formatTelegramSignedMoney(soybean?.weeklyChangeAbs ?? 0)} і залишається однією з найбільш чутливих позицій у переробному кошику.`
-                : `GMO soybean posted a weekly move of ${formatTelegramSignedMoney(soybean?.weeklyChangeAbs ?? 0)} and remains one of the most sensitive positions in the processing basket.`,
+                ? `Соя ГМО показала тижневий рух ${formatTelegramSignedMoney(soybean?.weeklyChangeAbs ?? null)} і залишається однією з найбільш чутливих позицій у переробному кошику.`
+                : `GMO soybean posted a weekly move of ${formatTelegramSignedMoney(soybean?.weeklyChangeAbs ?? null)} and remains one of the most sensitive positions in the processing basket.`,
           },
           {
             title: "Oils / meals / processing products",
@@ -2150,7 +2155,7 @@ export function buildWeeklyTelegramMessages(
     [
       `🧠 <b>Аналітичний висновок тижня</b>\nЗерновий блок читався через кукурудзу, пшеницю та різницю між портом і кордоном, яка задавала ринкову опору тижня.`,
       `📈 <b>Spot Index Ukraine</b>\n• Кукурудза, пшениця 11.5% та фуражна пшениця показали тижневий рух у межах опублікованих значень.\n• FCA Чоп: ${formatTelegramMoney(borderCorn?.latestValue)}.\n• Ринок читав не лише самі ціни, а й різницю між портом і кордоном.`,
-      `🌽 <b>Кукурудза</b>\n• Кукурудза закріпилася як головна експортна опора тижня.\n• Опубліковане значення: ${formatTelegramMoney(corn?.latestValue)}.\n• Тижневий рух: ${formatTelegramSignedMoney(corn?.weeklyChangeAbs ?? 0)}.`,
+      `🌽 <b>Кукурудза</b>\n• Кукурудза закріпилася як головна експортна опора тижня.\n• Опубліковане значення: ${formatTelegramMoney(corn?.latestValue)}.\n• Тижневий рух: ${formatTelegramSignedMoney(corn?.weeklyChangeAbs ?? null)}.`,
       `🌾 <b>Пшениця</b>\n• Пшениця 11.5% та фуражна пшениця показали власну структуру попиту.\n• Пшениця 11.5%: ${formatTelegramMoney(wheat?.latestValue)}.\n• Фуражна пшениця: ${formatTelegramMoney(feedWheat?.latestValue)}.`,
       `🌍 <b>Експортна географія</b>\nПоточний тиждень найкраще читався через CPT Одеса та FCA Чоп, що допомогло окремо побачити портову й прикордонну логіку.`,
       `🌐 <b>Зовнішній ринковий фон</b>\nЗовнішній фон залишався важливим для читання зерна через futures tone, експортний попит і ширший чорноморський контекст.`,
@@ -2163,8 +2168,8 @@ export function buildWeeklyTelegramMessages(
     [
       `🧠 <b>Аналітичний висновок тижня</b>\nОлійний блок читався через соняшник і сою, а також через те, як ці позиції впливали на тон переробки та суміжні продукти.`,
       `📈 <b>Spot Index Ukraine</b>\n• Соняшник і соя ГМО залишилися головними опорними позиціями переробного сегмента.\n• Тиждень читався через переробку, внутрішній попит і експортний фон.`,
-      `🌻 <b>Соняшник</b>\n• Соняшник залишився ключовим для читання переробного ринку.\n• Опубліковане значення: ${formatTelegramMoney(sunflower?.latestValue)}.\n• Тижневий рух: ${formatTelegramSignedMoney(sunflower?.weeklyChangeAbs ?? 0)}.`,
-      `🌱 <b>Соя</b>\n• Соя ГМО зберегла важливість для переробного кошика.\n• Опубліковане значення: ${formatTelegramMoney(soybean?.latestValue)}.\n• Тижневий рух: ${formatTelegramSignedMoney(soybean?.weeklyChangeAbs ?? 0)}.`,
+      `🌻 <b>Соняшник</b>\n• Соняшник залишився ключовим для читання переробного ринку.\n• Опубліковане значення: ${formatTelegramMoney(sunflower?.latestValue)}.\n• Тижневий рух: ${formatTelegramSignedMoney(sunflower?.weeklyChangeAbs ?? null)}.`,
+      `🌱 <b>Соя</b>\n• Соя ГМО зберегла важливість для переробного кошика.\n• Опубліковане значення: ${formatTelegramMoney(soybean?.latestValue)}.\n• Тижневий рух: ${formatTelegramSignedMoney(soybean?.weeklyChangeAbs ?? null)}.`,
       `🛢 <b>Олії, макуха та продукти переробки</b>\nСуміжні продукти читаються через базові олійні позиції та зміну тону переробки.`,
       `🌍 <b>Експортна географія</b>\nДля олійних важливо дивитися не тільки на benchmark, а й на маршрути, попит переробників і цінову реакцію в суміжних продуктах.`,
       `🌐 <b>Зовнішній ринковий фон</b>\nСвітовий попит на олії, біржовий тон і реакція суміжних ринків залишаються ключовим контекстом.`,
@@ -2412,7 +2417,8 @@ function formatTelegramMoney(value: number | null | undefined) {
   return value == null ? "—" : `${Math.round(value)}$`;
 }
 
-function formatTelegramSignedMoney(value: number) {
+function formatTelegramSignedMoney(value: number | null) {
+  if (value === null) return "—";
   const rounded = Math.round(value);
   return `${rounded > 0 ? "+" : ""}${rounded}$`;
 }
