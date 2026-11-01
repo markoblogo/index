@@ -111,6 +111,14 @@ OpenAI account; other report modes keep their configured model.
 The compact prompt also retains checked `pdf-tables-v1` image tables through
 the existing table renderer, with page, observation date, units and intact rows.
 Their verbatim blocks can support the ledger even when native PDF text is empty.
+Production drafting saves logistics, grains and oilseeds in three separate model
+requests in private `reportDraftPartsJson`. A model/prompt hash binds the parts;
+input changes require review, not mixed revisions. Writes are fenced by the
+preparation lease and previous JSON. The next request assembles all three parts
+before the existing evidence/publication checks. Known checkpoints are not errors.
+Use `--prepare-only` to render/register all videos without claiming or sending
+delivery. On 1 November the owner paused sending pending full-format review;
+the Mac LaunchAgent is disabled until a separate approval to resume.
 The bounded provider response is retained in private `reportAttemptJson` before
 normalization, including incomplete-response status. It is not a publication or
 a successful validation receipt. Operator errors expose only a redacted reason,

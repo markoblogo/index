@@ -140,6 +140,11 @@ export async function handleSsiVideoWorker(request: Request) {
         await db.$executeRawUnsafe('UPDATE private."SsiWeeklyVideoPreparation" SET "retryAfter"=NOW() WHERE "periodEnd"=$1::date AND "lease"=$2', end, token);
         return json(result);
       } catch (error) {
+        const checkpoint = error instanceof Error && typeof error.cause === "string" ? error.cause.match(/weekly_part_prepared:(logistics|grains|oilseeds)$/)?.[0] : undefined;
+        if (checkpoint) {
+          await db.$executeRawUnsafe('UPDATE private."SsiWeeklyVideoPreparation" SET "retryAfter"=NOW() WHERE "periodEnd"=$1::date AND "lease"=$2', end, token);
+          return json({ status: "waiting", reason: checkpoint });
+        }
         await db.$executeRawUnsafe('UPDATE private."SsiWeeklyVideoPreparation" SET "retryAfter"=NOW()+INTERVAL \'30 minutes\' WHERE "periodEnd"=$1::date AND "lease"=$2', end, token);
         throw error;
       }

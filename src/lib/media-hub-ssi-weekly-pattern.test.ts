@@ -16,6 +16,21 @@ const exportTable = (day: string, total: string, corn = "123") => ({
 });
 
 describe("SSI weekly structured evidence", () => {
+  it("keeps sunflower seed and oil separate and supplies oilseed-specific buyers", () => {
+    const table = { sheetName: "export", header: ["Експорт, тис. дол. США"], rows: [
+      ["№", "Країна", "Всього", "1206 Насіння соняшнику", "1512 Олія соняшникова"], ["", "Всього", "100", "20", "80"],
+      ["Експорт товарів, оформлених по 12.02.2026, т"],
+      ["№", "Країна", "Всього", "1206 Насіння соняшнику", "1512 Олія соняшникова"], ["", "Всього", "3000", "1000", "2000"],
+      ["1", "Seed buyer", "1000", "1000", "0"], ["2", "Oil buyer", "2000", "0", "2000"],
+    ] };
+    const text = renderSsiWeeklySpreadsheetEvidence([material("oils", "agro_ex_im.xlsx", [table])], "2026-02-13");
+    const block = JSON.parse(text.split("\n")[1]);
+    expect(block.total).toEqual(["Всього", "3000", "1000", "2000"]);
+    expect(block.destinationsByCommodity).toEqual([
+      { metric: "1206 Насіння соняшнику", unit: "tonnes", destinations: [{ country: "Seed buyer", tonnes: "1000" }] },
+      { metric: "1512 Олія соняшникова", unit: "tonnes", destinations: [{ country: "Oil buyer", tonnes: "2000" }] },
+    ]);
+  });
   it("reaches the tonne block below truncated prose without mixing dollar values", () => {
     const result = renderSsiWeeklySpreadsheetEvidence([material("current", "agro_ex_im_26_02_12.xlsx", [exportTable("12", "12345")])], "2026-02-13");
     expect(result).toContain('"cohort":"customs_clearance"');

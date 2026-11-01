@@ -157,4 +157,13 @@ describe("production paired-draft adapter with fake database and Telegram", () =
     expect(result.body.diagnostic).not.toContain("fixture-secret");
     expect(result.body.diagnostic).toContain("[redacted]");
   });
+  it("returns a successful persisted-part checkpoint without a failure backoff or send", async () => {
+    mocks.report.mockResolvedValue(null);
+    mocks.query.mockImplementation(async (sql: string) => sql.startsWith("INSERT") ? [{ periodEnd: new Date("2026-10-30"), intakeCompleteAt: new Date() }] : []);
+    mocks.gate.mockResolvedValue(null);
+    mocks.publish.mockRejectedValueOnce(new Error("weekly_report_generation_failed", { cause: "openai_generation_empty:uk:weekly_part_prepared:logistics" }));
+    expect(await action({ action: "prepare" })).toMatchObject({ status: 200, body: { status: "waiting", reason: "weekly_part_prepared:logistics" } });
+    expect(mocks.execute.mock.calls.some(([sql]) => String(sql).includes("30 minutes"))).toBe(false);
+    expect(mocks.send).not.toHaveBeenCalled();
+  });
 });

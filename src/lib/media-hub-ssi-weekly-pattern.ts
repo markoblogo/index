@@ -20,7 +20,7 @@ type Material = { id: string; originalFilename: string | null; originalUrl?: str
   extractionStatus: string; extractedTables: unknown };
 type Table = { sheetName: string; header: string[]; rows: string[][]; parseWarnings?: string[] };
 type Block = { family: string; date: string; text: string };
-const codes = /^(1001|1003|1005|1201|1205|1507|1512|1514|2304|2306)\b/;
+const codes = /^(1001|1003|1005|1201|1205|1206|1507|1512|1514|2304|2306)\b/;
 const months = ["січня", "лютого", "березня", "квітня", "травня", "червня", "липня", "серпня", "вересня", "жовтня", "листопада", "грудня"];
 
 function dateKey(year: string, month: string, day: string) {
@@ -77,10 +77,13 @@ export function renderSsiWeeklySpreadsheetEvidence(materials: Material[], period
           }
           const dollars = /тис\.?\s*дол\.?\s*США/i.test(table.header[0] || "")
             ? table.rows.find(r => r[1] === "Всього" && numeric(r[2])) : undefined;
+          const destinationsByCommodity = cols.filter(c => codes.test(c.h)).map(c => ({ metric: c.h, unit: "tonnes",
+            destinations: table.rows.slice(i + 3).filter(r => numeric(r[c.index]) && Number(r[c.index]) > 0 && r[1] && r[1] !== "Всього")
+              .sort((a, b) => Number(b[c.index]) - Number(a[c.index])).slice(0, 3).map(r => ({ country: r[1], tonnes: r[c.index] })) }));
           blocks.push({ family: "customs_clearance", date, text: JSON.stringify({ ...receipt,
             cohort: "customs_clearance", coverage: title, unit: "tonnes",
             ...(dollars ? { valueTotal: { unit: "thousand USD", value: dollars[2] } } : {}),
-            columns: ["Country", ...cols.map(c => c.h)], total: project(total), destinations: [...destinations.values()] }) });
+            columns: ["Country", ...cols.map(c => c.h)], total: project(total), destinations: [...destinations.values()], destinationsByCommodity }) });
         }
       } else if (/check[ _]points/i.test(name)) {
         const title = table.header[0] || "", date = datedTitle(title);

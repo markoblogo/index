@@ -57,8 +57,8 @@ async function main() {
     let prepared = await api({ action: "prepare" });
     // Separate bounded server requests, but do not sleep five minutes between
     // successful intake/report checkpoints during one authorized Mac run.
-    for (let step = 0; step < 2 && prepared.status === "waiting" &&
-      ["drive_import_completed", "weekly_report_prepared"].includes(String(prepared.reason)); step++) {
+    for (let step = 0; step < 5 && prepared.status === "waiting" &&
+      /^(drive_import_completed|weekly_report_prepared|weekly_part_prepared:(logistics|grains|oilseeds))$/.test(String(prepared.reason)); step++) {
       prepared = await api({ action: "prepare" });
     }
     if (prepared.status === "already_sent") { console.log('{"status":"already_sent"}'); return; }
@@ -91,6 +91,7 @@ async function main() {
       ready = JSON.parse(readFileSync(readyPath, "utf8")) as WeeklyVideoReadySet;
     }
     await api({ action: "ready", jobId: job.id, ready });
+    if (process.argv.includes("--prepare-only")) { console.log(JSON.stringify({ status: "prepared_without_send", jobId: job.id, parts: ready.assets.length })); return; }
     const sendWeek = getSsiMacWakeWeek(new Date());
     if (!sendWeek || sendWeek.periodEndDate !== job.snapshot.period.end || !sendWeek.maySend) { console.log('{"status":"prepared_waiting_for_slot"}'); return; }
     const store: PairedDeliveryStore = {
