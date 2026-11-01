@@ -103,6 +103,11 @@ Paired drafts exclude legacy raw-material fallback prose. Exact published Friday
 snapshots supply weekly deltas; daily zero is never a weekly baseline. Extracted
 PDF text is included alongside typed tables, and selected verbatim source chunks
 extend the evidence ledger. Any remaining unsupported claim blocks publication.
+The paired prompt uses the shared SSI editorial contract directly, not legacy
+Cortex/fallback templates. Typed spreadsheet weights and monetary values stay
+separate; human-scale units are deterministic conversions with source IDs.
+Weekly prose uses `SPIKE_WEEKLY_EDITORIAL_MODEL` or `gpt-4.1` in the existing
+OpenAI account; other report modes keep their configured model.
 The bounded provider response is retained in private `reportAttemptJson` before
 normalization, including incomplete-response status. It is not a publication or
 a successful validation receipt. Operator errors expose only a redacted reason,

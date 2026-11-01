@@ -26,6 +26,7 @@ import {
 } from "@/lib/media-hub-report-prompts";
 import type { PublicHistoryItem, PublicLatestItem } from "@/lib/public-api-data";
 import { renderSsiWeeklyGrounding } from "./ssi-weekly-grounding";
+import { buildSsiWeeklyEditorialContract, getSsiWeeklyRequiredParts } from "./ssi-weekly-editorial-contract";
 import { normalizeSsiWeeklyDraft, ssiWeeklyDraftFormat, ssiWeeklyDraftInstructions } from "./ssi-weekly-structured-draft";
 
 type MediaHubReportKind = "daily" | "weekly" | "monthly";
@@ -95,7 +96,7 @@ export async function generateMediaHubLlmReports(input: {
 
   const pairedWeeklyWorker = input.pairedWeeklyWorker === true && input.tenant === "spike" && input.kind === "weekly";
   const locales: Locale[] = input.tenant === "spike" ? pairedWeeklyWorker ? ["uk"] : ["uk", "en"] : ["en"];
-  const model = getMediaHubModel(input.kind);
+  const model = pairedWeeklyWorker ? process.env.SPIKE_WEEKLY_EDITORIAL_MODEL || "gpt-4.1" : getMediaHubModel(input.kind);
   const localized: Partial<Record<Locale, MediaHubLocalizedReport>> = {};
   const qualityCandidates: Partial<Record<Locale, CortexEditorialQualityCandidate>> = {};
   const errors: string[] = [];
@@ -152,7 +153,8 @@ async function generateOneLocale(input: {
   snapshots: MediaHubWindowSnapshot[];
   tenant: MediaHubTenant;
 }): Promise<GenerationResult> {
-  const prompt = [buildPrompt(input), input.pairedWeeklyWorker ? renderSsiWeeklyGrounding(input) : ""].filter(Boolean).join("\n\n");
+  const prompt = input.pairedWeeklyWorker ? [buildSsiWeeklyEditorialContract("uk"), JSON.stringify(getSsiWeeklyRequiredParts("uk")),
+    `Report period: ${input.periodStartDate} through ${input.periodEndDate}.`, renderSsiWeeklyGrounding(input)].join("\n\n") : buildPrompt(input);
 
   try {
     if (input.pairedWeeklyWorker) {

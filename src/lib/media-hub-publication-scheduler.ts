@@ -1345,7 +1345,7 @@ function buildSnapshotReportContent(input: {
     periodEndDate: input.periodEndDate,
     snapshots: input.snapshots,
   });
-  const evidence = input.pairedWeeklyWorker ? extendSsiWeeklyEvidence(baseEvidence, input.manualMaterials ?? [], JSON.stringify(localizedReports)) : baseEvidence;
+  const evidence = input.pairedWeeklyWorker ? extendSsiWeeklyEvidence(baseEvidence, input.manualMaterials ?? [], JSON.stringify(localizedReports), input.historyData, input.periodEndDate) : baseEvidence;
   const qualityCandidates = finalizeCortexEditorialQualityCandidates({
     evidence,
     kind: input.kind,

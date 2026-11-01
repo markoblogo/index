@@ -3,6 +3,18 @@ import { renderSsiWeeklyGrounding, extendSsiWeeklyEvidence } from "./ssi-weekly-
 import type { PublicHistoryItem, PublicLatestItem } from "./public-api-data";
 import type { MediaHubManualMaterialDigest } from "./media-hub-manual-materials";
 const row = (date: string, value: number) => ({ commodityCode: "CORN", basis: "CPT Odesa", date, valueUsdPerMt: value, respondents: 1 }) as PublicHistoryItem;
+it("separates monetary blocks from tonnes and scales million/billion USD deterministically", () => {
+  const material = { id: "sheet", originalFilename: "agro_ex_im.xlsx", extractionStatus: "extracted", extractedText: "", extractedTables: [{
+    sheetName: "export", header: ["Експорт товарів, тис. дол. США"], rows: [
+      ["№", "Країна", "Всього", "1001 Пшениця"], ["", "Всього", "1505000", "181000"],
+      ["Експорт товарів, оформлених по 29.10.2026, т"], ["№", "Країна", "Всього", "1001 Пшениця"],
+      ["", "Всього", "2872000", "949900"], ["1", "Польща", "100", "100"],
+    ],
+  }] } as MediaHubManualMaterialDigest;
+  const text = renderSsiWeeklyGrounding({ latestData: [], manualMaterials: [material], periodEndDate: "2026-10-30" });
+  expect(text).toContain('"millionUSD":1505'); expect(text).toContain('"billionUSD":1.505');
+  expect(text).toContain('"millionTonnes":2.872'); expect(text).not.toContain('"tonnes":1505000');
+});
 it("uses the two exact published Fridays, not the latest daily zero", () => {
   const text = renderSsiWeeklyGrounding({ latestData: [{ ...row("2026-10-30", 155), changeAbs: 0 } as PublicLatestItem], historyData: [row("2026-10-23", 160), row("2026-10-30", 155)], periodEndDate: "2026-10-30" });
   expect(text).toContain('"weeklyChangeAbs":-5'); expect(text).toContain('"previousValue":160');
@@ -14,4 +26,10 @@ it("grounds in extracted PDF contents, not only the email-header summary", () =>
   const evidence = extendSsiWeeklyEvidence([], [material], "Verified rail loading 42.2 thousand tonnes");
   expect(evidence.some(item => item.excerpt.includes("Verified rail loading 42.2"))).toBe(true);
   expect(evidence.every(item => material.extractedText.replace(/\s+/g, " ").includes(item.excerpt))).toBe(true);
+});
+it("adds auditable published weekly arithmetic to evidence without reusing daily deltas", () => {
+  const evidence = extendSsiWeeklyEvidence([], [], "", [row("2026-10-23", 160), row("2026-10-30", 155)], "2026-10-30");
+  expect(evidence).toHaveLength(1);
+  expect(evidence[0].excerpt).toContain('"weeklyChangeAbs":-5');
+  expect(evidence[0].sourceDate).toBe("2026-10-30");
 });
