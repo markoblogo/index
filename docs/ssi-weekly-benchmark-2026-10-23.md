@@ -1,5 +1,7 @@
 # SSI weekly benchmark: 23 October 2026
 
+Follow-up: [30 October comparison and evidence selection corrections](./ssi-weekly-benchmark-2026-10-30.md).
+
 Decision date: 25 October 2026. Scope: `spike-ua`, Ukrainian weekly report,
 `generate -> validate`. Route: `evolve`, production-sensitive drafting guidance;
 review focus: contracts and data integrity. No schedule, index calculation,

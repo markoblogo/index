@@ -1197,7 +1197,7 @@ async function buildTransientMediaHubSnapshotReport(
   const latestData = tenantId === "spike-ua" ? await getPublicLatestData() : [];
   const historyData = tenantId === "spike-ua" && (kind === "daily" || pairedWeeklyWorker) ? await getPublicHistoryData(pairedWeeklyWorker ? { scope: "analytics" } : {}) : [];
   const manualMaterials = await getManualMaterialsForPeriod({
-    kind,
+    kind, includeComparisonMaterials: pairedWeeklyWorker && tenantId === "spike-ua",
     periodEndDate,
     periodStartDate,
     tenantId,

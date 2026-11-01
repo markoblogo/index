@@ -11,6 +11,7 @@ import { db, hasDatabaseUrl } from "@/lib/db";
 import { fetchWithTimeout as fetchExternalWithTimeout } from "@/lib/fetch-timeout";
 import { sanitizeMaterialStorageText } from "@/lib/media-hub-material-text";
 import { selectReportWindowMaterials } from "@/lib/media-hub-material-window";
+import { selectSsiWeeklyComparisonMaterials, ssiWeeklyComparisonWindowStart } from "./ssi-weekly-comparison-materials";
 import type { MediaHubPublicationKind } from "@/lib/media-hub-publication-scheduler";
 
 export type MediaHubManualMaterialKind =
@@ -122,6 +123,7 @@ export type MediaHubMaterialExtractionReceipt = {
 };
 
 export type MediaHubManualMaterialDigest = {
+  comparisonOnly?: boolean;
   assets: MediaHubManualMaterialAssetDigest[];
   extractionReceipts: MediaHubMaterialExtractionReceipt[];
   extractedFacts: unknown;
@@ -406,6 +408,7 @@ export async function ingestScheduledMediaHubSources() {
 }
 
 export async function getManualMaterialsForPeriod(input: {
+  includeComparisonMaterials?: boolean;
   kind: Exclude<MediaHubPublicationKind, "none">;
   periodEndDate: string;
   periodStartDate: string;
@@ -452,7 +455,27 @@ export async function getManualMaterialsForPeriod(input: {
   );
 
   const selected = selectReportWindowMaterials(rows, input.periodStartDate, input.periodEndDate, 32, intakeEndDate, preferDriveMaterials);
-  return (await attachMaterialAssets(selected)).map((row) => toMaterialDigest(row, 4000));
+  // Opt-in drafting context only. Logistics readiness continues to use the
+  // unchanged current-window query without historical comparison materials.
+  const comparisons = input.includeComparisonMaterials && preferDriveMaterials
+    ? selectSsiWeeklyComparisonMaterials(await db.$queryRawUnsafe<MaterialRow[]>(`
+        SELECT * FROM "MediaHubManualMaterial"
+        WHERE "tenantId" = $1 AND "receivedFrom" = 'google-drive'
+          AND "originalFilename" ~* '(agro[_ ]ex[_ ]im|check[ _]points|оперативн.*вагон|статистичн.*дан|статистик.*уз|evening|closing|market.*review|tbc)'
+          AND "kind" IN ('weekly_material', 'source_candidate')
+          AND "extractionStatus" IN ('extracted', 'partial', 'unsupported_image_ocr', 'partial_visual_pending')
+          AND COALESCE(substring("canonicalUrl" from '[?&]driveVersion=([0-9]{4}-[0-9]{2}-[0-9]{2})T')::date, "reportingDate")
+            BETWEEN $2::date AND $3::date
+        ORDER BY "receivedAt" DESC LIMIT 96
+      `, input.tenantId, ssiWeeklyComparisonWindowStart(input.periodEndDate), intakeEndDate),
+      selected, input.periodStartDate, input.periodEndDate)
+    : [];
+  const currentIds = new Set(selected.map(row => row.id));
+  const comparisonRows = comparisons.filter(row => !currentIds.has(row.id));
+  const comparisonIds = new Set(comparisonRows.map(row => row.id));
+  return (await attachMaterialAssets([...selected, ...comparisonRows])).map(row => ({
+    ...toMaterialDigest(row, 4000), ...(comparisonIds.has(row.id) ? { comparisonOnly: true } : {}),
+  }));
 }
 
 export async function listRecentMediaHubManualMaterials(tenantId?: string) {
