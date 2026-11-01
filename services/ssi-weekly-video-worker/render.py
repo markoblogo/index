@@ -108,7 +108,8 @@ def scene_html(scene, part, index, count, report_end):
 
 
 def composition_html(sid, css, duration, body):
-    return f'<template><style>{css}</style><div id="root" data-composition-id="{sid}" data-width="1080" data-height="1920"><div id="{sid}-clip" class="clip" data-start="0" data-duration="{duration}" data-track-index="0"><div id="content">{body}</div></div></div><script>const tl=gsap.timeline({{paused:true}});tl.from(".rule",{{scaleX:0,duration:.28}},0);tl.from("h1,.metric,.period,.takeaway",{{y:14,opacity:0,duration:.28,stagger:.03}},.1);tl.from(".bar",{{scaleX:0,duration:.8}},.4);tl.to({{}},{{duration:{duration}}},0);window.__timelines["{sid}"]=tl;</script></template>'
+    animation = f'const scope=document.getElementById("{sid}-clip");const q=s=>scope.querySelectorAll(s);const tl=gsap.timeline({{paused:true}});if(!window.matchMedia("(prefers-reduced-motion: reduce)").matches){{tl.from(q(".rule"),{{scaleX:0,duration:.28}},0);tl.from(q("h1,.metric,.period,.takeaway"),{{y:14,opacity:0,duration:.28,stagger:.03}},.1);const bars=q(".bar");if(bars.length)tl.from(bars,{{scaleX:0,duration:.8}},.4);}}tl.to({{}},{{duration:{duration}}},0);window.__timelines["{sid}"]=tl;'
+    return f'<template><style>{css}</style><div id="root" data-composition-id="{sid}" data-width="1080" data-height="1920"><div id="{sid}-clip" class="clip" data-start="0" data-duration="{duration}" data-track-index="0"><div id="content">{body}</div></div></div><script>{animation}</script></template>'
 
 
 def render(config, job):
@@ -177,8 +178,11 @@ def render(config, job):
         (root / 'index.html').write_text(f'<!doctype html><html lang="en"><head><meta charset="utf-8"><script src="assets/gsap.min.js"></script><style>html,body{{margin:0;width:1080px;height:1920px;overflow:hidden}}#root,.clip{{position:absolute;inset:0}}</style></head><body><div id="root" data-composition-id="main" data-width="1080" data-height="1920" data-fps="30" data-duration="{cursor}">{"".join(clips)}<audio id="voice-master" class="clip" src="voice-master.wav" data-start="0" data-duration="{cursor}" data-track-index="20"></audio></div><script>const tl=gsap.timeline({{paused:true}});tl.to({{}},{{duration:{cursor}}});window.__timelines.main=tl;</script></body></html>')
         env = dict(os.environ, TMPDIR=str(work), PRODUCER_HEADLESS_SHELL_PATH=config['chrome'], DO_NOT_TRACK='1')
         times = ','.join(str(round(cue['start'] + 1.3, 3)) for cue in cues)
-        check = run([config['node'], config['hyperframesCli'], 'check', str(root), '--json', '--strict', '--at', times], env=env)
+        check = subprocess.run([config['node'], config['hyperframesCli'], 'check', str(root), '--json', '--strict', '--at', times], env=env, capture_output=True)
         (root / 'layout-check.json').write_bytes(check.stdout)
+        if check.returncode:
+            (root / 'layout-check-error.log').write_bytes(check.stderr)
+            raise ValueError('layout_check_failed: ' + str(root / 'layout-check.json'))
         picture = root / 'picture.mp4'
         run([config['node'], config['hyperframesCli'], 'render', str(root), '--workers', '1', '--format', 'mp4', '--fps', '30', '--crf', '23', '--output', picture], env=env)
         final = root / 'draft.mp4'

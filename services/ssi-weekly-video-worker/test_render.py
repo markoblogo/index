@@ -32,6 +32,13 @@ class RenderContract(unittest.TestCase):
         self.assertIn('id="corn-clip" class="clip"', markup)
         self.assertIn('window.__timelines["corn"]', markup)
 
+    def test_no_chart_scene_skips_empty_bar_animation_and_scopes_selectors(self):
+        markup = composition_html('corn', '', 8, '<h1>Synthetic</h1>')
+        self.assertIn('scope.querySelectorAll', markup)
+        self.assertIn('if(bars.length)tl.from(bars', markup)
+        self.assertNotIn('tl.from(".bar"', markup)
+        self.assertIn('prefers-reduced-motion: reduce', markup)
+
     def test_excess_rows_and_long_labels_block_instead_of_overflowing(self):
         row = {**self.scene['hero'], 'english': {'headline': 'x' * 23}}
         self.scene.update(rows=[row], kind='rows')

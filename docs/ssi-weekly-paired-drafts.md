@@ -92,7 +92,7 @@ Preparation uses separate requests for intake, the Ukrainian report and English
 video metadata. Successful intake is checkpointed by week. The paired SSI worker
 reuses collected news/materials, the shared SSI editorial contract and evidence
 validation; it does not rerun every API provider or generate an unused English
-full report. Its one Ukrainian model call is bounded to 16,000 output tokens /
+full report. Each Ukrainian part's model call is bounded to 16,000 output tokens /
 180 seconds, without automatic rewrites or untracked web-search facts. Other
 tenants and standard report-generation modes retain their existing behavior.
 The bounded response uses a strict three-part schema (logistics, grains,
@@ -122,6 +122,13 @@ before the existing evidence/publication checks. Known checkpoints are not error
 Use `--prepare-only` to render/register all videos without claiming or sending
 delivery. On 1 November the owner paused sending pending full-format review;
 the Mac LaunchAgent is disabled until a separate approval to resume.
+The live renderer skips bar animation for scenes without charts, scopes targets
+to the scene clip and honors reduced-motion preferences. Strict HyperFrames
+checks remain enabled; their stdout/stderr are retained on failure. Five Python
+contract tests cover the optional-chart path and fixed-design constraints.
+Local source-checked editorial previews remain distinct from an automatic
+candidate in `needs_review`; preview MP4 QA is not owner approval or permission
+to send. Install the current Mac runtime before any approved delivery resumption.
 The bounded provider response is retained in private `reportAttemptJson` before
 normalization, including incomplete-response status. It is not a publication or
 a successful validation receipt. Operator errors expose only a redacted reason,
