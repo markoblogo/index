@@ -43,21 +43,28 @@ async function reportForJob(job: Job, end: string) {
 }
 function plain(value: string) { return value.replace(/<[^>]*>/g, " ").replace(/&(?:amp|nbsp|quot);/g, " ").replace(/\s+/g, " ").trim(); }
 
-async function prepareJob(end: string) {
-  let report = await getMediaHubReport("weekly", end, "spike-ua");
+async function prepareJob(end: string, intakeComplete: boolean, preparationLease: string) {
+  const report = await getMediaHubReport("weekly", end, "spike-ua");
   if (report?.telegramSentAt) return { status: "already_sent" };
   const existing = await currentJob(end);
   if (existing && report && existing.baseContentSha256 === reportContentHash(report.contentJson)) return { status: existing.status, job: existing };
   if (existing) throw new Error("report_revision_changed");
+  if (report?.status === "needs_review") return { status: "blocked", reason: "weekly_report_needs_review" };
   if (!report || report.status !== "published") {
+    if (!intakeComplete) {
     const imported = await syncGoogleDriveContextMaterials();
     if (imported.status !== "processed" || imported.remainingCount !== 0) return { status: "blocked", reason: "drive_import_incomplete",
       imported: { status: imported.status, fileCount: imported.fileCount, importedCount: imported.results.length,
         alreadyImportedCount: imported.alreadyImportedCount, remainingCount: imported.remainingCount } };
+      const saved = await db.$executeRawUnsafe('UPDATE private."SsiWeeklyVideoPreparation" SET "intakeCompleteAt"=NOW() WHERE "periodEnd"=$1::date AND "lease"=$2', end, preparationLease);
+      if (saved !== 1) throw new Error("preparation_lease_changed");
+      return { status: "waiting", reason: "drive_import_completed" };
+    }
     const blocked = await getSsiWeeklyLogisticsPublicationBlock({ periodEndDate: end, publishTelegram: false });
     if (blocked) return blocked;
-    await publishMediaHubSnapshotReport("weekly", end);
-    report = await getMediaHubReport("weekly", end, "spike-ua");
+    const publication = await publishMediaHubSnapshotReport("weekly", end, { pairedWeeklyWorker: true });
+    return { status: publication.status === "published" ? "waiting" : "blocked",
+      reason: publication.status === "published" ? "weekly_report_prepared" : "weekly_report_needs_review" };
   }
   if (!report || report.status !== "published" || report.telegramSentAt) throw new Error("weekly_report_not_ready");
   type Content = Parameters<typeof buildMediaHubTelegramMessages>[0]["content"];
@@ -126,10 +133,10 @@ export async function handleSsiVideoWorker(request: Request) {
     };
     if (body.action === "prepare") {
       const token = randomUUID();
-      const claimed = await db.$queryRawUnsafe<Array<{ periodEnd: Date }>>('INSERT INTO private."SsiWeeklyVideoPreparation" ("periodEnd","lease","retryAfter") VALUES ($1::date,$2,NOW()+INTERVAL \'20 minutes\') ON CONFLICT ("periodEnd") DO UPDATE SET "lease"=$2,"retryAfter"=NOW()+INTERVAL \'20 minutes\' WHERE "SsiWeeklyVideoPreparation"."retryAfter"<NOW() RETURNING "periodEnd"', end, token);
+      const claimed = await db.$queryRawUnsafe<Array<{ periodEnd: Date; intakeCompleteAt: Date | null }>>('INSERT INTO private."SsiWeeklyVideoPreparation" ("periodEnd","lease","retryAfter") VALUES ($1::date,$2,NOW()+INTERVAL \'20 minutes\') ON CONFLICT ("periodEnd") DO UPDATE SET "lease"=$2,"retryAfter"=NOW()+INTERVAL \'20 minutes\' WHERE "SsiWeeklyVideoPreparation"."retryAfter"<NOW() RETURNING "periodEnd","intakeCompleteAt"', end, token);
       if (!claimed.length) return json({ status: "waiting", reason: "preparation_in_progress_or_backoff" });
       try {
-        const result = await prepareJob(end);
+        const result = await prepareJob(end, Boolean(claimed[0].intakeCompleteAt), token);
         await db.$executeRawUnsafe('UPDATE private."SsiWeeklyVideoPreparation" SET "retryAfter"=NOW() WHERE "periodEnd"=$1::date AND "lease"=$2', end, token);
         return json(result);
       } catch (error) {

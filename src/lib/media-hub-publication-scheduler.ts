@@ -758,6 +758,7 @@ function normalizeSsiWhatsAppFooter(tenant: "spike" | "platform", text: string) 
 export async function publishMediaHubSnapshotReport(
   kind: Exclude<MediaHubPublicationKind, "none">,
   periodEndDate: string,
+  options: { pairedWeeklyWorker?: boolean } = {},
 ) {
   if (!isPlatformSite() && isSsiPeriodicPublicationHeld(getActiveIndexConfig().id, kind)) return SSI_PERIODIC_PUBLICATION_HOLD_RESULT;
   if (!hasDatabaseUrl() && isPlatformSite()) {
@@ -772,7 +773,7 @@ export async function publishMediaHubSnapshotReport(
     await ensureMediaHubReportStorage();
 
     const { content, manualMaterials, periodStartDate, primarySnapshot, snapshots } =
-      await buildTransientMediaHubSnapshotReport(kind, periodEndDate);
+      await buildTransientMediaHubSnapshotReport(kind, periodEndDate, options);
     const tenantId = isPlatformSite() ? "1d3x" : getActiveIndexConfig().id;
     const canPublishStandardSsiDailyReport =
       tenantId === "spike-ua" &&
@@ -1172,14 +1173,16 @@ async function getPublicationSnapshots(windowKey: MediaHubWindowKey) {
 async function buildTransientMediaHubSnapshotReport(
   kind: Exclude<MediaHubPublicationKind, "none">,
   periodEndDate: string,
+  options: { pairedWeeklyWorker?: boolean } = {},
 ) {
+  const pairedWeeklyWorker = Boolean(options.pairedWeeklyWorker && kind === "weekly" && !isPlatformSite() && getActiveIndexConfig().id === "spike-ua");
   const periodStartDate = shiftIsoDate(
     periodEndDate,
     kind === "daily" ? 0 : kind === "weekly" ? -6 : -29,
   );
   const windowKey: MediaHubWindowKey =
     kind === "daily" ? "day" : kind === "weekly" ? "week" : "month";
-  await runMediaHubApiMonitoring({
+  if (!pairedWeeklyWorker) await runMediaHubApiMonitoring({
     force: kind === "weekly" || kind === "monthly",
     kind,
     tenantMode: isPlatformSite() ? "platform" : "unified",
@@ -1223,6 +1226,7 @@ async function buildTransientMediaHubSnapshotReport(
       return [] as string[];
     });
   const llm = await generateMediaHubLlmReports({
+    pairedWeeklyWorker,
     avoidPhrases,
     kind,
     latestData,
@@ -1233,6 +1237,7 @@ async function buildTransientMediaHubSnapshotReport(
     snapshots,
     tenant: tenantId === "1d3x" ? "platform" : "spike",
   });
+  if (pairedWeeklyWorker && !llm.localized.uk) throw new Error("weekly_report_generation_failed");
   const content = buildSnapshotReportContent({
     kind,
     llm,

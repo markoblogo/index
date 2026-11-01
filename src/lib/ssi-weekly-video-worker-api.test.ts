@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildWeeklyVideoPacket, freezeVideoReport, VIDEO_PARTS, videoHash } from "./ssi-weekly-video-packet";
 import { makeWeeklyDraftItems, type WeeklyVideoReadySet } from "./ssi-weekly-paired-draft";
 
-const mocks = vi.hoisted(() => ({ query: vi.fn(), execute: vi.fn(), report: vi.fn(), send: vi.fn(), publish: vi.fn(), held: vi.fn(() => false), inTransaction: false }));
+const mocks = vi.hoisted(() => ({ query: vi.fn(), execute: vi.fn(), report: vi.fn(), send: vi.fn(), publish: vi.fn(), sync: vi.fn(), gate: vi.fn(), held: vi.fn(() => false), inTransaction: false }));
 vi.mock("server-only", () => ({}));
 vi.mock("./db", () => ({ db: { $queryRawUnsafe: mocks.query, $executeRawUnsafe: mocks.execute, $transaction: async (fn: (tx: unknown) => unknown) => { mocks.inTransaction = true; try { return await fn({ $executeRawUnsafe: mocks.execute }); } finally { mocks.inTransaction = false; } } } }));
 vi.mock("./index-platform", () => ({ getActiveIndexConfig: () => ({ id: "spike-ua" }) }));
@@ -10,8 +10,8 @@ vi.mock("./platform-site", () => ({ isPlatformSite: () => false }));
 vi.mock("./ssi-periodic-publication-hold", () => ({ isSsiPeriodicPublicationHeld: mocks.held }));
 vi.mock("./fetch-timeout", () => ({ fetchWithTimeout: mocks.send }));
 vi.mock("./media-hub-publication-scheduler", () => ({ getMediaHubReport: mocks.report, publishMediaHubSnapshotReport: mocks.publish, buildMediaHubTelegramMessages: vi.fn() }));
-vi.mock("./media-hub-google-drive", () => ({ syncGoogleDriveContextMaterials: vi.fn() }));
-vi.mock("./ssi-weekly-logistics-control", () => ({ getSsiWeeklyLogisticsPublicationBlock: vi.fn() }));
+vi.mock("./media-hub-google-drive", () => ({ syncGoogleDriveContextMaterials: mocks.sync }));
+vi.mock("./ssi-weekly-logistics-control", () => ({ getSsiWeeklyLogisticsPublicationBlock: mocks.gate }));
 import { handleSsiVideoWorker } from "./ssi-weekly-video-worker-api";
 
 const snapshot = freezeVideoReport({ tenantId: "spike-ua", reportId: "report", validated: true,
@@ -131,5 +131,20 @@ describe("production paired-draft adapter with fake database and Telegram", () =
     job.leaseUntil = baseJob.leaseUntil;
     mocks.execute.mockResolvedValue(0);
     expect((await action({ action: "ready", ready: { ...ready, assets: ready.assets.map(a => ({ ...a, artifactId: a.artifactId + ".new" })) } })).status).toBe(409);
+  });
+  it("checkpoints intake and returns before starting report/model work", async () => {
+    mocks.report.mockResolvedValue(null);
+    mocks.query.mockImplementation(async (sql: string) => sql.startsWith("INSERT") ? [{ periodEnd: new Date("2026-10-30"), intakeCompleteAt: null }] : []);
+    mocks.sync.mockResolvedValue({ status: "processed", remainingCount: 0, results: [], fileCount: 0, alreadyImportedCount: 0 });
+    expect((await action({ action: "prepare" })).body).toMatchObject({ status: "waiting", reason: "drive_import_completed" });
+    expect(mocks.publish).not.toHaveBeenCalled(); expect(mocks.send).not.toHaveBeenCalled();
+  });
+  it("saves the Ukrainian report in a separate request from video metadata", async () => {
+    mocks.report.mockResolvedValue(null);
+    mocks.query.mockImplementation(async (sql: string) => sql.startsWith("INSERT") ? [{ periodEnd: new Date("2026-10-30"), intakeCompleteAt: new Date() }] : []);
+    mocks.gate.mockResolvedValue(null); mocks.publish.mockResolvedValue({ status: "published" });
+    expect((await action({ action: "prepare" })).body).toMatchObject({ status: "waiting", reason: "weekly_report_prepared" });
+    expect(mocks.publish).toHaveBeenCalledWith("weekly", "2026-10-30", { pairedWeeklyWorker: true });
+    expect(mocks.sync).not.toHaveBeenCalled(); expect(mocks.send).not.toHaveBeenCalled();
   });
 });

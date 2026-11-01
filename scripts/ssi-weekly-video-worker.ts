@@ -54,7 +54,13 @@ async function main() {
       if (!response.ok) throw new Error(typeof value.reason === "string" ? value.reason : `worker_api_${response.status}`);
       return value;
     };
-    const prepared = await api({ action: "prepare" });
+    let prepared = await api({ action: "prepare" });
+    // Separate bounded server requests, but do not sleep five minutes between
+    // successful intake/report checkpoints during one authorized Mac run.
+    for (let step = 0; step < 2 && prepared.status === "waiting" &&
+      ["drive_import_completed", "weekly_report_prepared"].includes(String(prepared.reason)); step++) {
+      prepared = await api({ action: "prepare" });
+    }
     if (prepared.status === "already_sent") { console.log('{"status":"already_sent"}'); return; }
     const job = prepared.job as Job | undefined;
     if (!job || !["prepared", "ready", "sent"].includes(job.status)) {

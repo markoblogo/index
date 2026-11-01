@@ -82,6 +82,14 @@ only the OS-lock-owning launcher cleans a dead predecessor.
 
 ## QA and limits
 
+Preparation uses separate requests for intake, the Ukrainian report and English
+video metadata. Successful intake is checkpointed by week. The paired SSI worker
+reuses collected news/materials, the shared SSI editorial contract and evidence
+validation; it does not rerun every API provider or generate an unused English
+full report. Its one Ukrainian model call is bounded to 16,000 output tokens /
+180 seconds, without automatic rewrites or untracked web-search facts. Other
+tenants and standard report-generation modes retain their existing behavior.
+
 - 1080x1920, 30 fps, H.264/AAC, full decode, layout checks, source-bound claims,
   fresh voice only, measured loudness and two seconds after both voice completion
   and settled data. Compared rows share the hero's visible observation window.

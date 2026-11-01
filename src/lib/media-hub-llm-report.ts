@@ -48,6 +48,7 @@ type GenerationResult = {
 const OPENAI_REPORT_TIMEOUT_MS = 60_000;
 
 export async function generateMediaHubLlmReports(input: {
+  pairedWeeklyWorker?: boolean;
   kind: MediaHubReportKind;
   latestData: PublicLatestItem[];
   manualMaterials?: MediaHubManualMaterialDigest[];
@@ -89,7 +90,8 @@ export async function generateMediaHubLlmReports(input: {
     return { cortexContextPack, editorialGuidance, localized: {}, qualityCandidates: {}, skippedReason: "openai_api_key_missing" };
   }
 
-  const locales: Locale[] = input.tenant === "spike" ? ["uk", "en"] : ["en"];
+  const pairedWeeklyWorker = input.pairedWeeklyWorker === true && input.tenant === "spike" && input.kind === "weekly";
+  const locales: Locale[] = input.tenant === "spike" ? pairedWeeklyWorker ? ["uk"] : ["uk", "en"] : ["en"];
   const model = getMediaHubModel(input.kind);
   const localized: Partial<Record<Locale, MediaHubLocalizedReport>> = {};
   const qualityCandidates: Partial<Record<Locale, CortexEditorialQualityCandidate>> = {};
@@ -98,6 +100,7 @@ export async function generateMediaHubLlmReports(input: {
   for (const locale of locales) {
     const generated = await generateOneLocale({
       ...input,
+      pairedWeeklyWorker,
       apiKey,
       cortexContextPack,
       editorialGuidance,
@@ -129,6 +132,7 @@ export async function generateMediaHubLlmReports(input: {
 }
 
 async function generateOneLocale(input: {
+  pairedWeeklyWorker?: boolean;
   apiKey: string;
   cortexContextPack: CortexContextPack;
   editorialGuidance?: CortexEditorialGuidance;
@@ -147,6 +151,10 @@ async function generateOneLocale(input: {
   const prompt = buildPrompt(input);
 
   try {
+    if (input.pairedWeeklyWorker) {
+      const result = await callResponsesApi({ ...input, prompt });
+      return result.report ? buildShadowQualityCandidate({ input, prompt, report: result.report }) : result;
+    }
     const attempts = [...new Set([input.model, "gpt-4o-mini"])];
     let lastError = "";
 
@@ -172,6 +180,7 @@ async function generateOneLocale(input: {
 
 async function buildShadowQualityCandidate(input: {
   input: {
+    pairedWeeklyWorker?: boolean;
     apiKey: string;
     editorialGuidance?: CortexEditorialGuidance;
     kind: MediaHubReportKind;
@@ -189,7 +198,7 @@ async function buildShadowQualityCandidate(input: {
   let revisedAssessment: CortexEditorialQualityCandidate["revisedAssessment"] = null;
   const structureProfile = input.input.editorialGuidance?.structureProfile;
   const rewriteAttempted = Boolean(
-    input.input.editorialGuidance?.active && (shouldAttemptCortexEditorialRewrite(originalAssessment) || structureProfile?.active),
+    !input.input.pairedWeeklyWorker && input.input.editorialGuidance?.active && (shouldAttemptCortexEditorialRewrite(originalAssessment) || structureProfile?.active),
   );
 
   if (rewriteAttempted) {
@@ -225,18 +234,19 @@ async function buildShadowQualityCandidate(input: {
 }
 
 async function callResponsesApi(input: {
+  pairedWeeklyWorker?: boolean;
   apiKey: string;
   kind: MediaHubReportKind;
   model: string;
   prompt: string;
   tenant: MediaHubTenant;
 }): Promise<GenerationResult> {
-  const useWebSearch = input.kind !== "daily";
+  const useWebSearch = input.kind !== "daily" && !input.pairedWeeklyWorker;
   const requestBody: Record<string, unknown> = {
     input: input.prompt,
-    max_output_tokens: getMaxOutputTokens(input.kind),
+    max_output_tokens: input.pairedWeeklyWorker ? 16000 : getMaxOutputTokens(input.kind),
     model: input.model,
-    temperature: 0.25,
+    ...(input.pairedWeeklyWorker ? { text: { format: { type: "json_object" } } } : { temperature: 0.25 }),
   };
 
   if (useWebSearch) {
@@ -247,7 +257,7 @@ async function callResponsesApi(input: {
     body: JSON.stringify(requestBody),
     headers: openAiHeaders(input.apiKey),
     method: "POST",
-  }, OPENAI_REPORT_TIMEOUT_MS);
+  }, input.pairedWeeklyWorker ? 180000 : OPENAI_REPORT_TIMEOUT_MS);
 
   if (!response.ok && useWebSearch) {
     delete requestBody.tools;
@@ -263,6 +273,7 @@ async function callResponsesApi(input: {
   }
 
   const payload = await response.json();
+  if (input.pairedWeeklyWorker && payload.status !== "completed") return { error: "responses_incomplete" };
   const report = parseGeneratedJson(extractResponseText(payload), input.kind);
   return report ? { report } : { error: "responses_parse_empty" };
 }
