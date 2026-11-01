@@ -62,9 +62,16 @@ describe("production paired-draft adapter with fake database and Telegram", () =
   it("allows a read-only configuration check before start without generating", async () => {
     vi.setSystemTime(new Date("2026-10-25T10:00:00Z"));
     const response = await handleSsiVideoWorker(new Request(request({}).url + "?preflight=1", { headers: { Authorization: "Bearer fixture-key" } }));
-    expect(await response.json()).toMatchObject({ status: "configured", reportsGenerated: false, messagesSent: false });
+    expect(await response.json()).toMatchObject({ status: "configured", targetChatId: "-123", reportsGenerated: false, messagesSent: false });
     expect(mocks.publish).not.toHaveBeenCalled();
     expect(mocks.send.mock.calls.every(([url]) => String(url).endsWith("/getChat"))).toBe(true);
+  });
+  it("does not reveal the destination without the scoped preflight key", async () => {
+    const response = await handleSsiVideoWorker(new Request(request({}).url + "?preflight=1"));
+    expect(response.status).toBe(401);
+    expect(await response.json()).not.toHaveProperty("targetChatId");
+    expect(mocks.query).not.toHaveBeenCalled();
+    expect(mocks.send).not.toHaveBeenCalled();
   });
   it("accepts a PostgreSQL-reordered confirmed receipt without another send", async () => {
     job.ledger = { ids: [101], identity: pack.identity, version: 1 };

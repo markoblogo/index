@@ -114,6 +114,7 @@ export async function handleSsiVideoWorker(request: Request) {
         await db.$queryRawUnsafe('SELECT "periodEnd" FROM private."SsiWeeklyVideoPreparation" LIMIT 0');
       }
       return json({ status: rows[0]?.installed ? "configured" : "migration_required", foundersGroupPrivate: target.private,
+        targetChatId: target.chatId,
         pairedMode: process.env.SSI_WEEKLY_PAIRED_DRAFTS === "1", held: isSsiPeriodicPublicationHeld("spike-ua", "weekly"),
         startsOn: process.env.SSI_WEEKLY_VIDEO_START_DATE ?? "2026-11-01", reportsGenerated: false, messagesSent: false });
     } catch { return json({ status: "blocked", reason: "worker_configuration_not_ready" }, 503); }
