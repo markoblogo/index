@@ -49,6 +49,12 @@ finalize the public report. WhatsApp is unchanged and outside this work.
 
 ## Local runtime
 
+Drive import progress is recorded per file version in the private
+`MediaHubGoogleDriveVersionReceipt` table, independently of content deduplication.
+This prevents unchanged files from starving later batches in the overlap window.
+Receipts do not move observation dates or replace facts. Explicit PDF/OCR repair
+eligibility is checked against the linked material and remains unchanged.
+
 Private configuration follows
 `services/ssi-weekly-video-worker/config.example.json`. Keep the verified handoff
 and scratch on mounted Work, outside the public tree. Historical masters are

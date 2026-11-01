@@ -57,7 +57,12 @@ async function main() {
     const prepared = await api({ action: "prepare" });
     if (prepared.status === "already_sent") { console.log('{"status":"already_sent"}'); return; }
     const job = prepared.job as Job | undefined;
-    if (!job || !["prepared", "ready", "sent"].includes(job.status)) throw new Error("weekly_report_or_video_job_not_ready");
+    if (!job || !["prepared", "ready", "sent"].includes(job.status)) {
+      const reason = typeof prepared.reason === "string" ? prepared.reason : typeof prepared.skippedReason === "string" ? prepared.skippedReason : "weekly_report_or_video_job_not_ready";
+      console.log(JSON.stringify({ status: prepared.status, reason, imported: prepared.imported }));
+      if (prepared.status === "waiting") return;
+      throw new Error(reason);
+    }
     const jobDir = path.join(config.workRoot, job.packet.packetSha256);
     mkdirSync(jobDir, { recursive: true, mode: 0o700 });
     const jobPath = path.join(jobDir, "job.json");

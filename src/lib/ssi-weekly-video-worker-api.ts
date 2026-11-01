@@ -51,7 +51,9 @@ async function prepareJob(end: string) {
   if (existing) throw new Error("report_revision_changed");
   if (!report || report.status !== "published") {
     const imported = await syncGoogleDriveContextMaterials();
-    if (imported.status !== "processed" || imported.remainingCount !== 0) return { status: "blocked", reason: "drive_import_incomplete" };
+    if (imported.status !== "processed" || imported.remainingCount !== 0) return { status: "blocked", reason: "drive_import_incomplete",
+      imported: { status: imported.status, fileCount: imported.fileCount, importedCount: imported.results.length,
+        alreadyImportedCount: imported.alreadyImportedCount, remainingCount: imported.remainingCount } };
     const blocked = await getSsiWeeklyLogisticsPublicationBlock({ periodEndDate: end, publishTelegram: false });
     if (blocked) return blocked;
     await publishMediaHubSnapshotReport("weekly", end);

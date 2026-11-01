@@ -135,8 +135,14 @@ export async function syncGoogleDriveContextMaterials(options: { rescanRecent?: 
     return `${link}${link.includes("?") ? "&" : "?"}driveVersion=${encodeURIComponent(file.modifiedTime!)}`;
   };
   const existing = eligibleFiles.length ? await db.$queryRawUnsafe<Array<{ canonicalUrl: string }>>(
-    `SELECT "canonicalUrl" FROM "MediaHubManualMaterial" WHERE "tenantId" = 'spike-ua'
-     AND "receivedFrom" = 'google-drive' AND "canonicalUrl" = ANY($1::text[])
+    `SELECT v."canonicalUrl" FROM (
+       SELECT "id" AS "materialId", "canonicalUrl" FROM "MediaHubManualMaterial"
+       WHERE "tenantId" = 'spike-ua' AND "receivedFrom" = 'google-drive'
+       UNION ALL
+       SELECT "materialId", "canonicalUrl" FROM private."MediaHubGoogleDriveVersionReceipt"
+       WHERE "tenantId" = 'spike-ua'
+     ) v JOIN "MediaHubManualMaterial" m ON m."id" = v."materialId" AND m."tenantId" = 'spike-ua'
+     WHERE v."canonicalUrl" = ANY($1::text[])
      AND NOT ("mimeType" IN ('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
        'application/vnd.openxmlformats-officedocument.wordprocessingml.document') AND "extractionStatus" <> 'extracted'
        AND NOT COALESCE("extractedFactsJson", '[]'::jsonb) @> '[{"officeParserAttempt":"ooxml-bounded-v1"}]'::jsonb)
@@ -186,6 +192,16 @@ export async function syncGoogleDriveContextMaterials(options: { rescanRecent?: 
     if (!result.id || result.extractionStatus === "failed" || result.extractionStatus === "skipped") {
       throw new Error(`Google Drive material intake failed for ${file.name}.`);
     }
+    // A byte-identical file may reuse an older material. Remember the version
+    // without changing that material's observation date or source facts.
+    await db.$executeRawUnsafe(
+      `INSERT INTO private."MediaHubGoogleDriveVersionReceipt"
+       ("canonicalUrl","tenantId","driveFileId","modifiedAt","materialId","contentSha256")
+       VALUES ($1,'spike-ua',$2,$3::timestamptz,$4,$5)
+       ON CONFLICT ("tenantId","canonicalUrl") DO NOTHING`,
+      versionUrl(file), file.id, file.modifiedTime, result.id,
+      createHash("sha256").update(bytes).digest("hex"),
+    );
     results.push(result);
     visitedCount += 1;
     // Persist progress before another external request can fail or time out.
