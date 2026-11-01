@@ -147,4 +147,14 @@ describe("production paired-draft adapter with fake database and Telegram", () =
     expect(mocks.publish).toHaveBeenCalledWith("weekly", "2026-10-30", { pairedWeeklyWorker: true });
     expect(mocks.sync).not.toHaveBeenCalled(); expect(mocks.send).not.toHaveBeenCalled();
   });
+  it("returns a redacted provider diagnostic without exposing a credential", async () => {
+    mocks.report.mockResolvedValue(null);
+    mocks.query.mockImplementation(async (sql: string) => sql.startsWith("INSERT") ? [{ periodEnd: new Date("2026-10-30"), intakeCompleteAt: new Date() }] : []);
+    mocks.gate.mockResolvedValue(null);
+    mocks.publish.mockRejectedValueOnce(new Error("weekly_report_generation_failed", { cause: "openai_generation_empty:Bearer fixture-secret sk-fixture-secret" }));
+    const result = await action({ action: "prepare" });
+    expect(result.body.reason).toBe("weekly_report_generation_failed");
+    expect(result.body.diagnostic).not.toContain("fixture-secret");
+    expect(result.body.diagnostic).toContain("[redacted]");
+  });
 });

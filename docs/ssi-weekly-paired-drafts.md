@@ -95,6 +95,10 @@ validation; it does not rerun every API provider or generate an unused English
 full report. Its one Ukrainian model call is bounded to 16,000 output tokens /
 180 seconds, without automatic rewrites or untracked web-search facts. Other
 tenants and standard report-generation modes retain their existing behavior.
+The bounded provider response is retained in private `reportAttemptJson` before
+normalization, including incomplete-response status. It is not a publication or
+a successful validation receipt. Operator errors expose only a redacted reason,
+never request credentials; rejected output remains private for diagnosis.
 
 - 1080x1920, 30 fps, H.264/AAC, full decode, layout checks, source-bound claims,
   fresh voice only, measured loudness and two seconds after both voice completion

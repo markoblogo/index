@@ -10,7 +10,7 @@ import {
 import { buildCortexMemoryContextPack } from "@/lib/cortex-memory-context-pack";
 import { loadCortexRuntimeChunkManifest } from "@/lib/cortex-runtime-chunk-manifest";
 import { buildCortexIndexDbEvidence } from "@/lib/cortex-index-db-evidence";
-import { hasDatabaseUrl } from "@/lib/db";
+import { db, hasDatabaseUrl } from "@/lib/db";
 import { getCortexEditorialGuidance, type CortexEditorialGuidance } from "@/lib/cortex-editorial-shadow";
 import {
   assessCortexEditorialDraft,
@@ -235,6 +235,7 @@ async function buildShadowQualityCandidate(input: {
 
 async function callResponsesApi(input: {
   pairedWeeklyWorker?: boolean;
+  periodEndDate?: string;
   apiKey: string;
   kind: MediaHubReportKind;
   model: string;
@@ -273,6 +274,11 @@ async function callResponsesApi(input: {
   }
 
   const payload = await response.json();
+  if (input.pairedWeeklyWorker && input.periodEndDate && hasDatabaseUrl()) {
+    const attempt = { model: input.model, status: payload.status, incomplete: payload.incomplete_details ?? null,
+      output: payload.output ?? [], error: payload.error ?? null, usage: payload.usage ?? null };
+    await db.$executeRawUnsafe('UPDATE private."SsiWeeklyVideoPreparation" SET "reportAttemptJson"=$2::jsonb WHERE "periodEnd"=$1::date', input.periodEndDate, JSON.stringify(attempt));
+  }
   if (input.pairedWeeklyWorker && payload.status !== "completed") return { error: "responses_incomplete" };
   const report = parseGeneratedJson(extractResponseText(payload), input.kind);
   return report ? { report } : { error: "responses_parse_empty" };

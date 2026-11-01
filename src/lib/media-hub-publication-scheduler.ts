@@ -1237,7 +1237,7 @@ async function buildTransientMediaHubSnapshotReport(
     snapshots,
     tenant: tenantId === "1d3x" ? "platform" : "spike",
   });
-  if (pairedWeeklyWorker && !llm.localized.uk) throw new Error("weekly_report_generation_failed");
+  if (pairedWeeklyWorker && !llm.localized.uk) throw new Error("weekly_report_generation_failed", { cause: llm.skippedReason });
   const content = buildSnapshotReportContent({
     kind,
     llm,

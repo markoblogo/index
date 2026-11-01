@@ -230,7 +230,9 @@ export async function handleSsiVideoWorker(request: Request) {
     return json({ error: "unknown_action" }, 400);
   } catch (error) {
     const reason = error instanceof Error && /^[a-z0-9_]+$/.test(error.message) ? error.message : "video_worker_operation_failed";
+    const diagnostic = reason === "weekly_report_generation_failed" && error instanceof Error && typeof error.cause === "string"
+      ? error.cause.replace(/sk-[A-Za-z0-9_-]+/g, "[redacted]").replace(/Bearer\s+[^\s,;]+/gi, "Bearer [redacted]").slice(0, 400) : undefined;
     console.warn("SSI paired draft worker blocked", { reason });
-    return json({ status: "blocked", reason }, 409);
+    return json({ status: "blocked", reason, diagnostic }, 409);
   }
 }
