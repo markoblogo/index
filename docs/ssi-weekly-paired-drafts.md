@@ -108,6 +108,9 @@ Cortex/fallback templates. Typed spreadsheet weights and monetary values stay
 separate; human-scale units are deterministic conversions with source IDs.
 Weekly prose uses `SPIKE_WEEKLY_EDITORIAL_MODEL` or `gpt-4.1` in the existing
 OpenAI account; other report modes keep their configured model.
+The compact prompt also retains checked `pdf-tables-v1` image tables through
+the existing table renderer, with page, observation date, units and intact rows.
+Their verbatim blocks can support the ledger even when native PDF text is empty.
 The bounded provider response is retained in private `reportAttemptJson` before
 normalization, including incomplete-response status. It is not a publication or
 a successful validation receipt. Operator errors expose only a redacted reason,

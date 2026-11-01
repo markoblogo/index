@@ -33,3 +33,14 @@ it("adds auditable published weekly arithmetic to evidence without reusing daily
   expect(evidence[0].excerpt).toContain('"weeklyChangeAbs":-5');
   expect(evidence[0].sourceDate).toBe("2026-10-30");
 });
+it("preserves checked image-table cells, page, date and unit when native PDF text has no quote", () => {
+  const material = { id: "image-pdf", originalFilename: "market.pdf", extractedText: "Email header only", extractionStatus: "extracted",
+    extractedTables: [{ parser: "pdf-tables-v1", title: "Corn futures", unit: "cents/bushel", observationDate: "2026-10-30", sourcePage: 3,
+      imageSha256: "a".repeat(64), header: ["Contract", "Settlement"], rows: [["December 2026", "456.25"]] }],
+    receivedAt: new Date("2026-10-31"), originalUrl: null, sourceType: "google_drive_file",
+  } as MediaHubManualMaterialDigest;
+  const prompt = renderSsiWeeklyGrounding({ latestData: [], manualMaterials: [material], periodEndDate: "2026-10-30" });
+  expect(prompt).toContain('"December 2026","456.25"'); expect(prompt).toContain("market.pdf page 3");
+  expect(prompt).toContain("units: cents/bushel | observation: 2026-10-30");
+  expect(extendSsiWeeklyEvidence([], [material], "Corn futures December 2026 456.25 cents/bushel").some(item => item.excerpt.includes("456.25"))).toBe(true);
+});
