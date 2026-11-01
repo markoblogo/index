@@ -124,8 +124,14 @@ delivery. On 1 November the owner paused sending pending full-format review;
 the Mac LaunchAgent is disabled until a separate approval to resume.
 The live renderer skips bar animation for scenes without charts, scopes targets
 to the scene clip and honors reduced-motion preferences. Strict HyperFrames
-checks remain enabled; their stdout/stderr are retained on failure. Five Python
+checks remain enabled; their stdout/stderr are retained on failure. Seven Python
 contract tests cover the optional-chart path and fixed-design constraints.
+Voice normalization measures the source master first, then applies a second
+pass at -16 LUFS with -2.5 dBTP headroom before 48 kHz AAC encoding. The encoded
+file must still satisfy the unchanged -1 dBTP ceiling and loudness window.
+Each successful part receives an atomic `part-ready.json`; retries reuse it only
+when packet/snapshot, voice revision, media parameters, all QA flags and the file
+hash match. A failed or modified part is never treated as a confirmed artifact.
 Local source-checked editorial previews remain distinct from an automatic
 candidate in `needs_review`; preview MP4 QA is not owner approval or permission
 to send. Install the current Mac runtime before any approved delivery resumption.

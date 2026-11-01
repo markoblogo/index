@@ -26,6 +26,33 @@ def probe(config, path):
     return json.loads(run([config['ffprobe'], '-v', 'error', '-show_streams', '-show_format', '-of', 'json', path]).stdout)
 
 
+def loudnorm_second_pass_filter(stats):
+    fields = {'measured_I': 'input_i', 'measured_TP': 'input_tp', 'measured_LRA': 'input_lra',
+              'measured_thresh': 'input_thresh', 'offset': 'target_offset'}
+    values = {key: float(stats[source]) for key, source in fields.items()}
+    if not all(math.isfinite(value) for value in values.values()):
+        raise ValueError('voice_measurement_not_finite')
+    return 'loudnorm=I=-16:TP=-2.5:LRA=7:linear=true:' + ':'.join(f'{key}={value}' for key, value in values.items())
+
+
+def cached_part_asset(root, packet, voice_revision):
+    try:
+        receipt = json.loads((root / 'part-ready.json').read_text())
+        asset = receipt['asset']
+        file = root / 'draft.mp4'
+        if receipt.get('version') != 1 or asset['packetSha256'] != packet['packetSha256'] or asset['snapshotSha256'] != packet['snapshotSha256']:
+            return None
+        if Path(asset['artifactId']).resolve() != file.resolve() or not file.is_file() or asset['sha256'] != digest(file) or asset['bytes'] != file.stat().st_size or asset['bytes'] > 3900000:
+            return None
+        if asset['part'] != root.name or asset['voiceRevision'] != voice_revision or (asset['width'], asset['height'], asset['fps'], asset['codec'], asset['audioCodec']) != (1080, 1920, 30, 'h264', 'aac'):
+            return None
+        if not all(asset['qa'].get(key) is True for key in ['decode', 'layout', 'claims', 'audio', 'timing', 'voiceOnly']):
+            return None
+        return asset
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+
+
 def preflight(config):
     root = Path(config['workRoot']).resolve()
     root.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -128,11 +155,17 @@ def render(config, job):
     import onnxruntime as ort
     ort.disable_telemetry_events()
     from supertonic import TTS
-    tts = TTS(model='supertonic-3', model_dir=Path(config['modelRoot']), auto_download=False, intra_op_num_threads=4, inter_op_num_threads=1)
-    style = tts.get_voice_style('M1')
+    tts, style = None, None
     artifacts = []
     for part in packet['parts']:
         root = work / part['id']
+        cached = cached_part_asset(root, packet, checked['voiceRevision'])
+        if cached:
+            artifacts.append(cached)
+            continue
+        if tts is None:
+            tts = TTS(model='supertonic-3', model_dir=Path(config['modelRoot']), auto_download=False, intra_op_num_threads=4, inter_op_num_threads=1)
+            style = tts.get_voice_style('M1')
         (root / 'compositions').mkdir(parents=True, exist_ok=True)
         baseline = Path(config['handoffRoot']) / 'approved-template' / 'renderer-baselines' / part['id']
         for source in (baseline / 'assets').rglob('*'):
@@ -186,7 +219,10 @@ def render(config, job):
         picture = root / 'picture.mp4'
         run([config['node'], config['hyperframesCli'], 'render', str(root), '--workers', '1', '--format', 'mp4', '--fps', '30', '--crf', '23', '--output', picture], env=env)
         final = root / 'draft.mp4'
-        run([config['ffmpeg'], '-v', 'error', '-y', '-i', picture, '-i', master, '-map', '0:v:0', '-map', '1:a:0', '-c:v', 'copy', '-af', 'loudnorm=I=-16:TP=-1.5:LRA=7', '-c:a', 'aac', '-b:a', '96k', '-movflags', '+faststart', '-shortest', final])
+        measured_log = run([config['ffmpeg'], '-hide_banner', '-i', master, '-af', 'loudnorm=I=-16:TP=-2.5:LRA=7:print_format=json', '-f', 'null', '-']).stderr.decode()
+        measured = json.loads(measured_log[measured_log.rfind('{'):measured_log.rfind('}') + 1])
+        (root / 'voice-first-pass.json').write_text(json.dumps(measured, indent=2))
+        run([config['ffmpeg'], '-v', 'error', '-y', '-i', picture, '-i', master, '-map', '0:v:0', '-map', '1:a:0', '-c:v', 'copy', '-af', loudnorm_second_pass_filter(measured), '-ar', '48000', '-ac', '1', '-c:a', 'aac', '-b:a', '96k', '-movflags', '+faststart', '-shortest', final])
         run([config['ffmpeg'], '-v', 'error', '-i', final, '-f', 'null', '-'])
         meta = probe(config, final)
         video = next(s for s in meta['streams'] if s['codec_type'] == 'video')
@@ -199,13 +235,18 @@ def render(config, job):
         levels = run([config['ffmpeg'], '-hide_banner', '-i', final, '-af', 'loudnorm=I=-16:TP=-1.5:print_format=json', '-f', 'null', '-']).stderr.decode()
         loudness = json.loads(levels[levels.rfind('{'):levels.rfind('}') + 1])
         if not -17.5 <= float(loudness['input_i']) <= -14.5 or float(loudness['input_tp']) > -1:
-            raise ValueError('encoded_voice_level_failed')
+            (root / 'encoded-qa-failed.json').write_text(json.dumps({'part': part['id'], 'probe': meta, 'loudness': loudness}, indent=2))
+            raise ValueError('encoded_voice_level_failed: ' + part['id'])
         (root / 'cues.json').write_text(json.dumps(cues, indent=2))
         (root / 'encoded-qa.json').write_text(json.dumps({'probe': meta, 'loudness': loudness, 'listening': 'not_assessed', 'music': False, 'sfx': False}, indent=2))
         artifacts.append({'part': part['id'], 'artifactId': str(final), 'sha256': digest(final), 'packetSha256': packet['packetSha256'], 'snapshotSha256': packet['snapshotSha256'],
                           'narrationSha256': hashlib.sha256(json.dumps([s['narrationEn'] for s in part['scenes']], separators=(',', ':'), ensure_ascii=False).encode()).hexdigest(),
                           'voiceRevision': checked['voiceRevision'], 'bytes': final.stat().st_size, 'width': 1080, 'height': 1920, 'fps': 30, 'codec': 'h264', 'audioCodec': 'aac',
                           'qa': {key: True for key in ['decode', 'layout', 'claims', 'audio', 'timing', 'voiceOnly']}})
+        checkpoint = root / 'part-ready.tmp'
+        with checkpoint.open('w') as stream:
+            json.dump({'version': 1, 'asset': artifacts[-1]}, stream); stream.flush(); os.fsync(stream.fileno())
+        checkpoint.replace(root / 'part-ready.json')
     ready = {'snapshotSha256': packet['snapshotSha256'], 'packetSha256': packet['packetSha256'], 'templateSha256': packet['templateSha256'], 'assets': artifacts}
     temp = work / 'ready-set.tmp'
     with temp.open('w') as stream:

@@ -1,6 +1,9 @@
 """Synthetic HTML checks only: no report generation, speech, or MP4 rendering."""
 import unittest
-from render import scene_html, period_text, composition_html
+import json
+import tempfile
+from pathlib import Path
+from render import scene_html, period_text, composition_html, loudnorm_second_pass_filter, cached_part_asset, digest
 
 
 class RenderContract(unittest.TestCase):
@@ -47,6 +50,31 @@ class RenderContract(unittest.TestCase):
         self.scene['rows'] = [row] * 3
         with self.assertRaisesRegex(ValueError, 'more_than_two'):
             scene_html(self.scene, 'grains', 0, 1, '2026-10-30')
+
+    def test_two_pass_voice_filter_keeps_aac_peak_headroom_and_rejects_silence(self):
+        measured = {'input_i': '-25.31', 'input_tp': '-5.49', 'input_lra': '11.50', 'input_thresh': '-35.82', 'target_offset': '1.04'}
+        result = loudnorm_second_pass_filter(measured)
+        self.assertIn('TP=-2.5', result)
+        self.assertIn('measured_I=-25.31', result)
+        self.assertIn('offset=1.04', result)
+        measured['input_i'] = '-inf'
+        with self.assertRaisesRegex(ValueError, 'not_finite'):
+            loudnorm_second_pass_filter(measured)
+
+    def test_resume_requires_same_packet_voice_revision_file_hash_and_all_qa(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder) / 'grains'; root.mkdir()
+            file = root / 'draft.mp4'; file.write_bytes(b'synthetic fixture, not a real MP4')
+            packet = {'packetSha256': 'p', 'snapshotSha256': 's'}
+            asset = {'part': 'grains', 'artifactId': str(file), 'bytes': file.stat().st_size, 'sha256': digest(file), **packet,
+                     'voiceRevision': 'voice', 'width': 1080, 'height': 1920, 'fps': 30, 'codec': 'h264', 'audioCodec': 'aac',
+                     'qa': {key: True for key in ['decode', 'layout', 'claims', 'audio', 'timing', 'voiceOnly']}}
+            (root / 'part-ready.json').write_text(json.dumps({'version': 1, 'asset': asset}))
+            self.assertIsNotNone(cached_part_asset(root, packet, 'voice'))
+            self.assertIsNone(cached_part_asset(root, packet, 'other-voice'))
+            self.assertIsNone(cached_part_asset(root, {**packet, 'packetSha256': 'changed'}, 'voice'))
+            file.write_bytes(b'changed')
+            self.assertIsNone(cached_part_asset(root, packet, 'voice'))
 
 
 if __name__ == '__main__':
