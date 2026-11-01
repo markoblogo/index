@@ -95,6 +95,10 @@ validation; it does not rerun every API provider or generate an unused English
 full report. Its one Ukrainian model call is bounded to 16,000 output tokens /
 180 seconds, without automatic rewrites or untracked web-search facts. Other
 tenants and standard report-generation modes retain their existing behavior.
+The bounded response uses a strict three-part schema (logistics, grains,
+oilseeds), then normalizes to the existing report format. Every part must have
+substantive paragraphs; a completed provider response containing only logistics
+is rejected before publication. Schema completeness never replaces claim checks.
 The bounded provider response is retained in private `reportAttemptJson` before
 normalization, including incomplete-response status. It is not a publication or
 a successful validation receipt. Operator errors expose only a redacted reason,

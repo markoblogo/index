@@ -25,6 +25,7 @@ import {
   renderCortexEditorialStructureProfile,
 } from "@/lib/media-hub-report-prompts";
 import type { PublicLatestItem } from "@/lib/public-api-data";
+import { normalizeSsiWeeklyDraft, ssiWeeklyDraftFormat, ssiWeeklyDraftInstructions } from "./ssi-weekly-structured-draft";
 
 type MediaHubReportKind = "daily" | "weekly" | "monthly";
 type MediaHubTenant = "spike" | "platform";
@@ -247,7 +248,7 @@ async function callResponsesApi(input: {
     input: input.prompt,
     max_output_tokens: input.pairedWeeklyWorker ? 16000 : getMaxOutputTokens(input.kind),
     model: input.model,
-    ...(input.pairedWeeklyWorker ? { text: { format: { type: "json_object" } } } : { temperature: 0.25 }),
+    ...(input.pairedWeeklyWorker ? { instructions: ssiWeeklyDraftInstructions, text: { format: ssiWeeklyDraftFormat } } : { temperature: 0.25 }),
   };
 
   if (useWebSearch) {
@@ -280,7 +281,10 @@ async function callResponsesApi(input: {
     await db.$executeRawUnsafe('UPDATE private."SsiWeeklyVideoPreparation" SET "reportAttemptJson"=$2::jsonb WHERE "periodEnd"=$1::date', input.periodEndDate, JSON.stringify(attempt));
   }
   if (input.pairedWeeklyWorker && payload.status !== "completed") return { error: "responses_incomplete" };
-  const report = parseGeneratedJson(extractResponseText(payload), input.kind);
+  const responseText = extractResponseText(payload);
+  const normalized = input.pairedWeeklyWorker ? normalizeSsiWeeklyDraft(responseText) : responseText;
+  if (normalized === null) return { error: "weekly_three_parts_incomplete" };
+  const report = parseGeneratedJson(normalized, input.kind);
   return report ? { report } : { error: "responses_parse_empty" };
 }
 
