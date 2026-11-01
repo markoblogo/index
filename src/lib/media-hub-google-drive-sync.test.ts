@@ -81,8 +81,11 @@ describe("resumable Google Drive sync", () => {
         ? Promise.resolve(new Response("unavailable", { status: 503 }))
         : baseFetch(input, init)));
     await expect(syncGoogleDriveContextMaterials()).rejects.toThrow("download failed");
-    expect(execute).toHaveBeenCalledTimes(1);
-    expect(execute.mock.calls[0]?.[1]).toEqual(new Date(files[0].modifiedTime));
+    const checkpoints = execute.mock.calls.filter(([sql]) => String(sql).includes("MediaHubGoogleDriveSyncState"));
+    const versionReceipts = execute.mock.calls.filter(([sql]) => String(sql).includes("MediaHubGoogleDriveVersionReceipt"));
+    expect(checkpoints).toHaveLength(1);
+    expect(versionReceipts).toHaveLength(1);
+    expect(checkpoints[0]?.[1]).toEqual(new Date(files[0].modifiedTime));
   });
 
   it("does not checkpoint a failed extraction", async () => {
