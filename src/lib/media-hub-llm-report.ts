@@ -24,7 +24,8 @@ import {
   buildMediaHubReportPrompt,
   renderCortexEditorialStructureProfile,
 } from "@/lib/media-hub-report-prompts";
-import type { PublicLatestItem } from "@/lib/public-api-data";
+import type { PublicHistoryItem, PublicLatestItem } from "@/lib/public-api-data";
+import { renderSsiWeeklyGrounding } from "./ssi-weekly-grounding";
 import { normalizeSsiWeeklyDraft, ssiWeeklyDraftFormat, ssiWeeklyDraftInstructions } from "./ssi-weekly-structured-draft";
 
 type MediaHubReportKind = "daily" | "weekly" | "monthly";
@@ -49,6 +50,7 @@ type GenerationResult = {
 const OPENAI_REPORT_TIMEOUT_MS = 60_000;
 
 export async function generateMediaHubLlmReports(input: {
+  historyData?: PublicHistoryItem[];
   pairedWeeklyWorker?: boolean;
   kind: MediaHubReportKind;
   latestData: PublicLatestItem[];
@@ -133,6 +135,7 @@ export async function generateMediaHubLlmReports(input: {
 }
 
 async function generateOneLocale(input: {
+  historyData?: PublicHistoryItem[];
   pairedWeeklyWorker?: boolean;
   apiKey: string;
   cortexContextPack: CortexContextPack;
@@ -149,7 +152,7 @@ async function generateOneLocale(input: {
   snapshots: MediaHubWindowSnapshot[];
   tenant: MediaHubTenant;
 }): Promise<GenerationResult> {
-  const prompt = buildPrompt(input);
+  const prompt = [buildPrompt(input), input.pairedWeeklyWorker ? renderSsiWeeklyGrounding(input) : ""].filter(Boolean).join("\n\n");
 
   try {
     if (input.pairedWeeklyWorker) {

@@ -99,6 +99,10 @@ The bounded response uses a strict three-part schema (logistics, grains,
 oilseeds), then normalizes to the existing report format. Every part must have
 substantive paragraphs; a completed provider response containing only logistics
 is rejected before publication. Schema completeness never replaces claim checks.
+Paired drafts exclude legacy raw-material fallback prose. Exact published Friday
+snapshots supply weekly deltas; daily zero is never a weekly baseline. Extracted
+PDF text is included alongside typed tables, and selected verbatim source chunks
+extend the evidence ledger. Any remaining unsupported claim blocks publication.
 The bounded provider response is retained in private `reportAttemptJson` before
 normalization, including incomplete-response status. It is not a publication or
 a successful validation receipt. Operator errors expose only a redacted reason,

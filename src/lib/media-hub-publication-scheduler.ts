@@ -1,6 +1,7 @@
 import { stringifyReportJson } from "@/lib/report-json";
 import { deliverSsiReportParts } from "@/lib/ssi-telegram-parts";
 import "server-only";
+import { extendSsiWeeklyEvidence } from "./ssi-weekly-grounding";
 import { createHash, randomUUID } from "node:crypto";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { db, hasDatabaseUrl } from "@/lib/db";
@@ -1194,7 +1195,7 @@ async function buildTransientMediaHubSnapshotReport(
   const primarySnapshot = snapshots[0];
   const tenantId = isPlatformSite() ? "1d3x" : getActiveIndexConfig().id;
   const latestData = tenantId === "spike-ua" ? await getPublicLatestData() : [];
-  const historyData = tenantId === "spike-ua" && kind === "daily" ? await getPublicHistoryData() : [];
+  const historyData = tenantId === "spike-ua" && (kind === "daily" || pairedWeeklyWorker) ? await getPublicHistoryData(pairedWeeklyWorker ? { scope: "analytics" } : {}) : [];
   const manualMaterials = await getManualMaterialsForPeriod({
     kind,
     periodEndDate,
@@ -1226,7 +1227,7 @@ async function buildTransientMediaHubSnapshotReport(
       return [] as string[];
     });
   const llm = await generateMediaHubLlmReports({
-    pairedWeeklyWorker,
+    pairedWeeklyWorker, historyData,
     avoidPhrases,
     kind,
     latestData,
@@ -1239,7 +1240,7 @@ async function buildTransientMediaHubSnapshotReport(
   });
   if (pairedWeeklyWorker && !llm.localized.uk) throw new Error("weekly_report_generation_failed", { cause: llm.skippedReason });
   const content = buildSnapshotReportContent({
-    kind,
+    kind, pairedWeeklyWorker,
     llm,
     tenant: tenantId === "1d3x" ? "platform" : "spike",
     historyData,
@@ -1296,7 +1297,7 @@ async function sendTelegramMessages(
 }
 
 function buildSnapshotReportContent(input: {
-  historyData?: Awaited<ReturnType<typeof getPublicHistoryData>>;
+  pairedWeeklyWorker?: boolean; historyData?: Awaited<ReturnType<typeof getPublicHistoryData>>;
   kind: Exclude<MediaHubPublicationKind, "none">;
   latestData?: PublicLatestItem[];
   llm?: Awaited<ReturnType<typeof generateMediaHubLlmReports>>;
@@ -1310,7 +1311,7 @@ function buildSnapshotReportContent(input: {
   const totalItems = input.snapshots.reduce((sum, snapshot) => sum + snapshot.itemCount, 0);
   const totalSources = input.snapshots.reduce((sum, snapshot) => sum + snapshot.sourceCount, 0);
   const primaryLocalized = getPrimaryLocalizedReport(input.llm?.localized);
-  const nonDailyFallback = input.kind === "daily"
+  const nonDailyFallback = input.kind === "daily" || input.pairedWeeklyWorker
     ? null
     : buildNonDailyFallbackReport({
       kind: input.kind,
@@ -1338,12 +1339,13 @@ function buildSnapshotReportContent(input: {
         primaryTitle: evidenceFallback?.title || primary?.summaryTitle,
       })
     : undefined;
-  const evidence = buildMediaHubEvidenceLedger({
+  const baseEvidence = buildMediaHubEvidenceLedger({
     latestData: input.latestData,
     manualMaterials: input.manualMaterials,
     periodEndDate: input.periodEndDate,
     snapshots: input.snapshots,
   });
+  const evidence = input.pairedWeeklyWorker ? extendSsiWeeklyEvidence(baseEvidence, input.manualMaterials ?? [], JSON.stringify(localizedReports)) : baseEvidence;
   const qualityCandidates = finalizeCortexEditorialQualityCandidates({
     evidence,
     kind: input.kind,
@@ -1372,7 +1374,7 @@ function buildSnapshotReportContent(input: {
   const highRiskUnsupportedClaims = validation.unsupportedClaims
     .filter((claim) => claim.severity === "high")
     .map((claim) => claim.claim);
-  if (highRiskUnsupportedClaims.length > 0) {
+  if (highRiskUnsupportedClaims.length > 0 && !input.pairedWeeklyWorker) {
     summary = stripUnsupportedClaimLines(summary, highRiskUnsupportedClaims);
     localizedReports = stripUnsupportedClaimsFromLocalizedReport(
       localizedReports,
@@ -1388,7 +1390,6 @@ function buildSnapshotReportContent(input: {
       }),
     });
   }
-
   return {
     generatedAt: new Date().toISOString(),
     kind: input.kind,
@@ -1408,7 +1409,7 @@ function buildSnapshotReportContent(input: {
       sourceType: material.sourceType,
     })) ?? [],
     evidence,
-    validation,
+    validation: input.pairedWeeklyWorker && validation.unsupportedClaims.length ? { ...validation, status: "needs_review" as const } : validation,
     localized: localizedReports,
     dailyReports,
     periodEndDate: input.periodEndDate,
