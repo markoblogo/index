@@ -55,6 +55,12 @@ This prevents unchanged files from starving later batches in the overlap window.
 Receipts do not move observation dates or replace facts. Explicit PDF/OCR repair
 eligibility is checked against the linked material and remains unchanged.
 
+For SSI weekly selection only, current-window Drive materials precede news
+before the database and prompt-size caps. This prevents a news flood from hiding
+required logistics documents. Observation-date filtering still runs before the
+final cap; old documents do not become current through a later upload. Remaining
+capacity still includes monitored news. Other tenants/windows keep recency order.
+
 Private configuration follows
 `services/ssi-weekly-video-worker/config.example.json`. Keep the verified handoff
 and scratch on mounted Work, outside the public tree. Historical masters are

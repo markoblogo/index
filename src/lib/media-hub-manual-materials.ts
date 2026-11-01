@@ -417,7 +417,8 @@ export async function getManualMaterialsForPeriod(input: {
 
   await ensureMediaHubManualMaterialStorage();
 
-  const intakeEndDate = input.tenantId === "spike-ua" && input.kind === "weekly"
+  const preferDriveMaterials = input.tenantId === "spike-ua" && input.kind === "weekly";
+  const intakeEndDate = preferDriveMaterials
     ? getSsiWeeklyIntakeEndDate(input.periodEndDate) : input.periodEndDate;
 
   const materialKind =
@@ -438,7 +439,7 @@ export async function getManualMaterialsForPeriod(input: {
         ELSE "reportingWeekStart" <= $3::date AND "reportingWeekEnd" >= $2::date END
         AND "kind" IN ($4, $5, 'source_candidate')
         AND "extractionStatus" IN ('extracted', 'partial', 'unsupported_image_ocr', 'partial_visual_pending')
-      ORDER BY "receivedAt" DESC
+      ORDER BY CASE WHEN $7::boolean AND "receivedFrom" = 'google-drive' THEN 0 ELSE 1 END, "receivedAt" DESC
       LIMIT 256
     `,
     input.tenantId,
@@ -447,9 +448,10 @@ export async function getManualMaterialsForPeriod(input: {
     materialKind,
     fallbackKind,
     intakeEndDate,
+    preferDriveMaterials,
   );
 
-  const selected = selectReportWindowMaterials(rows, input.periodStartDate, input.periodEndDate, 32, intakeEndDate);
+  const selected = selectReportWindowMaterials(rows, input.periodStartDate, input.periodEndDate, 32, intakeEndDate, preferDriveMaterials);
   return (await attachMaterialAssets(selected)).map((row) => toMaterialDigest(row, 4000));
 }
 

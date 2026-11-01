@@ -22,7 +22,7 @@ type WindowMaterial = {
   reportingDate: Date;
 };
 
-export function selectReportWindowMaterials<T extends WindowMaterial>(rows: T[], start: string, end: string, limit = 32, intakeEnd = end): T[] {
+export function selectReportWindowMaterials<T extends WindowMaterial>(rows: T[], start: string, end: string, limit = 32, intakeEnd = end, preferDrive = false): T[] {
   const date = (row: T) => materialFilenameDate(row.originalFilename ?? "") ??
     row.canonicalUrl?.match(/[?&]driveVersion=(\d{4}-\d{2}-\d{2})T/)?.[1] ??
     row.reportingDate.toISOString().slice(0, 10);
@@ -33,6 +33,6 @@ export function selectReportWindowMaterials<T extends WindowMaterial>(rows: T[],
     // belong to the trading week. Never rename the upload as an observation.
     return date(row) >= start && date(row) <= (observationDate ? end : intakeEnd);
   })
-    .sort((a, b) => date(b).localeCompare(date(a)))
+    .sort((a, b) => (preferDrive ? Number(b.receivedFrom === "google-drive") - Number(a.receivedFrom === "google-drive") : 0) || date(b).localeCompare(date(a)))
     .slice(0, limit);
 }
