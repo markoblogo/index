@@ -97,7 +97,7 @@ export async function generateMediaHubLlmReports(input: {
 
   const pairedWeeklyWorker = input.pairedWeeklyWorker === true && input.tenant === "spike" && input.kind === "weekly";
   const locales: Locale[] = input.tenant === "spike" ? pairedWeeklyWorker ? ["uk"] : ["uk", "en"] : ["en"];
-  const model = pairedWeeklyWorker ? process.env.SPIKE_WEEKLY_EDITORIAL_MODEL || "gpt-4.1" : getMediaHubModel(input.kind);
+  const model = pairedWeeklyWorker ? process.env.SPIKE_WEEKLY_EDITORIAL_MODEL || "gpt-5.4" : getMediaHubModel(input.kind);
   const localized: Partial<Record<Locale, MediaHubLocalizedReport>> = {};
   const qualityCandidates: Partial<Record<Locale, CortexEditorialQualityCandidate>> = {};
   const errors: string[] = [];
@@ -256,6 +256,7 @@ async function callResponsesApi(input: {
     input: input.prompt,
     max_output_tokens: input.pairedWeeklyWorker ? 16000 : getMaxOutputTokens(input.kind),
     model: input.model,
+    ...(input.pairedWeeklyWorker && /^gpt-5(?:\.|$)/.test(input.model) ? { reasoning: { effort: "low" } } : {}),
     ...(input.pairedWeeklyWorker ? { instructions: input.weeklyPart ? `${ssiWeeklyDraftInstructions}\nSTAGED OVERRIDE: Write ONLY ${input.weeklyPart}, with its required part title and summary array. Do not output the other two parts in this request. The final three-part report is assembled from separately saved parts. Keep exact crop/contract identity: SX is SOYBEANS, never corn; corn is ZC/C; wheat ZW/W. Chop is FCA, never CPT. Never label sunflower oil (1512) as sunflower seed (1206). Every cause must be explicitly supported; omit guessed interpretations.` : ssiWeeklyDraftInstructions,
       text: { format: input.weeklyPart ? ssiPartFormat(input.weeklyPart) : ssiWeeklyDraftFormat } } : { temperature: 0.25 }),
   };

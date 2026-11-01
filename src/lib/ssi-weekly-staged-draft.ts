@@ -13,7 +13,7 @@ export function ssiPartFormat(part: SsiDraftPart) {
   return { type: "json_schema", name: `ssi_weekly_${part}`, strict: true, schema: {
     type: "object", additionalProperties: false, required: ["title", "summary"], properties: {
       title: { type: "string", enum: [getSsiWeeklyRequiredParts("uk")[i].title] },
-      summary: { type: "array", items: { type: "string" }, minItems: 8, maxItems: part === "logistics" ? 18 : part === "grains" ? 22 : 26 },
+      summary: { type: "array", items: { type: "string", pattern: "^[^\\r\\n]{1,700}$" }, minItems: 8, maxItems: part === "logistics" ? 18 : part === "grains" ? 22 : 26 },
     },
   } };
 }
@@ -23,7 +23,7 @@ export function parseSsiPart(text: string, part: SsiDraftPart): Result {
     const value = JSON.parse(text) as Draft;
     const expected = getSsiWeeklyRequiredParts("uk")[SSI_DRAFT_PARTS.indexOf(part)];
     if (value.title !== expected.title || !Array.isArray(value.summary) || value.summary.length < 8 || value.summary.length > 26 ||
-      value.summary.some(line => typeof line !== "string" || !line.trim()) ||
+      value.summary.some(line => typeof line !== "string" || !line.trim() || line.length > 700 || /[\r\n]/.test(line)) ||
       value.summary.filter(line => line.trim().split(/\s+/).length >= 7).length < 5) return { error: "weekly_part_incomplete" };
     const joined = value.summary.join("\n");
     if (/CPT\s*(?:Чоп|Chop)(?=$|[^\p{L}\p{N}_])/iu.test(joined)) return { error: "weekly_basis_mismatch" };

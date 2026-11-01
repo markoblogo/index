@@ -106,8 +106,11 @@ extend the evidence ledger. Any remaining unsupported claim blocks publication.
 The paired prompt uses the shared SSI editorial contract directly, not legacy
 Cortex/fallback templates. Typed spreadsheet weights and monetary values stay
 separate; human-scale units are deterministic conversions with source IDs.
-Weekly prose uses `SPIKE_WEEKLY_EDITORIAL_MODEL` or `gpt-4.1` in the existing
+Weekly prose uses `SPIKE_WEEKLY_EDITORIAL_MODEL` or `gpt-5.4` in the existing
 OpenAI account; other report modes keep their configured model.
+GPT-5 uses low reasoning inside the existing 16,000-token/180-second budget.
+Paragraph strings are single-line and at most 700 characters, in schema and
+local validation, to reject whole-part strings and control-character padding.
 The compact prompt also retains checked `pdf-tables-v1` image tables through
 the existing table renderer, with page, observation date, units and intact rows.
 Their verbatim blocks can support the ledger even when native PDF text is empty.

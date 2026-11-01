@@ -20,6 +20,7 @@ it("bounds paired SSI drafting to one Ukrainian call, without web search or shad
   expect(result.localized.en).toBeUndefined(); expect(mocks.fetch).toHaveBeenCalledTimes(1);
   const request = JSON.parse(mocks.fetch.mock.calls[0][1].body);
   expect(request.max_output_tokens).toBe(16000); expect(request.tools).toBeUndefined();
+  expect(request.model).toBe("gpt-5.4"); expect(request.reasoning).toEqual({ effort: "low" });
   expect(request.text.format).toMatchObject({ type: "json_schema", strict: true });
   expect(request.text.format.schema.required).toEqual(["title", "logistics", "grains", "oilseeds"]);
   expect(mocks.fetch.mock.calls[0][2]).toBe(180000);

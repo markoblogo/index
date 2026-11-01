@@ -10,7 +10,7 @@ export const ssiWeeklyDraftFormat = {
     properties: {
       title: { type: "string" },
       ...Object.fromEntries(keys.map(key => [key, {
-        type: "array", items: { type: "string" }, minItems: 8, maxItems: key === "logistics" ? 18 : key === "grains" ? 22 : 26,
+        type: "array", items: { type: "string", pattern: "^[^\\r\\n]{1,700}$" }, minItems: 8, maxItems: key === "logistics" ? 18 : key === "grains" ? 22 : 26,
       }])),
     },
     required: ["title", ...keys],
@@ -20,6 +20,7 @@ export const ssiWeeklyDraftFormat = {
 export const ssiWeeklyDraftInstructions = [
   "Generate the COMPLETE Ukrainian SSI weekly report: all three parts in ONE response, not only Part I.",
   "The response schema overrides only the legacy title/summary JSON shape. Return title and three arrays: logistics, grains, oilseeds.",
+  "Every array item is ONE single-line paragraph or heading, at most 700 characters. Never place an entire part inside one string. No carriage returns, newlines or whitespace padding inside an item.",
   "Each array contains its section headings and individual paragraphs/quote rows, NOT the entire part in one string. Include at least five substantive analytical paragraphs per part, using supplied evidence only.",
   "Do not put part titles, report headers or footers inside these arrays: the renderer adds them. Retain the required section headings from the editorial contract.",
   "Each part must fit one Telegram message including its eventual header/footer: target 3300-3600 characters per array. Keep complete sentences; no invented facts to fill the schema.",

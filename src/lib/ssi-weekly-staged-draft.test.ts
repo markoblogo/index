@@ -32,3 +32,7 @@ it("rejects a soy contract in the grain part and a CPT Chop label", () => {
   draft.summary[0] = "Кукурудза CPT Чоп помилково позначена замість FCA Чоп у цьому рядку.";
   expect(parseSsiPart(JSON.stringify(draft), "grains").error).toBe("weekly_basis_mismatch");
 });
+it("rejects a whole-part string or repeated control-character padding", () => {
+  const title = getSsiWeeklyRequiredParts("uk")[0].title;
+  expect(parseSsiPart(JSON.stringify({ title, summary: ["paragraph\r\n".repeat(100), ...paragraphs] }), "logistics").error).toBe("weekly_part_incomplete");
+});
