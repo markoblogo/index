@@ -167,7 +167,8 @@ export async function syncGoogleDriveContextMaterials(options: { rescanRecent?: 
       continue;
     }
     if (results.length >= SYNC_BATCH_SIZE || Date.now() - startedAt.getTime() >= SYNC_BUDGET_MS) break;
-    const download = await withSsiWorkerStage("drive_download", () => fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(file.id)}?alt=media`, {
+    const fileId = file.id, filename = file.name, modifiedTime = file.modifiedTime;
+    const download = await withSsiWorkerStage("drive_download", () => fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media`, {
       headers: { authorization: `Bearer ${token}` },
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     }));
@@ -180,13 +181,13 @@ export async function syncGoogleDriveContextMaterials(options: { rescanRecent?: 
     const result = await withSsiWorkerStage("drive_extraction", () => ingestMediaHubFileMaterial({
       bytes,
       canonicalUrl: versionUrl(file),
-      filename: file.name,
+      filename,
       hashtags: ["#ssi", kind === "monthly_material" ? "#monthly" : "#weekly", ...(logisticsType ? [`#${logisticsType}`] : [])],
       kind,
       mimeType: file.mimeType || download.headers.get("content-type") || "application/octet-stream",
       originalUrl: fileUrl,
       receivedFrom: "google-drive",
-      reportingDate: new Date(file.modifiedTime),
+      reportingDate: new Date(modifiedTime),
       sourceType: "google_drive_file",
       tenantId: "spike-ua",
     }));
