@@ -1,7 +1,7 @@
 import { beforeEach, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ query: vi.fn(), execute: vi.fn() }));
 vi.mock("./db", () => ({ db: { $queryRawUnsafe: mocks.query, $executeRawUnsafe: mocks.execute } }));
-import { generateStagedSsiWeeklyDraft, parseSsiPart, ssiPartFormat, ssiStagedPartInstructions, SSI_DRAFT_PARTS } from "./ssi-weekly-staged-draft";
+import { generateStagedSsiWeeklyDraft, parseSsiPart, ssiPartFormat, ssiStagedPartInstructions, SSI_DRAFT_PARTS, SSI_PART_SECTIONS } from "./ssi-weekly-staged-draft";
 import { getSsiWeeklyRequiredParts } from "./ssi-weekly-editorial-contract";
 const paragraphs = Array.from({ length: 8 }, (_, i) => `Verified source statement ${i} preserves its crop, observation and exact units.`);
 beforeEach(() => { vi.resetAllMocks(); });
@@ -46,7 +46,22 @@ it("requires separate headings and a whole-message reserve without relaxing UTF-
   expect(parseSsiPart(JSON.stringify({ title: part.title, summary: oversized }), "logistics").error).toBe("weekly_part_too_long");
   const emojiBoundary = [...summary]; emojiBoundary[5] = "a".repeat(699) + "🌾";
   expect(parseSsiPart(JSON.stringify({ title: part.title, summary: emojiBoundary }), "logistics").error).toBe("weekly_part_incomplete");
-  expect(ssiPartFormat("logistics").schema.properties.summary.items.maxLength).toBe(600);
+  expect(ssiPartFormat("logistics").schema.required).toEqual(["title", "sections"]);
   expect(ssiStagedPartInstructions("logistics", true)).toContain("SHAPE REPAIR");
   expect(ssiStagedPartInstructions("logistics")).toContain("overview 2, road/Danube road 4, rail 3, border 3, ports 1");
+});
+it("injects all headings and fits the full per-section schema budget without slicing facts", () => {
+  for (const [i, part] of SSI_DRAFT_PARTS.entries()) {
+    const expected = getSsiWeeklyRequiredParts("uk")[i];
+    const sections = Object.fromEntries(SSI_PART_SECTIONS[part].map(spec => [spec.key, Array.from({ length: spec.maxItems }, () => {
+      const text = "A verified dated source metric preserves its units basis and observation. ";
+      return text + "x".repeat(spec.maxLength - text.length);
+    })]));
+    const result = parseSsiPart(JSON.stringify({ title: expected.title, sections }), part);
+    expect(result.report).toBeDefined();
+    expect(result.report!.summary.join("\n\n").length).toBeLessThanOrEqual(3600);
+    for (const heading of expected.sections) expect(result.report!.summary).toContain(heading);
+    delete sections[SSI_PART_SECTIONS[part].at(-1)!.key];
+    expect(parseSsiPart(JSON.stringify({ title: expected.title, sections }), part).error).toBe("weekly_part_incomplete");
+  }
 });

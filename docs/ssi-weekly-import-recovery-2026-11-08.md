@@ -51,3 +51,11 @@ allocates section quotas, and bounds provider paragraphs at 600 code points.
 An automatic shape-only retry is allowed once inside a 230-second request
 budget; fact/basis/contract/provider failures are never retried by that helper.
 Neither Telegram limits nor factual validation are relaxed.
+
+The first prompt-only repair still exceeded 3,600 units (4,700) and did not
+reserve the ports heading. The provider contract therefore uses separate,
+required section arrays with per-section fact-count and string-length caps.
+Code injects headings and flattens to the existing report shape; missing sections
+cannot be merged into one array item by the model. Tests exercise every section
+at its maximum budget for all three parts. Existing UTF-16, scope and factual
+checks remain authoritative; no received draft is mechanically sliced to fit.
