@@ -27,7 +27,8 @@ import {
 import type { PublicHistoryItem, PublicLatestItem } from "@/lib/public-api-data";
 import { renderSsiWeeklyGrounding } from "./ssi-weekly-grounding";
 import { buildSsiWeeklyEditorialContract, getSsiWeeklyRequiredParts } from "./ssi-weekly-editorial-contract";
-import { generateStagedSsiWeeklyDraft, parseSsiPart, ssiPartFormat, type SsiDraftPart } from "./ssi-weekly-staged-draft";
+import { generateStagedSsiWeeklyDraft, parseSsiPart, ssiPartFormat, ssiStagedPartInstructions, type SsiDraftPart } from "./ssi-weekly-staged-draft";
+import { withSsiPartRepair } from "./ssi-weekly-draft-repair";
 import { normalizeSsiWeeklyDraft, ssiWeeklyDraftFormat, ssiWeeklyDraftInstructions } from "./ssi-weekly-structured-draft";
 
 type MediaHubReportKind = "daily" | "weekly" | "monthly";
@@ -160,7 +161,7 @@ async function generateOneLocale(input: {
   try {
     if (input.pairedWeeklyWorker) {
       const result = hasDatabaseUrl() ? await generateStagedSsiWeeklyDraft({ end: input.periodEndDate, prompt, model: input.model,
-        generate: weeklyPart => callResponsesApi({ ...input, prompt, weeklyPart }) }) : await callResponsesApi({ ...input, prompt });
+        generate: weeklyPart => withSsiPartRepair((repairPart, timeoutMs) => callResponsesApi({ ...input, prompt, weeklyPart, repairPart, timeoutMs })) }) : await callResponsesApi({ ...input, prompt });
       return result.report ? buildShadowQualityCandidate({ input, prompt, report: result.report }) : result;
     }
     const attempts = [...new Set([input.model, "gpt-4o-mini"])];
@@ -242,6 +243,8 @@ async function buildShadowQualityCandidate(input: {
 }
 
 async function callResponsesApi(input: {
+  repairPart?: boolean;
+  timeoutMs?: number;
   weeklyPart?: SsiDraftPart;
   pairedWeeklyWorker?: boolean;
   periodEndDate?: string;
@@ -257,7 +260,7 @@ async function callResponsesApi(input: {
     max_output_tokens: input.pairedWeeklyWorker ? 16000 : getMaxOutputTokens(input.kind),
     model: input.model,
     ...(input.pairedWeeklyWorker && /^gpt-5(?:\.|$)/.test(input.model) ? { reasoning: { effort: "low" } } : {}),
-    ...(input.pairedWeeklyWorker ? { instructions: input.weeklyPart ? `${ssiWeeklyDraftInstructions}\nSTAGED OVERRIDE: Write ONLY ${input.weeklyPart}, with its required part title and summary array. Do not output the other two parts in this request. The final three-part report is assembled from separately saved parts. Keep exact crop/contract identity: SX is SOYBEANS, never corn; corn is ZC/C; wheat ZW/W. Chop is FCA, never CPT. Never label sunflower oil (1512) as sunflower seed (1206). Every cause must be explicitly supported; omit guessed interpretations.` : ssiWeeklyDraftInstructions,
+    ...(input.pairedWeeklyWorker ? { instructions: input.weeklyPart ? `${ssiWeeklyDraftInstructions}\n${ssiStagedPartInstructions(input.weeklyPart, input.repairPart)}` : ssiWeeklyDraftInstructions,
       text: { format: input.weeklyPart ? ssiPartFormat(input.weeklyPart) : ssiWeeklyDraftFormat } } : { temperature: 0.25 }),
   };
 
@@ -269,7 +272,7 @@ async function callResponsesApi(input: {
     body: JSON.stringify(requestBody),
     headers: openAiHeaders(input.apiKey),
     method: "POST",
-  }, input.pairedWeeklyWorker ? 180000 : OPENAI_REPORT_TIMEOUT_MS);
+  }, input.timeoutMs ?? (input.pairedWeeklyWorker ? 180000 : OPENAI_REPORT_TIMEOUT_MS));
 
   if (!response.ok && useWebSearch) {
     delete requestBody.tools;
@@ -286,7 +289,7 @@ async function callResponsesApi(input: {
 
   const payload = await response.json();
   if (input.pairedWeeklyWorker && input.periodEndDate && hasDatabaseUrl()) {
-    const attempt = { model: input.model, part: input.weeklyPart ?? null, status: payload.status, incomplete: payload.incomplete_details ?? null,
+    const attempt = { model: input.model, part: input.weeklyPart ?? null, repairAttempt: Boolean(input.repairPart), status: payload.status, incomplete: payload.incomplete_details ?? null,
       output: payload.output ?? [], error: payload.error ?? null, usage: payload.usage ?? null };
     await db.$executeRawUnsafe('UPDATE private."SsiWeeklyVideoPreparation" SET "reportAttemptJson"=$2::jsonb WHERE "periodEnd"=$1::date', input.periodEndDate, JSON.stringify(attempt));
   }

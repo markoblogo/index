@@ -1,7 +1,7 @@
 import { beforeEach, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ query: vi.fn(), execute: vi.fn() }));
 vi.mock("./db", () => ({ db: { $queryRawUnsafe: mocks.query, $executeRawUnsafe: mocks.execute } }));
-import { generateStagedSsiWeeklyDraft, parseSsiPart, SSI_DRAFT_PARTS } from "./ssi-weekly-staged-draft";
+import { generateStagedSsiWeeklyDraft, parseSsiPart, ssiPartFormat, ssiStagedPartInstructions, SSI_DRAFT_PARTS } from "./ssi-weekly-staged-draft";
 import { getSsiWeeklyRequiredParts } from "./ssi-weekly-editorial-contract";
 const paragraphs = Array.from({ length: 8 }, (_, i) => `Verified source statement ${i} preserves its crop, observation and exact units.`);
 beforeEach(() => { vi.resetAllMocks(); });
@@ -35,4 +35,18 @@ it("rejects a soy contract in the grain part and a CPT Chop label", () => {
 it("rejects a whole-part string or repeated control-character padding", () => {
   const title = getSsiWeeklyRequiredParts("uk")[0].title;
   expect(parseSsiPart(JSON.stringify({ title, summary: ["paragraph\r\n".repeat(100), ...paragraphs] }), "logistics").error).toBe("weekly_part_incomplete");
+});
+it("requires separate headings and a whole-message reserve without relaxing UTF-16 item checks", () => {
+  const part = getSsiWeeklyRequiredParts("uk")[0];
+  const summary = [...part.sections, ...paragraphs];
+  expect(parseSsiPart(JSON.stringify({ title: part.title, summary }), "logistics").report).toBeDefined();
+  const merged = [part.sections.join(","), ...paragraphs];
+  expect(parseSsiPart(JSON.stringify({ title: part.title, summary: merged }), "logistics").error).toBe("weekly_part_sections_missing");
+  const oversized = [...part.sections, ...Array.from({ length: 8 }, () => "verified dated source fact and correct unit ".repeat(12))];
+  expect(parseSsiPart(JSON.stringify({ title: part.title, summary: oversized }), "logistics").error).toBe("weekly_part_too_long");
+  const emojiBoundary = [...summary]; emojiBoundary[5] = "a".repeat(699) + "🌾";
+  expect(parseSsiPart(JSON.stringify({ title: part.title, summary: emojiBoundary }), "logistics").error).toBe("weekly_part_incomplete");
+  expect(ssiPartFormat("logistics").schema.properties.summary.items.maxLength).toBe(600);
+  expect(ssiStagedPartInstructions("logistics", true)).toContain("SHAPE REPAIR");
+  expect(ssiStagedPartInstructions("logistics")).toContain("overview 2, road/Danube road 4, rail 3, border 3, ports 1");
 });

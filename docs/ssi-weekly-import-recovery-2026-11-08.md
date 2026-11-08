@@ -34,3 +34,20 @@ first rejected file's size was not captured by the old diagnostic.
 The owner authorized one fenced retry of the 6 November preparation after this
 repair, only with no delivery job or active work. Do not disable general backoff
 or duplicate-send protection.
+
+## Actual import and drafting outcome
+
+The repaired import advanced past a 34,934,511-byte UZ PDF that exceeded the
+previous 20 MiB guard. All 105 changed versions were processed through saved
+checkpoints; the seven current dated logistics PDFs have `extracted` status.
+The large supplementary PDF remains `partial_visual_pending`, not falsely
+described as completely read.
+
+The first logistics candidate was rejected: 4,903 summary UTF-16 units, merged
+border/port headings and a 701-unit paragraph (700 Unicode code points). The
+provider's regex limit alone did not enforce the local UTF-16/message contract.
+The revised staged contract reserves 3,600 summary units and separate headings,
+allocates section quotas, and bounds provider paragraphs at 600 code points.
+An automatic shape-only retry is allowed once inside a 230-second request
+budget; fact/basis/contract/provider failures are never retried by that helper.
+Neither Telegram limits nor factual validation are relaxed.
