@@ -147,3 +147,11 @@ free-form causes or a second model calculation. Actual futures delivery months
 remain in source-driven period labels, never hard-coded in headlines. No new
 provider call is made for video metadata. Existing packet/source/template hashes,
 all-three-assets readiness and six-send receipt fencing are unchanged.
+
+The installed HyperFrames 0.8.185 exporter failed against the current Chrome:
+`drawElementImage` required `content=drawable`. Layout/contrast checks passed;
+this was an experimental capture-path failure, not a reason to weaken QA.
+The supported `PRODUCER_EXPERIMENTAL_FAST_CAPTURE=false` compatibility switch
+selects normal capture. It is retained in the existing LaunchAgent and installer;
+the 300-second wake interval, approved template/renderer hashes and media checks
+are unchanged. Do not enable the experimental path merely because it is faster.
