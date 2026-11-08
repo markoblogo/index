@@ -12,7 +12,10 @@ it("offers only exact report excerpts, with contiguous heading context rather th
 });
 it("requires numeric claims, known source identities and at most two rows per bounded scene", () => {
   const format = ssiVideoMetadataFormat(["evidence:one"], ["<b>Corn</b>\n• CBOT corn: 441.5 cents/bu."]);
-  const schema = format.schema.properties as Record<string, any>;
+  const schema = format.schema.properties as {
+    claims: { items: { properties: { value: { type: string }; evidenceId: { enum: string[] }; unit: { enum: string[] }; sourceQuote: { enum: string[] } } } };
+    selections: { properties: Record<string, { minItems: number; maxItems: number; items: { properties: { rowClaimIds: { maxItems: number }; id: { pattern: string } } } }> };
+  };
   expect(format.strict).toBe(true); expect(schema.claims.items.properties.value.type).toBe("number");
   expect(schema.claims.items.properties.evidenceId.enum).toEqual(["evidence:one"]);
   expect(schema.claims.items.properties.unit.enum).toContain("wagons");
