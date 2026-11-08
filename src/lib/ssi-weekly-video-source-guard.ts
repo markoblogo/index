@@ -27,12 +27,18 @@ export const normalizeVideoSource = (text: string) => text.replace(/<[^>]*>/g, "
 export function videoClaimMatchesReport(claim: VideoClaim & { sourceQuote: string }, source: string, reportEnd: string) {
   if (typeof claim.sourceQuote !== "string" || !normalizeVideoSource(source).includes(normalizeVideoSource(claim.sourceQuote))) return false;
   const quote = normalizeVideoSource(claim.sourceQuote);
-  if (!units[claim.unit]?.test(quote) || !bases[claim.basis]?.test(quote)) return false;
-  if (claim.unit === "wagons" && units["wagons/day"].test(quote)) return false;
-  if (/коротк.{0,20}тон|short ton/i.test(quote) && claim.unit !== "USD/short ton") return false;
-  if ((claim.unit === "tonnes" || claim.unit === "thousand tonnes") && /млн\s*(?:т|тонн)|million tonnes/i.test(quote)) return false;
+  if (!bases[claim.basis]?.test(quote)) return false;
   const numbers = [...quote.matchAll(/[-−]?\d+(?:[ '\u2019\u00a0\u202f]\d{3})*(?:[.,]\d+)?/gu)];
-  if (!numbers.some(match => Math.abs(Number(match[0].replace(/−/g, "-").replace(/[ '\u2019\u00a0\u202f]/g, "").replace(",", ".")) - claim.value) < 0.000001)) return false;
+  if (!numbers.some(match => {
+    if (Math.abs(Number(match[0].replace(/−/g, "-").replace(/[ '\u2019\u00a0\u202f]/g, "").replace(",", ".")) - claim.value) >= 0.000001) return false;
+    // A paragraph can quote beans, meal and oil together: inspect THIS metric's
+    // unit before the next numeric field/clause, not another metric's denominator.
+    const localUnit = quote.slice(match.index! + match[0].length).split(/[;!?\d]/, 1)[0].slice(0, 80);
+    if (!units[claim.unit]?.test(localUnit)) return false;
+    if (claim.unit === "wagons" && units["wagons/day"].test(localUnit)) return false;
+    if (/коротк.{0,20}тон|short ton/i.test(localUnit) && claim.unit !== "USD/short ton") return false;
+    return !((claim.unit === "tonnes" || claim.unit === "thousand tonnes") && /млн\s*(?:т|тонн)|million tonnes/i.test(localUnit));
+  })) return false;
   if (![claim.period.start, claim.period.end].every(d => /^\d{4}-\d{2}-\d{2}$/.test(d) && Number.isFinite(Date.parse(d)) && new Date(d).toISOString().slice(0, 10) === d) || claim.period.start > claim.period.end) return false;
   if (claim.period.end !== reportEnd) {
     const [, month, day] = claim.period.end.split("-");

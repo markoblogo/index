@@ -126,3 +126,8 @@ claims, source-ID/unit/basis enums, exact report-excerpt choices, 3-12 scenes pe
 part, slug IDs and at most two rows. Evidence is compacted for presentation-only
 generation; the frozen manifest still hashes the full original evidence. The
 existing semantic quote/value/basis/date and packet guards remain authoritative.
+
+Mixed soybean-complex paragraphs bind each numeric value to its adjacent unit,
+before the next numeric field or semicolon. A meal quote elsewhere in the same
+paragraph no longer incorrectly rejects a valid bean/oil quote; borrowing that
+meal's unit for another number remains rejected by regression tests.

@@ -9,6 +9,14 @@ const claim: VideoClaim & { sourceQuote: string } = { id: "claim:corn", evidence
   english: { headline: "Corn at the port", narration: "The port level is lower.", takeaway: "Compare delivery bases." } };
 
 describe("video source guards", () => {
+  it("binds the unit adjacent to its own value inside mixed soybean-complex quotes", () => {
+    const source = "CBOT соя — 1193.75 cents/bu; шрот — 319.2 USD/short ton; соєва олія — 62.26 cents/lb.";
+    for (const [value, unit] of [[1193.75, "cents/bu"], [319.2, "USD/short ton"], [62.26, "cents/lb"]] as const) {
+      expect(videoClaimMatchesReport({ ...claim, value, unit, basis: "CBOT", sourceQuote: source }, source, "2026-10-30")).toBe(true);
+    }
+    expect(videoClaimMatchesReport({ ...claim, value: 319.2, unit: "cents/bu", basis: "CBOT", sourceQuote: source }, source, "2026-10-30")).toBe(false);
+    expect(videoClaimMatchesReport({ ...claim, value: 319.2, unit: "USD/t", basis: "CBOT", sourceQuote: source }, source, "2026-10-30")).toBe(false);
+  });
   it("accepts canonical cents abbreviations without changing commodity, value or denominator", () => {
     for (const [unit, value, source] of [
       ["cents/bu", 441.5, "CBOT corn December 2026 — 441.5 cents/bu."],
