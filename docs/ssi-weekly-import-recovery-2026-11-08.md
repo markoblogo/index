@@ -118,3 +118,11 @@ alongside their existing long forms. Accumulated queues use `wagons`, not
 source-quote checks remain unchanged. A lease-fenced private metadata candidate
 is saved before validation, bound to the report revision, so an invalid quote
 can be diagnosed without blind regeneration or any Telegram send.
+
+The saved metadata diagnostic exposed a separate contract failure: free JSON
+quoted spreadsheet receipts rather than report text, used list/null metrics and
+put 4-9 rows into a single scene. Metadata now has a strict schema: numeric
+claims, source-ID/unit/basis enums, exact report-excerpt choices, 3-12 scenes per
+part, slug IDs and at most two rows. Evidence is compacted for presentation-only
+generation; the frozen manifest still hashes the full original evidence. The
+existing semantic quote/value/basis/date and packet guards remain authoritative.
