@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { ssiRailEvidence } from "./ssi-weekly-rail-evidence";
+import { isSsiRailMaterial, ssiRailEvidence, ssiVerifiedRailSections } from "./ssi-weekly-rail-evidence";
 import type { MediaHubManualMaterialDigest } from "./media-hub-manual-materials";
 const material = (text: string) => ({ id: "rail", extractedText: text }) as MediaHubManualMaterialDigest;
 const table = `Інформаційна довідка щодо перевезень зернових вантажів. За жовтень 2026 року
@@ -14,6 +14,14 @@ it("subtracts internal Izmail and checks the export denominator independently of
   expect(receipt.facts).toContain("лише експорт 30");
   expect(ssiRailEvidence([material(table.replace("200,00", "300,00"))])).toEqual([]);
   expect(ssiRailEvidence([{ ...material(table), comparisonOnly: true }])).toEqual([]);
+});
+it("builds public rail sections only from reconciled fields and refuses incomplete source packets", () => {
+  const queue = "станції ДН Зал-ці УЗ\n40 140 190 360 21 17 46 244 77\nстаном на 05.11.2026 09:15\nНоменклатура вантажу : зерно;";
+  const result = ssiVerifiedRailSections([{ ...material(table), id: "monthly" }, { ...material(queue), id: "queue" }]);
+  expect(result?.rail[0]).toContain("200 тис. т"); expect(result?.rail[0]).toContain("80%");
+  expect(result?.border[0]).toContain("360 зернових"); expect(result?.ports[0]).toContain("20 тис. т внутрішнього");
+  expect(ssiVerifiedRailSections([material(table)])).toBeNull();
+  expect(isSsiRailMaterial("05 11 2026 Cтатистичні дані щодо перевезення зерно.pdf")).toBe(true);
 });
 it("selects only the UZ column of an explicitly grain-only queue, not an all-cargo total", () => {
   const text = "станції ДН Зал-ці УЗ\n40 140 190 360 21 17 46 244 77\nстаном на 05.11.2026 09:15\nНоменклатура вантажу : зерно;";

@@ -87,3 +87,11 @@ and exact previous-Friday baseline before assigning a weekly change. Missing,
 blocked or stale sources contribute no replacement quote. Morning PDFs remain
 valid dated context, not closing prices. Normalized quote materials and source
 URLs enter the frozen report evidence; this is not a new crawler/service.
+
+The first complete-paragraph production candidate still misread neighboring
+columns in flattened rail tables. It was stopped before video preparation or
+delivery. Owner approved excluding those matrices and using signed rail fields:
+rail/border/port paragraphs are now constructed from reconciled source fields,
+not model-selected numeric cells. Missing reconciliation or a grain-only queue
+blocks drafting. The model still drafts overview/road and both commodity parts.
+Original rail materials remain stored; no source or archival file is deleted.

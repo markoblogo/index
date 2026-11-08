@@ -29,6 +29,7 @@ import { renderSsiWeeklyGrounding } from "./ssi-weekly-grounding";
 import { buildSsiWeeklyEditorialContract, getSsiWeeklyRequiredParts } from "./ssi-weekly-editorial-contract";
 import { generateStagedSsiWeeklyDraft, parseSsiPart, ssiPartFormat, ssiStagedPartInstructions, type SsiDraftPart } from "./ssi-weekly-staged-draft";
 import { withSsiPartRepair } from "./ssi-weekly-draft-repair";
+import { ssiVerifiedRailSections } from "./ssi-weekly-rail-evidence";
 import { normalizeSsiWeeklyDraft, ssiWeeklyDraftFormat, ssiWeeklyDraftInstructions } from "./ssi-weekly-structured-draft";
 
 type MediaHubReportKind = "daily" | "weekly" | "monthly";
@@ -243,6 +244,7 @@ async function buildShadowQualityCandidate(input: {
 }
 
 async function callResponsesApi(input: {
+  manualMaterials?: MediaHubManualMaterialDigest[];
   repairPart?: boolean;
   timeoutMs?: number;
   weeklyPart?: SsiDraftPart;
@@ -255,13 +257,15 @@ async function callResponsesApi(input: {
   tenant: MediaHubTenant;
 }): Promise<GenerationResult> {
   const useWebSearch = input.kind !== "daily" && !input.pairedWeeklyWorker;
+  const fixedSections = input.weeklyPart === "logistics" ? ssiVerifiedRailSections(input.manualMaterials ?? []) : undefined;
+  if (input.weeklyPart === "logistics" && !fixedSections) return { error: "weekly_rail_evidence_incomplete" };
   const requestBody: Record<string, unknown> = {
     input: input.prompt,
     max_output_tokens: input.pairedWeeklyWorker ? 16000 : getMaxOutputTokens(input.kind),
     model: input.model,
     ...(input.pairedWeeklyWorker && /^gpt-5(?:\.|$)/.test(input.model) ? { reasoning: { effort: "low" } } : {}),
-    ...(input.pairedWeeklyWorker ? { instructions: input.weeklyPart ? `${ssiWeeklyDraftInstructions}\n${ssiStagedPartInstructions(input.weeklyPart, input.repairPart)}` : ssiWeeklyDraftInstructions,
-      text: { format: input.weeklyPart ? ssiPartFormat(input.weeklyPart) : ssiWeeklyDraftFormat } } : { temperature: 0.25 }),
+    ...(input.pairedWeeklyWorker ? { instructions: input.weeklyPart ? `${ssiWeeklyDraftInstructions}\n${ssiStagedPartInstructions(input.weeklyPart, input.repairPart, fixedSections ?? undefined)}` : ssiWeeklyDraftInstructions,
+      text: { format: input.weeklyPart ? ssiPartFormat(input.weeklyPart, fixedSections ?? undefined) : ssiWeeklyDraftFormat } } : { temperature: 0.25 }),
   };
 
   if (useWebSearch) {
@@ -295,7 +299,7 @@ async function callResponsesApi(input: {
   }
   if (input.pairedWeeklyWorker && payload.status !== "completed") return { error: "responses_incomplete" };
   const responseText = extractResponseText(payload);
-  if (input.weeklyPart) return parseSsiPart(responseText, input.weeklyPart);
+  if (input.weeklyPart) return parseSsiPart(responseText, input.weeklyPart, fixedSections ?? undefined);
   const normalized = input.pairedWeeklyWorker ? normalizeSsiWeeklyDraft(responseText) : responseText;
   if (normalized === null) return { error: "weekly_three_parts_incomplete" };
   const report = parseGeneratedJson(normalized, input.kind);

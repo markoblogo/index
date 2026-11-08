@@ -81,3 +81,14 @@ it("selects only whole paragraphs, reserves every section and rejects unfinished
   }
   expect(isCompleteSsiParagraph("CBOT грудень 2026: 441.50 цента/бушель (-6.25)")).toBe(true);
 });
+it("cannot publish model-invented rail columns in place of signed source fields", () => {
+  const expected = getSsiWeeklyRequiredParts("uk")[0];
+  const sections = Object.fromEntries(SSI_PART_SECTIONS.logistics.map(spec => [spec.key,
+    Array.from({ length: spec.minItems }, () => "A complete dated factual statement preserves its basis and exact units.")]));
+  sections.rail = ["Вигадана передача зерна становить 19216 вагонів щодня."];
+  const fixed = { rail: [paragraphs[0]], border: [paragraphs[1]], ports: [paragraphs[2]] };
+  const result = parseSsiPart(JSON.stringify({ title: expected.title, sections }), "logistics", fixed);
+  expect(result.report?.summary.join(" ")).not.toContain("19216");
+  expect(result.report?.summary).toContain(paragraphs[0]);
+  expect(ssiPartFormat("logistics", fixed).schema.properties.sections.properties.rail.items).toEqual({ type: "string", enum: fixed.rail });
+});

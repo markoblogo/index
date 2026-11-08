@@ -24,7 +24,7 @@ export const SSI_PART_SECTIONS: Record<SsiDraftPart, Array<{ key: string; minIte
     { key: "soy", minItems: 2, maxItems: 7, maxLength: 160 },
   ],
 };
-export function ssiStagedPartInstructions(part: SsiDraftPart, repair = false) {
+export function ssiStagedPartInstructions(part: SsiDraftPart, repair = false, fixedSections?: Record<string, string[]>) {
   return [
     `STAGED OVERRIDE: Write ONLY ${part}, with its required part title and sections OBJECT matching the schema. Do not return summary or the other two parts. Each named section contains an array of short facts/paragraphs; code adds the exact section headings.`,
     "WHOLE PARAGRAPHS ONLY: finish each sentence naturally. Never truncate words, omit the end of a sentence, or pad to a character cap. Each paragraph must be self-contained; do not refer to an optional preceding paragraph. Code selects complete paragraphs to fit the message. Aim for 3200 summary characters overall, but completeness takes priority over squeezing each field. Never put headings or emoji in facts. At least five factual/analytical paragraphs per PART.",
@@ -33,6 +33,7 @@ export function ssiStagedPartInstructions(part: SsiDraftPart, repair = false) {
       ? "SECTION QUOTAS: five separate headings plus at most 13 fact paragraphs: overview 2, road/Danube road 4, rail 3, border 3, ports 1. Total at most 18 items. Omit minor checkpoint/station lists before any required section. Keep customs, road, rail export, internal/transit and grain-only/all-cargo queues distinct; never merge their denominators."
       : "Combine two comparable expiries into one compact quote row when necessary. Keep crop headings, verified quotes, trade comparisons and a short interpretation; remove optional background before required sections.",
     "Keep exact crop/contract identity: SX is SOYBEANS, never corn; corn is ZC/C; wheat ZW/W. Chop is FCA, never CPT. Sunflower oil (1512) is not seed (1206). Causes require explicit support. All original evidence, units and missing-data restrictions still apply.",
+    ...(fixedSections ? [`RAIL FIELDS ARE FIXED SOURCE PARAGRAPHS, not a drafting task. Copy the supplied rail/border/ports arrays exactly, in order; add no railway numbers or interpretations to overview/road: ${JSON.stringify(fixedSections)}`] : []),
     ...(repair ? ["SHAPE REPAIR: the previous candidate failed length/section/JSON validation. Generate a shorter NEW candidate from the SAME supplied evidence. Do not add facts, split into extra messages, merge headings, finish with a fragment or treat a previous draft as a factual source."] : []),
   ].join("\n");
 }
@@ -40,15 +41,15 @@ type Draft = { title: string; summary: string[] };
 type Result = { report?: Draft; error?: string };
 type State = { version: 1; inputHash: string; parts: Partial<Record<SsiDraftPart, Draft>> };
 
-export function ssiPartFormat(part: SsiDraftPart) {
+export function ssiPartFormat(part: SsiDraftPart, fixedSections?: Record<string, string[]>) {
   const i = SSI_DRAFT_PARTS.indexOf(part);
   return { type: "json_schema", name: `ssi_weekly_${part}`, strict: true, schema: {
     type: "object", additionalProperties: false, required: ["title", "sections"], properties: {
       title: { type: "string", enum: [getSsiWeeklyRequiredParts("uk")[i].title] },
       sections: { type: "object", additionalProperties: false, required: SSI_PART_SECTIONS[part].map(section => section.key),
         properties: Object.fromEntries(SSI_PART_SECTIONS[part].map(section => [section.key, {
-          type: "array", minItems: section.minItems, maxItems: section.maxItems,
-          items: { type: "string", maxLength: 700, pattern: "^[^\\r\\n]{1,700}$" },
+          type: "array", minItems: fixedSections?.[section.key]?.length ?? section.minItems, maxItems: fixedSections?.[section.key]?.length ?? section.maxItems,
+          items: fixedSections?.[section.key] ? { type: "string", enum: fixedSections[section.key] } : { type: "string", maxLength: 700, pattern: "^[^\\r\\n]{1,700}$" },
         }])) },
     },
   } };
@@ -83,10 +84,14 @@ function packSections(sections: Record<string, unknown>, part: SsiDraftPart, hea
   return flatten();
 }
 
-export function parseSsiPart(text: string, part: SsiDraftPart): Result {
+export function parseSsiPart(text: string, part: SsiDraftPart, fixedSections?: Record<string, string[]>): Result {
   try {
     let value = JSON.parse(text) as Draft & { sections?: Record<string, unknown> };
     const expected = getSsiWeeklyRequiredParts("uk")[SSI_DRAFT_PARTS.indexOf(part)];
+    if (fixedSections && part === "logistics") {
+      if (!value.sections || ["rail", "border", "ports"].some(key => !fixedSections[key]?.length)) return { error: "weekly_rail_evidence_incomplete" };
+      value.sections = { ...value.sections, ...fixedSections };
+    }
     if (value.sections) {
       const sections = value.sections, specs = SSI_PART_SECTIONS[part];
       if (Object.keys(sections).length !== specs.length || specs.some(spec => {
@@ -117,7 +122,7 @@ export function parseSsiPart(text: string, part: SsiDraftPart): Result {
 export async function generateStagedSsiWeeklyDraft(input: {
   end: string; prompt: string; model: string; generate: (part: SsiDraftPart) => Promise<Result>;
 }): Promise<Result> {
-  const inputHash = createHash("sha256").update(`ssi-parts-v4-whole-paragraphs\n${input.model}\n${input.prompt}`).digest("hex");
+  const inputHash = createHash("sha256").update(`ssi-parts-v5-signed-rail\n${input.model}\n${input.prompt}`).digest("hex");
   const [row] = await db.$queryRawUnsafe<Array<{ lease: string; reportDraftPartsJson: State | null }>>(
     'SELECT "lease","reportDraftPartsJson" FROM private."SsiWeeklyVideoPreparation" WHERE "periodEnd"=$1::date', input.end);
   if (!row?.lease) return { error: "weekly_preparation_lease_missing" };
