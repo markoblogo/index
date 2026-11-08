@@ -95,3 +95,11 @@ rail/border/port paragraphs are now constructed from reconciled source fields,
 not model-selected numeric cells. Missing reconciliation or a grain-only queue
 blocks drafting. The model still drafts overview/road and both commodity parts.
 Original rail materials remain stored; no source or archival file is deleted.
+
+Arithmetic receipts now independently derive commodity/overall shares, buyer
+concentrations and matched-month quantity/value changes from full dated cells.
+They retain material IDs, denominators, units and actual cutoffs, not a copy of
+generated prose. The 6 November candidate additionally requires operator review
+of a misquoted historical buyer share and curve interpretation before promotion.
+Do not clear a `needs_review` flag without correcting the text and rerunning
+validation against independent receipts.

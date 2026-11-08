@@ -5,6 +5,7 @@ import type { MediaHubEvidenceItem } from "./media-hub-evidence";
 import { renderSsiWeeklySpreadsheetEvidence } from "./media-hub-ssi-weekly-pattern";
 import { renderPdfTableEvidence } from "./media-hub-pdf-table-evidence";
 import { isSsiRailMaterial, ssiRailEvidence, ssiVerifiedRailSections } from "./ssi-weekly-rail-evidence";
+import { ssiCalculationReceipts } from "./ssi-weekly-calculation-receipts";
 
 type SourceBlock = { materialId: string; coverage?: string; cohort?: string; unit?: string;
   cutoff?: string; coverageStart?: string | null; comparisonRole?: string;
@@ -114,6 +115,8 @@ export function renderSsiWeeklyGrounding(input: {
     JSON.stringify(spreadsheetFacts(input.manualMaterials ?? [], input.periodEndDate)),
     "DERIVED COMPARISON MATRIX. Compare matched month-to-date quantities AND trade values. Daily pace uses THREE exact cumulative cutoffs, never a cumulative monthly average. Each input retains its material ID and actual cutoff; gaps are unavailable, not zero. Currency remains thousand USD, pace tonnes/day.",
     JSON.stringify(comparisonMatrix(spreadsheetFacts(input.manualMaterials ?? [], input.periodEndDate))),
+    "EXPLICIT ARITHMETIC RECEIPTS: use the exact commodity's country concentration and dated denominator. Do not borrow another commodity's share. A nearby expiry is not a new harvest without explicit source support; front above deferred is backwardation, not positive carry.",
+    JSON.stringify(ssiCalculationReceipts(input.manualMaterials ?? [], input.periodEndDate).map(item => ({ id: item.id, facts: item.claim }))),
     "RECONCILED RAIL RECEIPTS. These explicitly separated cohorts override percentages printed with a mixed denominator. The observation month/date is NOT the file upload date. Never relabel all-cargo or grain-plus-cake as grain-only. If a source's denominator cannot be reconciled, omit its share.",
     JSON.stringify(ssiRailEvidence(input.manualMaterials ?? [])),
     "FIXED RAIL SECTIONS: use these signed paragraphs verbatim; unlabeled native UZ matrices are deliberately excluded. Never infer country/station/daily values from a flattened table.",
@@ -176,5 +179,5 @@ export function extendSsiWeeklyEvidence(evidence: MediaHubEvidenceItem[], materi
     id: `manual:rail:${end}:${section}:${i}`, claim: text, excerpt: `${text}\n${text.replace(/(\d)\.(\d)/g, "$1,$2")}\n${JSON.stringify(ssiRailEvidence(materials))}`,
     confidence: "high" as const, sourceType: "manual_material" as const, sourceDate: end ?? null, sourceTitle: "Source-bound rail fields; original material IDs and observation periods retained", sourceUrl: null, usedInSection: section,
   })));
-  return [...weekly, ...fixedRail, ...rail, ...derived, ...comparisons, ...evidence, ...chunks].slice(0, 120);
+  return [...weekly, ...fixedRail, ...rail, ...ssiCalculationReceipts(materials, end ?? ""), ...derived, ...comparisons, ...evidence, ...chunks].slice(0, 120);
 }
