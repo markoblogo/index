@@ -103,3 +103,11 @@ generated prose. The 6 November candidate additionally requires operator review
 of a misquoted historical buyer share and curve interpretation before promotion.
 Do not clear a `needs_review` flag without correcting the text and rerunning
 validation against independent receipts.
+
+Final channel preview exposed a legacy formatter defect: keyword rebucketing
+put logistics paragraphs in commodity parts, consumed crop sections' budget,
+and considered evidence/feed text publishable prose. Complete authored packs
+now retain exact part/section boundaries and never mine evidence or feeds for
+additional public copy. Partial structured packs fail closed; genuinely legacy
+unstructured reports retain their previous path. Tests assert all headings,
+part isolation, multi-contract quote preservation and no evidence leakage.

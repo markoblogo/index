@@ -3,6 +3,7 @@ import type { MediaHubEvidenceItem } from "@/lib/media-hub-evidence";
 import type { MediaHubWindowSnapshot } from "@/lib/media-hub";
 import type { MediaHubLocalizedReport } from "@/lib/media-hub-llm-report";
 import { fitSsiTelegramPart } from "@/lib/ssi-weekly-report-safeguards";
+import { getSsiWeeklyRequiredParts } from "@/lib/ssi-weekly-editorial-contract";
 
 type SsiNonDailyReportContent = {
   evidence?: MediaHubEvidenceItem[];
@@ -29,20 +30,53 @@ export function buildSsiNonDailyStructuredMessages(input: {
   locale: Locale;
   periodEndDate: string;
 }) {
-  const facts = collectSsiFacts(input.content, input.locale);
-  const buckets = bucketFacts(facts, input.locale);
+  const structured = readStructuredParts(input.content.localized?.[input.locale]?.summary ?? input.content.summary, input.locale);
+  if (structured && input.content.validation?.unsupportedClaims?.length) throw new Error("ssi_structured_claims_need_review");
   const meta = getMeta(input.kind, input.locale);
-  const parts = buildParts(buckets, input.locale);
+  const parts = structured ?? buildParts(bucketFacts(collectSsiFacts(input.content, input.locale), input.locale), input.locale);
 
-  return parts.map((part, index) => fitSsiTelegramPart({ header: [
+  return parts.map((part, index) => {
+    const message = fitSsiTelegramPart({ header: [
     `🇺🇦 <b>${escapeHtml(meta.heading)}</b>`,
     escapeHtml(formatShortDate(input.periodEndDate)),
     "",
     `<b>${escapeHtml(part.title)}</b>`,
     "",
-  ].join("\n").trim(), sections: getPartSections(part, input.kind), fallback: part.fallback,
+  ].join("\n").trim(), sections: structured ? part.sections : getPartSections(part, input.kind), fallback: part.fallback,
     footer: index === parts.length - 1 ? meta.footer : meta.partFooter,
-  }));
+    });
+    if (structured && part.sections.some(section => !message.includes(`<b>${escapeHtml(section.heading)}</b>`))) throw new Error("ssi_structured_section_dropped");
+    return message;
+  });
+}
+
+/** Authored parts are authoritative. Evidence/feed are support, not extra prose. */
+function readStructuredParts(lines: string[], locale: Locale): ChannelPart[] | null {
+  const clean = (line: string) => line.replace(/<[^>]*>/g, "").trim();
+  if (!lines.some(line => /^(?:Частина|Part)\s+(?:I|II|III)\./.test(clean(line)))) return null;
+  const required = getSsiWeeklyRequiredParts(locale);
+  const result = required.map(part => ({ title: part.title, fallback: "", sections: part.sections.map(heading => ({ heading, items: [] as string[] })) }));
+  let part = -1, section = -1;
+  for (const raw of lines) {
+    const value = clean(raw); if (!value) continue;
+    const nextPart = required.findIndex(item => item.title === value);
+    if (nextPart >= 0) {
+      if (nextPart !== part + 1) throw new Error("ssi_structured_part_order_invalid");
+      part = nextPart; section = -1; continue;
+    }
+    if (part < 0) throw new Error("ssi_structured_part_missing");
+    const nextSection = required[part].sections.indexOf(value);
+    if (nextSection >= 0) {
+      if (nextSection !== section + 1) throw new Error("ssi_structured_section_order_invalid");
+      section = nextSection; continue;
+    }
+    if (section < 0 || required.some(item => item.sections.includes(value)) || /^(?:Частина|Part)\s/.test(value)) throw new Error("ssi_structured_section_missing");
+    result[part].sections[section].items.push(raw.replace(/^\s*[•*-]\s*/, "").trim()
+      .replace(/\bUSD\s*\/\s*(?:mt|t|т)(?![\p{L}\p{N}])/giu, "$")
+      .replace(/\bEUR\s*\/\s*(?:mt|t|т)(?![\p{L}\p{N}])/giu, "€"));
+  }
+  if (part !== 2 || result.some(item => item.sections.some(group => !group.items.length))) throw new Error("ssi_structured_parts_incomplete");
+  return result;
 }
 
 function collectSsiFacts(content: SsiNonDailyReportContent, locale: Locale) {
