@@ -10,11 +10,12 @@ import { fetchWithTimeout } from "./fetch-timeout";
 import { getMediaHubReport, publishMediaHubSnapshotReport, buildMediaHubTelegramMessages } from "./media-hub-publication-scheduler";
 import { syncGoogleDriveContextMaterials } from "./media-hub-google-drive";
 import { getSsiWeeklyLogisticsPublicationBlock } from "./ssi-weekly-logistics-control";
-import { freezeVideoReport, buildWeeklyVideoPacket, videoHash, VIDEO_PARTS, type FrozenVideoReport, type VideoClaim, type SceneSelection, type VideoPart, type WeeklyVideoPacket } from "./ssi-weekly-video-packet";
+import { freezeVideoReport, buildWeeklyVideoPacket, videoHash, VIDEO_PARTS, type FrozenVideoReport, type WeeklyVideoPacket } from "./ssi-weekly-video-packet";
 import { makeWeeklyDraftItems, type PairedLedger, type WeeklyVideoReadySet } from "./ssi-weekly-paired-draft";
 import { videoClaimMatchesReport } from "./ssi-weekly-video-source-guard";
 import { ssiWorkerFailure } from "./ssi-weekly-worker-diagnostics";
-import { ssiVideoMetadataFormat } from "./ssi-weekly-video-metadata-format";
+import { buildSsiWeeklyVideoFacts } from "./ssi-weekly-video-facts";
+import type { MediaHubManualMaterialDigest } from "./media-hub-manual-materials";
 
 type Job = { id: string; reportId: string; baseContentSha256: string; snapshot: FrozenVideoReport; packet: WeeklyVideoPacket;
   readySet: WeeklyVideoReadySet | null; targetChatId: string; ledger: PairedLedger | null; lease: string | null;
@@ -43,7 +44,6 @@ async function reportForJob(job: Job, end: string) {
   if (!report || report.id !== job.reportId || reportContentHash(report.contentJson) !== job.baseContentSha256) throw new Error("report_revision_changed");
   return report;
 }
-function plain(value: string) { return value.replace(/<[^>]*>/g, " ").replace(/&(?:amp|nbsp|quot);/g, " ").replace(/\s+/g, " ").trim(); }
 
 async function prepareJob(end: string, intakeComplete: boolean, preparationLease: string) {
   const report = await getMediaHubReport("weekly", end, "spike-ua");
@@ -75,22 +75,8 @@ async function prepareJob(end: string, intakeComplete: boolean, preparationLease
   const texts = buildMediaHubTelegramMessages({ content, kind: "weekly", latestData: [], locale: "uk", periodEndDate: end, tenant: "spike" });
   if (texts.length !== 3 || !content.evidence?.length) throw new Error("weekly_evidence_missing");
   const target = await privateFoundersTarget(chatId() ?? "");
-  if (!process.env.OPENAI_API_KEY) throw new Error("video_metadata_provider_not_configured");
-  const response = await fetchWithTimeout("https://api.openai.com/v1/responses", {
-    method: "POST", headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: process.env.SPIKE_WEEKLY_EDITORIAL_MODEL || process.env.SPIKE_WEEKLY_REPORT_MODEL || "gpt-4.1-mini", max_output_tokens: 14000,
-      text: { format: ssiVideoMetadataFormat(content.evidence.map(item => item.id), texts) },
-      input: JSON.stringify({ task: "Create English scene METADATA ONLY for this frozen validated Ukrainian founders draft, not a new report. No external search, new facts, advice or invented numbers. Exactly logistics, grains, oilseeds. Target 5/7/10 short scenes, omit unsupported optional scenes, at most 12 per part. Short headline <=42 characters, row headline <=22, narration <=140 characters (commentary, not reading every number), takeaway <=100. Return strict JSON {claims:[{id,evidenceId,part,value,unit,basis,period:{start,end,label},sourceQuote,english:{headline,narration,takeaway}}],selections:{logistics:[{id,heroClaimId,rowClaimIds,kind}],grains:[],oilseeds:[]}}. All quotes must be exact excerpts of the corresponding Ukrainian part; values must occur there. Evidence IDs must be from the supplied ledger. Keep each unit/basis/observation date exactly comparable to that excerpt. Units: USD/t, EUR/t, USD/short ton, cents/bu, cents/lb, thousand tonnes, million tonnes, tonnes, wagons/day, %, percentage points, USD/bbl, MYR/t. Allowed bases: CPT Odesa, CPT port, CPT plant, FCA Chop, CBOT, MATIF, BMD, WTI, Brent, FOB Northern Europe, FOB Netherlands, FCA Hamburg, customs clearance, road passage, rail transportation, border handovers. kind=none with zero rows, rows or bars with max2 rows. Bars may not mix units/bases. English labels must identify the crop or flow. Never copy a prior week's voice/date/value. A field's lack of evidence means omit the scene, not zero-fill.",
-        unitContract: "Additional permitted unit: wagons, for an accumulated queue only; never relabel a queue as wagons/day. cents/bu and cents/lb are exact canonical abbreviations, not dollar prices. Keep literal numbers without scaling. A sourceQuote must itself contain its unit, basis and actual observation date; include enough exact adjacent text rather than inventing a label. Monthly rail facts keep their October observation period, not the report's November date.",
-        sourceContract: "sourceQuote MUST be one of the exact report excerpts allowed by the JSON schema, never a quote copied or reconstructed from evidence. Each scene has at most two row claims. Use a separate short scene for another topic; all IDs must be slug-safe. Country lists without one finite numeric metric are not claims. No null/list-valued metrics, no invented bases, and no new facts. Evidence is a source index, not narration text.",
-        period: { start: content.periodStartDate, end }, parts: VIDEO_PARTS.map((id, i) => ({ id, ukrainianText: plain(texts[i]) })),
-        evidence: content.evidence.map(item => ({ id: item.id, sourceTitle: item.sourceTitle, sourceDate: item.sourceDate, sourceType: item.sourceType, excerpt: item.excerpt.slice(0, 800) })) }),
-    }),
-  }, 180000);
-  const raw = await response.json() as { status?: string; output?: Array<{ content?: Array<{ text?: string }> }> };
-  if (!response.ok || raw.status !== "completed") throw new Error("video_metadata_generation_failed");
-  const text = raw.output?.flatMap(item => item.content ?? []).map(item => item.text ?? "").join("") ?? "";
-  const draft = JSON.parse(text) as { claims: Array<VideoClaim & { sourceQuote: string }>; selections: Record<VideoPart, SceneSelection[]> };
+  const sources = (typeof report.sourceDigest === "string" ? JSON.parse(report.sourceDigest) : report.sourceDigest) as { manualMaterials?: MediaHubManualMaterialDigest[] } | null;
+  const draft = buildSsiWeeklyVideoFacts({ texts, evidence: content.evidence, materials: sources?.manualMaterials ?? [], end });
   const invalidClaims = draft.claims.filter(claim => {
     const index = VIDEO_PARTS.indexOf(claim.part);
     return index < 0 || !videoClaimMatchesReport(claim, texts[index], end);

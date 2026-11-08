@@ -131,3 +131,19 @@ Mixed soybean-complex paragraphs bind each numeric value to its adjacent unit,
 before the next numeric field or semicolon. A meal quote elsewhere in the same
 paragraph no longer incorrectly rejects a valid bean/oil quote; borrowing that
 meal's unit for another number remains rejected by regression tests.
+
+## Deterministic companion-video facts
+
+Even constrained model output invented scales and paired unrelated source
+quotes with metrics. The report itself remains the full reviewed report; only
+the video-metadata step is replaced. It now selects finite typed facts from the
+frozen published-index ledger, frozen source tables, checked closing quotes and
+reconciled rail receipts. Every selected value must also occur with its unit,
+basis and period in the corresponding report part. Missing support omits an
+optional scene; fewer than three scenes in any part blocks the whole package.
+
+English copy uses short factual templates and same-unit/date comparisons, not
+free-form causes or a second model calculation. Actual futures delivery months
+remain in source-driven period labels, never hard-coded in headlines. No new
+provider call is made for video metadata. Existing packet/source/template hashes,
+all-three-assets readiness and six-send receipt fencing are unchanged.

@@ -19,7 +19,7 @@ const bases: Record<string, RegExp> = {
   "FOB Netherlands": /FOB.{0,30}(?:Нідерланд|Netherlands|Dutch)/i,
   "FCA Hamburg": /FCA.{0,20}(?:Гамбург|Hamburg)/i,
   "customs clearance": /митн|оформ|customs|clearance/i,
-  "road passage": /авто|road/i, "rail transportation": /залізнич|УЗ|rail/i,
+  "road passage": /авто|road/i, "rail transportation": /залізни[чц]|УЗ|rail/i,
   "border handovers": /передач|переход|кордон|border/i,
 };
 export const normalizeVideoSource = (text: string) => text.replace(/<[^>]*>/g, " ").replace(/&(?:amp|nbsp|quot);/g, " ").replace(/\s+/g, " ").trim();
