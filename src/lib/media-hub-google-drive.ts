@@ -5,12 +5,13 @@ import { db, hasDatabaseUrl } from "@/lib/db";
 import { ingestMediaHubFileMaterial, type MaterialIngestResult } from "@/lib/media-hub-manual-materials";
 import { classifySsiWeeklyLogisticsTypeFromFilename } from "@/lib/ssi-weekly-logistics-control";
 import { withSsiWorkerStage } from "./ssi-weekly-worker-diagnostics";
+import { GOOGLE_DRIVE_MATERIAL_MAX_BYTES } from "./media-hub-material-size";
 
 const DRIVE_FOLDER_ID = process.env.MEDIA_HUB_GOOGLE_DRIVE_FOLDER_ID ?? "1cHuO86kaqND34vLTFo3Ly_OoBSNV3rgC";
 const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.readonly";
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const FILES_URL = "https://www.googleapis.com/drive/v3/files";
-const FILE_MAX_BYTES = 50 * 1024 * 1024;
+const FILE_MAX_BYTES = GOOGLE_DRIVE_MATERIAL_MAX_BYTES;
 const REQUEST_TIMEOUT_MS = 25_000;
 const STATE_COOKIE = "ssi_drive_oauth_state";
 const SYNC_BATCH_SIZE = 20;
@@ -192,7 +193,10 @@ export async function syncGoogleDriveContextMaterials(options: { rescanRecent?: 
       tenantId: "spike-ua",
     }));
     if (!result.id || result.extractionStatus === "failed" || result.extractionStatus === "skipped") {
-      throw new Error(`Google Drive material intake failed for ${file.name}.`);
+      await withSsiWorkerStage("drive_extraction", async () => {
+        throw new Error(result.message === "File exceeds Context material size limit."
+          ? "drive_material_size_limit" : `Google Drive material intake failed for ${file.name}.`);
+      });
     }
     // A byte-identical file may reuse an older material. Remember the version
     // without changing that material's observation date or source facts.

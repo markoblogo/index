@@ -90,7 +90,7 @@ describe("resumable Google Drive sync", () => {
 
   it("does not checkpoint a failed extraction", async () => {
     ingest.mockResolvedValue({ ...storedResult, id: undefined, extractionStatus: "failed", message: "File exceeds Context material size limit." });
-    await expect(syncGoogleDriveContextMaterials()).rejects.toThrow("intake failed");
+    await expect(syncGoogleDriveContextMaterials()).rejects.toThrow("drive_material_size_limit");
     expect(execute).not.toHaveBeenCalled();
   });
 });

@@ -12,6 +12,7 @@ import { fetchWithTimeout as fetchExternalWithTimeout } from "@/lib/fetch-timeou
 import { sanitizeMaterialStorageText } from "@/lib/media-hub-material-text";
 import { selectReportWindowMaterials } from "@/lib/media-hub-material-window";
 import { selectSsiWeeklyComparisonMaterials, ssiWeeklyComparisonWindowStart } from "./ssi-weekly-comparison-materials";
+import { mediaHubMaterialByteLimit } from "./media-hub-material-size";
 import type { MediaHubPublicationKind } from "@/lib/media-hub-publication-scheduler";
 
 export type MediaHubManualMaterialKind =
@@ -323,7 +324,7 @@ export async function ingestMediaHubFileMaterial(input: {
   telegramMessageId?: string;
   tenantId: MediaHubManualMaterialTenant;
 }) {
-  if (input.bytes.length > getManualMaterialMaxBytes()) {
+  if (input.bytes.length > getManualMaterialMaxBytes(input.receivedFrom)) {
     return buildResult(input.tenantId, input.kind, "failed", "File exceeds Context material size limit.");
   }
 
@@ -1477,9 +1478,8 @@ async function fetchWithTimeout(url: string) {
   }
 }
 
-function getManualMaterialMaxBytes() {
-  const configured = Number(process.env.MEDIA_HUB_MANUAL_MATERIAL_MAX_MB ?? DEFAULT_MAX_FILE_MB);
-  return Math.max(1, Math.min(50, configured || DEFAULT_MAX_FILE_MB)) * 1024 * 1024;
+function getManualMaterialMaxBytes(receivedFrom?: string) {
+  return mediaHubMaterialByteLimit(process.env.MEDIA_HUB_MANUAL_MATERIAL_MAX_MB ?? String(DEFAULT_MAX_FILE_MB), receivedFrom);
 }
 
 function decodeText(buffer: Buffer) {

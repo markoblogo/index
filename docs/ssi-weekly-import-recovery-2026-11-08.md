@@ -19,3 +19,18 @@ imports resume through their existing progress and duplicate guards.
 
 Diagnosis is not proof of import success. Record the actual production failure,
 repair and extraction/report/video/send receipts separately after verification.
+
+## Size-policy mismatch
+
+Production retry returned `drive_material_intake_failed` before any new material
+was persisted. Code inspection found that the importer accepted up to 50 MiB,
+while file ingestion independently rejected above 20 MiB by default. A shared
+size-policy module now uses the same bounded 50 MiB limit for authenticated
+`google-drive` ingestion only. Admin, Telegram and scheduled-link limits retain
+their existing settings. PDF page/OCR budgets and report-readability gates do
+not change. A later production retry must establish the actual outcome; the
+first rejected file's size was not captured by the old diagnostic.
+
+The owner authorized one fenced retry of the 6 November preparation after this
+repair, only with no delivery job or active work. Do not disable general backoff
+or duplicate-send protection.
