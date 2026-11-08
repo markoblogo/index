@@ -2,9 +2,10 @@ import type { VideoClaim } from "./ssi-weekly-video-packet";
 
 const units: Record<string, RegExp> = {
   "USD/t": /\$|USD|долар/i, "EUR/t": /€|EUR|євро/i, "USD/short ton": /коротк.{0,20}тон|short ton/i,
-  "cents/bu": /цент.{0,12}бушел|cents?.{0,8}bushel/i, "cents/lb": /цент.{0,12}фунт|cents?.{0,8}pound/i,
+  "cents/bu": /цент.{0,12}бушел|cents?.{0,8}bushel|\bcents?\/bu(?![\p{L}\p{N}])/iu, "cents/lb": /цент.{0,12}фунт|cents?.{0,8}pound|\bcents?\/lb(?![\p{L}\p{N}])/iu,
   "thousand tonnes": /тис\.?\s*(?:т|тонн)|thousand tonnes/i, "million tonnes": /млн\s*(?:т|тонн)|million tonnes/i,
   "tonnes": /тонн|tonnes/i, "wagons/day": /ваг.{0,8}(?:доб|день)|wagons?.{0,8}day/i,
+  "wagons": /вагон|wagons?/i,
   "%": /%/, "percentage points": /в\.?\s*п\.?|percentage points/i,
   "USD/bbl": /барел|барель|barrel/i, "MYR/t": /MYR/i,
 };
@@ -27,6 +28,7 @@ export function videoClaimMatchesReport(claim: VideoClaim & { sourceQuote: strin
   if (typeof claim.sourceQuote !== "string" || !normalizeVideoSource(source).includes(normalizeVideoSource(claim.sourceQuote))) return false;
   const quote = normalizeVideoSource(claim.sourceQuote);
   if (!units[claim.unit]?.test(quote) || !bases[claim.basis]?.test(quote)) return false;
+  if (claim.unit === "wagons" && units["wagons/day"].test(quote)) return false;
   if (/коротк.{0,20}тон|short ton/i.test(quote) && claim.unit !== "USD/short ton") return false;
   if ((claim.unit === "tonnes" || claim.unit === "thousand tonnes") && /млн\s*(?:т|тонн)|million tonnes/i.test(quote)) return false;
   const numbers = [...quote.matchAll(/[-−]?\d+(?:[ '\u2019\u00a0\u202f]\d{3})*(?:[.,]\d+)?/gu)];

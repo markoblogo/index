@@ -9,6 +9,26 @@ const claim: VideoClaim & { sourceQuote: string } = { id: "claim:corn", evidence
   english: { headline: "Corn at the port", narration: "The port level is lower.", takeaway: "Compare delivery bases." } };
 
 describe("video source guards", () => {
+  it("accepts canonical cents abbreviations without changing commodity, value or denominator", () => {
+    for (const [unit, value, source] of [
+      ["cents/bu", 441.5, "CBOT corn December 2026 — 441.5 cents/bu."],
+      ["cents/lb", 62.26, "CBOT soybean oil December 2026 — 62.26 cents/lb."],
+    ] as const) {
+      const candidate = { ...claim, unit, value, basis: "CBOT", sourceQuote: source };
+      expect(videoClaimMatchesReport(candidate, source, "2026-10-30")).toBe(true);
+      expect(videoClaimMatchesReport({ ...candidate, unit: unit === "cents/bu" ? "cents/lb" : "cents/bu" }, source, "2026-10-30")).toBe(false);
+      expect(videoClaimMatchesReport({ ...candidate, value: value + 1 }, source, "2026-10-30")).toBe(false);
+      expect(videoClaimMatchesReport({ ...candidate, basis: "MATIF" }, source, "2026-10-30")).toBe(false);
+    }
+  });
+  it("distinguishes the wagon queue from a daily wagon handover rate", () => {
+    const queue = "На прикордонних переходах — 3681 зернових вагонів.";
+    const daily = "Передача через прикордонні переходи — 345.3 ваг./добу.";
+    expect(videoClaimMatchesReport({ ...claim, value: 3681, unit: "wagons", basis: "border handovers", sourceQuote: queue }, queue, "2026-10-30")).toBe(true);
+    expect(videoClaimMatchesReport({ ...claim, value: 3681, unit: "wagons/day", basis: "border handovers", sourceQuote: queue }, queue, "2026-10-30")).toBe(false);
+    expect(videoClaimMatchesReport({ ...claim, value: 345.3, unit: "wagons/day", basis: "border handovers", sourceQuote: daily }, daily, "2026-10-30")).toBe(true);
+    expect(videoClaimMatchesReport({ ...claim, value: 345.3, unit: "wagons", basis: "border handovers", sourceQuote: daily }, daily, "2026-10-30")).toBe(false);
+  });
   it("binds exact values, currency, basis and observation period", () => {
     expect(videoClaimMatchesReport(claim, quote, "2026-10-30")).toBe(true);
     for (const changed of [{ ...claim, unit: "EUR/t" }, { ...claim, basis: "CPT plant" }, { ...claim, value: 161 },

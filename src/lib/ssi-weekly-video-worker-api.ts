@@ -79,6 +79,7 @@ async function prepareJob(end: string, intakeComplete: boolean, preparationLease
     method: "POST", headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify({ model: process.env.SPIKE_WEEKLY_EDITORIAL_MODEL || process.env.SPIKE_WEEKLY_REPORT_MODEL || "gpt-4.1-mini", max_output_tokens: 14000,
       input: JSON.stringify({ task: "Create English scene METADATA ONLY for this frozen validated Ukrainian founders draft, not a new report. No external search, new facts, advice or invented numbers. Exactly logistics, grains, oilseeds. Target 5/7/10 short scenes, omit unsupported optional scenes, at most 12 per part. Short headline <=42 characters, row headline <=22, narration <=140 characters (commentary, not reading every number), takeaway <=100. Return strict JSON {claims:[{id,evidenceId,part,value,unit,basis,period:{start,end,label},sourceQuote,english:{headline,narration,takeaway}}],selections:{logistics:[{id,heroClaimId,rowClaimIds,kind}],grains:[],oilseeds:[]}}. All quotes must be exact excerpts of the corresponding Ukrainian part; values must occur there. Evidence IDs must be from the supplied ledger. Keep each unit/basis/observation date exactly comparable to that excerpt. Units: USD/t, EUR/t, USD/short ton, cents/bu, cents/lb, thousand tonnes, million tonnes, tonnes, wagons/day, %, percentage points, USD/bbl, MYR/t. Allowed bases: CPT Odesa, CPT port, CPT plant, FCA Chop, CBOT, MATIF, BMD, WTI, Brent, FOB Northern Europe, FOB Netherlands, FCA Hamburg, customs clearance, road passage, rail transportation, border handovers. kind=none with zero rows, rows or bars with max2 rows. Bars may not mix units/bases. English labels must identify the crop or flow. Never copy a prior week's voice/date/value. A field's lack of evidence means omit the scene, not zero-fill.",
+        unitContract: "Additional permitted unit: wagons, for an accumulated queue only; never relabel a queue as wagons/day. cents/bu and cents/lb are exact canonical abbreviations, not dollar prices. Keep literal numbers without scaling. A sourceQuote must itself contain its unit, basis and actual observation date; include enough exact adjacent text rather than inventing a label. Monthly rail facts keep their October observation period, not the report's November date.",
         period: { start: content.periodStartDate, end }, parts: VIDEO_PARTS.map((id, i) => ({ id, ukrainianText: plain(texts[i]) })), evidence: content.evidence }),
     }),
   }, 180000);
@@ -86,6 +87,14 @@ async function prepareJob(end: string, intakeComplete: boolean, preparationLease
   if (!response.ok || raw.status !== "completed") throw new Error("video_metadata_generation_failed");
   const text = raw.output?.flatMap(item => item.content ?? []).map(item => item.text ?? "").join("") ?? "";
   const draft = JSON.parse(text) as { claims: Array<VideoClaim & { sourceQuote: string }>; selections: Record<VideoPart, SceneSelection[]> };
+  const invalidClaims = draft.claims.filter(claim => {
+    const index = VIDEO_PARTS.indexOf(claim.part);
+    return index < 0 || !videoClaimMatchesReport(claim, texts[index], end);
+  }).map(claim => ({ id: claim.id, part: claim.part, unit: claim.unit, basis: claim.basis, period: claim.period }));
+  // Private, source-bound diagnostic only; no prompt, credentials or channel sends.
+  const recorded = await db.$executeRawUnsafe('UPDATE private."SsiWeeklyVideoPreparation" SET "reportAttemptJson"=$3::jsonb WHERE "periodEnd"=$1::date AND "lease"=$2', end, preparationLease,
+    JSON.stringify({ phase: "video_metadata", reportId: report.id, reportContentSha256: reportContentHash(report.contentJson), status: invalidClaims.length ? "needs_review" : "checked", invalidClaims, draft }));
+  if (recorded !== 1) throw new Error("preparation_lease_changed");
   for (const claim of draft.claims) {
     const i = VIDEO_PARTS.indexOf(claim.part);
     if (i < 0 || !videoClaimMatchesReport(claim, texts[i], end)) throw new Error("video_claim_quote_mismatch");

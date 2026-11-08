@@ -111,3 +111,10 @@ now retain exact part/section boundaries and never mine evidence or feeds for
 additional public copy. Partial structured packs fail closed; genuinely legacy
 unstructured reports retain their previous path. Tests assert all headings,
 part isolation, multi-contract quote preservation and no evidence leakage.
+
+Video source validation accepts exact `cents/bu` and `cents/lb` abbreviations
+alongside their existing long forms. Accumulated queues use `wagons`, not
+`wagons/day`; count/rate substitution remains rejected. Number/basis/date and
+source-quote checks remain unchanged. A lease-fenced private metadata candidate
+is saved before validation, bound to the report revision, so an invalid quote
+can be diagnosed without blind regeneration or any Telegram send.
