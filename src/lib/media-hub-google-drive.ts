@@ -4,6 +4,7 @@ import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, 
 import { db, hasDatabaseUrl } from "@/lib/db";
 import { ingestMediaHubFileMaterial, type MaterialIngestResult } from "@/lib/media-hub-manual-materials";
 import { classifySsiWeeklyLogisticsTypeFromFilename } from "@/lib/ssi-weekly-logistics-control";
+import { withSsiWorkerStage } from "./ssi-weekly-worker-diagnostics";
 
 const DRIVE_FOLDER_ID = process.env.MEDIA_HUB_GOOGLE_DRIVE_FOLDER_ID ?? "1cHuO86kaqND34vLTFo3Ly_OoBSNV3rgC";
 const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.readonly";
@@ -116,7 +117,7 @@ export async function syncGoogleDriveContextMaterials(options: { rescanRecent?: 
   );
   if (!credential[0]) throw new Error("Google Drive account has not been connected.");
 
-  const token = await refreshGoogleDriveAccessToken(decryptRefreshToken(credential[0].refreshTokenCiphertext));
+  const token = await withSsiWorkerStage("drive_refresh", async () => refreshGoogleDriveAccessToken(decryptRefreshToken(credential[0].refreshTokenCiphertext)));
   const stateRows = await db.$queryRawUnsafe<Array<{ lastSuccessfulSyncAt: Date | null }>>(
     `SELECT "lastSuccessfulSyncAt" FROM private."MediaHubGoogleDriveSyncState" WHERE "id" = 'spike-ua' LIMIT 1`,
   );
@@ -127,14 +128,14 @@ export async function syncGoogleDriveContextMaterials(options: { rescanRecent?: 
     earliestReportDate.getTime(),
   ));
   const modifiedAfter = new Date(lastSyncAt.getTime() - 5 * 60_000).toISOString();
-  const files = await listChangedDriveFiles(token, modifiedAfter, startedAt.toISOString());
+  const files = await withSsiWorkerStage("drive_listing", () => listChangedDriveFiles(token, modifiedAfter, startedAt.toISOString()));
   const eligibleFiles = files.filter((file) => file.id && file.name && file.modifiedTime &&
     file.mimeType !== "application/vnd.google-apps.folder" && Number(file.size ?? 0) <= FILE_MAX_BYTES);
   const versionUrl = (file: (typeof files)[number]) => {
     const link = file.webViewLink ?? `https://drive.google.com/file/d/${encodeURIComponent(file.id!)}/view`;
     return `${link}${link.includes("?") ? "&" : "?"}driveVersion=${encodeURIComponent(file.modifiedTime!)}`;
   };
-  const existing = eligibleFiles.length ? await db.$queryRawUnsafe<Array<{ canonicalUrl: string }>>(
+  const existing = eligibleFiles.length ? await withSsiWorkerStage("drive_versions", () => db.$queryRawUnsafe<Array<{ canonicalUrl: string }>>(
     `SELECT v."canonicalUrl" FROM (
        SELECT "id" AS "materialId", "canonicalUrl" FROM "MediaHubManualMaterial"
        WHERE "tenantId" = 'spike-ua' AND "receivedFrom" = 'google-drive'
@@ -153,7 +154,7 @@ export async function syncGoogleDriveContextMaterials(options: { rescanRecent?: 
     eligibleFiles.map(versionUrl),
     process.env.MEDIA_HUB_ENABLE_PDF_TABLE_OCR !== "0" && process.env.MEDIA_HUB_ENABLE_VISION_SUMMARY !== "0" && Boolean(process.env.OPENAI_API_KEY),
     Boolean(options.rescanRecent),
-  ) : [];
+  )) : [];
   const importedVersions = new Set(existing.map((row) => row.canonicalUrl));
   const results: MaterialIngestResult[] = [];
   let visitedCount = 0;
@@ -166,17 +167,17 @@ export async function syncGoogleDriveContextMaterials(options: { rescanRecent?: 
       continue;
     }
     if (results.length >= SYNC_BATCH_SIZE || Date.now() - startedAt.getTime() >= SYNC_BUDGET_MS) break;
-    const download = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(file.id)}?alt=media`, {
+    const download = await withSsiWorkerStage("drive_download", () => fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(file.id)}?alt=media`, {
       headers: { authorization: `Bearer ${token}` },
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-    });
-    if (!download.ok) throw new Error(`Google Drive download failed for ${file.id}.`);
+    }));
+    if (!download.ok) await withSsiWorkerStage("drive_download", async () => { throw Object.assign(new Error(`Google Drive download failed for ${file.id}.`), { httpStatus: download.status }); });
     const bytes = Buffer.from(await download.arrayBuffer());
     if (bytes.length > FILE_MAX_BYTES) throw new Error(`Google Drive file exceeds size limit: ${file.name}.`);
     const kind = classifyGoogleDriveMaterialKind(file.name);
     const logisticsType = classifySsiWeeklyLogisticsTypeFromFilename(file.name);
     const fileUrl = file.webViewLink ?? `https://drive.google.com/file/d/${encodeURIComponent(file.id)}/view`;
-    const result = await ingestMediaHubFileMaterial({
+    const result = await withSsiWorkerStage("drive_extraction", () => ingestMediaHubFileMaterial({
       bytes,
       canonicalUrl: versionUrl(file),
       filename: file.name,
@@ -188,20 +189,20 @@ export async function syncGoogleDriveContextMaterials(options: { rescanRecent?: 
       reportingDate: new Date(file.modifiedTime),
       sourceType: "google_drive_file",
       tenantId: "spike-ua",
-    });
+    }));
     if (!result.id || result.extractionStatus === "failed" || result.extractionStatus === "skipped") {
       throw new Error(`Google Drive material intake failed for ${file.name}.`);
     }
     // A byte-identical file may reuse an older material. Remember the version
     // without changing that material's observation date or source facts.
-    await db.$executeRawUnsafe(
+    await withSsiWorkerStage("drive_receipt", () => db.$executeRawUnsafe(
       `INSERT INTO private."MediaHubGoogleDriveVersionReceipt"
        ("canonicalUrl","tenantId","driveFileId","modifiedAt","materialId","contentSha256")
        VALUES ($1,'spike-ua',$2,$3::timestamptz,$4,$5)
        ON CONFLICT ("tenantId","canonicalUrl") DO NOTHING`,
       versionUrl(file), file.id, file.modifiedTime, result.id,
       createHash("sha256").update(bytes).digest("hex"),
-    );
+    ));
     results.push(result);
     visitedCount += 1;
     // Persist progress before another external request can fail or time out.
@@ -217,12 +218,12 @@ export async function syncGoogleDriveContextMaterials(options: { rescanRecent?: 
 }
 
 async function saveGoogleDriveSyncCheckpoint(checkpoint: Date) {
-  await db.$executeRawUnsafe(
+  await withSsiWorkerStage("drive_checkpoint", () => db.$executeRawUnsafe(
     `INSERT INTO private."MediaHubGoogleDriveSyncState" ("id", "lastSuccessfulSyncAt", "updatedAt")
      VALUES ('spike-ua', $1, NOW()) ON CONFLICT ("id") DO UPDATE
      SET "lastSuccessfulSyncAt" = GREATEST(private."MediaHubGoogleDriveSyncState"."lastSuccessfulSyncAt", EXCLUDED."lastSuccessfulSyncAt"), "updatedAt" = NOW()`,
     checkpoint,
-  );
+  ));
 }
 
 async function refreshGoogleDriveAccessToken(refreshToken: string) {
@@ -260,7 +261,7 @@ async function listChangedDriveFiles(accessToken: string, modifiedAfter: string,
       ...(pageToken ? { pageToken } : {}),
     }).toString();
     const response = await fetch(url, { headers: { authorization: `Bearer ${accessToken}` }, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
-    if (!response.ok) throw new Error("Google Drive file listing failed.");
+    if (!response.ok) throw Object.assign(new Error("Google Drive file listing failed."), { httpStatus: response.status });
     const page = await response.json() as { files?: typeof files; nextPageToken?: string };
     files.push(...(page.files ?? []));
     pageToken = page.nextPageToken;

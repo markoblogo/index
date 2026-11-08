@@ -13,6 +13,7 @@ import { getSsiWeeklyLogisticsPublicationBlock } from "./ssi-weekly-logistics-co
 import { freezeVideoReport, buildWeeklyVideoPacket, videoHash, VIDEO_PARTS, type FrozenVideoReport, type VideoClaim, type SceneSelection, type VideoPart, type WeeklyVideoPacket } from "./ssi-weekly-video-packet";
 import { makeWeeklyDraftItems, type PairedLedger, type WeeklyVideoReadySet } from "./ssi-weekly-paired-draft";
 import { videoClaimMatchesReport } from "./ssi-weekly-video-source-guard";
+import { ssiWorkerFailure } from "./ssi-weekly-worker-diagnostics";
 
 type Job = { id: string; reportId: string; baseContentSha256: string; snapshot: FrozenVideoReport; packet: WeeklyVideoPacket;
   readySet: WeeklyVideoReadySet | null; targetChatId: string; ledger: PairedLedger | null; lease: string | null;
@@ -235,10 +236,10 @@ export async function handleSsiVideoWorker(request: Request) {
     }
     return json({ error: "unknown_action" }, 400);
   } catch (error) {
-    const reason = error instanceof Error && /^[a-z0-9_]+$/.test(error.message) ? error.message : "video_worker_operation_failed";
+    const { reason, details } = ssiWorkerFailure(error);
     const diagnostic = reason === "weekly_report_generation_failed" && error instanceof Error && typeof error.cause === "string"
       ? error.cause.replace(/sk-[A-Za-z0-9_-]+/g, "[redacted]").replace(/Bearer\s+[^\s,;]+/gi, "Bearer [redacted]").slice(0, 400) : undefined;
-    console.warn("SSI paired draft worker blocked", { reason });
-    return json({ status: "blocked", reason, diagnostic }, 409);
+    console.warn("SSI paired draft worker blocked", { reason, ...details });
+    return json({ status: "blocked", reason, diagnostic, failure: details }, 409);
   }
 }
