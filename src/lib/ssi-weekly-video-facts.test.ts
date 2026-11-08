@@ -2,6 +2,7 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { buildSsiWeeklyVideoFacts } from "./ssi-weekly-video-facts";
 import { buildWeeklyVideoPacket, freezeVideoReport, VIDEO_PARTS, videoHash } from "./ssi-weekly-video-packet";
 import type { MediaHubEvidenceItem } from "./media-hub-evidence";
+import type { MediaHubManualMaterialDigest } from "./media-hub-manual-materials";
 const mocks = vi.hoisted(() => ({ render: vi.fn() }));
 vi.mock("./media-hub-ssi-weekly-pattern", () => ({ renderSsiWeeklySpreadsheetEvidence: mocks.render }));
 vi.mock("./ssi-weekly-rail-evidence", () => ({ ssiRailEvidence: () => [] }));
@@ -36,4 +37,15 @@ it("builds source-bound English scenes without asking a model to recalculate fac
 it("never borrows a price absent from the report, or zero-fills a missing source section", () => {
   const input = fixture(); input.texts[2] = "<b>Oilseeds</b>\n• No supported oilseed numbers.";
   expect(() => buildSsiWeeklyVideoFacts(input)).toThrow("video_verified_fact_section_incomplete");
+});
+it("puts actual futures delivery months in visible captions and deferred row labels", () => {
+  const input = fixture(); input.evidence.push({ id: "manual:closing" } as MediaHubEvidenceItem);
+  input.texts[1] += "\n• MATIF corn March 2027 — 247.25 €; MATIF corn June 2027 — 245.25 €.";
+  const material = { id: "closing", sourceType: "scheduled_api", extractedFacts: [
+    { crop: "corn", venue: "MATIF", date: input.end, expiry: "March 2027", price: 247.25, unit: "EUR/t" },
+    { crop: "corn", venue: "MATIF", date: input.end, expiry: "June 2027", price: 245.25, unit: "EUR/t" },
+  ] } as MediaHubManualMaterialDigest;
+  const draft = buildSsiWeeklyVideoFacts({ ...input, materials: [material] });
+  expect(draft.claims.find(claim => claim.id === "corn-matif")?.english.takeaway).toBe("Delivery: March 2027.");
+  expect(draft.claims.find(claim => claim.id === "corn-matif-deferred")?.english.headline).toBe("Corn Jun 2027");
 });

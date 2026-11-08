@@ -95,8 +95,13 @@ export function buildSsiWeeklyVideoFacts(input: { texts: string[]; evidence: Med
   index("corn-chop", "grains", "CORN_FCA_CHOP", "FCA Chop", /кукурудз/iu, "Corn FCA Chop");
   index("wheat-milling", "grains", "WHT_115", "CPT Odesa", /продовольч|11[.,]5/iu, "Milling wheat");
   index("wheat-feed", "grains", "FEED_WHT", "CPT Odesa", /фураж/iu, "Feed wheat");
-  const future = (id: string, part: VideoPart, crop: string, venue: string, rank: number, match: RegExp, label: string) =>
-    add(id, part, closing(crop, venue, rank), match, label, "The displayed contract and unit identify this Friday's overseas closing benchmark.", "Contract month and quotation unit retained.");
+  const future = (id: string, part: VideoPart, crop: string, venue: string, rank: number, match: RegExp, label: string) => {
+    const metric = closing(crop, venue, rank); if (!metric) return;
+    const expiry = metric.label.split(";")[0];
+    const cropLabel = ({ corn: "Corn", wheat: "Wheat", rapeseed: "Rapeseed", soybeans: "Soy", "soybean meal": "Soymeal", "soybean oil": "Soy oil" } as Record<string, string>)[crop];
+    const rowLabel = rank > 0 ? `${cropLabel} ${expiry.replace(/^([A-Za-z]{3})[a-z]+/, "$1")}` : label;
+    add(id, part, metric, match, rowLabel, "The displayed contract and unit identify this Friday's overseas closing benchmark.", `Delivery: ${expiry}.`);
+  };
   future("corn-cbot", "grains", "corn", "CBOT", 0, /corn|кукурудз/iu, "CBOT corn");
   future("corn-matif", "grains", "corn", "MATIF", 0, /corn|кукурудз/iu, "MATIF corn nearby");
   future("corn-matif-deferred", "grains", "corn", "MATIF", 1, /corn|кукурудз/iu, "MATIF corn deferred");

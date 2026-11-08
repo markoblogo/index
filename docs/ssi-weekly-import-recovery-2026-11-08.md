@@ -155,3 +155,10 @@ The supported `PRODUCER_EXPERIMENTAL_FAST_CAPTURE=false` compatibility switch
 selects normal capture. It is retained in the existing LaunchAgent and installer;
 the 300-second wake interval, approved template/renderer hashes and media checks
 are unchanged. Do not enable the experimental path merely because it is faster.
+
+Encoded-frame review caught a presentation defect before delivery: the template
+renders observation dates rather than `period.label`, so futures expiry was only
+in packet metadata. Each futures scene now prints its actual source expiry in
+the visible takeaway caption; deferred rows also name their source month/year.
+Regression tests cover this. Owner approved rebuilding the still-unsent package;
+retain the first exports as rejected audit artifacts, not confirmed deliveries.
