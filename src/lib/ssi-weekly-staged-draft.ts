@@ -27,8 +27,8 @@ export const SSI_PART_SECTIONS: Record<SsiDraftPart, Array<{ key: string; minIte
 export function ssiStagedPartInstructions(part: SsiDraftPart, repair = false) {
   return [
     `STAGED OVERRIDE: Write ONLY ${part}, with its required part title and sections OBJECT matching the schema. Do not return summary or the other two parts. Each named section contains an array of short facts/paragraphs; code adds the exact section headings.`,
-    "HARD EDITORIAL BUDGET: the schema sets each section's paragraph count and character cap. Use complete short sentences, no truncation or padding. Never put section headings or emoji in the facts; code inserts headings separately. A figure already stated does not need a second explanatory paragraph. At least five factual/analytical paragraphs per PART, not five per subsection.",
-    `Section limits (including spaces/punctuation): ${JSON.stringify(SSI_PART_SECTIONS[part])}. Keep units, dates and bases; combine comparable contract quotes compactly rather than omit the crop's trade context.`,
+    "WHOLE PARAGRAPHS ONLY: finish each sentence naturally. Never truncate words, omit the end of a sentence, or pad to a character cap. Each paragraph must be self-contained; do not refer to an optional preceding paragraph. Code selects complete paragraphs to fit the message. Aim for 3200 summary characters overall, but completeness takes priority over squeezing each field. Never put headings or emoji in facts. At least five factual/analytical paragraphs per PART.",
+    `Section counts: ${JSON.stringify(SSI_PART_SECTIONS[part].map(({ key, minItems, maxItems }) => ({ key, minItems, maxItems })))}. Put essential quote rows and comparable dated facts FIRST in each section, then optional interpretation/background. Keep units, dates and bases; combine two comparable contracts in a complete short quote row.`,
     part === "logistics"
       ? "SECTION QUOTAS: five separate headings plus at most 13 fact paragraphs: overview 2, road/Danube road 4, rail 3, border 3, ports 1. Total at most 18 items. Omit minor checkpoint/station lists before any required section. Keep customs, road, rail export, internal/transit and grain-only/all-cargo queues distinct; never merge their denominators."
       : "Combine two comparable expiries into one compact quote row when necessary. Keep crop headings, verified quotes, trade comparisons and a short interpretation; remove optional background before required sections.",
@@ -48,10 +48,39 @@ export function ssiPartFormat(part: SsiDraftPart) {
       sections: { type: "object", additionalProperties: false, required: SSI_PART_SECTIONS[part].map(section => section.key),
         properties: Object.fromEntries(SSI_PART_SECTIONS[part].map(section => [section.key, {
           type: "array", minItems: section.minItems, maxItems: section.maxItems,
-          items: { type: "string", maxLength: section.maxLength, pattern: `^[^\\r\\n]{1,${section.maxLength}}$` },
+          items: { type: "string", maxLength: 700, pattern: "^[^\\r\\n]{1,700}$" },
         }])) },
     },
   } };
+}
+
+/** Quote rows may end in a value; prose must end naturally, never at a field cap. */
+export function isCompleteSsiParagraph(line: string) {
+  const text = line.replace(/<[^>]*>/g, "").trim();
+  if (!text || /(?:\.{3}|…|[,:;\-–—])$/.test(text)) return false;
+  const tail = text.replace(/[.!?\s)\]»”]+$/g, "");
+  if (/(?:^|\s)(?:і|й|та|або|але|на|до|з|із|у|в|за|від|проти|через|the|and|of|to|with)$/iu.test(tail)) return false;
+  if (/[.!?][)\]»”]*$/.test(text)) return true;
+  // A quote is not free prose: it needs a venue/basis and a numeric terminal field.
+  return /(?:CBOT|MATIF|SPIKE|CPT|FCA|FOB|BMD|WTI|Brent)/iu.test(text) &&
+    /\d\s*(?:[€$%]|USD\/t|EUR\/t|цента?\/бушель|цента?\/фунт|MYR\/t)?\s*(?:\([+−-]?\d+(?:[.,]\d+)?\))?$/.test(text);
+}
+
+function packSections(sections: Record<string, unknown>, part: SsiDraftPart, headings: string[]): string[] | null {
+  const specs = SSI_PART_SECTIONS[part];
+  const selected = specs.map(spec => (sections[spec.key] as string[]).slice(0, spec.minItems));
+  const flatten = () => selected.flatMap((lines, i) => [headings[i], ...lines]);
+  if (flatten().join("\n\n").length > 3600) return null;
+  // Round-robin additions cannot starve the final crop/port section. No string slicing.
+  for (let rank = 0; rank < Math.max(...specs.map(spec => spec.maxItems)); rank++) {
+    specs.forEach((spec, i) => {
+      const candidate = (sections[spec.key] as string[])[spec.minItems + rank];
+      if (!candidate) return;
+      selected[i].push(candidate);
+      if (flatten().join("\n\n").length > 3600) selected[i].pop();
+    });
+  }
+  return flatten();
 }
 
 export function parseSsiPart(text: string, part: SsiDraftPart): Result {
@@ -63,9 +92,12 @@ export function parseSsiPart(text: string, part: SsiDraftPart): Result {
       if (Object.keys(sections).length !== specs.length || specs.some(spec => {
         const lines = sections[spec.key];
         return !Array.isArray(lines) || lines.length < spec.minItems || lines.length > spec.maxItems ||
-          lines.some(line => typeof line !== "string" || !line.trim() || [...line].length > spec.maxLength || /[\r\n]/.test(line));
+          lines.some(line => typeof line !== "string" || !line.trim() || line.length > 700 || /[\r\n]/.test(line));
       })) return { error: "weekly_part_incomplete" };
-      value = { title: value.title, summary: specs.flatMap((spec, i) => [expected.sections[i], ...(sections[spec.key] as string[])]) };
+      if (specs.some(spec => (sections[spec.key] as string[]).some(line => !isCompleteSsiParagraph(line)))) return { error: "weekly_part_fragment" };
+      const summary = packSections(sections, part, expected.sections);
+      if (!summary) return { error: "weekly_part_too_long" };
+      value = { title: value.title, summary };
     }
     if (value.title !== expected.title || !Array.isArray(value.summary) || value.summary.length < 8 || value.summary.length > 26 ||
       value.summary.some(line => typeof line !== "string" || !line.trim() || line.length > 700 || /[\r\n]/.test(line)) ||
@@ -76,6 +108,7 @@ export function parseSsiPart(text: string, part: SsiDraftPart): Result {
     if (value.summary.join("\n\n").length > 3600) return { error: "weekly_part_too_long" };
     const headings = new Set(value.summary.map(line => line.replace(/<[^>]*>/g, "").trim()));
     if (expected.sections.some(heading => !headings.has(heading))) return { error: "weekly_part_sections_missing" };
+    if (value.summary.some(line => !expected.sections.includes(line.replace(/<[^>]*>/g, "").trim()) && !isCompleteSsiParagraph(line))) return { error: "weekly_part_fragment" };
     return { report: value };
   } catch { return { error: "weekly_part_invalid_json" }; }
 }
@@ -84,7 +117,7 @@ export function parseSsiPart(text: string, part: SsiDraftPart): Result {
 export async function generateStagedSsiWeeklyDraft(input: {
   end: string; prompt: string; model: string; generate: (part: SsiDraftPart) => Promise<Result>;
 }): Promise<Result> {
-  const inputHash = createHash("sha256").update(`ssi-parts-v3\n${input.model}\n${input.prompt}`).digest("hex");
+  const inputHash = createHash("sha256").update(`ssi-parts-v4-whole-paragraphs\n${input.model}\n${input.prompt}`).digest("hex");
   const [row] = await db.$queryRawUnsafe<Array<{ lease: string; reportDraftPartsJson: State | null }>>(
     'SELECT "lease","reportDraftPartsJson" FROM private."SsiWeeklyVideoPreparation" WHERE "periodEnd"=$1::date', input.end);
   if (!row?.lease) return { error: "weekly_preparation_lease_missing" };

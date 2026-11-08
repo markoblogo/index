@@ -134,7 +134,10 @@ export function getMediaHubReportTextForValidation(content: {
 function extractRiskyClaims(text: string) {
   return text
     .replace(/<[^>]+>/g, " ")
+    // A unit abbreviation is not a sentence boundary (e.g. 1.054 млн т / 43.2 тис. т).
+    .replace(/(тис|млн|млрд|ваг|р|ст)\.(?=\s+(?:т(?!\p{L})|тонн|грн|дол|USD|€|\$|р(?!\p{L})|до(?!\p{L})|проти(?!\p{L})|на(?!\p{L})|\d))/giu, "$1\uE000")
     .split(/(?<=[.!?。]|[。！？])\s+|\n+/)
+    .map(line => line.replace(/\uE000/g, "."))
     .map((line) => line.replace(/^[-•\s]+/, "").trim())
     .filter((line) => line.length >= 24 && line.length <= 420)
     .filter((line) => RISKY_CLAIM_PATTERN.test(line))

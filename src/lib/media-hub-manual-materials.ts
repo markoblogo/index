@@ -474,9 +474,12 @@ export async function getManualMaterialsForPeriod(input: {
   const currentIds = new Set(selected.map(row => row.id));
   const comparisonRows = comparisons.filter(row => !currentIds.has(row.id));
   const comparisonIds = new Set(comparisonRows.map(row => row.id));
-  return (await attachMaterialAssets([...selected, ...comparisonRows])).map(row => ({
-    ...toMaterialDigest(row, 4000), ...(comparisonIds.has(row.id) ? { comparisonOnly: true } : {}),
+  const digests = (await attachMaterialAssets([...selected, ...comparisonRows])).map(row => ({
+    ...toMaterialDigest(row, input.includeComparisonMaterials && preferDriveMaterials && /\.pdf$/i.test(row.originalFilename ?? "") ? 18000 : 4000), ...(comparisonIds.has(row.id) ? { comparisonOnly: true } : {}),
   }));
+  if (!input.includeComparisonMaterials || !preferDriveMaterials) return digests;
+  const { collectSsiWeeklyClosingQuotes } = await import("./ssi-weekly-closing-quotes");
+  return [...await collectSsiWeeklyClosingQuotes(input.periodEndDate), ...digests];
 }
 
 export async function listRecentMediaHubManualMaterials(tenantId?: string) {

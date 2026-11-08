@@ -1,7 +1,7 @@
 import { beforeEach, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ query: vi.fn(), execute: vi.fn() }));
 vi.mock("./db", () => ({ db: { $queryRawUnsafe: mocks.query, $executeRawUnsafe: mocks.execute } }));
-import { generateStagedSsiWeeklyDraft, parseSsiPart, ssiPartFormat, ssiStagedPartInstructions, SSI_DRAFT_PARTS, SSI_PART_SECTIONS } from "./ssi-weekly-staged-draft";
+import { generateStagedSsiWeeklyDraft, isCompleteSsiParagraph, parseSsiPart, ssiPartFormat, ssiStagedPartInstructions, SSI_DRAFT_PARTS, SSI_PART_SECTIONS } from "./ssi-weekly-staged-draft";
 import { getSsiWeeklyRequiredParts } from "./ssi-weekly-editorial-contract";
 const paragraphs = Array.from({ length: 8 }, (_, i) => `Verified source statement ${i} preserves its crop, observation and exact units.`);
 beforeEach(() => { vi.resetAllMocks(); });
@@ -55,7 +55,7 @@ it("injects all headings and fits the full per-section schema budget without sli
     const expected = getSsiWeeklyRequiredParts("uk")[i];
     const sections = Object.fromEntries(SSI_PART_SECTIONS[part].map(spec => [spec.key, Array.from({ length: spec.maxItems }, () => {
       const text = "A verified dated source metric preserves its units basis and observation. ";
-      return text + "x".repeat(spec.maxLength - text.length);
+      return text + "x".repeat(spec.maxLength - text.length - 1) + ".";
     })]));
     const result = parseSsiPart(JSON.stringify({ title: expected.title, sections }), part);
     expect(result.report).toBeDefined();
@@ -64,4 +64,20 @@ it("injects all headings and fits the full per-section schema budget without sli
     delete sections[SSI_PART_SECTIONS[part].at(-1)!.key];
     expect(parseSsiPart(JSON.stringify({ title: expected.title, sections }), part).error).toBe("weekly_part_incomplete");
   }
+});
+it("selects only whole paragraphs, reserves every section and rejects unfinished candidates", () => {
+  const part = getSsiWeeklyRequiredParts("uk")[0];
+  const sections = Object.fromEntries(SSI_PART_SECTIONS.logistics.map(spec => [spec.key,
+    Array.from({ length: spec.maxItems }, (_, i) => `Verified ${spec.key} fact ${i} preserves its observation period and units. ` + "x".repeat(390) + ".")]));
+  const result = parseSsiPart(JSON.stringify({ title: part.title, sections }), "logistics");
+  expect(result.report).toBeDefined();
+  expect(result.report!.summary.join("\n\n").length).toBeLessThanOrEqual(3600);
+  expect(result.report!.summary.filter(line => !part.sections.includes(line)).every(line => Object.values(sections).flat().includes(line))).toBe(true);
+  for (const heading of part.sections) expect(result.report!.summary).toContain(heading);
+  for (const fragment of ["Зниження залишило ринок ведмежим чн", "Портовий індекс знизився до $", "Перевезення зерна зросли на.", "Зерно доставлено у порти..."]) {
+    expect(isCompleteSsiParagraph(fragment)).toBe(false);
+    sections.overview[0] = fragment;
+    expect(parseSsiPart(JSON.stringify({ title: part.title, sections }), "logistics").error).toBe("weekly_part_fragment");
+  }
+  expect(isCompleteSsiParagraph("CBOT грудень 2026: 441.50 цента/бушель (-6.25)")).toBe(true);
 });

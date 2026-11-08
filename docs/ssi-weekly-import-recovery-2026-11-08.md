@@ -59,3 +59,31 @@ Code injects headings and flattens to the existing report shape; missing section
 cannot be merged into one array item by the model. Tests exercise every section
 at its maximum budget for all three parts. Existing UTF-16, scope and factual
 checks remain authoritative; no received draft is mechanically sliced to fit.
+
+## Quality hold and complete-paragraph repair
+
+Production generation showed that the low per-field caps encouraged unfinished
+words/sentences. The current candidate was held as `needs_review`; no messages
+or videos were sent. The Mac LaunchAgent was temporarily unloaded without
+changing its saved schedule. Do not re-enable until the replacement is reviewed.
+
+The replacement uses complete paragraphs (700-unit safety ceiling), reserves
+each required section first and adds optional whole paragraphs round-robin up
+to 3,600 units. It never slices a fact, pads a sentence or adds punctuation to
+conceal a fragment. Fragment rejection allows the existing single bounded
+shape repair. New staged input identity prevents reuse of old malformed parts.
+
+Paired weekly PDF context retains up to 18,000 native characters instead of
+4,000, still under the existing per-source/overall grounding budgets. Rail
+receipts reconcile land + Danube - internal Izmail + Odesa against export-only
+totals before deriving a share. Grain-only queue receipts require the explicit
+cargo label and UZ column; ambiguous cohorts remain unavailable. Observation
+month/date is preserved independently of Drive modification time.
+
+Paired weekly preparation also reads four bounded public closing-quote pages:
+GrainDecision corn/wheat/rapeseed and Brownfield's dated closing bulletin. The
+adapter checks actual observation date, named Close column, crop/expiry/unit,
+and exact previous-Friday baseline before assigning a weekly change. Missing,
+blocked or stale sources contribute no replacement quote. Morning PDFs remain
+valid dated context, not closing prices. Normalized quote materials and source
+URLs enter the frozen report evidence; this is not a new crawler/service.
